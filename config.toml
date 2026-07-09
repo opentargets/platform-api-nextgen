@@ -1,0 +1,12 @@
+data_release = "26.06"
+product = "platform"
+log_level = "trace"
+
+clickhouse_url = "http://localhost:8123"
+clickhouse_max_execution_time = "30s"
+opensearch_url = "http://localhost:9200"
+opensearch_timeout = "10s"
+
+[plugins]
+"ai-api" = "http://localhost:8081"
+"gsea" = "http://localhost:8082"
