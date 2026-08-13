@@ -8,6 +8,7 @@ use crate::{
     AppState,
     entity::{
         disease::{Disease, DiseaseQuery},
+        disease_hpo::{DiseaseHpo, DiseaseHpoQuery},
         hpo::{Hpo, HpoQuery},
         meta::{Meta, MetaQuery},
         study::{Study, StudyQuery},
@@ -16,6 +17,7 @@ use crate::{
 
 #[derive(Debug, SimpleObject)]
 #[graphql(concrete(name = "DiseasePage", params(Disease)))]
+#[graphql(concrete(name = "DiseaseHpoPage", params(DiseaseHpo)))]
 #[graphql(concrete(name = "StudyPage", params(Study)))]
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
 pub struct Paged<T: OutputType> {
@@ -24,7 +26,13 @@ pub struct Paged<T: OutputType> {
 }
 
 #[derive(MergedObject, Default)]
-pub struct Query(DiseaseQuery, MetaQuery, StudyQuery, HpoQuery);
+pub struct Query(
+    DiseaseQuery,
+    MetaQuery,
+    StudyQuery,
+    HpoQuery,
+    DiseaseHpoQuery,
+);
 
 pub type ApiSchema = Schema<Query, EmptyMutation, EmptySubscription>;
 
