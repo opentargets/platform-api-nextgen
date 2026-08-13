@@ -1,31 +1,22 @@
-//! `Human Phenotype Ontology (HPO)` entity: core annotation for HPO.
+use std::{cmp::Ordering, collections::HashMap};
 
-use std::cmp::Ordering;
-
-use async_graphql::{Context, Enum, InputObject, Object, SimpleObject};
-use clickhouse::{Row, error::Result};
+use async_graphql::{Context, Enum, Object, SimpleObject, dataloader::Loader};
+use clickhouse::Row;
 use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
     query::{
-        Entity, execute,
-        filter::{Filter, StringFilter},
-        paginate::Page,
+        Entity, QueryExt,
+        paginate::{Page, Paged},
         search::Searchable,
-        sort::{SortDirection, SortKey},
+        sort::{Sort, SortKey},
     },
-    schema::Paged,
 };
 
 // ---- model ----
 
-/// Entity trait: how do we get the unique indentifier of a disease:
-impl Entity for Hpo {
-    fn id(&self) -> &str { &self.id }
-}
-
-/// `HPO` entity: represents the core annotation for a HPO.
+/// Human Phenotype Ontology subset of information included in the Platform.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct Hpo {
@@ -35,20 +26,13 @@ pub struct Hpo {
     namespace: Vec<String>,
 }
 
-/// HPO filter: which fields can we filter HPO by?
-#[derive(Debug, InputObject)]
-pub struct HpoFilter {
-    pub id: Option<StringFilter>,
+impl Entity for Hpo {
+    fn id(&self) -> &str { &self.id }
 }
 
-impl Filter<Hpo> for HpoFilter {
-    fn matches(&self, d: &Hpo) -> bool { self.id.as_ref().is_none_or(|f| f.matches(Some(&d.id))) }
-}
-
-/// Hpo sort fields: which fields can we sort diseases by?
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Default)]
+/// Contains the fields available for sorting hpos.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
 pub enum HpoSortField {
-    #[default]
     Id,
     Name,
 }
@@ -62,7 +46,6 @@ impl SortKey<Hpo> for HpoSortField {
     }
 }
 
-/// Searchable implementation for Hpo: searches by ID, name, and description.
 impl Searchable for Hpo {
     fn matches_search(&self, needle: &str) -> bool {
         self.id.to_lowercase().contains(needle)
@@ -74,10 +57,31 @@ impl Searchable for Hpo {
     }
 }
 
+// ---- dataloaders ----
+
+pub struct HpoLoader {
+    pub ch: ClickHouse,
+}
+impl HpoLoader {
+    #[must_use]
+    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
+}
+impl Loader<String> for HpoLoader {
+    type Value = Hpo;
+    type Error = async_graphql::Error;
+    async fn load(&self, keys: &[String]) -> Result<HashMap<String, Hpo>, Self::Error> {
+        Ok(fetch_by_ids(&self.ch, keys)
+            .await?
+            .into_iter()
+            .map(|h| (h.id.clone(), h))
+            .collect())
+    }
+}
+
 // ---- retriever ----
 
 #[tracing::instrument(skip_all, fields(n = ids.len()))]
-async fn fetch_by_ids(ch: &ClickHouse, ids: &[String]) -> Result<Vec<Hpo>> {
+async fn fetch_by_ids(ch: &ClickHouse, ids: &[String]) -> clickhouse::error::Result<Vec<Hpo>> {
     if ids.is_empty() {
         return Ok(Vec::new());
     }
@@ -99,19 +103,15 @@ impl HpoQuery {
         &self,
         ctx: &Context<'_>,
         ids: Vec<String>,
-        filter: Option<HpoFilter>,
         search: Option<String>,
-        sort_by: Option<HpoSortField>,
+        sort: Option<Sort<HpoSortField>>,
         #[graphql(default)] page: Page,
     ) -> async_graphql::Result<Paged<Hpo>> {
         let items = fetch_by_ids(ctx.data::<ClickHouse>()?, &ids).await?;
-        Ok(execute(
-            items,
-            filter.as_ref(),
-            search.as_deref(),
-            &sort_by,
-            SortDirection::Asc,
-            page,
-        ))
+        Ok(items
+            .query()
+            .search(search.as_deref())
+            .sort(sort.as_ref())
+            .paginate(page))
     }
 }

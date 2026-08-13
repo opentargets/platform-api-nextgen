@@ -1,34 +1,26 @@
-//! `disease` entity: core annotation for diseases or phenotypes.
-
 use std::{cmp::Ordering, collections::HashMap};
 
 use async_graphql::{
-    ComplexObject, Context, Enum, InputObject, Object, SimpleObject,
+    ComplexObject, Context, Enum, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
-use clickhouse::{Row, error::Result};
+use clickhouse::Row;
 use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
     query::{
-        Entity, execute,
-        filter::{Filter, StringFilter},
-        paginate::Page,
+        Entity, QueryExt,
+        paginate::{Page, Paged},
         search::Searchable,
-        sort::{SortDirection, SortKey},
+        sort::{Sort, SortKey},
     },
-    schema::Paged,
 };
 
 // ---- model ----
 
-/// Entity trait: how do we get the unique indentifier of a disease:
-impl Entity for Disease {
-    fn id(&self) -> &str { &self.id }
-}
-
-/// `DiseaseSynonym` entity: represents a synonym for a disease or phenotype.
+/// List of synonymous disease labels.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct DiseaseSynonym {
@@ -36,7 +28,7 @@ pub struct DiseaseSynonym {
     terms: Vec<Option<String>>,
 }
 
-/// `Disease` entity: represents the core annotation for a disease or phenotype.
+/// Core annotation for diseases or phenotypes. A disease or phenotype in the Platform is understood as any disease, phenotype, biological process or measurement that might have any type of causality relationship with a human target. The EMBL-EBI Experimental Factor Ontology (EFO) (slim version) is used as scaffold for the disease or phenotype entity
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
@@ -59,22 +51,13 @@ pub struct Disease {
     indirect_location_ids: Vec<String>,
 }
 
-/// Disease filter: which fields can we filter diseases by?
-#[derive(Debug, InputObject)]
-pub struct DiseaseFilter {
-    pub id: Option<StringFilter>,
+impl Entity for Disease {
+    fn id(&self) -> &str { &self.id }
 }
 
-impl Filter<Disease> for DiseaseFilter {
-    fn matches(&self, d: &Disease) -> bool {
-        self.id.as_ref().is_none_or(|f| f.matches(Some(&d.id)))
-    }
-}
-
-/// Disease sort fields: which fields can we sort diseases by?
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Default)]
+/// Contains the fields available for sorting diseases.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
 pub enum DiseaseSortField {
-    #[default]
     Id,
     Name,
     IsTherapeuticArea,
@@ -90,7 +73,6 @@ impl SortKey<Disease> for DiseaseSortField {
     }
 }
 
-/// Searchable implementation for Disease: searches by ID, name, and description.
 impl Searchable for Disease {
     fn matches_search(&self, needle: &str) -> bool {
         self.id.to_lowercase().contains(needle)
@@ -130,7 +112,7 @@ impl Loader<String> for DiseaseLoader {
 // ---- retriever ----
 
 #[tracing::instrument(skip_all, fields(n = ids.len()))]
-async fn fetch_by_ids(ch: &ClickHouse, ids: &[String]) -> Result<Vec<Disease>> {
+async fn fetch_by_ids(ch: &ClickHouse, ids: &[String]) -> clickhouse::error::Result<Vec<Disease>> {
     if ids.is_empty() {
         return Ok(Vec::new());
     }
@@ -140,7 +122,8 @@ async fn fetch_by_ids(ch: &ClickHouse, ids: &[String]) -> Result<Vec<Disease>> {
         .await
 }
 
-async fn fetch_by_id(ch: &ClickHouse, id: &str) -> Result<Option<Disease>> {
+#[tracing::instrument(skip(ch), fields(id = %id))]
+async fn fetch_by_id(ch: &ClickHouse, id: &str) -> clickhouse::error::Result<Option<Disease>> {
     ch.query("SELECT ?fields FROM disease WHERE id = ? LIMIT 1")
         .bind(id)
         .fetch_optional::<Disease>()
@@ -154,26 +137,21 @@ pub struct DiseaseQuery;
 
 #[Object]
 impl DiseaseQuery {
-    /// Fetch diseases by ontology ID. `ids` is the PK anchor and is required.
+    /// Fetch diseases by ontology ID.
     async fn diseases(
         &self,
         ctx: &Context<'_>,
         ids: Vec<String>,
-        filter: Option<DiseaseFilter>,
         search: Option<String>,
-        sort_by: Option<DiseaseSortField>,
-        #[graphql(default)] direction: SortDirection,
+        sort: Option<Sort<DiseaseSortField>>,
         #[graphql(default)] page: Page,
     ) -> async_graphql::Result<Paged<Disease>> {
         let items = fetch_by_ids(ctx.data::<ClickHouse>()?, &ids).await?;
-        Ok(execute(
-            items,
-            filter.as_ref(),
-            search.as_deref(),
-            &sort_by,
-            direction,
-            page,
-        ))
+        Ok(items
+            .query()
+            .search(search.as_deref())
+            .sort(sort.as_ref())
+            .paginate(page))
     }
 
     async fn disease(
@@ -195,6 +173,19 @@ impl Disease {
     /// Direct child terms in the disease ontology.
     async fn children(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Disease>> {
         load_diseases(ctx, &self.children).await
+    }
+
+    async fn phenotypes(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<DiseasePhenotype>> {
+        let items = ctx
+            .data_unchecked::<DataLoader<DiseasePhenotypeLoader>>()
+            .load_one(self.id.clone())
+            .await?
+            .unwrap_or_default();
+        Ok(items.query().paginate(page))
     }
 }
 

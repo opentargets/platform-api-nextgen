@@ -1,15 +1,31 @@
 use std::cmp::Ordering;
 
-use async_graphql::Enum;
+use async_graphql::{Enum, InputObject, InputType};
 
-use crate::query::Entity;
+use crate::{
+    entity::{disease::DiseaseSortField, hpo::HpoSortField, study::StudySortField},
+    query::Entity,
+};
 
 /// Sort direction: ascending or descending.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Default)]
 pub enum SortDirection {
+    /// Ascending order.
     #[default]
-    Asc,
-    Desc,
+    Ascending,
+    /// Descending order.
+    Descending,
+}
+
+/// Sort types. Contain the sort field and direction.
+#[derive(Debug, Clone, Copy, InputObject)]
+#[graphql(concrete(name = "DiseaseSort", params(DiseaseSortField)))]
+#[graphql(concrete(name = "StudySort", params(StudySortField)))]
+#[graphql(concrete(name = "HpoSort", params(HpoSortField)))]
+pub struct Sort<K: InputType> {
+    pub key: K,
+    #[graphql(default)]
+    pub direction: SortDirection,
 }
 
 /// Per-entity sort key: how do we order two rows?
@@ -17,19 +33,25 @@ pub trait SortKey<T> {
     fn compare(&self, a: &T, b: &T) -> Ordering;
 }
 
-pub fn sort_items<T, K>(items: &mut [T], key: &Option<K>, dir: SortDirection)
+/// Null-object sort key.
+///
+/// Used when we don't want to define sort keys.
+#[derive(Clone, Copy)]
+pub struct NoSort;
+impl<T> SortKey<T> for NoSort {
+    fn compare(&self, _: &T, _: &T) -> Ordering { Ordering::Equal }
+}
+
+pub fn sort_items<T, K>(items: &mut [T], key: Option<&K>, direction: SortDirection)
 where
     T: Entity,
     K: SortKey<T>,
 {
     items.sort_unstable_by(|a, b| {
-        let primary = match &key {
-            Some(k) => match dir {
-                SortDirection::Asc => k.compare(a, b),
-                SortDirection::Desc => k.compare(a, b).reverse(),
-            },
-            None => Ordering::Equal,
-        };
+        let primary = key.map_or(Ordering::Equal, |k| match direction {
+            SortDirection::Ascending => k.compare(a, b),
+            SortDirection::Descending => k.compare(a, b).reverse(),
+        });
         primary.then_with(|| a.id().cmp(b.id()))
     });
 }

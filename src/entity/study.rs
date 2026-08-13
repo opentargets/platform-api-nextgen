@@ -1,32 +1,23 @@
-//! `study` entity: GWAS and molecular QTL studies.
-
 use std::cmp::Ordering;
 
-use async_graphql::{Context, Enum, InputObject, Object, SimpleObject};
-use clickhouse::{Row, error::Result};
+use async_graphql::{Context, Enum, Object, SimpleObject};
+use clickhouse::Row;
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
     query::{
-        Entity, execute,
-        filter::{Filter, StringFilter},
-        paginate::Page,
+        Entity, QueryExt,
+        paginate::{Page, Paged},
         search::Searchable,
-        sort::{SortDirection, SortKey, nulls_last},
+        sort::{Sort, SortKey, nulls_last},
     },
-    schema::Paged,
 };
 
 // ---- model ----
 
-/// Entity trait: how do we get the unique identifier of an entity?
-impl Entity for Study {
-    fn id(&self) -> &str { &self.study_id }
-}
-
-/// Study type: GWAS or some type of molecular QTL.
+/// Field specifying if study contains phenotype/disease or molecular genetic associations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr)]
 #[repr(i8)]
 #[graphql(rename_items = "lowercase")]
@@ -42,7 +33,7 @@ pub enum StudyType {
     Gwas = 9,
 }
 
-/// Sample entity: represents a sample size and ancestry for a study.
+/// Represents a sample of biological material.
 #[derive(Debug, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 // #[serde(from = "(String, u32)")]
@@ -51,7 +42,7 @@ pub struct Sample {
     sample_size: u32,
 }
 
-/// LD population structure entity: represents the LD population structure for a study.
+/// Collection of populations referenced by the study.
 #[derive(Debug, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 // #[serde(from = "(String, Option<f64>)")]
@@ -60,7 +51,7 @@ pub struct LdPopulationStructure {
     relative_sample_size: Option<f64>,
 }
 
-/// Summary statistics QC entity: represents a summary statistics QC check for a study.
+/// Mapping of quality control flags.
 #[derive(Debug, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 // #[serde(from = "(String, f64)")]
@@ -71,7 +62,7 @@ pub struct SumStatQC {
     qc_check_value: f64,
 }
 
-/// `Study` entity: represents a GWAS or molecular QTL study.
+/// Metadata for all complex trait GWAS and molecular QTL studies in the Platform. The dataset includes study metadata, phenotype information, sample sizes, publication information and more. Molecular QTL studies are split by their target trait (e.g. gene, splice junction, etc), biosample (tissue, cell type or cell line) and condition (e.g. stimulation, time period, etc), potentially leading to tens of thousands of studies derived from the same publication
 #[allow(clippy::struct_field_names)]
 #[derive(Debug, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
@@ -105,21 +96,11 @@ pub struct Study {
     sumstat_qc_values: Vec<SumStatQC>,
 }
 
-/// Study filter: which fields can we filter studies by?
-#[derive(Debug, InputObject)]
-pub struct StudyFilter {
-    pub study_id: Option<StringFilter>,
+impl Entity for Study {
+    fn id(&self) -> &str { &self.study_id }
 }
 
-impl Filter<Study> for StudyFilter {
-    fn matches(&self, s: &Study) -> bool {
-        self.study_id
-            .as_ref()
-            .is_none_or(|f| f.matches(Some(&s.study_id)))
-    }
-}
-
-/// Study sort fields: which fields can we sort studies by?
+/// Contains the fields available for sorting studies.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
 pub enum StudySortField {
     StudyId,
@@ -147,7 +128,6 @@ impl SortKey<Study> for StudySortField {
     }
 }
 
-/// Searchable implementation for Study: searches by study ID, trait from source, and project ID.
 impl Searchable for Study {
     fn matches_search(&self, needle: &str) -> bool {
         self.study_id.to_lowercase().contains(needle)
@@ -164,7 +144,7 @@ async fn fetch_studies(
     ids: Option<&[String]>,
     disease_ids: Option<&[String]>,
     indirect: bool,
-) -> Result<Vec<Study>> {
+) -> clickhouse::error::Result<Vec<Study>> {
     let mut clauses: Vec<&'static str> = Vec::new();
     if ids.is_some() {
         clauses.push("studyId IN ?");
@@ -192,7 +172,8 @@ async fn fetch_studies(
     q.fetch_all::<Study>().await
 }
 
-async fn fetch_by_id(ch: &ClickHouse, study_id: &str) -> Result<Option<Study>> {
+#[tracing::instrument(skip(ch), fields(id = %study_id))]
+async fn fetch_by_id(ch: &ClickHouse, study_id: &str) -> clickhouse::error::Result<Option<Study>> {
     ch.query("SELECT ?fields FROM studies WHERE studyId = ? LIMIT 1")
         .bind(study_id)
         .fetch_optional::<Study>()
@@ -212,10 +193,8 @@ impl StudyQuery {
         ids: Option<Vec<String>>,
         disease_ids: Option<Vec<String>>,
         #[graphql(default)] enable_indirect: bool,
-        filter: Option<StudyFilter>,
         search: Option<String>,
-        sort_by: Option<StudySortField>,
-        #[graphql(default)] dir: SortDirection,
+        sort: Option<Sort<StudySortField>>,
         #[graphql(default)] page: Page,
     ) -> async_graphql::Result<Paged<Study>> {
         if ids.is_none() && disease_ids.is_none() {
@@ -228,14 +207,11 @@ impl StudyQuery {
             enable_indirect,
         )
         .await?;
-        Ok(execute(
-            items,
-            filter.as_ref(),
-            search.as_deref(),
-            &sort_by,
-            dir,
-            page,
-        ))
+        Ok(items
+            .query()
+            .search(search.as_deref())
+            .sort(sort.as_ref())
+            .paginate(page))
     }
 
     async fn study(

@@ -7,6 +7,14 @@ pub trait Filter<T> {
     fn matches(&self, item: &T) -> bool;
 }
 
+/// Null-object filter.
+///
+/// Used when we don't want to define filters.
+pub struct NoFilter;
+impl<T> Filter<T> for NoFilter {
+    fn matches(&self, _: &T) -> bool { true }
+}
+
 /// Filter for a string field.
 #[derive(Debug, InputObject)]
 pub struct StringFilter {

@@ -6,6 +6,8 @@ clickhouse_url = "http://localhost:8123"
 clickhouse_max_execution_time = "30s"
 opensearch_url = "http://localhost:9200"
 opensearch_timeout = "10s"
+max_depth = 20
+max_complexity = 1000
 
 [plugins]
 "ai-api" = "http://localhost:8081"
