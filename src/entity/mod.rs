@@ -3,3 +3,4 @@
 pub mod disease;
 pub mod meta;
 pub mod study;
+pub mod hpo;
