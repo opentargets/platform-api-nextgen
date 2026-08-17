@@ -4,7 +4,7 @@ use async_graphql::{Context, Object, SimpleObject};
 
 use crate::config::Config;
 
-// ---- model ----
+// ---- models ----
 
 /// Version information for the API and its underlying data sources.
 #[derive(Debug, Clone, SimpleObject)]
@@ -35,7 +35,7 @@ pub struct Meta {
     downloads: Option<String>,
 }
 
-// ---- construction ----
+// ---- retrievers ----
 
 fn split_version(v: &str) -> (String, String, String) {
     let mut parts = v.split('.').map(str::to_string);
@@ -73,7 +73,7 @@ impl Meta {
     }
 }
 
-// ---- resolver ----
+// ---- resolvers ----
 
 #[derive(Default)]
 pub struct MetaQuery;

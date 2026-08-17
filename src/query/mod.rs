@@ -9,6 +9,7 @@ use crate::query::{
     sort::{Sort, SortDirection, SortKey, sort_items},
 };
 
+pub mod cache;
 pub mod filter;
 pub mod paginate;
 pub mod search;
@@ -37,6 +38,7 @@ pub struct Query<T>(Vec<T>);
 impl<T: OutputType> Query<T> {
     #[must_use]
     pub fn filter(mut self, filter: Option<&impl Filter<T>>) -> Self {
+        let _s = tracing::debug_span!("filter", n = self.0.len()).entered();
         if let Some(f) = filter {
             self.0.retain(|item| f.matches(item));
         }
@@ -48,6 +50,7 @@ impl<T: OutputType> Query<T> {
     where
         T: Searchable,
     {
+        let _s = tracing::debug_span!("search", n = self.0.len()).entered();
         if let Some(n) = needle {
             let n = n.to_lowercase();
             self.0.retain(|item| item.matches_search(&n));
@@ -61,6 +64,7 @@ impl<T: OutputType> Query<T> {
         T: Entity,
         K: SortKey<T> + InputType,
     {
+        let _s = tracing::debug_span!("sort", n = self.0.len()).entered();
         sort_items(
             &mut self.0,
             sort.map(|s| &s.key),
@@ -70,19 +74,16 @@ impl<T: OutputType> Query<T> {
     }
 
     #[must_use]
-    #[tracing::instrument(skip_all, fields(total = self.0.len(), size = page.size))]
-    pub fn paginate(self, page: Page) -> Paged<T>
-    where
-        T: OutputType,
-    {
+    pub fn paginate(mut self, page: Page) -> Paged<T> {
+        let _s = tracing::debug_span!("paginate", n = self.0.len()).entered();
         let total = self.0.len() as u64;
         let size = page.size.min(MAX_PAGE_SIZE);
-        let items = self
-            .0
-            .into_iter()
-            .skip(page.index * size)
-            .take(size)
-            .collect();
+        let start = (page.index * size).min(self.0.len());
+        let end = (start + size).min(self.0.len());
+        // Using drain here is much faster than into_iter().skip()/take() because
+        // it avoids copying the items into a new vector, and instead moves them
+        // directly into the Paged struct.
+        let items = self.0.drain(start..end).collect();
         Paged { total, items }
     }
 }

@@ -15,7 +15,7 @@ use crate::{
     },
 };
 
-// ---- model ----
+// ---- models ----
 
 /// Field specifying if study contains phenotype/disease or molecular genetic associations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr)]
@@ -136,9 +136,8 @@ impl Searchable for Study {
     }
 }
 
-// ---- retriever ----
+// ---- retrievers ----
 
-#[tracing::instrument(skip_all, fields(ids = ids.map(<[String]>::len), indirect))]
 async fn fetch_studies(
     ch: &ClickHouse,
     ids: Option<&[String]>,
@@ -172,7 +171,6 @@ async fn fetch_studies(
     q.fetch_all::<Study>().await
 }
 
-#[tracing::instrument(skip(ch), fields(id = %study_id))]
 async fn fetch_by_id(ch: &ClickHouse, study_id: &str) -> clickhouse::error::Result<Option<Study>> {
     ch.query("SELECT ?fields FROM studies WHERE studyId = ? LIMIT 1")
         .bind(study_id)
@@ -180,7 +178,7 @@ async fn fetch_by_id(ch: &ClickHouse, study_id: &str) -> clickhouse::error::Resu
         .await
 }
 
-// ---- resolver ----
+// ---- resolvers ----
 
 #[derive(Default)]
 pub struct StudyQuery;

@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use moka::sync::Cache;
 use serde::Deserialize;
 
 use crate::{
@@ -12,13 +13,14 @@ use crate::{
     entity::disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
     query::{
         Entity, QueryExt,
+        cache::CachedLoader,
         paginate::{Page, Paged},
         search::Searchable,
         sort::{Sort, SortKey},
     },
 };
 
-// ---- model ----
+// ---- models ----
 
 /// List of synonymous disease labels.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
@@ -28,7 +30,10 @@ pub struct DiseaseSynonym {
     terms: Vec<Option<String>>,
 }
 
-/// Core annotation for diseases or phenotypes. A disease or phenotype in the Platform is understood as any disease, phenotype, biological process or measurement that might have any type of causality relationship with a human target. The EMBL-EBI Experimental Factor Ontology (EFO) (slim version) is used as scaffold for the disease or phenotype entity
+/// Core annotation for diseases or phenotypes. A disease or phenotype in the Platform is
+/// understood as any disease, phenotype, biological process or measurement that might have
+/// any type of causality relationship with a human target. The EMBL-EBI Experimental Factor
+/// Ontology (EFO) (slim version) is used as scaffold for the disease or phenotype entity.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
@@ -90,63 +95,95 @@ impl Searchable for Disease {
 
 // ---- loaders ----
 
+// ============================================================= CACHE TEST
+pub type DiseaseCache = Cache<String, Option<Disease>>;
+
+#[must_use]
+// TODO: weigher and capacity si
+pub fn disease_cache() -> DiseaseCache { Cache::builder().max_capacity(100_000).build() }
+
 pub struct DiseaseLoader {
-    pub ch: ClickHouse,
+    ch: ClickHouse,
+    cache: DiseaseCache,
 }
 
 impl DiseaseLoader {
     #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
+    pub fn new(ch: ClickHouse, cache: DiseaseCache) -> Self { Self { ch, cache } }
+}
+
+impl CachedLoader for DiseaseLoader {
+    type Key = String;
+    type Value = Disease;
+
+    fn cache(&self) -> &DiseaseCache { &self.cache }
+    fn key_of(v: &Self::Value) -> String { v.id.clone() }
+
+    async fn fetch(&self, misses: &[String]) -> Result<Vec<Self::Value>, async_graphql::Error> {
+        fetch_by_ids(&self.ch, misses).await.map_err(Into::into)
+    }
 }
 
 impl Loader<String> for DiseaseLoader {
     type Value = Disease;
     type Error = async_graphql::Error;
 
-    async fn load(&self, keys: &[String]) -> Result<HashMap<String, Disease>, Self::Error> {
-        let rows = fetch_by_ids(&self.ch, keys).await?;
-        Ok(rows.into_iter().map(|d| (d.id.clone(), d)).collect())
+    #[tracing::instrument(skip_all, level = "debug",
+        fields(keys = keys.len(), hits = tracing::field::Empty, misses = tracing::field::Empty))]
+    async fn load(
+        &self,
+        keys: &[String],
+    ) -> Result<HashMap<String, Disease>, async_graphql::Error> {
+        self.load_cached(keys).await
     }
 }
 
-// ---- retriever ----
+// async fn load_diseases(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Result<Vec<Disease>> {
+//     let loader = ctx.data_unchecked::<DataLoader<DiseaseLoader>>();
+//     let mut found = loader.load_many(ids.iter().cloned()).await?;
+//     Ok(ids.iter().filter_map(|id| found.remove(id)).collect())
+// }
 
-#[tracing::instrument(skip_all, fields(n = ids.len()))]
-async fn fetch_by_ids(ch: &ClickHouse, ids: &[String]) -> clickhouse::error::Result<Vec<Disease>> {
-    if ids.is_empty() {
+async fn load_diseases(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Result<Vec<Disease>> {
+    // TEMP: bypass DataLoader::load_many to isolate the 44ms clone
+    let loader = ctx.data_unchecked::<DataLoader<DiseaseLoader>>().loader();
+    let mut found = loader.load(ids).await?; // your impl, returns HashMap, moves
+    Ok(ids.iter().filter_map(|id| found.remove(id)).collect())
+}
+
+// ---- retrievers ----
+
+#[tracing::instrument(skip_all, level = "debug", fields(n = efo_ids.len()))]
+async fn fetch_by_ids(
+    ch: &ClickHouse,
+    efo_ids: &[String],
+) -> clickhouse::error::Result<Vec<Disease>> {
+    if efo_ids.is_empty() {
         return Ok(Vec::new());
     }
     ch.query("SELECT ?fields FROM disease WHERE id IN ?")
-        .bind(ids)
+        .bind(efo_ids)
         .fetch_all::<Disease>()
         .await
 }
 
-#[tracing::instrument(skip(ch), fields(id = %id))]
-async fn fetch_by_id(ch: &ClickHouse, id: &str) -> clickhouse::error::Result<Option<Disease>> {
-    ch.query("SELECT ?fields FROM disease WHERE id = ? LIMIT 1")
-        .bind(id)
-        .fetch_optional::<Disease>()
-        .await
-}
-
-// ---- resolver ----
+// ---- resolvers ----
 
 #[derive(Default)]
 pub struct DiseaseQuery;
 
 #[Object]
 impl DiseaseQuery {
-    /// Fetch diseases by ontology ID.
+    /// Fetch diseases by EFO ID.
     async fn diseases(
         &self,
         ctx: &Context<'_>,
-        ids: Vec<String>,
+        efo_ids: Vec<String>,
         search: Option<String>,
         sort: Option<Sort<DiseaseSortField>>,
         #[graphql(default)] page: Page,
     ) -> async_graphql::Result<Paged<Disease>> {
-        let items = fetch_by_ids(ctx.data::<ClickHouse>()?, &ids).await?;
+        let items = load_diseases(ctx, &efo_ids).await?;
         Ok(items
             .query()
             .search(search.as_deref())
@@ -157,9 +194,11 @@ impl DiseaseQuery {
     async fn disease(
         &self,
         ctx: &Context<'_>,
-        id: String,
+        efo_id: String,
     ) -> async_graphql::Result<Option<Disease>> {
-        Ok(fetch_by_id(ctx.data::<ClickHouse>()?, &id).await?)
+        ctx.data_unchecked::<DataLoader<DiseaseLoader>>()
+            .load_one(efo_id)
+            .await
     }
 }
 
@@ -187,13 +226,4 @@ impl Disease {
             .unwrap_or_default();
         Ok(items.query().paginate(page))
     }
-}
-
-async fn load_diseases(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Result<Vec<Disease>> {
-    if ids.is_empty() {
-        return Ok(Vec::new());
-    }
-    let loader = ctx.data_unchecked::<DataLoader<DiseaseLoader>>();
-    let mut found = loader.load_many(ids.iter().cloned()).await?;
-    Ok(ids.iter().filter_map(|id| found.remove(id)).collect())
 }

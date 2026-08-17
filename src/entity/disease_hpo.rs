@@ -16,8 +16,11 @@ use crate::{
     query::Entity,
 };
 
+// ---- models ----
+
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
+/// Phenotype annotation.
 pub struct PhenotypeEvidence {
     aspect: Option<String>,
     bio_curation: Option<String>,
@@ -75,6 +78,8 @@ struct DiseaseHpoRow {
     phenotypes: Vec<DiseasePhenotype>,
 }
 
+// ---- loaders ----
+
 pub struct DiseasePhenotypeLoader {
     pub ch: ClickHouse,
 }
@@ -87,6 +92,7 @@ impl DiseasePhenotypeLoader {
 impl Loader<String> for DiseasePhenotypeLoader {
     type Value = Vec<DiseasePhenotype>;
     type Error = async_graphql::Error;
+    #[tracing::instrument(skip_all, level = "debug", fields(n = ids.len()))]
     async fn load(
         &self,
         ids: &[String],

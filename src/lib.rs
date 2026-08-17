@@ -14,6 +14,8 @@ use config::Config;
 use datasource::{clickhouse::ClickHouse, opensearch::OpenSearch};
 use plugin::registry::PluginRegistry;
 
+use crate::entity::disease::DiseaseCache;
+
 #[derive(Clone)]
 pub struct AppState {
     pub config: Arc<Config>,
@@ -21,4 +23,5 @@ pub struct AppState {
     pub opensearch: OpenSearch,
     pub plugin_registry: PluginRegistry,
     pub http: reqwest::Client,
+    pub disease_cache: DiseaseCache,
 }

@@ -14,7 +14,7 @@ use crate::{
     },
 };
 
-// ---- model ----
+// ---- models ----
 
 /// Human Phenotype Ontology subset of information included in the Platform.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
@@ -57,7 +57,7 @@ impl Searchable for Hpo {
     }
 }
 
-// ---- dataloaders ----
+// ---- loaders ----
 
 pub struct HpoLoader {
     pub ch: ClickHouse,
@@ -78,9 +78,9 @@ impl Loader<String> for HpoLoader {
     }
 }
 
-// ---- retriever ----
+// ---- retrievers ----
 
-#[tracing::instrument(skip_all, fields(n = ids.len()))]
+#[tracing::instrument(skip_all, level = "debug", fields(n = ids.len()))]
 async fn fetch_by_ids(ch: &ClickHouse, ids: &[String]) -> clickhouse::error::Result<Vec<Hpo>> {
     if ids.is_empty() {
         return Ok(Vec::new());
@@ -91,7 +91,7 @@ async fn fetch_by_ids(ch: &ClickHouse, ids: &[String]) -> clickhouse::error::Res
         .await
 }
 
-// ---- resolver ----
+// ---- resolvers ----
 
 #[derive(Default)]
 pub struct HpoQuery;

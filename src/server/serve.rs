@@ -17,6 +17,7 @@ pub fn router(state: AppState, schema: ApiSchema) -> Router {
         .nest("/api/v4", api) // Keeps backwards-compatible route
         .layer(Extension(schema))
         .layer(Extension(state.clickhouse.clone()))
+        .layer(Extension(state.disease_cache.clone()))
         .with_state(state)
 }
 
