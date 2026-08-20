@@ -5,7 +5,7 @@ use platform_api::{
     AppState,
     config::{Args, Config},
     datasource::{clickhouse::ClickHouse, opensearch::OpenSearch},
-    entity::disease::disease_cache,
+    entity::{disease::disease_cache, hpo::hpo_cache, study::study_cache},
     logging,
     plugin::registry::PluginRegistry,
     schema, server,
@@ -24,6 +24,8 @@ async fn main() {
         http: reqwest::Client::new(),
         config: Arc::new(config),
         disease_cache: disease_cache(),
+        hpo_cache: hpo_cache(),
+        study_cache: study_cache(),
     };
 
     let schema = schema::build_schema(&app_state);

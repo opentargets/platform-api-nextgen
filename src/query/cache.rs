@@ -1,7 +1,7 @@
 use std::{collections::HashMap, hash::Hash};
 
 use async_graphql::Error;
-use moka::sync::Cache;
+use moka::future::Cache;
 
 pub trait CachedLoader {
     type Key: Clone + Eq + Hash + Send + Sync + 'static;
@@ -9,8 +9,12 @@ pub trait CachedLoader {
 
     fn cache(&self) -> &Cache<Self::Key, Option<Self::Value>>;
     fn key_of(v: &Self::Value) -> Self::Key;
+
+    #[allow(async_fn_in_trait)]
     async fn fetch(&self, misses: &[Self::Key]) -> Result<Vec<Self::Value>, Error>;
 
+    #[allow(async_fn_in_trait)]
+    #[tracing::instrument(skip_all, level = "debug", fields(keys = keys.len(), hits = tracing::field::Empty, misses = tracing::field::Empty))]
     async fn load_cached(
         &self,
         keys: &[Self::Key],
@@ -20,7 +24,7 @@ pub trait CachedLoader {
 
         // first, we fill the result with cached values, and collect misses
         for key in keys {
-            match self.cache().get(key) {
+            match self.cache().get(key).await {
                 Some(Some(value)) => {
                     result.insert(key.clone(), value.clone());
                 }
@@ -29,6 +33,7 @@ pub trait CachedLoader {
             }
         }
 
+        // log cache stats
         let span = tracing::Span::current();
         span.record("hits", result.len());
         span.record("misses", misses.len());
@@ -48,11 +53,11 @@ pub trait CachedLoader {
         for key in &misses {
             match index.remove(key) {
                 Some(v) => {
-                    self.cache().insert(key.clone(), Some(v.clone()));
+                    self.cache().insert(key.clone(), Some(v.clone())).await;
                     result.insert(key.clone(), v);
                 }
                 None => {
-                    self.cache().insert(key.clone(), None);
+                    self.cache().insert(key.clone(), None).await;
                 }
             }
         }

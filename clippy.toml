@@ -1,1 +1,1 @@
-doc-valid-idents = ["ClickHouse", "OpenSearch", "MLCroissant", ".."]
+doc-valid-idents = ["ClickHouse", "OpenSearch", "MLCroissant", "PubMed", ".."]

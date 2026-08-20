@@ -1,14 +1,25 @@
-use std::cmp::Ordering;
+use std::{
+    cmp::Ordering,
+    collections::{HashMap, HashSet},
+};
 
-use async_graphql::{Context, Enum, Object, SimpleObject};
+use async_graphql::{
+    ComplexObject, Context, Enum, Object, SimpleObject,
+    dataloader::{DataLoader, Loader},
+};
 use clickhouse::Row;
+use moka::future::Cache;
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
 
 use crate::{
+    config::DEFAULT_CACHE_CAPACITY,
     datasource::clickhouse::ClickHouse,
+    entity::disease::{Disease, DiseaseLoader, load_diseases},
     query::{
         Entity, QueryExt,
+        cache::CachedLoader,
+        load_ordered,
         paginate::{Page, Paged},
         search::Searchable,
         sort::{Sort, SortKey, nulls_last},
@@ -34,67 +45,116 @@ pub enum StudyType {
 }
 
 /// Represents a sample of biological material.
-#[derive(Debug, Deserialize, SimpleObject)]
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-// #[serde(from = "(String, u32)")]
 pub struct Sample {
+    /// Sample ancestry name.
     ancestry: String,
+    /// Sample size.
     sample_size: u32,
 }
 
-/// Collection of populations referenced by the study.
-#[derive(Debug, Deserialize, SimpleObject)]
+/// Collection of populations.
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-// #[serde(from = "(String, Option<f64>)")]
 pub struct LdPopulationStructure {
+    /// Population identifier.
     ld_population: String,
+    /// Fraction of the total sample represented by the population.
     relative_sample_size: Option<f64>,
 }
 
 /// Mapping of quality control flags.
-#[derive(Debug, Deserialize, SimpleObject)]
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-// #[serde(from = "(String, f64)")]
 pub struct SumStatQC {
     #[graphql(name = "QCCheckName")]
+    /// Quality control metric identifier.
     qc_check_name: String,
+    /// Quality control metric value.
     #[graphql(name = "QCCheckValue")]
     qc_check_value: f64,
 }
 
-/// Metadata for all complex trait GWAS and molecular QTL studies in the Platform. The dataset includes study metadata, phenotype information, sample sizes, publication information and more. Molecular QTL studies are split by their target trait (e.g. gene, splice junction, etc), biosample (tissue, cell type or cell line) and condition (e.g. stimulation, time period, etc), potentially leading to tens of thousands of studies derived from the same publication
+/// Metadata for all complex trait GWAS and molecular QTL studies in the Platform. The dataset
+/// includes study metadata, phenotype information, sample sizes, publication information and more.
+/// Molecular QTL studies are split by their target trait (e.g. gene, splice junction, etc),
+/// biosample (tissue, cell type or cell line) and condition (e.g. stimulation, time period, etc),
+/// potentially leading to tens of thousands of studies derived from the same publication.
 #[allow(clippy::struct_field_names)]
-#[derive(Debug, Row, Deserialize, SimpleObject)]
+#[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
+#[graphql(complex)]
 pub struct Study {
+    // Identity
     #[graphql(name = "id")]
     study_id: String,
-    condition: Option<String>,
+    /// Identifier of the source project collection that the study information is derived from.
     project_id: String,
+    /// Field specifying if study contains phenotype/disease or molecular genetic associations.
     study_type: StudyType,
+
+    // Trait
+    /// Molecular or phenotypic trait, derived from source, analysed in the study.
     trait_from_source: String,
-    n_samples: Option<u32>,
-    summarystats_location: Option<String>,
-    has_sumstats: Option<bool>,
-    cohorts: Vec<String>,
-    initial_sample_size: Option<String>,
+    /// Phenotypic trait IDs that map to the analysed trait reported by study.
     trait_from_source_mapped_ids: Vec<String>,
-    publication_journal: Option<String>,
-    publication_date: Option<String>,
-    ld_population_structure: Vec<LdPopulationStructure>,
-    quality_controls: Vec<String>,
-    replication_samples: Vec<Sample>,
-    n_controls: Option<u32>,
-    pubmed_id: Option<String>,
-    publication_first_author: Option<String>,
-    publication_title: Option<String>,
-    discovery_samples: Vec<Sample>,
+    /// Reported sample conditions.
+    condition: Option<String>,
+
+    // Sample composition
+    /// Study initial sample size.
+    initial_sample_size: Option<String>,
+    /// The number of samples tested in GWAS analysis.
+    n_samples: Option<u32>,
+    /// The number of cases in this broad ancestry group.
     n_cases: Option<u32>,
+    /// The number of controls in this broad ancestry group.
+    n_controls: Option<u32>,
+    /// List of cohort(s) represented in the discovery sample.
+    cohorts: Vec<String>,
+    /// Collection of ancestries reported by the study discovery phase.
+    discovery_samples: Vec<Sample>,
+    /// Collection of ancestries reported by the study replication phase.
+    replication_samples: Vec<Sample>,
+    /// Collection of populations referenced by the study.
+    ld_population_structure: Vec<LdPopulationStructure>,
+
+    // Summary statistics
+    /// Indication whether the summary statistics exist in the source.
+    has_sumstats: Option<bool>,
+    /// Path to the source study summary statistics (if exists at the source).
+    summarystats_location: Option<String>,
+
+    // Analysis & QC
+    /// Collection of flags indicating the type of the analysis conducted in the association study.
     analysis_flags: Vec<String>,
+    /// Control metrics refining study validation.
+    quality_controls: Vec<String>,
+    /// Mapping of quality control flags.
     #[serde(rename = "sumstatQCValues")]
     #[graphql(name = "SumstatQCValues")]
     sumstat_qc_values: Vec<SumStatQC>,
+
+    // Publication
+    /// PubMed identifier of the publication that references the study [bioregistry:pubmed].
+    pubmed_id: Option<String>,
+    /// First name and initials of the author of the publication that references the study.
+    publication_first_author: Option<String>,
+    /// Title of the publication that references the study.
+    publication_title: Option<String>,
+    /// Abbreviated journal name where the publication referencing study was published.
+    publication_journal: Option<String>,
+    /// Date of the publication that references the study.
+    publication_date: Option<String>,
+
+    // embedded fields
+    /// Disease associated with a studied trait.
+    #[graphql(skip)]
+    disease_ids: Vec<String>,
 }
+
+// ---- query utilities ----
 
 impl Entity for Study {
     fn id(&self) -> &str { &self.study_id }
@@ -136,46 +196,86 @@ impl Searchable for Study {
     }
 }
 
-// ---- retrievers ----
+// ---- loaders ----
 
-async fn fetch_studies(
-    ch: &ClickHouse,
-    ids: Option<&[String]>,
-    disease_ids: Option<&[String]>,
-    indirect: bool,
-) -> clickhouse::error::Result<Vec<Study>> {
-    let mut clauses: Vec<&'static str> = Vec::new();
-    if ids.is_some() {
-        clauses.push("studyId IN ?");
-    }
-    if disease_ids.is_some() {
-        clauses.push(if indirect {
-            "studyId IN (SELECT arrayJoin(arrayUnion(studyIds, indirectStudyIds)) \
-             FROM disease WHERE id IN ?)"
-        } else {
-            "studyId IN (SELECT arrayJoin(studyIds) FROM disease WHERE id IN ?)"
-        });
-    }
-    let sql = format!(
-        "SELECT ?fields FROM studies WHERE {}",
-        clauses.join(" AND ")
-    );
+pub type StudyCache = Cache<String, Option<Study>>;
 
-    let mut q = ch.query(&sql);
-    if let Some(v) = ids {
-        q = q.bind(v);
-    }
-    if let Some(v) = disease_ids {
-        q = q.bind(v);
-    }
-    q.fetch_all::<Study>().await
+#[must_use]
+pub fn study_cache() -> StudyCache {
+    Cache::builder()
+        .max_capacity(DEFAULT_CACHE_CAPACITY)
+        .build()
 }
 
-async fn fetch_by_id(ch: &ClickHouse, study_id: &str) -> clickhouse::error::Result<Option<Study>> {
-    ch.query("SELECT ?fields FROM studies WHERE studyId = ? LIMIT 1")
-        .bind(study_id)
-        .fetch_optional::<Study>()
-        .await
+pub struct StudyLoader {
+    ch: ClickHouse,
+    cache: StudyCache,
+}
+
+impl StudyLoader {
+    #[must_use]
+    pub fn new(ch: ClickHouse, cache: StudyCache) -> Self { Self { ch, cache } }
+}
+
+impl CachedLoader for StudyLoader {
+    type Key = String;
+    type Value = Study;
+
+    fn cache(&self) -> &StudyCache { &self.cache }
+    fn key_of(v: &Self::Value) -> Self::Key { v.study_id.clone() }
+
+    #[tracing::instrument(skip_all, level = "debug", fields(n = misses.len()))]
+    async fn fetch(&self, misses: &[Self::Key]) -> Result<Vec<Self::Value>, async_graphql::Error> {
+        self.ch
+            .query("SELECT ?fields FROM studies WHERE studyId IN ?")
+            .bind(misses)
+            .fetch_all::<Study>()
+            .await
+            .map_err(Into::into)
+    }
+}
+
+impl Loader<String> for StudyLoader {
+    type Value = Study;
+    type Error = async_graphql::Error;
+
+    async fn load(&self, keys: &[String]) -> Result<HashMap<String, Study>, Self::Error> {
+        self.load_cached(keys).await
+    }
+}
+
+async fn load_studies(
+    ctx: &Context<'_>,
+    study_ids: Option<&[String]>,
+    disease_ids: Option<&[String]>,
+    indirect: bool,
+) -> async_graphql::Result<Vec<Study>> {
+    let study_loader = ctx.data_unchecked::<DataLoader<StudyLoader>>();
+
+    // no disease_ids: just fetch with study_ids
+    let Some(disease_ids) = disease_ids else {
+        return load_ordered(study_loader, study_ids.unwrap_or_default()).await;
+    };
+
+    // disease_ids: first get their related study_ids
+    let disease_loader = ctx.data_unchecked::<DataLoader<DiseaseLoader>>();
+    let mut study_ids_from_diseases: Vec<String> = disease_loader
+        .load_many(disease_ids.iter().cloned())
+        .await?
+        .into_values()
+        .flat_map(|d| d.into_study_ids(indirect))
+        .collect();
+    study_ids_from_diseases.sort_unstable();
+    study_ids_from_diseases.dedup();
+
+    // then filter if there are study_ids
+    if let Some(study_ids) = study_ids {
+        // convert to a HashSet to make membership test O(1)
+        let keep: HashSet<&String> = study_ids.iter().collect();
+        study_ids_from_diseases.retain(|id| keep.contains(id));
+    }
+
+    load_ordered(study_loader, &study_ids_from_diseases).await
 }
 
 // ---- resolvers ----
@@ -188,19 +288,19 @@ impl StudyQuery {
     async fn studies(
         &self,
         ctx: &Context<'_>,
-        ids: Option<Vec<String>>,
+        study_ids: Option<Vec<String>>,
         disease_ids: Option<Vec<String>>,
         #[graphql(default)] enable_indirect: bool,
         search: Option<String>,
         sort: Option<Sort<StudySortField>>,
         #[graphql(default)] page: Page,
     ) -> async_graphql::Result<Paged<Study>> {
-        if ids.is_none() && disease_ids.is_none() {
-            return Err("one of ids or diseaseIds is required".into());
+        if study_ids.is_none() && disease_ids.is_none() {
+            return Err("one of studyIds or diseaseIds is required".into());
         }
-        let items = fetch_studies(
-            ctx.data::<ClickHouse>()?,
-            ids.as_deref(),
+        let items = load_studies(
+            ctx,
+            study_ids.as_deref(),
             disease_ids.as_deref(),
             enable_indirect,
         )
@@ -217,6 +317,16 @@ impl StudyQuery {
         ctx: &Context<'_>,
         study_id: String,
     ) -> async_graphql::Result<Option<Study>> {
-        Ok(fetch_by_id(ctx.data::<ClickHouse>()?, &study_id).await?)
+        ctx.data_unchecked::<DataLoader<StudyLoader>>()
+            .load_one(study_id)
+            .await
+    }
+}
+
+#[ComplexObject]
+impl Study {
+    /// Disease associated with a studied trait.
+    async fn diseases(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Disease>> {
+        load_diseases(ctx, &self.disease_ids).await
     }
 }

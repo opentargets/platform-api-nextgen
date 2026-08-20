@@ -1,6 +1,9 @@
 //! Query utilities: filtering, searching, sorting, pagination.
 
-use async_graphql::{InputType, OutputType};
+use async_graphql::{
+    InputType, OutputType,
+    dataloader::{DataLoader, Loader},
+};
 
 use crate::query::{
     filter::Filter,
@@ -75,7 +78,6 @@ impl<T: OutputType> Query<T> {
 
     #[must_use]
     pub fn paginate(mut self, page: Page) -> Paged<T> {
-        let _s = tracing::debug_span!("paginate", n = self.0.len()).entered();
         let total = self.0.len() as u64;
         let size = page.size.min(MAX_PAGE_SIZE);
         let start = (page.index * size).min(self.0.len());
@@ -86,4 +88,21 @@ impl<T: OutputType> Query<T> {
         let items = self.0.drain(start..end).collect();
         Paged { total, items }
     }
+}
+
+/// Load values by key and return them in the same order as `ids`, dropping misses.
+///
+/// # Returns
+/// A vector of values in the same order as `ids`, with any missing values dropped.
+/// # Errors
+/// Returns an error if the loader fails to load any of the requested values.
+pub async fn load_ordered<L>(
+    loader: &DataLoader<L>,
+    ids: &[String],
+) -> Result<Vec<L::Value>, L::Error>
+where
+    L: Loader<String>,
+{
+    let mut found = loader.load_many(ids.iter().cloned()).await?;
+    Ok(ids.iter().filter_map(|id| found.remove(id)).collect())
 }

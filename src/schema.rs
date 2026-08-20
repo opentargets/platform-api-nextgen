@@ -19,7 +19,7 @@ pub type ApiSchema = Schema<Query, EmptyMutation, EmptySubscription>;
 #[must_use]
 pub fn build_schema(state: &AppState) -> ApiSchema {
     Schema::build(Query::default(), EmptyMutation, EmptySubscription)
-        .extension(async_graphql::extensions::Tracing)
+        // .extension(async_graphql::extensions::Tracing)
         .limit_depth(state.config.max_depth)
         .limit_complexity(state.config.max_complexity)
         .data(state.clickhouse.clone())

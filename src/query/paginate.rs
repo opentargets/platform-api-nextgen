@@ -2,7 +2,7 @@ use async_graphql::{InputObject, OutputType, SimpleObject};
 
 use crate::entity::{disease::Disease, disease_hpo::DiseasePhenotype, hpo::Hpo, study::Study};
 
-pub const MAX_PAGE_SIZE: usize = 1000;
+pub const MAX_PAGE_SIZE: usize = 100_000;
 
 /// Represents a paginated list of items.
 #[derive(Debug, Clone, Copy, InputObject)]
@@ -11,7 +11,7 @@ pub struct Page {
     #[graphql(default = 0)]
     pub index: usize,
     /// The number of items per page.
-    #[graphql(default = 10, validator(minimum = 1, maximum = 1000))]
+    #[graphql(default = 10, validator(minimum = 1, maximum = 100_000))]
     pub size: usize,
 }
 

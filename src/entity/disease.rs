@@ -5,15 +5,17 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
-use moka::sync::Cache;
+use moka::future::Cache;
 use serde::Deserialize;
 
 use crate::{
+    config::DEFAULT_CACHE_CAPACITY,
     datasource::clickhouse::ClickHouse,
     entity::disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
     query::{
         Entity, QueryExt,
         cache::CachedLoader,
+        load_ordered,
         paginate::{Page, Paged},
         search::Searchable,
         sort::{Sort, SortKey},
@@ -26,7 +28,9 @@ use crate::{
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct DiseaseSynonym {
+    // Whether this is an exact, related, broad or narrow synonym.
     relation: String,
+    // The terms that are synonymous with the disease.
     terms: Vec<Option<String>>,
 }
 
@@ -38,23 +42,62 @@ pub struct DiseaseSynonym {
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 pub struct Disease {
+    // Identity
     id: String,
+    /// Name of the disease.
     name: String,
+    /// Description of the disease.
     description: Option<String>,
+
+    // Ontology
+    /// Boolean column indicating if a disease is root of the ontology tree, a therapeutic area.
     is_therapeutic_area: bool,
+    /// List of major therapeutic areas the disease belongs to.
     therapeutic_areas: Vec<String>,
     #[graphql(skip)]
     parents: Vec<String>,
     #[graphql(skip)]
     children: Vec<String>,
+    /// List of all ancestral disease terms.
     ancestors: Vec<String>,
+    /// List of all descendant terms.
     descendants: Vec<String>,
+
+    // Crossreferences
+    /// List of synonyms for the disease.
     synonyms: Vec<DiseaseSynonym>,
+    /// List of obsoleted terms.
     obsolete_terms: Vec<String>,
+    /// Cross-references in other disease ontologies.
     db_x_refs: Vec<String>,
+
+    // Location
+    /// EFO terms for direct anatomical locations.
     direct_location_ids: Vec<String>,
+    /// EFO terms for indirect anatomical locations (propagated).
     indirect_location_ids: Vec<String>,
+
+    // Studies
+    /// List of studies associated with the disease.
+    study_ids: Vec<String>,
+    /// List of studies associated with the disease and its descendants.
+    indirect_study_ids: Vec<String>,
 }
+
+impl Disease {
+    /// Returns the study IDs associated with the disease.
+    ///
+    /// If `indirect` is `true`, the study IDs will include indirect study IDs.
+    #[must_use]
+    pub fn into_study_ids(mut self, indirect: bool) -> Vec<String> {
+        if indirect {
+            self.study_ids.append(&mut self.indirect_study_ids);
+        }
+        self.study_ids
+    }
+}
+
+// ---- query utilities ----
 
 impl Entity for Disease {
     fn id(&self) -> &str { &self.id }
@@ -95,12 +138,14 @@ impl Searchable for Disease {
 
 // ---- loaders ----
 
-// ============================================================= CACHE TEST
 pub type DiseaseCache = Cache<String, Option<Disease>>;
 
 #[must_use]
-// TODO: weigher and capacity si
-pub fn disease_cache() -> DiseaseCache { Cache::builder().max_capacity(100_000).build() }
+pub fn disease_cache() -> DiseaseCache {
+    Cache::builder()
+        .max_capacity(DEFAULT_CACHE_CAPACITY)
+        .build()
+}
 
 pub struct DiseaseLoader {
     ch: ClickHouse,
@@ -117,10 +162,16 @@ impl CachedLoader for DiseaseLoader {
     type Value = Disease;
 
     fn cache(&self) -> &DiseaseCache { &self.cache }
-    fn key_of(v: &Self::Value) -> String { v.id.clone() }
+    fn key_of(v: &Self::Value) -> Self::Key { v.id.clone() }
 
-    async fn fetch(&self, misses: &[String]) -> Result<Vec<Self::Value>, async_graphql::Error> {
-        fetch_by_ids(&self.ch, misses).await.map_err(Into::into)
+    #[tracing::instrument(skip_all, level = "debug", fields(n = misses.len()))]
+    async fn fetch(&self, misses: &[Self::Key]) -> Result<Vec<Self::Value>, async_graphql::Error> {
+        self.ch
+            .query("SELECT ?fields FROM disease WHERE id IN ?")
+            .bind(misses)
+            .fetch_all::<Disease>()
+            .await
+            .map_err(Into::into)
     }
 }
 
@@ -128,8 +179,6 @@ impl Loader<String> for DiseaseLoader {
     type Value = Disease;
     type Error = async_graphql::Error;
 
-    #[tracing::instrument(skip_all, level = "debug",
-        fields(keys = keys.len(), hits = tracing::field::Empty, misses = tracing::field::Empty))]
     async fn load(
         &self,
         keys: &[String],
@@ -138,33 +187,19 @@ impl Loader<String> for DiseaseLoader {
     }
 }
 
-// async fn load_diseases(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Result<Vec<Disease>> {
-//     let loader = ctx.data_unchecked::<DataLoader<DiseaseLoader>>();
-//     let mut found = loader.load_many(ids.iter().cloned()).await?;
-//     Ok(ids.iter().filter_map(|id| found.remove(id)).collect())
-// }
-
-async fn load_diseases(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Result<Vec<Disease>> {
-    // TEMP: bypass DataLoader::load_many to isolate the 44ms clone
-    let loader = ctx.data_unchecked::<DataLoader<DiseaseLoader>>().loader();
-    let mut found = loader.load(ids).await?; // your impl, returns HashMap, moves
-    Ok(ids.iter().filter_map(|id| found.remove(id)).collect())
-}
-
-// ---- retrievers ----
-
-#[tracing::instrument(skip_all, level = "debug", fields(n = efo_ids.len()))]
-async fn fetch_by_ids(
-    ch: &ClickHouse,
-    efo_ids: &[String],
-) -> clickhouse::error::Result<Vec<Disease>> {
-    if efo_ids.is_empty() {
-        return Ok(Vec::new());
-    }
-    ch.query("SELECT ?fields FROM disease WHERE id IN ?")
-        .bind(efo_ids)
-        .fetch_all::<Disease>()
-        .await
+/// Load diseases by their EFO IDs.
+///
+/// This function uses a [`DataLoader`] to fetch diseases from the cache or database.
+///
+/// # Returns
+/// A [`Vec`] of [`Disease`] entities.
+/// # Errors
+/// Returns an [`async_graphql::Error`] if the database query fails.
+pub async fn load_diseases(
+    ctx: &Context<'_>,
+    ids: &[String],
+) -> async_graphql::Result<Vec<Disease>> {
+    load_ordered(ctx.data_unchecked::<DataLoader<DiseaseLoader>>(), ids).await
 }
 
 // ---- resolvers ----
@@ -214,6 +249,7 @@ impl Disease {
         load_diseases(ctx, &self.children).await
     }
 
+    /// Clinical signs and symptoms observed in diseases or phenotypes. Signs and symptoms are integrated from multiple sources including EFO, MONDO and HPO.
     async fn phenotypes(
         &self,
         ctx: &Context<'_>,

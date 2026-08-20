@@ -2,6 +2,7 @@
 
 use axum::{Extension, Router, routing::get};
 use tokio::net::TcpListener;
+use tower_http::compression::CompressionLayer;
 
 use crate::{AppState, schema::ApiSchema, server::graphql};
 
@@ -18,6 +19,9 @@ pub fn router(state: AppState, schema: ApiSchema) -> Router {
         .layer(Extension(schema))
         .layer(Extension(state.clickhouse.clone()))
         .layer(Extension(state.disease_cache.clone()))
+        .layer(Extension(state.hpo_cache.clone()))
+        .layer(Extension(state.study_cache.clone()))
+        .layer(CompressionLayer::new().br(true))
         .with_state(state)
 }
 

@@ -14,7 +14,7 @@ use config::Config;
 use datasource::{clickhouse::ClickHouse, opensearch::OpenSearch};
 use plugin::registry::PluginRegistry;
 
-use crate::entity::disease::DiseaseCache;
+use crate::entity::{disease::DiseaseCache, hpo::HpoCache, study::StudyCache};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -24,4 +24,6 @@ pub struct AppState {
     pub plugin_registry: PluginRegistry,
     pub http: reqwest::Client,
     pub disease_cache: DiseaseCache,
+    pub hpo_cache: HpoCache,
+    pub study_cache: StudyCache,
 }
