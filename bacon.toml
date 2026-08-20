@@ -1,5 +1,0 @@
-[jobs.run]
-command = ["cargo", "run"]
-need_stdout = true
-env = { LOG_PRETTY = "1" }
-on_change_strategy = "kill_then_restart"
