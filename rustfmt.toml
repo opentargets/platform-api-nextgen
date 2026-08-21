@@ -1,3 +1,5 @@
 fn_single_line = true
 group_imports = "StdExternalCrate"
 imports_granularity = "Crate"
+wrap_comments = true
+comment_width = 100
