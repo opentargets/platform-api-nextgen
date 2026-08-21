@@ -1,0 +1,5 @@
+schema: 'http://localhost:8080/latest/graphql'
+extensions:
+  endpoints:
+    example:
+      url: 'http://localhost:8080/latest/graphql'

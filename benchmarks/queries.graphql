@@ -1,0 +1,63 @@
+query study_single {
+    studies(
+        diseaseIds: ["MONDO_0004992"]
+        enableIndirect: true
+        page: { index: 0, size: 10 }
+    ) {
+        total
+        items {
+            id
+            nSamples
+            traitFromSource
+            diseases {
+                id
+                name
+                children {
+                    id
+                    name
+                }
+            }
+        }
+    }
+}
+
+# ---
+
+query study_multiple {
+    studies(
+        studyIds: ["GCST90002357", "GCST004988", "GCST006979", "GCST90239655"]
+        # filter: { studyId: { contains: "GCST" } }
+        # search: "PLA"
+        # sort: N_SAMPLES
+        # dir: DESC
+        page: { index: 0, size: 10 }
+    ) {
+        total
+        items {
+            id
+            nSamples
+            traitFromSource
+        }
+    }
+}
+
+# ---
+
+query meta {
+    meta {
+        name
+        product
+        apiVersion {
+            year
+            month
+            revision
+        }
+        dataVersion {
+            year
+            month
+            revision
+        }
+        dataNamespace
+        downloads
+    }
+}
