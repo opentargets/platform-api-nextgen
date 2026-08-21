@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use async_graphql::{Context, Object, SimpleObject};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -41,27 +43,27 @@ fn default_multiplier() -> f64 { 1.0 }
 #[derive(Debug, SimpleObject)]
 pub struct SearchResult {
     /// Entity identifier (e.g., Ensembl, EFO, ChEMBL, variant or study ID).
-    pub id: String,
+    id: String,
     /// Primary display name for the entity.
-    pub name: String,
+    name: String,
     /// Entity type (target, disease, drug, variant, study).
-    pub entity: String,
+    entity: String,
     /// List of categories the hit belongs to.
-    pub category: Vec<String>,
+    category: Vec<String>,
     /// Short description or summary of the entity.
-    pub description: Option<String>,
+    description: Option<String>,
     /// Additional keywords associated with the entity.
-    pub keywords: Vec<String>,
+    keywords: Vec<String>,
     /// List of name prefixes used for prefix matching.
-    pub prefixes: Vec<String>,
+    prefixes: Vec<String>,
     /// List of n-grams derived from the name used for fuzzy matching.
-    pub ngrams: Vec<String>,
+    ngrams: Vec<String>,
     /// Highlighted text snippets showing where the query matched.
-    pub highlights: Vec<String>,
+    highlights: Vec<String>,
     /// Score boosting multiplier applied to the hit during ranking.
-    pub multiplier: f64,
+    multiplier: f64,
     /// Relevance score returned from the search engine for this hit.
-    pub score: f64,
+    score: f64,
     // TODO: object: Option<EntityUnionType>
     // Resolved entity corresponding to the search hit.
 }
@@ -70,16 +72,45 @@ pub struct SearchResult {
 #[derive(Debug, SimpleObject)]
 pub struct SearchResults {
     /// Total number of results for the current query and entity filter.
-    pub total: u64,
+    total: u64,
     /// Combined list of search hits across requested entities.
-    pub hits: Vec<SearchResult>,
-    // Facet aggregations by entity and category for the current query
-    // TODO: aggregations: SearchResultAggregations
+    hits: Vec<SearchResult>,
+    // Facet aggregations by entity and category for the current query.
+    aggregations: Option<SearchResultAggs>,
+}
+
+/// Search result aggregation category with result count.
+#[derive(Debug, SimpleObject)]
+pub struct SearchResultAggCategory {
+    /// Category name (e.g., target, disease, drug).
+    name: String,
+    /// Total number of search results in this category.
+    total: u64,
+}
+
+/// Search result aggregation by entity type with category breakdown.
+#[derive(Debug, SimpleObject)]
+pub struct SearchResultAggEntity {
+    /// Entity type name (e.g., target, disease, drug, variant, study).
+    name: String,
+    /// Total number of search results in this entity type.
+    total: u64,
+    /// List of category aggregations within this entity type.
+    categories: Vec<SearchResultAggCategory>,
+}
+
+/// Search result aggregations grouped by entity type.
+#[derive(Debug, SimpleObject)]
+pub struct SearchResultAggs {
+    /// Total number of search results across all entities.
+    total: u64,
+    /// List of entity type aggregations with category breakdowns.
+    entities: Vec<SearchResultAggEntity>,
 }
 
 // ---- query utilities ----
 
-/// Builds the OpenSearch request body for full-text entity search.
+/// Builds the search strategy.
 ///
 /// Combines three scoring strategies in a `bool.should` (with OR).
 ///   1. keyword: all query tokens must match one of the .raw id/keywords/name fields (analyzed via
@@ -88,11 +119,7 @@ pub struct SearchResults {
 ///      scaled by the doc's `multiplier`.
 ///   3. `exact`: one case-insensitive `term` per `.raw` field, each scaled by `multiplier`, giving
 ///      exact matches a large boost.
-///
-/// `entities` becomes a non-scoring `filter` (narrows results, leaves scores untouched). `page`
-/// maps to offset/limit; `track_total_hits` forces an exact total; the bulky `terms*` expansion
-/// fields are excluded from `_source` to keep responses small.
-fn build_body(query: &str, entities: Option<&[String]>, page: Page) -> Value {
+fn build_search_strategy(query: &str) -> Vec<Value> {
     let keyword = json!({
         "multi_match": {
             "query": query,           // the user's search string
@@ -171,12 +198,13 @@ fn build_body(query: &str, entities: Option<&[String]>, page: Page) -> Value {
     // Assemble the OR set: the two standalone strategies plus the 8 exact clauses.
     let mut should = vec![keyword, string];
     should.extend(exact);
+    should
+}
 
-    // Entity filter
+/// Builds the OpenSearch request that gets the search hits.
+fn build_hits_body(query: &str, entities: Option<&[String]>, page: Page) -> Value {
     let filter = entities.map_or_else(|| json!([]), |e| json!([{ "terms": { "entity.raw": e } }]));
 
-    // Final request body: pagination, exact totals, the scored+filtered query, and source trimming
-    // to drop the heavy expansion fields from each returned document.
     json!({
         "from": page.index * page.size,
         "size": page.size,
@@ -185,10 +213,24 @@ fn build_body(query: &str, entities: Option<&[String]>, page: Page) -> Value {
             "bool": {                     // combine scoring and filtering
                 "must": {                 // scoring part (contributes to relevance)
                     "bool": {
-                        "should": should  // the OR set of strategies built above
+                        "should": build_search_strategy(query)
                     }
                 },
                 "filter": filter          // non-scoring narrowing by entity type
+            }
+        },
+        "highlight": {
+            "type": "fvh",
+            "fields": {
+                "id": {},
+                "keywords": {},
+                "name": {},
+                "description": {},
+                "prefixes": {},
+                "terms": {},
+                "terms5": {},
+                "terms25": {},
+                "ngrams": {}
             }
         },
         "_source": {
@@ -201,7 +243,7 @@ fn build_body(query: &str, entities: Option<&[String]>, page: Page) -> Value {
     })
 }
 
-fn parse(json: &Value) -> SearchResults {
+fn parse_hits(json: &Value) -> SearchResults {
     let total = json["hits"]["total"]["value"].as_u64().unwrap_or(0);
     let hits = json["hits"]["hits"]
         .as_array()
@@ -210,6 +252,19 @@ fn parse(json: &Value) -> SearchResults {
                 .filter_map(|h| {
                     let doc: SearchDoc = serde_json::from_value(h["_source"].clone()).ok()?;
                     let score = h["_score"].as_f64().unwrap_or(0.0);
+                    let mut seen = HashSet::new();
+                    let highlights: Vec<String> = h["highlight"]
+                        .as_object()
+                        .map(|m| {
+                            m.values()
+                                .filter_map(Value::as_array)
+                                .flatten()
+                                .filter_map(Value::as_str)
+                                .filter(|s| seen.insert(s.to_string()))
+                                .map(str::to_owned)
+                                .collect()
+                        })
+                        .unwrap_or_default();
                     Some(SearchResult {
                         id: doc.id,
                         name: doc.name,
@@ -219,7 +274,7 @@ fn parse(json: &Value) -> SearchResults {
                         keywords: doc.keywords,
                         prefixes: doc.prefixes,
                         ngrams: doc.ngrams,
-                        highlights: Vec::new(),
+                        highlights,
                         multiplier: doc.multiplier,
                         score,
                     })
@@ -227,7 +282,77 @@ fn parse(json: &Value) -> SearchResults {
                 .collect()
         })
         .unwrap_or_default();
-    SearchResults { total, hits }
+    SearchResults {
+        total,
+        hits,
+        aggregations: None,
+    }
+}
+
+/// Builds the aggregations body for the search query.
+fn build_aggs_body(query: &str) -> Value {
+    json!({
+        "size": 0,
+        "query": {
+            "bool": {
+                "should": build_search_strategy(query)
+            }
+        },
+        "aggs": {
+            "entities": {
+                "terms": {
+                    "field": "entity.raw",
+                    "size": 1000
+                },
+                "aggs": {
+                    "categories": {
+                        "terms": {
+                            "field": "category.raw",
+                            "size": 1000
+                        }
+                    }
+                }
+            },
+            "total": {
+                "cardinality": {
+                    "field": "id.raw"
+                }
+            }
+        }
+    })
+}
+
+fn parse_aggs(json: &Value) -> Option<SearchResultAggs> {
+    let aggs = json.get("aggregations")?;
+    let entities = aggs["entities"]["buckets"]
+        .as_array()
+        .map(|buckets| {
+            buckets
+                .iter()
+                .map(|b| {
+                    let categories = b["categories"]["buckets"]
+                        .as_array()
+                        .map(|cats| {
+                            cats.iter()
+                                .map(|c| SearchResultAggCategory {
+                                    name: c["key"].as_str().unwrap_or_default().to_owned(),
+                                    total: c["doc_count"].as_u64().unwrap_or(0),
+                                })
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    SearchResultAggEntity {
+                        name: b["key"].as_str().unwrap_or_default().to_owned(),
+                        total: b["doc_count"].as_u64().unwrap_or(0),
+                        categories,
+                    }
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let total = aggs["total"]["value"].as_u64().unwrap_or(0);
+    Some(SearchResultAggs { total, entities })
 }
 
 // ---- resolvers ----
@@ -249,15 +374,22 @@ impl SearchQuery {
             return Ok(SearchResults {
                 hits: Vec::new(),
                 total: 0,
+                aggregations: None,
             });
         }
 
         let os = ctx.data::<OpenSearch>()?;
-        let body = build_body(&query_string, entity_names.as_deref(), page);
-        let json = os
-            .search(SEARCH_INDICES, body)
-            .await
-            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
-        Ok(parse(&json))
+        let hits_body = build_hits_body(&query_string, entity_names.as_deref(), page);
+        let aggs_body = build_aggs_body(&query_string);
+
+        let (hits_json, aggs_json) = tokio::try_join!(
+            os.search(SEARCH_INDICES, hits_body),
+            os.search(SEARCH_INDICES, aggs_body),
+        )
+        .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        let mut results = parse_hits(&hits_json);
+        results.aggregations = parse_aggs(&aggs_json);
+        Ok(results)
     }
 }
