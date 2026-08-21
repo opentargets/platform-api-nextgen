@@ -1,11 +1,18 @@
 use std::collections::HashSet;
 
-use async_graphql::{Context, Object, SimpleObject};
+use async_graphql::{ComplexObject, Context, Object, SimpleObject, Union, dataloader::DataLoader};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tracing::instrument;
 
-use crate::{datasource::opensearch::OpenSearch, query::paginate::Page};
+use crate::{
+    datasource::opensearch::OpenSearch,
+    entity::{
+        disease::{Disease, DiseaseLoader},
+        study::{Study, StudyLoader},
+    },
+    query::paginate::Page,
+};
 
 const SEARCH_INDICES: &[&str] = &[
     "search_disease",
@@ -38,9 +45,17 @@ struct SearchDoc {
 
 fn default_multiplier() -> f64 { 1.0 }
 
+/// Union of core Platform entities (target, disease, drug, variant, study).
+#[derive(Union)]
+pub enum EntityObject {
+    Disease(Disease),
+    Study(Study),
+}
+
 /// Full-text search hit describing a single entity and its relevance to the
 /// query.
 #[derive(Debug, SimpleObject)]
+#[graphql(complex)]
 pub struct SearchResult {
     /// Entity identifier (e.g., Ensembl, EFO, ChEMBL, variant or study ID).
     id: String,
@@ -64,19 +79,6 @@ pub struct SearchResult {
     multiplier: f64,
     /// Relevance score returned from the search engine for this hit.
     score: f64,
-    // TODO: object: Option<EntityUnionType>
-    // Resolved entity corresponding to the search hit.
-}
-
-/// Search results including hits and facet aggregations.
-#[derive(Debug, SimpleObject)]
-pub struct SearchResults {
-    /// Total number of results for the current query and entity filter.
-    total: u64,
-    /// Combined list of search hits across requested entities.
-    hits: Vec<SearchResult>,
-    // Facet aggregations by entity and category for the current query.
-    aggregations: Option<SearchResultAggs>,
 }
 
 /// Search result aggregation category with result count.
@@ -106,6 +108,17 @@ pub struct SearchResultAggs {
     total: u64,
     /// List of entity type aggregations with category breakdowns.
     entities: Vec<SearchResultAggEntity>,
+}
+
+/// Search results including hits and facet aggregations.
+#[derive(Debug, SimpleObject)]
+pub struct SearchResults {
+    /// Total number of results for the current query and entity filter.
+    total: u64,
+    /// Combined list of search hits across requested entities.
+    hits: Vec<SearchResult>,
+    // Facet aggregations by entity and category for the current query.
+    aggregations: Option<SearchResultAggs>,
 }
 
 // ---- query utilities ----
@@ -391,5 +404,32 @@ impl SearchQuery {
         let mut results = parse_hits(&hits_json);
         results.aggregations = parse_aggs(&aggs_json);
         Ok(results)
+    }
+}
+
+#[ComplexObject]
+impl SearchResult {
+    /// Resolved entity corresponding to the search hit.
+    async fn object(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Option<EntityObject>, async_graphql::Error> {
+        match self.entity.as_str() {
+            "disease" => {
+                let loader = ctx.data::<DataLoader<DiseaseLoader>>()?;
+                Ok(loader
+                    .load_one(self.id.clone())
+                    .await?
+                    .map(EntityObject::Disease))
+            }
+            "study" => {
+                let loader = ctx.data::<DataLoader<StudyLoader>>()?;
+                Ok(loader
+                    .load_one(self.id.clone())
+                    .await?
+                    .map(EntityObject::Study))
+            }
+            _ => Ok(None),
+        }
     }
 }

@@ -61,3 +61,93 @@ query meta {
         downloads
     }
 }
+
+# ---
+
+query disease_with_evidence {
+    disease(efoId: "EFO_0000266") {
+        id
+        name
+        phenotypes(page: { index: 0, size: 1000 }) {
+            total
+            items {
+                evidence {
+                    aspect
+                    bioCuration
+                    diseaseFromSourceId
+                    diseaseFromSource
+                    frequency
+                    modifiers {
+                        id
+                        name
+                        description
+                        namespace
+                    }
+                    onset {
+                        id
+                        name
+                        description
+                    }
+                    sex
+                }
+                phenotypeHPO {
+                    id
+                    name
+                    description
+                    namespace
+                }
+                phenotypeEFO {
+                    id
+                    name
+                }
+            }
+        }
+    }
+}
+
+# ---
+
+query search {
+    search(
+        queryString: "rheumatoid"
+        page: { index: 0, size: 10 }
+        entityNames: ["disease", "study"]
+    ) {
+        total
+        hits {
+            id
+            name
+            entity
+            category
+            description
+            # keywords
+            prefixes
+            ngrams
+            highlights
+            multiplier
+            score
+            object {
+                ... on Disease {
+                    id
+                    name
+                    description
+                }
+                ... on Study {
+                    id
+                    publicationTitle
+                }
+            }
+        }
+        aggregations {
+            total
+            entities {
+                name
+                total
+                categories {
+                    name
+                    total
+                }
+            }
+        }
+    }
+}
