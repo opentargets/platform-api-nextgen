@@ -10,7 +10,7 @@ use axum::{
 use tracing::Instrument;
 
 use crate::{
-    datasource::clickhouse::ClickHouse,
+    datasource::{clickhouse::ClickHouse, opensearch::OpenSearch},
     entity::{
         disease::{DiseaseCache, DiseaseLoader},
         disease_hpo::DiseasePhenotypeLoader,
@@ -27,6 +27,7 @@ pub async fn graphiql(OriginalUri(uri): OriginalUri) -> impl IntoResponse {
 pub async fn handler(
     Extension(schema): Extension<ApiSchema>,
     Extension(ch): Extension<ClickHouse>,
+    Extension(os): Extension<OpenSearch>,
     Extension(disease_cache): Extension<DiseaseCache>,
     Extension(hpo_cache): Extension<HpoCache>,
     Extension(study_cache): Extension<StudyCache>,
@@ -55,13 +56,15 @@ pub async fn handler(
         "graphql_request",
         op = inner.operation_name.as_deref().unwrap_or("anonymous")
     );
+
     schema
         .execute(
             inner
                 .data(diseases)
                 .data(hpos)
                 .data(phenotypes)
-                .data(studies),
+                .data(studies)
+                .data(os),
         )
         .instrument(span)
         .await

@@ -17,6 +17,7 @@ pub fn router(state: AppState, schema: ApiSchema) -> Router {
         .nest("/latest", api.clone()) // Immutable route to the latest data release
         .nest("/api/v4", api) // Keeps backwards-compatible route
         .layer(Extension(schema))
+        .layer(Extension(state.opensearch.clone()))
         .layer(Extension(state.clickhouse.clone()))
         .layer(Extension(state.disease_cache.clone()))
         .layer(Extension(state.hpo_cache.clone()))

@@ -7,12 +7,13 @@ use crate::{
     entity::{
         disease::DiseaseQuery,
         meta::{Meta, MetaQuery},
+        search::SearchQuery,
         study::StudyQuery,
     },
 };
 
 #[derive(MergedObject, Default)]
-pub struct Query(DiseaseQuery, MetaQuery, StudyQuery);
+pub struct Query(DiseaseQuery, MetaQuery, StudyQuery, SearchQuery);
 
 pub type ApiSchema = Schema<Query, EmptyMutation, EmptySubscription>;
 
@@ -23,6 +24,7 @@ pub fn build_schema(state: &AppState) -> ApiSchema {
         .limit_depth(state.config.max_depth)
         .limit_complexity(state.config.max_complexity)
         .data(state.clickhouse.clone())
+        .data(state.opensearch.clone())
         .data(Meta::new(&state.config))
         .finish()
 }

@@ -6,8 +6,7 @@ use crate::{config::Config, plugin::plugin::Plugin};
 
 /// The plugins available to the API.
 ///
-/// Built once at startup from configuration; membership is fixed for the
-/// lifetime of the process.
+/// Built once at startup from configuration; membership is fixed for the lifetime of the process.
 #[derive(Clone, Debug, Default)]
 pub struct PluginRegistry(HashMap<String, Plugin>);
 
