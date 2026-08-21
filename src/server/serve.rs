@@ -28,8 +28,8 @@ pub fn router(state: AppState, schema: ApiSchema) -> Router {
 /// Starts the HTTP server and listens for incoming requests.
 ///
 /// # Panics
-/// Panics if the server fails to bind to the specified address or if there is a server
-/// error during execution.
+/// Panics if the server fails to bind to the specified address or if there is a server error during
+/// execution.
 pub async fn serve(state: AppState, schema: ApiSchema) {
     let addr = &state.config.bind_address;
     let listener = TcpListener::bind(addr)

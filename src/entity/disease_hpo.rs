@@ -52,8 +52,8 @@ pub struct PhenotypeEvidence {
     resource: String,
 }
 
-/// Clinical signs and symptoms observed in diseases or phenotypes. Signs and symptoms are integrated
-/// from multiple sources including EFO, MONDO and HPO.
+/// Clinical signs and symptoms observed in diseases or phenotypes. Signs and symptoms are
+/// integrated from multiple sources including EFO, MONDO and HPO.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
@@ -65,7 +65,8 @@ pub struct DiseasePhenotype {
     /// The phenotype linked to the disease.
     #[graphql(skip)]
     phenotype: String,
-    /// A container for all evidence-related attributes supporting the disease-phenotype association.
+    /// A container for all evidence-related attributes supporting the disease-phenotype
+    /// association.
     evidence: Vec<PhenotypeEvidence>,
 }
 

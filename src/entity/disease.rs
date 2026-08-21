@@ -34,10 +34,10 @@ pub struct DiseaseSynonym {
     terms: Vec<Option<String>>,
 }
 
-/// Core annotation for diseases or phenotypes. A disease or phenotype in the Platform is
-/// understood as any disease, phenotype, biological process or measurement that might have
-/// any type of causality relationship with a human target. The EMBL-EBI Experimental Factor
-/// Ontology (EFO) (slim version) is used as scaffold for the disease or phenotype entity.
+/// Core annotation for diseases or phenotypes. A disease or phenotype in the Platform is understood
+/// as any disease, phenotype, biological process or measurement that might have any type of
+/// causality relationship with a human target. The EMBL-EBI Experimental Factor Ontology (EFO)
+/// (slim version) is used as scaffold for the disease or phenotype entity.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
@@ -249,7 +249,8 @@ impl Disease {
         load_diseases(ctx, &self.children).await
     }
 
-    /// Clinical signs and symptoms observed in diseases or phenotypes. Signs and symptoms are integrated from multiple sources including EFO, MONDO and HPO.
+    /// Clinical signs and symptoms observed in diseases or phenotypes. Signs and symptoms are
+    /// integrated from multiple sources including EFO, MONDO and HPO.
     async fn phenotypes(
         &self,
         ctx: &Context<'_>,

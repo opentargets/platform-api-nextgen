@@ -70,8 +70,7 @@ impl Config {
     /// Loads the configuration from environment variables and the config file.
     ///
     /// # Panics
-    /// Panics if the configuration is invalid or if the config file is specified but does not
-    /// exist.
+    /// Panics if the configuration is invalid or the config file is specified but does not exist.
     #[must_use]
     pub fn load(config_file: Option<&Path>) -> Self {
         let mut fig = Figment::new();
@@ -91,12 +90,12 @@ impl Config {
 
     /// The data namespace used in ClickHouse and OpenSearch.
     ///
-    /// It is used to isolate releases/products to allow more than one in the same db instance.
-    /// In the case of ClickHouse, the database name is the namespace. In OpenSearch, the indices
-    /// are prefixed with the namespace.
+    /// It is used to isolate releases/products to allow more than one in the same db instance. In
+    /// the case of ClickHouse, the database name is the namespace. In OpenSearch, the indices are
+    /// prefixed with the namespace.
     ///
-    /// Formed by concatenating the product with the data release, e.g.: `platform2606` or `ppp2204`,
-    /// where the trailing four digits are `YYMM`. Revision suffixes are stripped.
+    /// Formed by concatenating product with data release, e.g.: `platform2606` or `ppp2204`, where
+    /// the trailing four digits are `YYMM`. Revision suffixes are stripped.
     #[must_use]
     pub fn data_namespace(&self) -> String {
         let release: String = self.data_release.split('.').take(2).collect();

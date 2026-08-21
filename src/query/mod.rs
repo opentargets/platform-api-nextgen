@@ -33,9 +33,8 @@ impl<T> QueryExt<T> for Vec<T> {
     fn query(self) -> Query<T> { Query(self) }
 }
 
-/// Carries a collection through an optional filter → search → sort → paginate
-/// pipeline. Call only the stages a dataset supports; a stage's trait bound
-/// applies only when that stage is used.
+/// Carries a collection through an optional filter → search → sort → paginate pipeline. Call only
+/// the stages a dataset supports; a stage's trait bound applies only when that stage is used.
 pub struct Query<T>(Vec<T>);
 
 impl<T: OutputType> Query<T> {
@@ -82,9 +81,8 @@ impl<T: OutputType> Query<T> {
         let size = page.size.min(MAX_PAGE_SIZE);
         let start = (page.index * size).min(self.0.len());
         let end = (start + size).min(self.0.len());
-        // Using drain here is much faster than into_iter().skip()/take() because
-        // it avoids copying the items into a new vector, and instead moves them
-        // directly into the Paged struct.
+        // Using drain here is much faster than into_iter().skip()/take() because it avoids copying
+        // the items into a new vector, and instead moves them directly into the Paged struct.
         let items = self.0.drain(start..end).collect();
         Paged { total, items }
     }
