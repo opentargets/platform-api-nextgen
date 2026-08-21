@@ -14,7 +14,15 @@ pub trait CachedLoader {
     async fn fetch(&self, misses: &[Self::Key]) -> Result<Vec<Self::Value>, Error>;
 
     #[allow(async_fn_in_trait)]
-    #[tracing::instrument(skip_all, level = "debug", fields(keys = keys.len(), hits = tracing::field::Empty, misses = tracing::field::Empty))]
+    #[tracing::instrument(
+        skip_all,
+        level = "debug",
+        fields(
+            keys = keys.len(),
+            hits = tracing::field::Empty,
+            misses = tracing::field::Empty,
+        )
+    )]
     async fn load_cached(
         &self,
         keys: &[Self::Key],
