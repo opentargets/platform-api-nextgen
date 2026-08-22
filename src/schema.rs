@@ -8,12 +8,13 @@ use crate::{
         disease::DiseaseQuery,
         meta::{Meta, MetaQuery},
         search::SearchQuery,
+        search_facet::FacetQuery,
         study::StudyQuery,
     },
 };
 
 #[derive(MergedObject, Default)]
-pub struct Query(DiseaseQuery, MetaQuery, StudyQuery, SearchQuery);
+pub struct Query(DiseaseQuery, MetaQuery, StudyQuery, SearchQuery, FacetQuery);
 
 pub type ApiSchema = Schema<Query, EmptyMutation, EmptySubscription>;
 

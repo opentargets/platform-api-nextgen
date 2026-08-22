@@ -151,3 +151,28 @@ query search {
         }
     }
 }
+
+# ---
+
+query facets {
+    facets(
+        queryString: "arth"
+        entityNames: ["disease"]
+        category: "Disease"
+        page: { index: 0, size: 10 }
+    ) {
+        total
+        categories {
+            total
+            name
+        }
+        hits {
+            id
+            datasourceId
+            category
+            highlights
+            score
+            # entityIds
+        }
+    }
+}

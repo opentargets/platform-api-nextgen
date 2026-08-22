@@ -214,7 +214,7 @@ fn build_search_strategy(query: &str) -> Vec<Value> {
     should
 }
 
-/// Builds the OpenSearch request that gets the search hits.
+/// Builds the request that gets the search hits.
 fn build_hits_body(query: &str, entities: Option<&[String]>, page: Page) -> Value {
     let filter = entities.map_or_else(|| json!([]), |e| json!([{ "terms": { "entity.raw": e } }]));
 
@@ -302,7 +302,7 @@ fn parse_hits(json: &Value) -> SearchResults {
     }
 }
 
-/// Builds the aggregations body for the search query.
+/// Builds the request that gets the search aggregations.
 fn build_aggs_body(query: &str) -> Value {
     json!({
         "size": 0,

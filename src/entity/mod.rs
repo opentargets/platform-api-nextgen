@@ -5,4 +5,5 @@ pub mod disease_hpo;
 pub mod hpo;
 pub mod meta;
 pub mod search;
+pub mod search_facet;
 pub mod study;
