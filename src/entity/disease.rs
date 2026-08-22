@@ -43,6 +43,7 @@ pub struct DiseaseSynonym {
 #[graphql(complex)]
 pub struct Disease {
     // Identity
+    /// Open Targets disease identifier [bioregistry:efo].
     id: String,
     /// Name of the disease.
     name: String,

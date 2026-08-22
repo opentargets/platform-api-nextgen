@@ -87,6 +87,7 @@ pub struct SumStatQC {
 #[graphql(complex)]
 pub struct Study {
     // Identity
+    /// The GWAS or molQTL study identifier (e.g. GCST004132).
     #[graphql(name = "id")]
     study_id: String,
     /// Identifier of the source project collection that the study information is derived from.
