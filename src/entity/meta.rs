@@ -80,7 +80,7 @@ pub struct MetaQuery;
 
 #[Object]
 impl MetaQuery {
-    #[allow(clippy::unused_async)]
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)]
     async fn meta(&self, ctx: &Context<'_>) -> async_graphql::Result<Meta> {
         Ok(ctx.data::<Meta>()?.clone())
     }

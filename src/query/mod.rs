@@ -7,9 +7,10 @@ use async_graphql::{
 
 use crate::query::{
     filter::Filter,
-    paginate::{MAX_PAGE_SIZE, Page, Paged},
+    paginate::{MAX_PAGE_SIZE, Page, Paged, PagedWithStats},
     search::Searchable,
     sort::{Sort, SortDirection, SortKey, sort_items},
+    statistics::Statistics,
 };
 
 pub mod cache;
@@ -75,16 +76,38 @@ impl<T: OutputType> Query<T> {
         self
     }
 
+    /// Returns a slice of the items for the given page.
+    fn page_slice(&mut self, page: Page) -> Vec<T> {
+        // Using drain here is much faster than into_iter().skip()/take() because it avoids copying
+        // the items into a new vector, and instead moves them directly into the Paged struct.
+        let total = self.0.len();
+        let size = page.size.min(MAX_PAGE_SIZE);
+        let start = (page.index * size).min(total);
+        let end = (start + size).min(total);
+        self.0.drain(start..end).collect()
+    }
+
     #[must_use]
     pub fn paginate(mut self, page: Page) -> Paged<T> {
         let total = self.0.len() as u64;
-        let size = page.size.min(MAX_PAGE_SIZE);
-        let start = (page.index * size).min(self.0.len());
-        let end = (start + size).min(self.0.len());
-        // Using drain here is much faster than into_iter().skip()/take() because it avoids copying
-        // the items into a new vector, and instead moves them directly into the Paged struct.
-        let items = self.0.drain(start..end).collect();
-        Paged { total, items }
+        Paged {
+            total,
+            items: self.page_slice(page),
+        }
+    }
+
+    #[must_use]
+    pub fn paginate_with_stats(mut self, page: Page) -> PagedWithStats<T>
+    where
+        T: Statistics,
+    {
+        let stats = T::compute(&self.0);
+        let total = self.0.len() as u64;
+        PagedWithStats {
+            total,
+            items: self.page_slice(page),
+            stats,
+        }
     }
 }
 

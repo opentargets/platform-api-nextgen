@@ -21,16 +21,17 @@ use crate::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
-        paginate::{Page, Paged},
+        paginate::{Page, PagedWithStats},
         search::Searchable,
         sort::{Sort, SortKey, nulls_last},
+        statistics::{Statistics, count_by},
     },
 };
 
 // ---- models ----
 
 /// Field specifying if study contains phenotype/disease or molecular genetic associations.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr)]
 #[repr(i8)]
 #[graphql(rename_items = "lowercase")]
 pub enum StudyType {
@@ -198,6 +199,29 @@ impl Searchable for Study {
     }
 }
 
+#[derive(SimpleObject)]
+pub struct StudyTypeBucket {
+    study_type: StudyType,
+    count: u64,
+}
+
+#[derive(SimpleObject)]
+pub struct StudyStats {
+    study_type: Vec<StudyTypeBucket>,
+}
+
+impl Statistics for Study {
+    type Stats = StudyStats;
+    fn compute(items: &[Self]) -> StudyStats {
+        StudyStats {
+            study_type: count_by(items, |s| s.study_type)
+                .into_iter()
+                .map(|(study_type, count)| StudyTypeBucket { study_type, count })
+                .collect(),
+        }
+    }
+}
+
 // ---- loaders ----
 
 pub type StudyCache = Cache<String, Option<Study>>;
@@ -296,7 +320,7 @@ impl StudyQuery {
         search: Option<String>,
         sort: Option<Sort<StudySortField>>,
         #[graphql(default)] page: Page,
-    ) -> async_graphql::Result<Paged<Study>> {
+    ) -> async_graphql::Result<PagedWithStats<Study>> {
         if study_ids.is_none() && disease_ids.is_none() {
             return Err("one of studyIds or diseaseIds is required".into());
         }
@@ -311,7 +335,7 @@ impl StudyQuery {
             .query()
             .search(search.as_deref())
             .sort(sort.as_ref())
-            .paginate(page))
+            .paginate_with_stats(page))
     }
 
     async fn study(
