@@ -22,8 +22,7 @@ impl Default for Page {
     fn default() -> Self { Self { index: 0, size: 10 } }
 }
 
-/// The result of a paginated query, containing the total number of items, the items themselves, and
-/// statistics about the query.
+/// The result of a paginated query, containing the total number of items and the items.
 #[derive(Debug, SimpleObject)]
 #[graphql(concrete(name = "DiseasePage", params(Disease)))]
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
@@ -33,8 +32,8 @@ pub struct Paged<T: OutputType> {
     pub items: Vec<T>,
 }
 
-/// The result of a paginated query, containing the total number of items, the items themselves, and
-/// statistics about the query.
+/// The result of a paginated query, containing the total number of items, the items, and statistics
+/// about the query.
 #[derive(Debug, SimpleObject)]
 #[graphql(concrete(name = "StudyPage", params(Study)))]
 pub struct PagedWithStats<T: OutputType + Statistics> {
