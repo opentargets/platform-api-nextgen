@@ -1,16 +1,26 @@
 //! HTTP server: router assembly and startup.
 
-use axum::{Extension, Router, routing::get};
+use axum::{Extension, Router, middleware::from_fn, routing::get};
 use tokio::net::TcpListener;
 use tower_http::compression::CompressionLayer;
 
-use crate::{AppState, schema::ApiSchema, server::graphql};
+use crate::{
+    AppState,
+    server::{
+        cache::post_cache,
+        graphql::{self, ApiSchema},
+    },
+};
 
 pub fn router(state: AppState, schema: ApiSchema) -> Router {
     let release = format!("/{}", state.config.data_release_main());
 
-    let api: Router<AppState> =
-        Router::new().route("/graphql", get(graphql::graphiql).post(graphql::handler));
+    let api: Router<AppState> = Router::new().route(
+        "/graphql",
+        get(graphql::graphiql)
+            .post(graphql::handler)
+            .layer(from_fn(post_cache)),
+    );
 
     Router::new()
         .nest(&release, api.clone()) // e.g. `/2606` for data release `26.06.1`
@@ -19,9 +29,6 @@ pub fn router(state: AppState, schema: ApiSchema) -> Router {
         .layer(Extension(schema))
         .layer(Extension(state.opensearch.clone()))
         .layer(Extension(state.clickhouse.clone()))
-        .layer(Extension(state.disease_cache.clone()))
-        .layer(Extension(state.hpo_cache.clone()))
-        .layer(Extension(state.study_cache.clone()))
         .layer(CompressionLayer::new().br(true))
         .with_state(state)
 }

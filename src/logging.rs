@@ -43,4 +43,5 @@ pub fn init(config: &Config) {
             )
             .init();
     }
+    tracing::info!("configuration:\n{config:#?}");
 }

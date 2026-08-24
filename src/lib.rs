@@ -5,7 +5,6 @@ pub mod error;
 pub mod logging;
 pub mod plugin;
 pub mod query;
-pub mod schema;
 pub mod server;
 
 use std::sync::Arc;
@@ -14,8 +13,6 @@ use config::Config;
 use datasource::{clickhouse::ClickHouse, opensearch::OpenSearch};
 use plugin::registry::PluginRegistry;
 
-use crate::entity::{disease::DiseaseCache, hpo::HpoCache, study::StudyCache};
-
 #[derive(Clone)]
 pub struct AppState {
     pub config: Arc<Config>,
@@ -23,7 +20,17 @@ pub struct AppState {
     pub opensearch: OpenSearch,
     pub plugin_registry: PluginRegistry,
     pub http: reqwest::Client,
-    pub disease_cache: DiseaseCache,
-    pub hpo_cache: HpoCache,
-    pub study_cache: StudyCache,
+}
+
+impl AppState {
+    #[must_use]
+    pub fn new(config: Config) -> Self {
+        Self {
+            plugin_registry: PluginRegistry::new(&config),
+            http: reqwest::Client::new(),
+            clickhouse: ClickHouse::new(&config),
+            opensearch: OpenSearch::new(&config),
+            config: Arc::new(config),
+        }
+    }
 }

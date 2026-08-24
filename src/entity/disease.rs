@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::HashMap};
+use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
     ComplexObject, Context, Enum, Object, SimpleObject,
@@ -9,12 +9,11 @@ use moka::future::Cache;
 use serde::Deserialize;
 
 use crate::{
-    config::DEFAULT_CACHE_CAPACITY,
     datasource::clickhouse::ClickHouse,
     entity::disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
     query::{
         Entity, QueryExt,
-        cache::CachedLoader,
+        cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged},
         search::Searchable,
@@ -140,29 +139,22 @@ impl Searchable for Disease {
 // ---- loaders ----
 
 pub type DiseaseCache = Cache<String, Option<Disease>>;
-
-#[must_use]
-pub fn disease_cache() -> DiseaseCache {
-    Cache::builder()
-        .max_capacity(DEFAULT_CACHE_CAPACITY)
-        .build()
-}
+static DISEASE_CACHE: LazyLock<DiseaseCache> = LazyLock::new(entity_cache);
 
 pub struct DiseaseLoader {
     ch: ClickHouse,
-    cache: DiseaseCache,
 }
 
 impl DiseaseLoader {
     #[must_use]
-    pub fn new(ch: ClickHouse, cache: DiseaseCache) -> Self { Self { ch, cache } }
+    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl CachedLoader for DiseaseLoader {
     type Key = String;
     type Value = Disease;
 
-    fn cache(&self) -> &DiseaseCache { &self.cache }
+    fn cache(&self) -> &DiseaseCache { &DISEASE_CACHE }
     fn key_of(v: &Self::Value) -> Self::Key { v.id.clone() }
 
     #[tracing::instrument(skip_all, level = "debug", fields(n = misses.len()))]

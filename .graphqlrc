@@ -1,4 +1,5 @@
 schema: 'http://localhost:8080/latest/graphql'
+documents: 'benchmarks/**/*.{graphql,gql}'
 extensions:
   endpoints:
     example:

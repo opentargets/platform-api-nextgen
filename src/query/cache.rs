@@ -3,6 +3,13 @@ use std::{collections::HashMap, hash::Hash};
 use async_graphql::Error;
 use moka::future::Cache;
 
+use crate::config::CACHE_ENTITY_CAPACITY;
+
+#[must_use]
+pub fn entity_cache<V: Clone + Send + Sync + 'static>() -> Cache<String, Option<V>> {
+    Cache::builder().max_capacity(CACHE_ENTITY_CAPACITY).build()
+}
+
 pub trait CachedLoader {
     type Key: Clone + Eq + Hash + Send + Sync + 'static;
     type Value: Clone + Send + Sync + 'static;

@@ -1,6 +1,7 @@
 use std::{
     cmp::Ordering,
     collections::{HashMap, HashSet},
+    sync::LazyLock,
 };
 
 use async_graphql::{
@@ -13,12 +14,12 @@ use serde::Deserialize;
 use serde_repr::Deserialize_repr;
 
 use crate::{
-    config::DEFAULT_CACHE_CAPACITY,
+    config::DEFAULT_CLICKHOUSE_FETCH_CHUNK,
     datasource::clickhouse::ClickHouse,
     entity::disease::{Disease, DiseaseLoader, load_diseases},
     query::{
         Entity, QueryExt,
-        cache::CachedLoader,
+        cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged},
         search::Searchable,
@@ -200,39 +201,39 @@ impl Searchable for Study {
 // ---- loaders ----
 
 pub type StudyCache = Cache<String, Option<Study>>;
-
-#[must_use]
-pub fn study_cache() -> StudyCache {
-    Cache::builder()
-        .max_capacity(DEFAULT_CACHE_CAPACITY)
-        .build()
-}
+static STUDY_CACHE: LazyLock<StudyCache> = LazyLock::new(entity_cache);
 
 pub struct StudyLoader {
     ch: ClickHouse,
-    cache: StudyCache,
 }
 
 impl StudyLoader {
     #[must_use]
-    pub fn new(ch: ClickHouse, cache: StudyCache) -> Self { Self { ch, cache } }
+    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl CachedLoader for StudyLoader {
     type Key = String;
     type Value = Study;
 
-    fn cache(&self) -> &StudyCache { &self.cache }
+    fn cache(&self) -> &StudyCache { &STUDY_CACHE }
     fn key_of(v: &Self::Value) -> Self::Key { v.study_id.clone() }
 
     #[tracing::instrument(skip_all, level = "debug", fields(n = misses.len()))]
+
     async fn fetch(&self, misses: &[Self::Key]) -> Result<Vec<Self::Value>, async_graphql::Error> {
-        self.ch
-            .query("SELECT ?fields FROM studies WHERE studyId IN ?")
-            .bind(misses)
-            .fetch_all::<Study>()
-            .await
-            .map_err(Into::into)
+        // TODO: extract batched fetcher into an utility to be used in other places
+        let mut out = Vec::with_capacity(misses.len());
+        for chunk in misses.chunks(DEFAULT_CLICKHOUSE_FETCH_CHUNK) {
+            let rows = self
+                .ch
+                .query("SELECT ?fields FROM studies WHERE studyId IN ?")
+                .bind(chunk)
+                .fetch_all::<Study>()
+                .await?;
+            out.extend(rows);
+        }
+        Ok(out)
     }
 }
 

@@ -19,7 +19,9 @@ use serde::{
 use crate::plugin::plugin::Plugin;
 
 const DEFAULT_CONFIG_FILE: &str = "config.toml";
-pub const DEFAULT_CACHE_CAPACITY: u64 = 100_000;
+pub const CACHE_REQUEST_SIZE: u64 = 2 * 1024 * 1024 * 1024; // 2GB
+pub const CACHE_ENTITY_CAPACITY: u64 = 100_000;
+pub const DEFAULT_CLICKHOUSE_FETCH_CHUNK: usize = 10_000;
 
 #[derive(Parser)]
 pub struct Args {

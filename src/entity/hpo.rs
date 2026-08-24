@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::HashMap};
+use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
     Context, Enum, Object, SimpleObject,
@@ -9,11 +9,10 @@ use moka::future::Cache;
 use serde::Deserialize;
 
 use crate::{
-    config::DEFAULT_CACHE_CAPACITY,
     datasource::clickhouse::ClickHouse,
     query::{
         Entity, QueryExt,
-        cache::CachedLoader,
+        cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged},
         search::Searchable,
@@ -33,7 +32,7 @@ pub struct Hpo {
     name: String,
     /// Description of the disease.
     description: Option<String>,
-    // DEPRECATED
+    // DEPRECATED - This is always empty in the data.
     #[graphql(deprecation = "empty")]
     namespace: Vec<String>,
 }
@@ -74,29 +73,22 @@ impl Searchable for Hpo {
 // ---- loaders ----
 
 pub type HpoCache = Cache<String, Option<Hpo>>;
-
-#[must_use]
-pub fn hpo_cache() -> HpoCache {
-    Cache::builder()
-        .max_capacity(DEFAULT_CACHE_CAPACITY)
-        .build()
-}
+static HPO_CACHE: LazyLock<HpoCache> = LazyLock::new(entity_cache);
 
 pub struct HpoLoader {
     ch: ClickHouse,
-    cache: HpoCache,
 }
 
 impl HpoLoader {
     #[must_use]
-    pub fn new(ch: ClickHouse, cache: HpoCache) -> Self { Self { ch, cache } }
+    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl CachedLoader for HpoLoader {
     type Key = String;
     type Value = Hpo;
 
-    fn cache(&self) -> &HpoCache { &self.cache }
+    fn cache(&self) -> &HpoCache { &HPO_CACHE }
     fn key_of(v: &Self::Value) -> Self::Key { v.id.clone() }
 
     #[tracing::instrument(skip_all, level = "debug", fields(n = misses.len()))]

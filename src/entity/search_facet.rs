@@ -5,7 +5,7 @@ use tracing::instrument;
 
 use crate::{datasource::opensearch::OpenSearch, query::paginate::Page};
 
-const FACET_ENTITIES: &[&str] = &["disease", "target", "drug", "study", "variant"];
+const FACET_ENTITIES: &[&str] = &["disease", "target"];
 
 /// Returns the facet search indices for the given entity names.
 fn facet_indices(entity_names: Option<&[String]>) -> Vec<String> {
