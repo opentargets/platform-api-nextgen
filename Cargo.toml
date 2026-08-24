@@ -10,6 +10,7 @@ axum = "0.8.9"
 clap = { version = "4.6.5", features = ["derive"] }
 clickhouse = "0.15.1"
 figment = { version = "0.10.19", features = ["env", "toml"] }
+graphql-parser = "0.4.1"
 humantime-serde = "1.1.1"
 moka = { version = "0.12.16", features = ["future", "sync"] }
 opensearch = "2.4.0"
