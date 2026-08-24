@@ -206,8 +206,15 @@ pub struct StudyTypeBucket {
 }
 
 #[derive(SimpleObject)]
+pub struct HasSumstatsBucket {
+    value: Option<bool>,
+    count: u64,
+}
+
+#[derive(SimpleObject)]
 pub struct StudyStats {
     study_type: Vec<StudyTypeBucket>,
+    has_sumstats: Vec<HasSumstatsBucket>,
 }
 
 impl Statistics for Study {
@@ -217,6 +224,10 @@ impl Statistics for Study {
             study_type: count_by(items, |s| s.study_type)
                 .into_iter()
                 .map(|(study_type, count)| StudyTypeBucket { study_type, count })
+                .collect(),
+            has_sumstats: count_by(items, |s| s.has_sumstats)
+                .into_iter()
+                .map(|(value, count)| HasSumstatsBucket { value, count })
                 .collect(),
         }
     }

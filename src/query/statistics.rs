@@ -5,6 +5,9 @@ pub trait Statistics: Sized {
     fn compute(items: &[Self]) -> Self::Stats;
 }
 
+/// Stat: Counts
+///
+/// Counts the number of occurrences of each key in the given slice of items.
 pub fn count_by<T, K, F>(items: &[T], key: F) -> Vec<(K, u64)>
 where
     K: Eq + Hash + Ord,
