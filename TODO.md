@@ -1,2 +1,4 @@
 - [ ] Clear cache endpoint
+- [ ] Enforce order on pipeline execute
+- [ ] Check https://docs.rs/async-graphql/7.2.1/async_graphql/dataloader/trait.CacheFactory.html and https://docs.rs/async-graphql/7.2.1/async_graphql/dataloader/struct.DataLoader.html#method.with_cache
 - [ ]
