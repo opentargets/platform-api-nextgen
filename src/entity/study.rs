@@ -24,7 +24,11 @@ use crate::{
         paginate::{Page, PagedWithStats},
         search::Searchable,
         sort::{Sort, SortKey, nulls_last},
-        statistics::{Statistics, count_by},
+        statistics::Statistics,
+        stats::{
+            distribution::{StatsBucket, distribution},
+            sumstats::{Sumstats, sumstats},
+        },
     },
 };
 
@@ -199,36 +203,30 @@ impl Searchable for Study {
     }
 }
 
-#[derive(SimpleObject)]
-pub struct StudyTypeBucket {
-    study_type: StudyType,
-    count: u64,
-}
-
-#[derive(SimpleObject)]
-pub struct HasSumstatsBucket {
-    value: Option<bool>,
-    count: u64,
-}
-
+/// Statistics for a set of studies.
 #[derive(SimpleObject)]
 pub struct StudyStats {
-    study_type: Vec<StudyTypeBucket>,
-    has_sumstats: Vec<HasSumstatsBucket>,
+    /// The distribution of study types.
+    study_type: Vec<StatsBucket<StudyType>>,
+    /// The distribution of studies with sumstats.
+    has_sumstats: Vec<StatsBucket<Option<bool>>>,
+    /// The summary statistics of sample sizes.
+    n_samples: Sumstats,
+    /// The samples to cases ratio.
+    samples_by_case: Sumstats,
 }
 
 impl Statistics for Study {
     type Stats = StudyStats;
     fn compute(items: &[Self]) -> StudyStats {
         StudyStats {
-            study_type: count_by(items, |s| s.study_type)
-                .into_iter()
-                .map(|(study_type, count)| StudyTypeBucket { study_type, count })
-                .collect(),
-            has_sumstats: count_by(items, |s| s.has_sumstats)
-                .into_iter()
-                .map(|(value, count)| HasSumstatsBucket { value, count })
-                .collect(),
+            study_type: distribution(items, |s| s.study_type),
+            has_sumstats: distribution(items, |s| s.has_sumstats),
+            n_samples: sumstats(items, |s| s.n_samples.unwrap_or_default()),
+            samples_by_case: sumstats(items, |s| {
+                f64::from(s.n_cases.unwrap_or_default())
+                    / f64::from(s.n_samples.unwrap_or_default())
+            }),
         }
     }
 }

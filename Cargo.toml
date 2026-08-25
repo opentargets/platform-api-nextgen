@@ -30,6 +30,7 @@ pedantic = { level = "warn", priority = -1 }
 too_many_arguments = "allow"
 too_many_lines = "allow"
 unused_async_trait_impl = "allow"
+cast_precision_loss = "allow"
 
 [profile.release]
 debug = true

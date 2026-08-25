@@ -19,6 +19,7 @@ pub mod paginate;
 pub mod search;
 pub mod sort;
 pub mod statistics;
+pub mod stats;
 
 /// A row with a primary key, used as a stable sort tiebreaker.
 pub trait Entity {
