@@ -16,5 +16,15 @@
                 }
             }
         }
+    },
+    "languages": {
+        "SQL": {
+            "formatter": {
+                "external": {
+                    "command": "sql-formatter",
+                    "arguments": ["--language", "clickhouse"]
+                }
+            }
+        },
     }
 }
