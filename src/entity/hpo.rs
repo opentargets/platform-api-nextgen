@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    Context, Enum, Object, SimpleObject,
+    Context, Enum, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -11,12 +11,11 @@ use serde::Deserialize;
 use crate::{
     datasource::clickhouse::ClickHouse,
     query::{
-        Entity, QueryExt,
+        Entity,
         cache::{CachedLoader, entity_cache},
         load_ordered,
-        paginate::{Page, Paged},
         search::Searchable,
-        sort::{Sort, SortKey},
+        sort::SortKey,
     },
 };
 
@@ -119,29 +118,4 @@ impl Loader<String> for HpoLoader {
 /// Returns an error if the HPOs could not be loaded.
 pub async fn load_hpos(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Result<Vec<Hpo>> {
     load_ordered(ctx.data_unchecked::<DataLoader<HpoLoader>>(), ids).await
-}
-
-// ---- resolvers ----
-
-#[derive(Default)]
-pub struct HpoQuery;
-
-#[Object]
-impl HpoQuery {
-    /// Fetch HPOs by HPO ID.
-    async fn hpos(
-        &self,
-        ctx: &Context<'_>,
-        ids: Vec<String>,
-        search: Option<String>,
-        sort: Option<Sort<HpoSortField>>,
-        #[graphql(default)] page: Page,
-    ) -> async_graphql::Result<Paged<Hpo>> {
-        let items = load_hpos(ctx, &ids).await?;
-        Ok(items
-            .query()
-            .search(search.as_deref())
-            .sort(sort.as_ref())
-            .paginate(page))
-    }
 }

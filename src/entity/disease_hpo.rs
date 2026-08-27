@@ -70,12 +70,10 @@ pub struct DiseasePhenotype {
     evidence: Vec<PhenotypeEvidence>,
 }
 
-/// Disease and phenotypes annotations.
+// A ClickHouse row representing a disease and its associated phenotypes.
 #[derive(Debug, Row, Deserialize)]
-struct DiseaseHpo {
-    /// Disease identifier.
+struct DiseaseHpoRow {
     disease: String,
-    /// List of phenotypes associated with the disease.
     phenotypes: Vec<DiseasePhenotype>,
 }
 
@@ -102,7 +100,7 @@ impl Loader<String> for DiseasePhenotypeLoader {
         &self,
         ids: &[String],
     ) -> Result<HashMap<String, Vec<DiseasePhenotype>>, Self::Error> {
-        let rows: Vec<DiseaseHpo> = self
+        let rows: Vec<DiseaseHpoRow> = self
             .ch
             .query("SELECT ?fields FROM disease_hpo WHERE disease IN ?")
             .bind(ids)
