@@ -15,3 +15,4 @@ pub mod search_facet;
 pub mod sequence_ontology;
 pub mod study;
 pub mod target;
+pub mod variant;

@@ -12,6 +12,7 @@ use crate::{
         mouse_phenotype::MousePhenotype,
         study::Study,
         target::Target,
+        variant::Variant,
     },
     query::statistics::Statistics,
 };
@@ -45,6 +46,7 @@ impl Default for Page {
 #[graphql(concrete(name = "MousePhenotypePage", params(MousePhenotype)))]
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
+#[graphql(concrete(name = "VariantPage", params(Variant)))]
 pub struct Paged<T: OutputType> {
     pub count: u64,
     pub rows: Vec<T>,
