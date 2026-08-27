@@ -5,7 +5,7 @@ use std::{
 };
 
 use async_graphql::{
-    ComplexObject, Context, Enum, Object, SimpleObject,
+    ComplexObject, Context, Enum, InputObject, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -20,6 +20,7 @@ use crate::{
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
+        filter::{Filter, IntFilter, StringFilter},
         load_ordered,
         paginate::{Page, PagedWithStats},
         search::Searchable,
@@ -203,6 +204,33 @@ impl Searchable for Study {
     }
 }
 
+/// Filter for studies.
+#[derive(Debug, InputObject)]
+pub struct StudyFilter {
+    /// Keep studies whose type is one of these.
+    pub study_type: Option<Vec<StudyType>>,
+    /// Keep studies whose project ID matches this filter.
+    pub project_id: Option<StringFilter>,
+    /// Keep studies whose number of samples matches this filter.
+    pub n_samples: Option<IntFilter>,
+}
+
+impl Filter<Study> for StudyFilter {
+    fn matches(&self, item: &Study) -> bool {
+        self.study_type
+            .as_ref()
+            .is_none_or(|t| t.contains(&item.study_type))
+            && self
+                .project_id
+                .as_ref()
+                .is_none_or(|f| f.matches(Some(&item.project_id)))
+            && self
+                .n_samples
+                .as_ref()
+                .is_none_or(|f| f.matches(item.n_samples.map(i64::from)))
+    }
+}
+
 /// Statistics for a set of studies.
 #[derive(SimpleObject)]
 pub struct StudyStats {
@@ -327,6 +355,7 @@ impl StudyQuery {
         disease_ids: Option<Vec<String>>,
         #[graphql(default)] enable_indirect: bool,
         search: Option<String>,
+        filter: Option<StudyFilter>,
         sort: Option<Sort<StudySortField>>,
         #[graphql(default)] page: Page,
     ) -> async_graphql::Result<PagedWithStats<Study>> {
@@ -342,6 +371,7 @@ impl StudyQuery {
         .await?;
         Ok(items
             .query()
+            .filter(filter.as_ref())
             .search(search.as_deref())
             .sort(sort.as_ref())
             .paginate_with_stats(page))
