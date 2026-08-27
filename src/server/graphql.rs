@@ -42,6 +42,8 @@ pub async fn handler(
 ) -> GraphQLResponse {
     let diseases = DataLoader::new(DiseaseLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
+    let targets =
+        DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let hpos =
         DataLoader::new(HpoLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let studies =
@@ -65,6 +67,7 @@ pub async fn handler(
         .execute(
             inner
                 .data(diseases)
+                .data(targets)
                 .data(hpos)
                 .data(phenotypes)
                 .data(studies)
@@ -83,6 +86,7 @@ pub struct Query(
     SearchQuery,  // Search bar functionality
     FacetQuery,   // Facet search for AOTF
     DiseaseQuery, // Diseases
+    TargetQuery,  // Targets
     StudyQuery,   // Studies
     TargetQuery,  // Targets
     DrugQuery,    // Drugs

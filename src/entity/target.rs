@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    Context, Object, SimpleObject,
+    ComplexObject, Context, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -10,6 +10,10 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::{
+        association::{DiseaseAssociation, load_associations},
+        disease::Disease,
+    },
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -495,10 +499,31 @@ impl Loader<String> for TargetLoader {
     }
 }
 
+/// Load targets by their EFO IDs.
+///
+/// This function uses a [`DataLoader`] to fetch targets from the cache or database.
+///
+/// # Returns
+/// A [`Vec`] of [`Target`] entities.
+/// # Errors
+/// Returns an [`async_graphql::Error`] if the database query fails.
 pub async fn load_targets(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Result<Vec<Target>> {
     load_ordered(ctx.data_unchecked::<DataLoader<TargetLoader>>(), ids).await
 }
 
+/// Load a target by its ID.
+///
+/// This function uses a [`DataLoader`] to fetch a target from the cache or database.
+///
+/// # Returns
+/// An [`Option`] of [`Target`] entity.
+/// # Errors
+/// Returns an [`async_graphql::Error`] if the database query fails.
+pub async fn load_target(ctx: &Context<'_>, id: &str) -> async_graphql::Result<Option<Target>> {
+    ctx.data_unchecked::<DataLoader<TargetLoader>>()
+        .load_one(id.to_string())
+        .await
+}
 // ---- resolvers ----
 
 #[derive(Default)]
@@ -510,7 +535,7 @@ impl TargetQuery {
     async fn targets(
         &self,
         ctx: &Context<'_>,
-        #[graphql(desc = "List of Ensembl IDs")] ensembl_ids: Vec<String>,
+        #[graphql(desc = "List of Ensembl IDs.")] ensembl_ids: Vec<String>,
         #[graphql(default)] page: Page,
     ) -> async_graphql::Result<Paged<Target>> {
         let targets = load_targets(ctx, &ensembl_ids).await?;
@@ -522,9 +547,25 @@ impl TargetQuery {
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "Ensembl ID")] ensembl_id: String,
+        ensembl_id: String,
     ) -> async_graphql::Result<Option<Target>> {
         ctx.data_unchecked::<DataLoader<TargetLoader>>()
             .load_one(ensembl_id)
             .await
+    }
+}
+
+#[ComplexObject]
+impl Target {
+    /// Target-disease associations calculated on-the-fly using configurable data source weights and
+    /// evidence filters. Returns associations with aggregated scores and evidence counts supporting
+    /// the target-disease relationship.
+    #[allow(clippy::unused_async)]
+    async fn associated_diseases(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<DiseaseAssociation>> {
+        load_associations::<Disease>(ctx, &self.id, page)
     }
 }

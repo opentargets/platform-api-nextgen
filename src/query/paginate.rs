@@ -2,7 +2,12 @@ use async_graphql::{InputObject, OutputType, SimpleObject};
 
 use crate::{
     entity::{
-        disease::Disease, disease_hpo::DiseasePhenotype, drug::Drug, hpo::Hpo, study::Study,
+        association::{DiseaseAssociation, TargetAssociation},
+        disease::Disease,
+        disease_hpo::DiseasePhenotype,
+        drug::Drug,
+        hpo::Hpo,
+        study::Study,
         target::Target,
     },
     query::statistics::Statistics,
@@ -28,10 +33,12 @@ impl Default for Page {
 /// The result of a paginated query, containing the total number of items and the items.
 #[derive(Debug, SimpleObject)]
 #[graphql(concrete(name = "DiseasePage", params(Disease)))]
-#[graphql(concrete(name = "HpoPage", params(Hpo)))]
 #[graphql(concrete(name = "DiseasePhenotypePage", params(DiseasePhenotype)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
 #[graphql(concrete(name = "DrugPage", params(Drug)))]
+#[graphql(concrete(name = "HpoPage", params(Hpo)))]
+#[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
+#[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 pub struct Paged<T: OutputType> {
     pub total: u64,
     pub items: Vec<T>,

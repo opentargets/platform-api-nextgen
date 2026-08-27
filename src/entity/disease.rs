@@ -10,7 +10,11 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
+    entity::{
+        association::{TargetAssociation, load_associations},
+        disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
+        target::Target,
+    },
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -195,6 +199,20 @@ pub async fn load_diseases(
     load_ordered(ctx.data_unchecked::<DataLoader<DiseaseLoader>>(), ids).await
 }
 
+/// Load a disease by its ID.
+///
+/// This function uses a [`DataLoader`] to fetch a disease from the cache or database.
+///
+/// # Returns
+/// An [`Option`] of [`Disease`] entity.
+/// # Errors
+/// Returns an [`async_graphql::Error`] if the database query fails.
+pub async fn load_disease(ctx: &Context<'_>, id: &str) -> async_graphql::Result<Option<Disease>> {
+    ctx.data_unchecked::<DataLoader<DiseaseLoader>>()
+        .load_one(id.to_string())
+        .await
+}
+
 // ---- resolvers ----
 
 #[derive(Default)]
@@ -255,5 +273,16 @@ impl Disease {
             .await?
             .unwrap_or_default();
         Ok(items.query().paginate(page))
+    }
+
+    /// Disease-target associations computed on the fly with configurable datasource weights and
+    /// filters.
+    #[allow(clippy::unused_async)]
+    async fn associated_targets(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<TargetAssociation>> {
+        load_associations::<Target>(ctx, &self.id, page)
     }
 }

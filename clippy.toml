@@ -1,1 +1,10 @@
-doc-valid-idents = ["ClickHouse", "OpenSearch", "MLCroissant", "PubMed", "ChEMBL", "DrugBank",  ".."]
+doc-valid-idents = [
+    "ClickHouse",
+    "OpenSearch",
+    "MLCroissant",
+    "PubMed",
+    "ChEMBL",
+    "DrugBank",
+    "Gene2Phenotype",
+    ".."  # this appends default valid idents
+]
