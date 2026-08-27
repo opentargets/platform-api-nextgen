@@ -56,7 +56,7 @@ pub struct Config {
     /// The timeout for OpenSearch requests. Defaults to 10 seconds.
     #[serde(default = "default_opensearch_timeout", with = "humantime_serde")]
     pub opensearch_timeout: Duration,
-    /// The maximum depth of the GraphQL schema. Defaults to 10.
+    /// The maximum depth of the GraphQL schema. Defaults to 15.
     #[serde(default = "default_max_depth")]
     pub max_depth: usize,
     /// The maximum complexity of the GraphQL schema. Defaults to 1000.
@@ -112,7 +112,7 @@ impl Config {
 fn default_log_level() -> String { "info".to_string() }
 fn default_bind_address() -> String { "0.0.0.0:8080".to_string() }
 fn default_opensearch_timeout() -> Duration { Duration::from_secs(10) }
-fn default_max_depth() -> usize { 10 }
+fn default_max_depth() -> usize { 15 }
 fn default_max_complexity() -> usize { 1000 }
 
 fn is_num(s: &str) -> bool { s.chars().all(|c| c.is_ascii_digit()) }
