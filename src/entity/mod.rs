@@ -10,3 +10,4 @@ pub mod search;
 pub mod search_facet;
 pub mod study;
 pub mod target;
+pub mod variant;

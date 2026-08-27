@@ -9,6 +9,7 @@ use crate::{
         hpo::Hpo,
         study::Study,
         target::Target,
+        variant::Variant,
     },
     query::statistics::Statistics,
 };
@@ -39,6 +40,7 @@ impl Default for Page {
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
 #[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
+#[graphql(concrete(name = "VariantPage", params(Variant)))]
 pub struct Paged<T: OutputType> {
     pub total: u64,
     pub items: Vec<T>,

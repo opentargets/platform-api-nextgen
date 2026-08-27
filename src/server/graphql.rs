@@ -20,6 +20,7 @@ use crate::{
         search_facet::FacetQuery,
         study::{StudyLoader, StudyQuery},
         target::{TargetLoader, TargetQuery},
+        variant::{VariantLoader, VariantQuery},
     },
 };
 
@@ -41,6 +42,8 @@ pub async fn handler(
         DataLoader::new(StudyLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let phenotypes = DataLoader::new(DiseasePhenotypeLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
+    let variants = DataLoader::new(VariantLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
 
     let drugs =
         DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
@@ -61,6 +64,7 @@ pub async fn handler(
                 .data(studies)
                 .data(os)
                 .data(drugs),
+                .data(variants),
         )
         .instrument(span)
         .await
@@ -73,10 +77,10 @@ pub struct Query(
     SearchQuery,  // Search bar functionality
     FacetQuery,   // Facet search for AOTF
     DiseaseQuery, // Diseases
-    TargetQuery,  // Targets
     StudyQuery,   // Studies
     TargetQuery,  // Targets
     DrugQuery,    // Drugs
+    VariantQuery, // Variants
 );
 
 pub type ApiSchema = Schema<Query, EmptyMutation, EmptySubscription>;
