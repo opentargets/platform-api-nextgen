@@ -25,6 +25,7 @@ use crate::{
         sequence_ontology::SequenceOntologyLoader,
         study::{StudyLoader, StudyQuery},
         target::{TargetLoader, TargetQuery},
+        variant::{VariantLoader, VariantQuery},
     },
 };
 
@@ -57,6 +58,8 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let targets =
         DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
+    let variants = DataLoader::new(VariantLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
 
     let inner = req.into_inner();
     let span = tracing::info_span!(
@@ -78,7 +81,8 @@ pub async fn handler(
                 .data(phenotypes)
                 .data(sequence_ontology)
                 .data(studies)
-                .data(targets),
+                .data(targets)
+                .data(variants),
         )
         .instrument(span)
         .await
@@ -91,9 +95,9 @@ pub struct Query(
     SearchQuery,  // Search bar functionality
     FacetQuery,   // Facet search for AOTF
     DiseaseQuery, // Diseases
-    TargetQuery,  // Targets
     StudyQuery,   // Studies
     DrugQuery,    // Drugs
+    VariantQuery, // Variants
 );
 
 pub type ApiSchema = Schema<Query, EmptyMutation, EmptySubscription>;
