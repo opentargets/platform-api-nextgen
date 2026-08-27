@@ -40,14 +40,23 @@ use crate::{
 #[repr(i8)]
 #[graphql(rename_items = "lowercase")]
 pub enum StudyType {
+    /// Bulk tissue transcript uptake quantitative trait locus (tuQTL) study.
     Tuqtl = 1,
+    /// Bulk tissue protein quantitative trait locus (pQTL) study.
     Pqtl = 2,
+    /// Bulk tissue expression quantitative trait locus (eQTL) study.
     Eqtl = 3,
+    /// Bulk tissue splicing quantitative trait locus (sQTL) study.
     Sqtl = 4,
+    /// Single-cell transcript uptake quantitative trait locus (sc-tuQTL) study.
     Sctuqtl = 5,
+    /// Single-cell protein quantitative trait locus (sc-pQTL) study.
     Scpqtl = 6,
+    /// Single-cell expression quantitative trait locus (sc-eQTL) study.
     Sceqtl = 7,
+    /// Single-cell splicing quantitative trait locus (sc-sQTL) study.
     Scsqtl = 8,
+    /// Genome-wide association study (GWAS) of complex traits or diseases.
     Gwas = 9,
 }
 
