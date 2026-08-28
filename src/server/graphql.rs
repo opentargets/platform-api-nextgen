@@ -2,14 +2,9 @@
 
 use async_graphql::{
     EmptyMutation, EmptySubscription, MergedObject, Schema, dataloader::DataLoader,
-    http::GraphiQLSource,
 };
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
-use axum::{
-    Extension,
-    extract::OriginalUri,
-    response::{Html, IntoResponse},
-};
+use axum::Extension;
 use tracing::Instrument;
 
 use crate::{
@@ -29,10 +24,6 @@ use crate::{
 };
 
 const MAX_BATCH_SIZE: usize = 10_000;
-
-pub async fn graphiql(OriginalUri(uri): OriginalUri) -> impl IntoResponse {
-    Html(GraphiQLSource::build().endpoint(uri.path()).finish())
-}
 
 pub async fn handler(
     Extension(schema): Extension<ApiSchema>,

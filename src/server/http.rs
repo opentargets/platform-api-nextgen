@@ -1,6 +1,12 @@
 //! HTTP server: router assembly and startup.
 
-use axum::{Extension, Router, middleware::from_fn, routing::get};
+use axum::{
+    Extension, Router,
+    middleware::from_fn,
+    response::{Html, IntoResponse},
+    routing::get,
+};
+use reqwest::header;
 use tokio::net::TcpListener;
 use tower_http::compression::CompressionLayer;
 
@@ -12,17 +18,24 @@ use crate::{
     },
 };
 
+const GRAPHIQL: &str = include_str!("assets/graphiql.html");
+const FAVICON: &[u8] = include_bytes!("assets/favicon.png");
+
+async fn graphiql() -> Html<&'static str> { Html(GRAPHIQL) }
+async fn favicon() -> impl IntoResponse { ([(header::CONTENT_TYPE, "image/png")], FAVICON) }
+
 pub fn router(state: AppState, schema: ApiSchema) -> Router {
     let release = format!("/{}", state.config.data_release_main());
 
     let api: Router<AppState> = Router::new().route(
         "/graphql",
-        get(graphql::graphiql)
+        get(graphiql)
             .post(graphql::handler)
             .layer(from_fn(post_cache)),
     );
 
     Router::new()
+        .route("/favicon.ico", get(favicon))
         .nest(&release, api.clone()) // e.g. `/2606` for data release `26.06.1`
         .nest("/latest", api.clone()) // Immutable route to the latest data release
         .nest("/api/v4", api) // Keeps backwards-compatible route
