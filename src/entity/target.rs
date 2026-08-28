@@ -10,6 +10,7 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::search,
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -324,10 +325,7 @@ impl Loader<String> for TargetLoader {
     }
 }
 
-pub async fn load_diseases(
-    ctx: &Context<'_>,
-    ids: &&[String],
-) -> async_graphql::Result<Vec<Target>> {
+pub async fn load_targets(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Result<Vec<Target>> {
     load_ordered(ctx.data_unchecked::<DataLoader<TargetLoader>>(), ids).await
 }
 
@@ -338,6 +336,15 @@ pub struct TargetQuery;
 
 #[Object]
 impl TargetQuery {
+    async fn targets(
+        &self,
+        ctx: &Context<'_>,
+        ensemblIds: Vec<String>,
+    ) -> async_graphql::Result<Vec<Target>> {
+        let target = load_targets(ctx, &ensemblIds).await?;
+        Ok(target)
+    }
+
     async fn target(
         &self,
         ctx: &Context<'_>,
