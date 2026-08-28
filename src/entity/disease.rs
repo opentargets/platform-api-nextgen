@@ -11,7 +11,9 @@ use serde::Deserialize;
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
-        association::{TargetAssociation, load_associations},
+        association::{
+            AssocArgs, AssociationSort, DatasourcePolicyInput, TargetAssociation, load_associations,
+        },
         disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
         target::Target,
     },
@@ -281,8 +283,53 @@ impl Disease {
     async fn associated_targets(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default)] page: Page,
+
+        #[graphql(
+            name = "Bs",
+            default,
+            desc = "List of target ids to use as the second dimension for associations."
+        )]
+        bs: Vec<String>,
+
+        #[graphql(name = "BFilter", desc = "Filter to apply to the B dimension items.")]
+        b_filter: Option<String>,
+
+        #[graphql(default, desc = "List of the facet ids to filter by (using AND).")]
+        facet_filters: Vec<String>,
+
+        #[graphql(
+            default,
+            desc = "Expand the association set indirectly: for a disease, include its ontology \
+                    descendants."
+        )]
+        indirect: bool,
+
+        #[graphql(
+            default,
+            desc = "List of datasource policies. If ommitted, use the default."
+        )]
+        datasources: Option<Vec<DatasourcePolicyInput>>,
+
+        #[graphql(
+            default,
+            desc = "Ordering for the associations. Can either be `score` to use the overall \
+                    association score (default), a datasource id (e.g., `impc`), or a datatype id \
+                    (e.g., `animal_model`)."
+        )]
+        sort: AssociationSort,
+
+        #[graphql(default, desc = "Pagination for the associations.")] page: Page,
     ) -> async_graphql::Result<Paged<TargetAssociation>> {
-        load_associations::<Target>(ctx, &self.id, page)
+        let args = AssocArgs {
+            bs,
+            b_filter,
+            facet_filters,
+            indirect,
+            include_measurements: false, // Only used in target to include measurements diseases
+            datasources,
+            sort,
+            page,
+        };
+        load_associations::<Target>(ctx, &self.id, args)
     }
 }

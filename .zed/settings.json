@@ -26,5 +26,11 @@
                 }
             }
         },
+        "GraphQL": {
+            "formatter": "prettier",
+            "prettier": {
+                "printWidth": 100
+            }
+        }
     }
 }

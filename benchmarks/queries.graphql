@@ -1,9 +1,5 @@
 query study_single {
-    studies(
-        diseaseIds: ["MONDO_0004992"]
-        enableIndirect: true
-        page: { index: 0, size: 10 }
-    ) {
+    studies(diseaseIds: ["MONDO_0004992"], enableIndirect: true, page: { index: 0, size: 10 }) {
         total
         items {
             id
@@ -180,11 +176,7 @@ query facets {
 # ---
 
 query study_with_stats($dids: [String!]) {
-    studies(
-        studyIds: $dids
-        enableIndirect: true
-        page: { index: 0, size: 10000 }
-    ) {
+    studies(studyIds: $dids, enableIndirect: true, page: { index: 0, size: 10000 }) {
         total
         items {
             id
@@ -3386,113 +3378,38 @@ query targets($eids: [String!]!) {
 
 # ---
 
-query TargetAssociationsQuery {
+query AOTFTOld {
     target(ensemblId: "ENSG00000105397") {
         id
         approvedSymbol
         associatedDiseases(
-            page: { index: 0, size: 10 }
+            page: { index: 0, size: 25 }
             orderByScore: "score"
             enableIndirect: false
             datasources: [
-                {
-                    id: "clinical_precedence"
-                    weight: 1
-                    propagate: true
-                    required: false
-                }
-                {
-                    id: "gwas_credible_sets"
-                    weight: 1
-                    propagate: true
-                    required: false
-                }
-                {
-                    id: "gene_burden"
-                    weight: 1
-                    propagate: true
-                    required: false
-                }
-                { id: "eva", weight: 1, propagate: true, required: false }
-                {
-                    id: "genomics_england"
-                    weight: 1
-                    propagate: true
-                    required: false
-                }
-                {
-                    id: "gene2phenotype"
-                    weight: 1
-                    propagate: true
-                    required: false
-                }
-                {
-                    id: "uniprot_literature"
-                    weight: 1
-                    propagate: true
-                    required: false
-                }
-                {
-                    id: "uniprot_variants"
-                    weight: 1
-                    propagate: true
-                    required: false
-                }
-                { id: "orphanet", weight: 1, propagate: true, required: false }
-                { id: "clingen", weight: 1, propagate: true, required: false }
-                {
-                    id: "cancer_gene_census"
-                    weight: 1
-                    propagate: true
-                    required: false
-                }
-                { id: "intogen", weight: 1, propagate: true, required: false }
-                {
-                    id: "eva_somatic"
-                    weight: 1
-                    propagate: true
-                    required: false
-                }
-                {
-                    id: "cancer_biomarkers"
-                    weight: 1
-                    propagate: true
-                    required: false
-                }
-                {
-                    id: "crispr_screen"
-                    weight: 1
-                    propagate: true
-                    required: false
-                }
-                { id: "crispr", weight: 1, propagate: true, required: false }
-                { id: "reactome", weight: 1, propagate: true, required: false }
-                {
-                    id: "europepmc"
-                    weight: 0.2
-                    propagate: true
-                    required: false
-                }
-                {
-                    id: "expression_atlas"
-                    weight: 0.2
-                    propagate: false
-                    required: false
-                }
-                { id: "impc", weight: 0.2, propagate: true, required: false }
-                {
-                    id: "ot_crispr_validation"
-                    weight: 0.5
-                    propagate: true
-                    required: false
-                }
-                {
-                    id: "ot_crispr"
-                    weight: 0.5
-                    propagate: true
-                    required: false
-                }
-                { id: "encore", weight: 0.5, propagate: true, required: false }
+                { id: "clinical_precedence", propagate: true, required: false, weight: 1 }
+                { id: "gwas_credible_sets", propagate: true, required: false, weight: 1 }
+                { id: "gene_burden", propagate: true, required: false, weight: 1 }
+                { id: "eva", propagate: true, required: false, weight: 1 }
+                { id: "genomics_england", propagate: true, required: false, weight: 1 }
+                { id: "gene2phenotype", propagate: true, required: false, weight: 1 }
+                { id: "uniprot_literature", propagate: true, required: false, weight: 1 }
+                { id: "uniprot_variants", propagate: true, required: false, weight: 1 }
+                { id: "orphanet", propagate: true, required: false, weight: 1 }
+                { id: "clingen", propagate: true, required: false, weight: 1 }
+                { id: "cancer_gene_census", propagate: true, required: false, weight: 1 }
+                { id: "intogen", propagate: true, required: false, weight: 1 }
+                { id: "eva_somatic", propagate: true, required: false, weight: 1 }
+                { id: "cancer_biomarkers", propagate: true, required: false, weight: 1 }
+                { id: "crispr_screen", propagate: true, required: false, weight: 1 }
+                { id: "crispr", propagate: true, required: false, weight: 1 }
+                { id: "reactome", propagate: true, required: false, weight: 1 }
+                { id: "europepmc", propagate: true, required: false, weight: 0.2 }
+                { id: "expression_atlas", propagate: false, required: false, weight: 0.2 }
+                { id: "impc", propagate: true, required: false, weight: 0.2 }
+                { id: "ot_crispr_validation", propagate: true, required: false, weight: 0.5 }
+                { id: "ot_crispr", propagate: true, required: false, weight: 0.5 }
+                { id: "encore", propagate: true, required: false, weight: 0.5 }
             ]
             Bs: []
             facetFilters: ["N4DS854BUCcyDrzNL72Y"]
@@ -3508,11 +3425,173 @@ query TargetAssociationsQuery {
                 }
                 score
                 datasourceScores {
-                    id
+                    componentId: id
                     score
                 }
-                datatypeScores {
+            }
+        }
+    }
+}
+
+# ---
+
+query AOTFTNew {
+    target(ensemblId: "ENSG00000105397") {
+        id
+        associatedDiseases(
+            Bs: []
+            BFilter: ""
+            facetFilters: ["N4DS854BUCcyDrzNL72Y"]
+            indirect: false
+            includeMeasurements: false
+            datasources: [
+                { id: "clinical_precedence", propagate: true, required: false, weight: 1 }
+                { id: "gwas_credible_sets", propagate: true, required: false, weight: 1 }
+                { id: "gene_burden", propagate: true, required: false, weight: 1 }
+                { id: "eva", propagate: true, required: false, weight: 1 }
+                { id: "genomics_england", propagate: true, required: false, weight: 1 }
+                { id: "gene2phenotype", propagate: true, required: false, weight: 1 }
+                { id: "uniprot_literature", propagate: true, required: false, weight: 1 }
+                { id: "uniprot_variants", propagate: true, required: false, weight: 1 }
+                { id: "orphanet", propagate: true, required: false, weight: 1 }
+                { id: "clingen", propagate: true, required: false, weight: 1 }
+                { id: "cancer_gene_census", propagate: true, required: false, weight: 1 }
+                { id: "intogen", propagate: true, required: false, weight: 1 }
+                { id: "eva_somatic", propagate: true, required: false, weight: 1 }
+                { id: "cancer_biomarkers", propagate: true, required: false, weight: 1 }
+                { id: "crispr_screen", propagate: true, required: false, weight: 1 }
+                { id: "crispr", propagate: true, required: false, weight: 1 }
+                { id: "reactome", propagate: true, required: false, weight: 1 }
+                { id: "europepmc", propagate: true, required: false, weight: 0.2 }
+                { id: "expression_atlas", propagate: false, required: false, weight: 0.2 }
+                { id: "impc", propagate: true, required: false, weight: 0.2 }
+                { id: "ot_crispr_validation", propagate: true, required: false, weight: 0.5 }
+                { id: "ot_crispr", propagate: true, required: false, weight: 0.5 }
+                { id: "encore", propagate: true, required: false, weight: 0.5 }
+            ]
+            sort: { key: "score", direction: DESCENDING }
+            page: { index: 0, size: 1 }
+        ) {
+            total
+            items {
+                novelty
+                disease {
                     id
+                    name
+                }
+                score
+                datasourceScores {
+                    componentId: id
+                    score
+                }
+            }
+        }
+    }
+}
+
+# ---
+
+query AOTFDOld {
+    disease(efoId: "MONDO_0005180") {
+        id
+        name
+        associatedTargets(
+            page: { index: 0, size: 25 }
+            sort: "score"
+            enableIndirect: true
+            datasources: [
+                { id: "clinical_precedence", propagate: true, required: false, weight: 1 }
+                { id: "gwas_credible_sets", propagate: true, required: false, weight: 1 }
+                { id: "gene_burden", propagate: true, required: false, weight: 1 }
+                { id: "eva", propagate: true, required: false, weight: 1 }
+                { id: "genomics_england", propagate: true, required: false, weight: 1 }
+                { id: "gene2phenotype", propagate: true, required: false, weight: 1 }
+                { id: "uniprot_literature", propagate: true, required: false, weight: 1 }
+                { id: "uniprot_variants", propagate: true, required: false, weight: 1 }
+                { id: "orphanet", propagate: true, required: false, weight: 1 }
+                { id: "clingen", propagate: true, required: false, weight: 1 }
+                { id: "cancer_gene_census", propagate: true, required: false, weight: 1 }
+                { id: "intogen", propagate: true, required: false, weight: 1 }
+                { id: "eva_somatic", propagate: true, required: false, weight: 1 }
+                { id: "cancer_biomarkers", propagate: true, required: false, weight: 1 }
+                { id: "crispr_screen", propagate: true, required: false, weight: 1 }
+                { id: "crispr", propagate: true, required: false, weight: 1 }
+                { id: "reactome", propagate: true, required: false, weight: 1 }
+                { id: "europepmc", propagate: true, required: false, weight: 0.2 }
+                { id: "expression_atlas", propagate: false, required: false, weight: 0.2 }
+                { id: "impc", propagate: true, required: false, weight: 0.2 }
+                { id: "ot_crispr_validation", propagate: true, required: false, weight: 0.5 }
+                { id: "ot_crispr", propagate: true, required: false, weight: 0.5 }
+                { id: "encore", propagate: true, required: false, weight: 0.5 }
+            ]
+            Bs: []
+            facetFilters: []
+            BFilter: "LRRK2"
+        ) {
+            count
+            rows {
+                novelty
+                target {
+                    id
+                }
+                score
+                datasourceScores {
+                    componentId: id
+                    score
+                }
+            }
+        }
+    }
+}
+
+# ---
+
+query AOTFDNew {
+    disease(efoId: "MONDO_0005180") {
+        id
+        name
+        associatedTargets(
+            Bs: []
+            BFilter: "LRRK2"
+            facetFilters: []
+            indirect: true
+            datasources: [
+                { id: "clinical_precedence", propagate: true, required: false, weight: 1 }
+                { id: "gwas_credible_sets", propagate: true, required: false, weight: 1 }
+                { id: "gene_burden", propagate: true, required: false, weight: 1 }
+                { id: "eva", propagate: true, required: false, weight: 1 }
+                { id: "genomics_england", propagate: true, required: false, weight: 1 }
+                { id: "gene2phenotype", propagate: true, required: false, weight: 1 }
+                { id: "uniprot_literature", propagate: true, required: false, weight: 1 }
+                { id: "uniprot_variants", propagate: true, required: false, weight: 1 }
+                { id: "orphanet", propagate: true, required: false, weight: 1 }
+                { id: "clingen", propagate: true, required: false, weight: 1 }
+                { id: "cancer_gene_census", propagate: true, required: false, weight: 1 }
+                { id: "intogen", propagate: true, required: false, weight: 1 }
+                { id: "eva_somatic", propagate: true, required: false, weight: 1 }
+                { id: "cancer_biomarkers", propagate: true, required: false, weight: 1 }
+                { id: "crispr_screen", propagate: true, required: false, weight: 1 }
+                { id: "crispr", propagate: true, required: false, weight: 1 }
+                { id: "reactome", propagate: true, required: false, weight: 1 }
+                { id: "europepmc", propagate: true, required: false, weight: 0.2 }
+                { id: "expression_atlas", propagate: false, required: false, weight: 0.2 }
+                { id: "impc", propagate: true, required: false, weight: 0.2 }
+                { id: "ot_crispr_validation", propagate: true, required: false, weight: 0.5 }
+                { id: "ot_crispr", propagate: true, required: false, weight: 0.5 }
+                { id: "encore", propagate: true, required: false, weight: 0.5 }
+            ]
+            sort: { key: "score", direction: DESCENDING }
+            page: { index: 0, size: 25 }
+        ) {
+            total
+            items {
+                novelty
+                target {
+                    id
+                }
+                score
+                datasourceScores {
+                    componentId: id
                     score
                 }
             }

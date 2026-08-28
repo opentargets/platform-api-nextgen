@@ -11,7 +11,10 @@ use serde::Deserialize;
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
-        association::{DiseaseAssociation, load_associations},
+        association::{
+            AssocArgs, AssociationSort, DatasourcePolicyInput, DiseaseAssociation,
+            load_associations,
+        },
         disease::Disease,
     },
     query::{
@@ -564,8 +567,59 @@ impl Target {
     async fn associated_diseases(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default)] page: Page,
+
+        #[graphql(
+            name = "Bs",
+            default,
+            desc = "List of disease ids to use as the second dimension for associations."
+        )]
+        bs: Vec<String>,
+
+        #[graphql(name = "BFilter", desc = "Filter to apply to the B dimension items.")]
+        b_filter: Option<String>,
+
+        #[graphql(default, desc = "List of the facet ids to filter by (using AND).")]
+        facet_filters: Vec<String>,
+
+        #[graphql(
+            default,
+            desc = "Expand the association set indirectly: for a target, include its interaction \
+                    partners."
+        )]
+        indirect: bool,
+
+        #[graphql(
+            default = false,
+            desc = "Whether to include measurements in the response. Defaults to true."
+        )]
+        include_measurements: bool,
+
+        #[graphql(
+            default,
+            desc = "List of datasource policies. If ommitted, use the default."
+        )]
+        datasources: Option<Vec<DatasourcePolicyInput>>,
+
+        #[graphql(
+            default,
+            desc = "Ordering for the associations. Can either be `score` to use the overall \
+                    association score (default), a datasource id (e.g., `impc`), or a datatype id \
+                    (e.g., `animal_model`)."
+        )]
+        sort: AssociationSort,
+
+        #[graphql(default, desc = "Pagination for the associations.")] page: Page,
     ) -> async_graphql::Result<Paged<DiseaseAssociation>> {
-        load_associations::<Disease>(ctx, &self.id, page)
+        let args = AssocArgs {
+            bs,
+            b_filter,
+            facet_filters,
+            indirect,
+            include_measurements,
+            datasources,
+            sort,
+            page,
+        };
+        load_associations::<Disease>(ctx, &self.id, args)
     }
 }

@@ -23,7 +23,9 @@ pub enum SortDirection {
 #[graphql(concrete(name = "StudySort", params(StudySortField)))]
 #[graphql(concrete(name = "HpoSort", params(HpoSortField)))]
 pub struct Sort<K: InputType> {
+    /// The field to sort by.
     pub key: K,
+    /// The direction to sort in.
     #[graphql(default)]
     pub direction: SortDirection,
 }

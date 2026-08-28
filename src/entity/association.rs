@@ -1,8 +1,8 @@
 // ---- models ----
 
-use std::{any::TypeId, marker::PhantomData};
+use std::{any::TypeId, collections::HashMap, marker::PhantomData, sync::LazyLock};
 
-use async_graphql::{ComplexObject, Context, Object, OutputType, SimpleObject};
+use async_graphql::{ComplexObject, Context, InputObject, OutputType, SimpleObject};
 use clickhouse::Row;
 use serde::Deserialize;
 
@@ -11,8 +11,129 @@ use crate::{
         disease::{Disease, load_disease},
         target::{Target, load_target},
     },
-    query::paginate::{Page, Paged},
+    query::{
+        paginate::{Page, Paged},
+        sort::SortDirection,
+    },
 };
+
+/// Defines the policy for a datasource, including its weight, propagation, and required status.
+#[derive(Clone, Copy)]
+pub struct DatasourcePolicy {
+    /// The weight of the datasource in association scoring. Range is [0.0, 1.0].
+    weight: f64,
+    /// Whether the datasource should propagate its score to the overall association.
+    propagate: bool,
+    /// Whether the datasource is required for the association to be considered valid.
+    required: bool,
+}
+
+impl Default for DatasourcePolicy {
+    /// Returns a default policy with weight 1.0, propagate true, and required false.
+    #[rustfmt::skip]
+    fn default() -> Self { Self { weight: 1.0, propagate: true, required: false } }
+}
+
+// overrides only; everything else takes Default
+#[rustfmt::skip]
+static DEFAULT_POLICY: LazyLock<HashMap<&str, DatasourcePolicy>> = LazyLock::new(|| {
+    HashMap::from([
+        ("europepmc",            DatasourcePolicy { weight: 0.2, propagate: true,  required: false }),
+        ("expression_atlas",     DatasourcePolicy { weight: 0.2, propagate: false, required: false }),
+        ("impc",                 DatasourcePolicy { weight: 0.2, propagate: true,  required: false }),
+        ("cancer_biomarkers",    DatasourcePolicy { weight: 0.5, propagate: true,  required: false }),
+        ("ot_crispr_validation", DatasourcePolicy { weight: 0.5, propagate: true,  required: false }),
+        ("ot_crispr",            DatasourcePolicy { weight: 0.5, propagate: true,  required: false }),
+        ("encore",               DatasourcePolicy { weight: 0.5, propagate: true,  required: false }),
+    ])
+});
+
+/// Server default policy for `id` (override if listed, else `Default`).
+pub fn default_policy(id: &str) -> DatasourcePolicy {
+    DEFAULT_POLICY.get(id).copied().unwrap_or_default()
+}
+
+/// Input type for `DatasourcePolicy`.
+#[derive(InputObject, Clone)]
+pub struct DatasourcePolicyInput {
+    /// The ID of the datasource.
+    id: String,
+    /// The weight of the datasource in association scoring. Range is [0.0, 1.0].
+    weight: f64,
+    /// Whether the datasource should propagate its score to the overall association.
+    propagate: bool,
+    /// Whether the datasource is required for the association to be considered valid.
+    #[graphql(default)]
+    required: bool,
+}
+
+/// Client overrides only (id → policy). Absent ids fall back to `default_policy`.
+fn resolve_policies(input: Option<&[DatasourcePolicyInput]>) -> HashMap<String, DatasourcePolicy> {
+    input
+        .into_iter()
+        .flatten()
+        .map(|s| {
+            (
+                s.id.clone(),
+                DatasourcePolicy {
+                    weight: s.weight,
+                    propagate: s.propagate,
+                    required: s.required,
+                },
+            )
+        })
+        .collect()
+}
+
+/// Effective policy for `id`: client override wins, else server default.
+fn policy_for(overrides: &HashMap<String, DatasourcePolicy>, id: &str) -> DatasourcePolicy {
+    overrides
+        .get(id)
+        .copied()
+        .unwrap_or_else(|| default_policy(id))
+}
+
+/// Sort types. Contain the sort field and direction.
+#[derive(InputObject, Clone)]
+pub struct AssociationSort {
+    /// The key to sort by. Can be either "score" to sort by overall score, a datasource or a
+    /// datatype.
+    #[graphql(default = "score")]
+    key: String,
+    /// The direction to sort in.
+    direction: SortDirection,
+}
+
+impl Default for AssociationSort {
+    fn default() -> Self {
+        Self {
+            key: "score".into(),
+            direction: SortDirection::Descending,
+        }
+    }
+}
+
+/// Arguments for association queries.
+pub struct AssocArgs {
+    /// List of disease or target ids to use as the second dimension for associations.
+    pub bs: Vec<String>,
+    /// Filter to apply to the B dimension items.
+    pub b_filter: Option<String>,
+    /// List of the facet IDs to filter by (using AND).
+    pub facet_filters: Vec<String>,
+    /// Expand the association set indirectly: for a disease, include its ontology descendants;
+    /// for a target, include its interaction partners.
+    pub indirect: bool,
+    /// Whether to include measurements in the response.
+    pub include_measurements: bool,
+    /// List of datasource policies. If ommitted, use the default.
+    pub datasources: Option<Vec<DatasourcePolicyInput>>,
+    /// Ordering for the associations. Can either be `score` to use the overall association score
+    /// (default), a datasource id (e.g., `impc`), or a datatype id (e.g., `animal_model`)."
+    pub sort: AssociationSort,
+    /// Pagination for the associations.
+    pub page: Page,
+}
 
 /// A scored component used in association scoring.
 #[derive(Debug, Clone, SimpleObject)]
@@ -137,7 +258,7 @@ async fn fetch_associations<T: OutputType + 'static>(
 pub fn load_associations<T>(
     ctx: &Context<'_>,
     fixed_id: &str,
-    _: Page,
+    args: AssocArgs,
 ) -> async_graphql::Result<Paged<Association<T>>>
 where
     T: OutputType + 'static,
