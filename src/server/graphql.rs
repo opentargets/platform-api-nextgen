@@ -33,8 +33,6 @@ pub async fn handler(
 ) -> GraphQLResponse {
     let diseases = DataLoader::new(DiseaseLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
-    let targets =
-        DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let hpos =
         DataLoader::new(HpoLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let studies =
@@ -78,7 +76,6 @@ pub struct Query(
     DiseaseQuery, // Diseases
     TargetQuery,  // Targets
     StudyQuery,   // Studies
-    TargetQuery,  // Targets
     DrugQuery,    // Drugs
 );
 

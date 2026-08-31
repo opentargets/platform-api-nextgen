@@ -5,22 +5,20 @@ use tracing::instrument;
 
 use crate::{datasource::opensearch::OpenSearch, query::paginate::Page};
 
-const FACET_ENTITIES: &[&str] = &["disease", "target"];
+const FACET_INDICES: &[&str] = &["facet_search_disease", "facet_search_target"];
 
 /// Returns the facet search indices for the given entity names.
-fn facet_indices(entity_names: Option<&[String]>) -> Vec<String> {
-    let entities = match entity_names {
-        Some(names) => names
+fn facet_indices(entity_names: Option<&[String]>) -> Vec<&'static str> {
+    match entity_names {
+        // to be able to return &str, we take those that end with entity_names
+        // that way we can return strs created at compile-time
+        Some(names) => FACET_INDICES
             .iter()
-            .map(String::as_str)
-            .filter(|n| FACET_ENTITIES.contains(n))
+            .copied()
+            .filter(|index| names.iter().any(|name| index.ends_with(name.as_str())))
             .collect(),
-        None => FACET_ENTITIES.to_vec(),
-    };
-    entities
-        .iter()
-        .map(|e| format!("facet_search_{e}"))
-        .collect()
+        None => FACET_INDICES.to_vec(),
+    }
 }
 
 // ---- models ----
@@ -204,15 +202,14 @@ impl FacetQuery {
     ) -> Result<SearchFacetsResults, async_graphql::Error> {
         let os = ctx.data::<OpenSearch>()?;
         let indices = facet_indices(entity_names.as_deref());
-        let idx: Vec<&str> = indices.iter().map(String::as_str).collect();
 
         // categories are always fetched
         let categories_body = build_categories_body();
 
-        // empty query: return only category list
+        // query empty: return only category list
         if query_string.is_empty() {
             let cats = os
-                .search(&idx, categories_body)
+                .search(&indices, categories_body)
                 .await
                 .map_err(|e| async_graphql::Error::new(e.to_string()))?;
             return Ok(SearchFacetsResults {
@@ -222,13 +219,11 @@ impl FacetQuery {
             });
         }
 
-        // hits are fetched with the query
+        // query present: fetch hits and categories concurrently
+        let hits_body = build_hits_body(&query_string, category.as_deref(), page);
         let (hits_json, cats_json) = tokio::try_join!(
-            os.search(
-                &idx,
-                build_hits_body(&query_string, category.as_deref(), page)
-            ),
-            os.search(&idx, categories_body),
+            os.search(&indices, hits_body),
+            os.search(&indices, categories_body),
         )
         .map_err(|e| async_graphql::Error::new(e.to_string()))?;
 
@@ -239,4 +234,45 @@ impl FacetQuery {
             categories: parse_categories(&cats_json),
         })
     }
+}
+
+/// Returns all entity IDs given a list of facet IDs.
+///
+/// Used to narrow down the B entity list in the associations query.
+///
+/// # Errors
+/// Returns an error if the search fails.
+pub async fn facet_entity_ids(
+    os: &OpenSearch,
+    facet_ids: &[String],
+) -> Result<Vec<String>, async_graphql::Error> {
+    if facet_ids.is_empty() {
+        return Ok(vec![]);
+    }
+    let indices = &facet_indices(None);
+    let body = json!({
+        "size": facet_ids.len(),
+        "_source": ["entityIds"],
+        "query": { "ids": { "values": facet_ids } }
+    });
+
+    let json = os
+        .search(indices, body)
+        .await
+        .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+    let mut ids: Vec<String> = json["hits"]["hits"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|h| h["_source"]["entityIds"].as_array().cloned())
+        .flatten()
+        .filter_map(|v| v.as_str().map(str::to_owned))
+        .collect();
+    ids.sort();
+    ids.dedup();
+
+    tracing::trace!("facet_entity_ids: ids={:?}", ids);
+
+    Ok(ids)
 }

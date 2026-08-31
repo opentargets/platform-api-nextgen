@@ -17,6 +17,17 @@ pub enum SortDirection {
     Descending,
 }
 
+impl SortDirection {
+    /// Returns the SQL string for this sort direction.
+    #[must_use]
+    pub fn as_sql(&self) -> &'static str {
+        match self {
+            Self::Ascending => "ASC",
+            Self::Descending => "DESC",
+        }
+    }
+}
+
 /// Sort types. Contain the sort field and direction.
 #[derive(Debug, Clone, Copy, InputObject)]
 #[graphql(concrete(name = "DiseaseSort", params(DiseaseSortField)))]
