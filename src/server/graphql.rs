@@ -81,7 +81,6 @@ pub struct Query(
     DiseaseQuery, // Diseases
     TargetQuery,  // Targets
     StudyQuery,   // Studies
-    TargetQuery,  // Targets
     DrugQuery,    // Drugs
 );
 

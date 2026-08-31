@@ -12,7 +12,8 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         association::{
-            AssocArgs, AssociationSort, DatasourcePolicyInput, TargetAssociation, load_associations,
+            AssociationArguments, AssociationSort, DatasourcePolicyOverride,
+            EntityWithAssociations, TargetAssociation, load_associations,
         },
         disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
         target::Target,
@@ -100,6 +101,28 @@ impl Disease {
             self.study_ids.append(&mut self.indirect_study_ids);
         }
         self.study_ids
+    }
+}
+
+impl EntityWithAssociations for Disease {
+    const TABLE: &'static str = "associations_otf_disease";
+    type B = Target;
+    async fn a_ids(
+        ch: &ClickHouse,
+        anchor: &str,
+        indirect: bool,
+    ) -> async_graphql::Result<Vec<String>> {
+        let mut ids = vec![anchor.to_string()];
+        if indirect {
+            let descendants = ch
+                .query("SELECT descendants FROM disease WHERE id = ?")
+                .bind(anchor)
+                .fetch_optional::<Vec<String>>()
+                .await?
+                .unwrap_or_default();
+            ids.extend(descendants);
+        }
+        Ok(ids)
     }
 }
 
@@ -306,9 +329,9 @@ impl Disease {
 
         #[graphql(
             default,
-            desc = "List of datasource policies. If ommitted, use the default."
+            desc = "Optional list of datasource policy overrides with changes to the defaults."
         )]
-        datasources: Option<Vec<DatasourcePolicyInput>>,
+        datasource_policy_overrides: Vec<DatasourcePolicyOverride>,
 
         #[graphql(
             default,
@@ -320,16 +343,20 @@ impl Disease {
 
         #[graphql(default, desc = "Pagination for the associations.")] page: Page,
     ) -> async_graphql::Result<Paged<TargetAssociation>> {
-        let args = AssocArgs {
-            bs,
-            b_filter,
-            facet_filters,
-            indirect,
-            include_measurements: false, // Only used in target to include measurements diseases
-            datasources,
-            sort,
-            page,
-        };
-        load_associations::<Target>(ctx, &self.id, args)
+        load_associations::<Disease>(
+            ctx,
+            &self.id,
+            &AssociationArguments {
+                bs,
+                b_filter,
+                facet_filters,
+                indirect,
+                include_measurements: None, // Used in target to include measurement diseases
+                datasource_policy_overrides,
+                sort,
+                page,
+            },
+        )
+        .await
     }
 }
