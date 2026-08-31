@@ -12,8 +12,8 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         association::{
-            AssocArgs, AssociationSort, DatasourcePolicyInput, DiseaseAssociation,
-            load_associations,
+            AssociationArguments, AssociationSort, DatasourcePolicyOverride, DiseaseAssociation,
+            EntityWithAssociations, load_associations,
         },
         disease::Disease,
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
@@ -103,6 +103,7 @@ pub struct DBXrefs {
 #[serde(rename_all = "camelCase")]
 pub struct Constraint {
     /// Type of constraint applied to the target.
+    #[allow(clippy::struct_field_names)]
     constraint_type: String,
     /// Expected constraint score.
     exp: Option<f64>,
@@ -447,6 +448,7 @@ pub struct Target {
     /// List of obsolete names previously used for the target gene.
     obsolete_names: Vec<LabelSource>,
     /// Target classification categories from ChEMBL.
+    #[allow(clippy::struct_field_names)]
     target_class: Vec<TargetClass>,
     /// Target Enabling Package (TEP) information.
     tep: TEP,
@@ -456,6 +458,36 @@ pub struct Target {
     transcript_ids: Vec<String>,
     /// List of transcripts associated with the target including protein and structure annotations.
     transcripts: Vec<Transcripts>,
+}
+
+#[derive(clickhouse::Row, serde::Deserialize)]
+struct InteractionRow {
+    b: String,
+}
+
+impl EntityWithAssociations for Target {
+    const TABLE: &'static str = "associations_otf_target";
+    type B = Disease;
+    async fn a_ids(
+        ch: &ClickHouse,
+        anchor: &str,
+        indirect: bool,
+    ) -> async_graphql::Result<Vec<String>> {
+        let mut ids = vec![anchor.to_string()];
+        if indirect {
+            let rows = ch
+                .query(
+                    "SELECT DISTINCT tupleElement(i, 'targetB') AS b \
+                     FROM interaction ARRAY JOIN interactions AS i \
+                     WHERE targetA = ? AND b LIKE 'ENSG%'",
+                )
+                .bind(anchor)
+                .fetch_all::<InteractionRow>()
+                .await?;
+            ids.extend(rows.into_iter().map(|r| r.b).filter(|b| b != anchor));
+        }
+        Ok(ids)
+    }
 }
 
 // ---- query utilities ----
@@ -592,15 +624,15 @@ impl Target {
 
         #[graphql(
             default = false,
-            desc = "Whether to include measurements in the response. Defaults to true."
+            desc = "Whether to include measurements in the response. Defaults to false."
         )]
         include_measurements: bool,
 
         #[graphql(
             default,
-            desc = "List of datasource policies. If ommitted, use the default."
+            desc = "Optional list of datasource policy overrides with changes to the defaults."
         )]
-        datasources: Option<Vec<DatasourcePolicyInput>>,
+        datasource_policy_overrides: Vec<DatasourcePolicyOverride>,
 
         #[graphql(
             default,
@@ -612,17 +644,21 @@ impl Target {
 
         #[graphql(default, desc = "Pagination for the associations.")] page: Page,
     ) -> async_graphql::Result<Paged<DiseaseAssociation>> {
-        let args = AssocArgs {
-            bs,
-            b_filter,
-            facet_filters,
-            indirect,
-            include_measurements,
-            datasources,
-            sort,
-            page,
-        };
-        load_associations::<Disease>(ctx, &self.id, args)
+        load_associations::<Target>(
+            ctx,
+            &self.id,
+            &AssociationArguments {
+                bs,
+                b_filter,
+                facet_filters,
+                indirect,
+                include_measurements: Some(include_measurements),
+                datasource_policy_overrides,
+                sort,
+                page,
+            },
+        )
+        .await
     }
 
     /// Mouse phenotype information linking this human target to observed phenotypes in mouse
