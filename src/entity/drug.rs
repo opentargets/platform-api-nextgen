@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    Context, Object, SimpleObject,
+    ComplexObject, Context, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -32,16 +32,25 @@ pub struct DrugLabelAndSource {
     source: String,
 }
 
+/// Core annotation for drug or clinical candidate molecules. A drug in the platform is understood
+/// as any bioactive molecule with drug-like properties included in the EMBL-EBI ChEMBL database.
+/// All ChEMBL molecules fullfilling any of the next criteria are included in the database: a)
+/// Molecules with a known indication. b) Molecules with a known mechanism of action c) ChEMBL
+/// molecules included in the DrugBank database d) Molecules that are acknowledged as chemical
+/// probes.
 #[derive(Debug, Clone, Deserialize, SimpleObject, Row)]
 #[serde(rename_all = "camelCase")]
+#[graphql(complex)]
 pub struct Drug {
+    ///
     id: String,
     name: String,
     synonyms: Vec<DrugLabelAndSource>,
     trade_names: Vec<DrugLabelAndSource>,
     #[allow(clippy::struct_field_names)]
-    drug_type: String,
+    drug_type: String, // make it enum in future
     cross_references: Vec<DrugReferences>,
+    #[graphql(skip)]
     parent_id: Option<String>,
     maximum_clinical_stage: String,
     description: Option<String>,
@@ -78,7 +87,7 @@ impl CachedLoader for DrugLoader {
     #[tracing::instrument(skip_all, level = "debug", fields(n = misses.len()))]
     async fn fetch(&self, misses: &[Self::Key]) -> Result<Vec<Self::Value>, async_graphql::Error> {
         self.ch
-            .query("SELECT ?fields FROM drugs WHERE id IN ?")
+            .query("SELECT ?fields FROM drug WHERE id IN ?")
             .bind(misses)
             .fetch_all::<Drug>()
             .await
@@ -100,6 +109,13 @@ pub async fn load_drugs(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Res
     load_ordered(ctx.data_unchecked::<DataLoader<DrugLoader>>(), ids).await
 }
 
+#[allow(clippy::missing_errors_doc)]
+pub async fn load_drug(ctx: &Context<'_>, id: &str) -> async_graphql::Result<Option<Drug>> {
+    ctx.data_unchecked::<DataLoader<DrugLoader>>()
+        .load_one(id.to_string())
+        .await
+}
+
 // ---- resolvers ----
 
 #[derive(Default)]
@@ -107,23 +123,37 @@ pub struct DrugQuery;
 
 #[Object]
 impl DrugQuery {
+    /// Retrieve multiple drugs or clinical candidates by identifiers.
     async fn drugs(
         &self,
         ctx: &Context<'_>,
-        ensembl_ids: Vec<String>,
+        #[graphql(desc = "List of Chembl IDs.")] chembl_ids: Vec<String>,
         #[graphql(default)] page: Page,
     ) -> async_graphql::Result<Paged<Drug>> {
-        let drugs = load_drugs(ctx, &ensembl_ids).await?;
+        let drugs = load_drugs(ctx, &chembl_ids).await?;
         Ok(drugs.query().paginate(page))
     }
 
     async fn drug(
         &self,
         ctx: &Context<'_>,
-        target_id: String,
+        chembl_id: String,
     ) -> async_graphql::Result<Option<Drug>> {
         ctx.data_unchecked::<DataLoader<DrugLoader>>()
-            .load_one(target_id)
+            .load_one(chembl_id)
             .await
+    }
+}
+
+#[ComplexObject]
+impl Drug {
+    /// Parent molecule for derivative compounds.
+    async fn parent_molecule(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Drug>> {
+        match &self.parent_id {
+            Some(pid) => {
+                return load_drug(ctx, pid).await;
+            }
+            None => Ok(None),
+        }
     }
 }
