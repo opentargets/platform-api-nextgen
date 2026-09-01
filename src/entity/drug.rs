@@ -1,5 +1,17 @@
+use std::sync::LazyLock;
+
 use async_graphql::SimpleObject;
+use clickhouse::Row;
+use moka::future::Cache;
 use serde::Deserialize;
+
+use crate::{
+    datasource::clickhouse::ClickHouse,
+    query::{
+        Entity,
+        cache::{CachedLoader, entity_cache},
+    },
+};
 
 // ---- models ----
 
@@ -15,7 +27,7 @@ pub struct DrugLabelAndSource {
     source: String,
 }
 
-#[derive(Debug, Clone, Deserialize, SimpleObject)]
+#[derive(Debug, Clone, Deserialize, SimpleObject, Row)]
 #[serde(rename_all = "camelCase")]
 pub struct Drug {
     id: String,
@@ -31,10 +43,42 @@ pub struct Drug {
     molblock: Option<String>,
 }
 
-// object Drug {
-//   implicit val getResult: GetResult[Drug] = GetResult(fromPositionedResult[Drug])
-//   implicit val DrugXRefImpW: OFormat[DrugReferences] = Json.format[DrugReferences]
-//   implicit val drugLabelAndSourceImpF: OFormat[DrugLabelAndSource] =
-// Json.format[DrugLabelAndSource]   implicit val drugImplicitR: Reads[Drug] = Json.reads[Drug]
-//   implicit val drugImplicitW: OWrites[Drug] = Json.writes[Drug]
-// }
+// ---- query utilities ----
+
+impl Entity for Drug {
+    fn id(&self) -> &str { &self.id }
+}
+
+// ---- loaders ----
+
+pub type DrugCache = Cache<String, Option<Drug>>;
+static DRUG_CACHE: LazyLock<DrugCache> = LazyLock::new(entity_cache);
+
+pub struct DrugLoader {
+    ch: ClickHouse,
+}
+
+impl DrugLoader {
+    #[must_use]
+    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
+}
+
+impl CachedLoader for DrugLoader {
+    type Key = String;
+    type Value = Drug;
+
+    fn cache(&self) -> &DrugCache { &DRUG_CACHE }
+    fn key_of(v: &Self::Value) -> Self::Key { v.id.clone() }
+
+    #[tracing::instrument(skip_all, level = "debug", fields(n = misses.len()))]
+    async fn fetch(&self, misses: &[Self::Key]) -> Result<Vec<Self::Value>, async_graphql::Error> {
+        self.ch
+            .query("SELECT ?fields FROM drugs WHERE id IN ?")
+            .bind(misses)
+            .fetch_all::<Drug>()
+            .await
+            .map_err(Into::into)
+    }
+}
+
+// ---- resolvers ----
