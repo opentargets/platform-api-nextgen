@@ -16,15 +16,17 @@ pub struct DrugLabelAndSource {
 }
 
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
+#[serde(rename_all = "camelCase")]
 pub struct Drug {
     id: String,
     name: String,
     synonyms: Vec<DrugLabelAndSource>,
-    tradeNames: Vec<DrugLabelAndSource>,
-    drugType: String,
-    crossReferences: Vec<DrugReferences>,
-    parentId: Option<String>,
-    maximumClinicalStage: String,
+    trade_names: Vec<DrugLabelAndSource>,
+    #[allow(clippy::struct_field_names)]
+    drug_type: String,
+    cross_references: Vec<DrugReferences>,
+    parent_id: Option<String>,
+    maximum_clinical_stage: String,
     description: Option<String>,
     molblock: Option<String>,
 }
