@@ -1,6 +1,6 @@
-use std::sync::LazyLock;
+use std::{collections::HashMap, sync::LazyLock};
 
-use async_graphql::SimpleObject;
+use async_graphql::{SimpleObject, dataloader::Loader};
 use clickhouse::Row;
 use moka::future::Cache;
 use serde::Deserialize;
@@ -78,6 +78,15 @@ impl CachedLoader for DrugLoader {
             .fetch_all::<Drug>()
             .await
             .map_err(Into::into)
+    }
+}
+
+impl Loader<String> for DrugLoader {
+    type Value = Drug;
+    type Error = async_graphql::Error;
+
+    async fn load(&self, keys: &[String]) -> Result<HashMap<String, Drug>, async_graphql::Error> {
+        self.load_cached(keys).await
     }
 }
 
