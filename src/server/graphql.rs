@@ -18,6 +18,7 @@ use crate::{
     entity::{
         disease::{DiseaseLoader, DiseaseQuery},
         disease_hpo::DiseasePhenotypeLoader,
+        drug::{DrugLoader, DrugQuery},
         hpo::HpoLoader,
         meta::{Meta, MetaQuery},
         search::SearchQuery,
@@ -47,8 +48,12 @@ pub async fn handler(
         DataLoader::new(StudyLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let phenotypes = DataLoader::new(DiseasePhenotypeLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
+
     let targets =
         DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
+
+    let drugs =
+        DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
 
     let inner = req.into_inner();
     let span = tracing::info_span!(
@@ -64,7 +69,8 @@ pub async fn handler(
                 .data(phenotypes)
                 .data(studies)
                 .data(targets)
-                .data(os),
+                .data(os)
+                .data(drugs),
         )
         .instrument(span)
         .await
@@ -79,6 +85,7 @@ pub struct Query(
     DiseaseQuery, // Diseases
     StudyQuery,   // Studies
     TargetQuery,  // Targets
+    DrugQuery,    // Drugs
 );
 
 pub type ApiSchema = Schema<Query, EmptyMutation, EmptySubscription>;
