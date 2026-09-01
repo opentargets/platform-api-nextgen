@@ -1,6 +1,9 @@
 use std::{collections::HashMap, sync::LazyLock};
 
-use async_graphql::{SimpleObject, dataloader::Loader};
+use async_graphql::{
+    Context, SimpleObject,
+    dataloader::{DataLoader, Loader},
+};
 use clickhouse::Row;
 use moka::future::Cache;
 use serde::Deserialize;
@@ -10,6 +13,7 @@ use crate::{
     query::{
         Entity,
         cache::{CachedLoader, entity_cache},
+        load_ordered,
     },
 };
 
@@ -88,6 +92,11 @@ impl Loader<String> for DrugLoader {
     async fn load(&self, keys: &[String]) -> Result<HashMap<String, Drug>, async_graphql::Error> {
         self.load_cached(keys).await
     }
+}
+
+#[allow(clippy::missing_errors_doc)]
+pub async fn load_drugs(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Result<Vec<Drug>> {
+    load_ordered(ctx.data_unchecked::<DataLoader<DrugLoader>>(), ids).await
 }
 
 // ---- resolvers ----
