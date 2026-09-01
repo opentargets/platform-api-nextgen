@@ -1,7 +1,7 @@
-use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
+use std::{collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    ComplexObject, Context, Enum, Object, SimpleObject,
+    Context, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -10,14 +10,11 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::search,
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged},
-        search::Searchable,
-        sort::{Sort, SortKey},
     },
 };
 
@@ -339,10 +336,11 @@ impl TargetQuery {
     async fn targets(
         &self,
         ctx: &Context<'_>,
-        ensemblIds: Vec<String>,
-    ) -> async_graphql::Result<Vec<Target>> {
-        let target = load_targets(ctx, &ensemblIds).await?;
-        Ok(target)
+        ensembl_ids: Vec<String>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<Target>> {
+        let targets = load_targets(ctx, &ensembl_ids).await?;
+        Ok(targets.query().paginate(page))
     }
 
     async fn target(
