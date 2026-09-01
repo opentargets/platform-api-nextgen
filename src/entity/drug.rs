@@ -150,10 +150,11 @@ impl DrugQuery {
         Ok(drugs.query().paginate(page))
     }
 
+    /// Retrieve a drug or a clinical candidate by an identifier.
     async fn drug(
         &self,
         ctx: &Context<'_>,
-        chembl_id: String,
+        #[graphql(desc = "Chembl ID")] chembl_id: String,
     ) -> async_graphql::Result<Option<Drug>> {
         ctx.data_unchecked::<DataLoader<DrugLoader>>()
             .load_one(chembl_id)
