@@ -1,7 +1,9 @@
 use async_graphql::{InputObject, OutputType, SimpleObject};
 
 use crate::{
-    entity::{disease::Disease, disease_hpo::DiseasePhenotype, hpo::Hpo, study::Study},
+    entity::{
+        disease::Disease, disease_hpo::DiseasePhenotype, hpo::Hpo, study::Study, target::Target,
+    },
     query::statistics::Statistics,
 };
 
@@ -27,6 +29,7 @@ impl Default for Page {
 #[graphql(concrete(name = "DiseasePage", params(Disease)))]
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
 #[graphql(concrete(name = "DiseasePhenotypePage", params(DiseasePhenotype)))]
+#[graphql(concrete(name = "TargetPage", params(Target)))]
 pub struct Paged<T: OutputType> {
     pub total: u64,
     pub items: Vec<T>,
