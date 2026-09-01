@@ -20,15 +20,21 @@ use crate::{
 
 // ---- models ----
 
+/// Cross-reference information for a drug molecule
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 pub struct DrugReferences {
+    /// Source database providing the cross-reference
     source: String,
+    /// List of identifiers from the source database
     ids: Vec<String>,
 }
 
+/// Drug label with source information
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 pub struct DrugLabelAndSource {
+    /// Label value (e.g., synonym, symbol)
     label: String,
+    /// Source database of the label
     source: String,
 }
 
@@ -42,18 +48,28 @@ pub struct DrugLabelAndSource {
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 pub struct Drug {
-    ///
+    /// Drug or clinical candidate molecule identifier
     id: String,
+    /// Generic name of the drug molecule
     name: String,
+    /// List of alternative names for the drug, each with its source (e.g. ChEMBL, or AACT for
+    /// names mined from clinical trials)
     synonyms: Vec<DrugLabelAndSource>,
+    /// List of brand names for the drug, each with its source
     trade_names: Vec<DrugLabelAndSource>,
+    /// Classification of the molecule's therapeutic category or chemical class (e.g. Antibody)
     #[allow(clippy::struct_field_names)]
-    drug_type: String, // make it enum in future
+    drug_type: String, // TODO: make it enum type because 11 drug types
+    /// Cross-reference information for this molecule from external databases
     cross_references: Vec<DrugReferences>,
+    /// Parent molecule for derivative compounds
     #[graphql(skip)]
     parent_id: Option<String>,
+    /// Highest clinical stage reached by the drug or clinical candidate molecule
     maximum_clinical_stage: String,
+    /// Summary of the drug's clinical development
     description: Option<String>,
+    /// Molblock TODO: explanation in plain language
     molblock: Option<String>,
 }
 
