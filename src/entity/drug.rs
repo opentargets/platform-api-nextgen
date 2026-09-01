@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    Context, SimpleObject,
+    Context, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -11,9 +11,10 @@ use serde::Deserialize;
 use crate::{
     datasource::clickhouse::ClickHouse,
     query::{
-        Entity,
+        Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
+        paginate::{Page, Paged},
     },
 };
 
@@ -100,3 +101,29 @@ pub async fn load_drugs(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Res
 }
 
 // ---- resolvers ----
+
+#[derive(Default)]
+pub struct DrugQuery;
+
+#[Object]
+impl DrugQuery {
+    async fn drugs(
+        &self,
+        ctx: &Context<'_>,
+        ensembl_ids: Vec<String>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<Drug>> {
+        let drugs = load_drugs(ctx, &ensembl_ids).await?;
+        Ok(drugs.query().paginate(page))
+    }
+
+    async fn drug(
+        &self,
+        ctx: &Context<'_>,
+        target_id: String,
+    ) -> async_graphql::Result<Option<Drug>> {
+        ctx.data_unchecked::<DataLoader<DrugLoader>>()
+            .load_one(target_id)
+            .await
+    }
+}
