@@ -4,11 +4,17 @@ import play.api.libs.json._
 import slick.jdbc.GetResult
 import utils.db.DbJsonParser.fromPositionedResult
 
-case class DrugReferences(source: String, ids: Seq[String])
+pub struct DrugReferences{
+    source: String,
+    ids: Vec<String>,
+}
 
-case class DrugLabelAndSource(label: String, source: String)
+pub struct DrugLabelAndSource{
+    label: String,
+    source: String,
+}
 
-case class Drug(
+pub struct Drug{
     id: String,
     name: String,
     synonyms: Vec<DrugLabelAndSource>,
@@ -18,8 +24,8 @@ case class Drug(
     parentId: Option<String>,
     maximumClinicalStage: String,
     description: Option<String>,
-    molblock: Option<String>
-)
+    molblock: Option<String>,
+}
 
 object Drug {
   implicit val getResult: GetResult[Drug] = GetResult(fromPositionedResult[Drug])
