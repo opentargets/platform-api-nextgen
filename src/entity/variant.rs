@@ -22,6 +22,7 @@ use crate::{
 };
 
 // ---- models ----
+/// Chromosome type.
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr)]
 #[repr(i8)]
 #[graphql(rename_items = "lowercase")]
@@ -53,68 +54,113 @@ pub enum Chromosome {
     ChrMT = 25,
 }
 
-
+/// Predicted or measured effect of the variant based on various methods.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct VariantEffect {
+    /// Method name used to predict the effect of the variant.
     method: Option<String>,
+    /// Textual assessment of the variant effect.
     assessment: Option<String>,
+    /// Score of the variant effect.
     score: Option<f64>,
+    /// Flagging if the variant effect is considered pathogenic.
     assessment_flag: Option<String>,
+    /// Target identifier on which the variant effect is interpreted [bioregistry:ensembl].
     target_id: Option<String>,
+    /// Variant effect normalised between -1 and 1.
     normalised_score: Option<f64>,
 }
 
+/// Predicted consequences on transcript context.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct TranscriptConsequence {
+    /// The sequence ontology identifier of the consequence of the variant based on Ensembl VEP in the context of the transcript [bioregistry:so].
     variant_functional_consequence_ids: Vec<String>,
+    /// Amino acid change caused by this variant on this gene.
     amino_acid_change: Option<String>,
+    /// Uniprot identifiers of the gene product [bioregistry:uniprot].
     uniprot_accessions: Vec<String>,
+    /// Flagging if the transcript is the canonical transcript for the gene.
     is_ensembl_canonical: bool,
+    /// Affected codon in the transcript.
     codons: Option<String>,
+    /// Distance of the variant from the transcript.
     distance_from_footprint: i32,
+    /// Distance of the variant from the transcription start site.
     distance_from_tss: i32,
+    /// Open Target target identifier of the transcript [bioregistry:ensembl].
     target_id: Option<String>,
+    /// Ensembl VEP predicted impact of the variant on the transcript.
     impact: Option<String>,
+    /// Ensembl transcript identifier [bioregistry:ensembl].
     transcript_id: Option<String>,
+    /// Loss-of-function prediction based on LOFTEE.
     loftee_prediction: Option<String>,
+    /// SIFT prediction of the variant impact on the transcript.
     sift_prediction: Option<f64>,
+    /// Polyphen prediction of the variant impact on the transcript.
     polyphen_prediction: Option<f64>,
+    /// Index of the transcript in the list of transcripts around the gene.
     transcript_index: u32,
+    /// Score assigned to transcript based on Ensembl VEP consequence.
     consequence_score: f64,
 }
 
+/// Cross-references for the variant in different databases.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct DbXref {
+    /// Identifier of the variant in the given database.
     id: Option<String>,
+    /// Name of the database the variant is referenced in.
     source: Option<String>,
 }
 
+/// Allele frequencies of the variant in different populations.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct AlleleFrequency {
+    /// Name of the population.
     population_name: Option<String>,
+    /// Frequency of the alternate allele in the population.
     allele_frequency: Option<f64>,
 }
 
+/// Core variant information for all variants in the Platform.
+/// Variants are included if any phenotypic information is available for the variant,
+/// including GWAS or molQTL credible sets, ClinVar, Uniprot or ClinPGx.
+/// The dataset includes variant metadata as well as variant effects derived from Ensembl VEP.
 #[allow(clippy::struct_field_names)]
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct Variant {
+    /// Unique identifier for the variant following schema: {chromosome}-{position}-{referenceAllele}-{alternateAllele}.
     variant_id: String,
+    /// Chromosome on which the variant is located.
     chromosome: Chromosome,
+    /// Variant's position on the chromosome.
     position: u32,
+    /// Reference allele for the variant.
     reference_allele: String,
+    /// Alternate allele for the variant.
     alternate_allele: String,
+    /// Predicted or measured effect of the variant based on various methods.
     variant_effect: Vec<VariantEffect>,
+    /// Sequence ontology identifier of the most severe consequence of the variant based on Ensembl VEP [bioregistry:so].
     most_severe_consequence_id: String,
+    /// Predicted consequences on transcript context.
     transcript_consequences: Vec<TranscriptConsequence>,
+    /// RsIds for the variant.
     rs_ids: Vec<String>,
+    /// Cross-references for the variant in different databases.
     db_xrefs: Vec<DbXref>,
+    /// Allele frequencies of the variant in different populations.
     allele_frequencies: Vec<AlleleFrequency>,
+    /// HGVS identifier of the variant.
     hgvs_id: Option<String>,
+    /// Short summary of the variant effect.
     variant_description: String,
 }
 
