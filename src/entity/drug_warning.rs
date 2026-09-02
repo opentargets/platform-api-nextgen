@@ -1,17 +1,32 @@
-package models.entities
+use std::{collections::HashMap, sync::LazyLock};
 
-import utils.OTLogging
-import play.api.libs.json._
-import slick.jdbc.GetResult
-import utils.db.DbJsonParser.fromPositionedResult
+use async_graphql::{
+    Context, Object, SimpleObject,
+    dataloader::{DataLoader, Loader},
+};
+use clickhouse::Row;
+use moka::future::Cache;
+use serde::Deserialize;
 
-pub struct DrugWarningReference{
+use crate::{
+    datasource::clickhouse::ClickHouse,
+    query::{
+        Entity, QueryExt,
+        cache::{CachedLoader, entity_cache},
+        load_ordered,
+        paginate::{Page, Paged},
+    },
+};
+
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
+pub struct DrugWarningReference {
     id: String,
     source: String,
-    url: String
+    url: String,
 }
 
-pub struct DrugWarning{
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
+pub struct DrugWarning {
     toxicityClass: Option<String>,
     chemblIds: Vec<String>,
     country: Option<String>,
@@ -25,17 +40,8 @@ pub struct DrugWarning{
     efoIdForWarningClass: Option<String>,
 }
 
-pub struct DrugWarnings{
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
+pub struct DrugWarnings {
     chemblId: String,
     drugWarnings: Vec<DrugWarning>,
-}
-
-object DrugWarning extends OTLogging {
-  implicit val getDrugWarningsFromDB: GetResult[DrugWarnings] =
-    GetResult(fromPositionedResult[DrugWarnings])
-  implicit val drugWarningsImpF: OFormat[DrugWarnings] = Json.format[models.entities.DrugWarnings]
-  implicit val drugWarningsReferenceImpF: OFormat[models.entities.DrugWarningReference] =
-    Json.format[models.entities.DrugWarningReference]
-  implicit val drugWarningImpF: OFormat[models.entities.DrugWarning] =
-    Json.format[models.entities.DrugWarning]
 }
