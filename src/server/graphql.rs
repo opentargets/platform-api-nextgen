@@ -62,7 +62,6 @@ pub async fn handler(
                 .data(hpos)
                 .data(phenotypes)
                 .data(studies)
-                .data(targets)
                 .data(os)
                 .data(drugs),
         )
