@@ -1,7 +1,7 @@
-use std::{collections::HashMap, sync::LazyLock};
+use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    ComplexObject, Context, Object, SimpleObject,
+    ComplexObject, Context, Enum, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -22,6 +22,8 @@ use crate::{
         cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged},
+        search::Searchable,
+        sort::SortKey,
     },
 };
 
@@ -108,6 +110,41 @@ impl EntityWithAssociations for Drug {
 
 impl Entity for Drug {
     fn id(&self) -> &str { &self.id }
+}
+
+/// Contains the fields available for sorting drugs.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
+pub enum DrugSortField {
+    Id,
+    Name,
+    DrugType,
+    MaximumClinicalStage,
+}
+
+impl SortKey<Drug> for DrugSortField {
+    fn compare(&self, a: &Drug, b: &Drug) -> Ordering {
+        match self {
+            Self::Id => a.id.cmp(&b.id),
+            Self::Name => a.name.cmp(&b.name),
+            Self::DrugType => a.drug_type.cmp(&b.drug_type),
+            Self::MaximumClinicalStage => a.drug_type.cmp(&b.maximum_clinical_stage),
+        }
+    }
+}
+
+impl Searchable for Drug {
+    fn matches_search(&self, needle: &str) -> bool {
+        self.id.to_lowercase().contains(needle)
+            || self.name.to_lowercase().contains(needle)
+            || self
+                .description
+                .as_deref()
+                .is_some_and(|d| d.to_lowercase().contains(needle))
+            || self.synonyms.iter().flat_map(|s| &s.terms).any(|t| {
+                t.as_deref()
+                    .is_some_and(|f| f.to_lowercase().contains(needle))
+            })
+    }
 }
 
 // ---- loaders ----
