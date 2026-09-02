@@ -10,6 +10,13 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::{
+        association::{
+            AssocArgs, AssociationSort, DatasourcePolicyOverride, DrugAssociation,
+            EntityWithAssociations, load_associations,
+        },
+        drug_warning::{DrugWarning, DrugWarningLoader},
+    },
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -72,6 +79,29 @@ pub struct Drug {
     /// Mol Block is a chemical structure file format that serves as a connection table,
     /// representing molecules through a list of atoms, bonds, and spatial coordinates.
     molblock: Option<String>,
+}
+
+impl EntityWithAssociations for Drug {
+    const TABLE: &'static str = "associations_otf_drug";
+    async fn indirect_ids(ch: &ClickHouse, id: &str) -> async_graphql::Result<Vec<String>> {
+        let out = ch
+            .query("select childChemblIds from drug where id = ?")
+            .bind(id)
+            .fetch_optional::<Vec<String>>()
+            .await?;
+        Ok(out.unwrap_or_default())
+    }
+    async fn a_ids(
+        ch: &ClickHouse,
+        id: &str,
+        indirect: bool,
+    ) -> async_graphql::Result<Vec<String>> {
+        let mut a_ids = vec![id.to_string()];
+        if indirect {
+            a_ids.extend(Self::indirect_ids(ch, id).await?);
+        }
+        Ok(a_ids)
+    }
 }
 
 // ---- query utilities ----
@@ -173,5 +203,24 @@ impl Drug {
             }
             None => Ok(None),
         }
+    }
+
+    /// Direct children terms in the drug ontology
+    async fn children(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Disease>> {
+        load_diseases(ctx, &self.children).await
+    }
+
+    /// Drug warnings
+    async fn drug_warnings(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<DrugWarning>> {
+        let items = ctx
+            .data_unchecked::<DataLoader<DrugWarningLoader>>()
+            .load_one(self.id.clone())
+            .await?
+            .unwrap_or_default();
+        Ok(items.query().paginate(page))
     }
 }
