@@ -550,7 +550,6 @@ impl TargetQuery {
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "Ensembl ID")] ensembl_id: String,
-        ensembl_id: String,
     ) -> async_graphql::Result<Option<Target>> {
         ctx.data_unchecked::<DataLoader<TargetLoader>>()
             .load_one(ensembl_id)
