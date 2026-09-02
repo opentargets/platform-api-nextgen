@@ -18,6 +18,8 @@ use crate::{
     },
 };
 
+// ---- models ----
+
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 pub struct DrugWarningReference {
     id: String,
@@ -58,4 +60,18 @@ pub struct DrugWarning {
 pub struct DrugWarnings {
     chembl_id: String,
     drug_warnings: Vec<DrugWarning>,
+}
+
+// ---- loaders ----
+
+pub type DrugWarningCache = Cache<String, Option<DrugWarning>>;
+static DRUG_CACHE: LazyLock<DrugWarningCache> = LazyLock::new(entity_cache);
+
+pub struct DrugWarningLoader {
+    ch: ClickHouse,
+}
+
+impl DrugWarningLoader {
+    #[must_use]
+    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
