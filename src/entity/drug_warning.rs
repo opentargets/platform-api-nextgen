@@ -26,22 +26,24 @@ pub struct DrugWarningReference {
 }
 
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
+#[serde(rename_all = "camelCase")]
 pub struct DrugWarning {
-    toxicityClass: Option<String>,
-    chemblIds: Vec<String>,
+    toxicity_class: Option<String>,
+    chembl_ids: Vec<String>,
     country: Option<String>,
     description: Option<String>,
     id: Option<i64>,
     references: Vec<DrugWarningReference>,
-    warningType: String,
+    warning_type: String,
     year: Option<i32>,
-    efoTerm: Option<String>,
-    efoId: Option<String>,
-    efoIdForWarningClass: Option<String>,
+    efo_term: Option<String>,
+    efo_id: Option<String>,
+    efo_id_for_warning_class: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
+#[serde(rename_all = "camelCase")]
 pub struct DrugWarnings {
-    chemblId: String,
-    drugWarnings: Vec<DrugWarning>,
+    chembl_id: String,
+    drug_warnings: Vec<DrugWarning>,
 }
