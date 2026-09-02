@@ -5,26 +5,30 @@ import play.api.libs.json._
 import slick.jdbc.GetResult
 import utils.db.DbJsonParser.fromPositionedResult
 
-case class DrugWarningReference(id: String, source: String, url: String)
+pub struct DrugWarningReference{
+    id: String,
+    source: String,
+    url: String
+}
 
-case class DrugWarning(
-    toxicityClass: Option[String],
-    chemblIds: Option[Seq[String]],
-    country: Option[String],
-    description: Option[String],
-    id: Option[Long],
-    references: Option[Seq[DrugWarningReference]],
+pub struct DrugWarning{
+    toxicityClass: Option<String>,
+    chemblIds: Vec<String>,
+    country: Option<String>,
+    description: Option<String>,
+    id: Option<i64>,
+    references: Vec<DrugWarningReference>,
     warningType: String,
-    year: Option[Int],
-    efoTerm: Option[String],
-    efoId: Option[String],
-    efoIdForWarningClass: Option[String]
-)
+    year: Option<i32>,
+    efoTerm: Option<String>,
+    efoId: Option<String>,
+    efoIdForWarningClass: Option<String>,
+}
 
-case class DrugWarnings(
+pub struct DrugWarnings{
     chemblId: String,
-    drugWarnings: Seq[DrugWarning]
-)
+    drugWarnings: Vec<DrugWarning>,
+}
 
 object DrugWarning extends OTLogging {
   implicit val getDrugWarningsFromDB: GetResult[DrugWarnings] =
