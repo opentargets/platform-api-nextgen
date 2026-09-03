@@ -64,7 +64,7 @@ pub struct DrugWarnings {
 
 // ---- loaders ----
 
-pub type DrugWarningCache = Cache<String, Option<DrugWarning>>;
+pub type DrugWarningCache = Cache<i64, Option<DrugWarning>>;
 static DRUG_WARNING_CACHE: LazyLock<DrugWarningCache> = LazyLock::new(entity_cache);
 
 pub struct DrugWarningLoader {
@@ -77,7 +77,7 @@ impl DrugWarningLoader {
 }
 
 impl CachedLoader for DrugWarningLoader {
-    type Key = String;
+    type Key = i64;
     type Value = DrugWarning;
 
     fn cache(&self) -> &DrugWarningCache { &DRUG_WARNING_CACHE }
@@ -94,11 +94,11 @@ impl CachedLoader for DrugWarningLoader {
     }
 }
 
-impl Loader<String> for DrugWarningLoader {
+impl Loader<i64> for DrugWarningLoader {
     type Value = DrugWarning;
     type Error = async_graphql::Error;
 
-    async fn load(&self, keys: &[String]) -> Result<HashMap<String, DrugWarning>, Self::Error> {
+    async fn load(&self, keys: &[i64]) -> Result<HashMap<i64, DrugWarning>, Self::Error> {
         self.load_cached(keys).await
     }
 }
@@ -111,7 +111,7 @@ impl Loader<String> for DrugWarningLoader {
 /// Returns an error if the DrugWarnings could not be loaded.
 pub async fn load_drug_warnings(
     ctx: &Context<'_>,
-    ids: &[String],
+    ids: &[i64],
 ) -> async_graphql::Result<Vec<DrugWarning>> {
     load_ordered(ctx.data_unchecked::<DataLoader<DrugWarningLoader>>(), ids).await
 }
