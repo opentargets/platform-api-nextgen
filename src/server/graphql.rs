@@ -66,9 +66,9 @@ pub async fn handler(
                 .data(phenotypes)
                 .data(studies)
                 .data(os)
-                .data(drugs),
-                .data(variants),
-                .data(so),
+                .data(drugs)
+                .data(variants)
+                .data(so)
         )
         .instrument(span)
         .await
