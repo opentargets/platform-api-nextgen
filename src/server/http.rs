@@ -6,9 +6,12 @@ use axum::{
     response::{Html, IntoResponse},
     routing::get,
 };
-use reqwest::header;
+use reqwest::{Method, header};
 use tokio::net::TcpListener;
-use tower_http::compression::CompressionLayer;
+use tower_http::{
+    compression::CompressionLayer,
+    cors::{Any, CorsLayer},
+};
 
 use crate::{
     AppState,
@@ -34,6 +37,11 @@ pub fn router(state: AppState, schema: ApiSchema) -> Router {
             .layer(from_fn(post_cache)),
     );
 
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_headers(Any);
+
     Router::new()
         .route("/favicon.ico", get(favicon))
         .nest(&release, api.clone()) // e.g. `/2606` for data release `26.06.1`
@@ -43,6 +51,7 @@ pub fn router(state: AppState, schema: ApiSchema) -> Router {
         .layer(Extension(state.opensearch.clone()))
         .layer(Extension(state.clickhouse.clone()))
         .layer(CompressionLayer::new().br(true))
+        .layer(cors)
         .with_state(state)
 }
 
