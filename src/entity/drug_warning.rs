@@ -28,7 +28,7 @@ pub struct DrugWarningReference {
 }
 
 /// Blackbox and withdrawn information for drugs molecules included in ChEMBL database.
-#[derive(Debug, Clone, Deserialize, SimpleObject)]
+#[derive(Debug, Clone, Deserialize, SimpleObject, Row)]
 #[serde(rename_all = "camelCase")]
 pub struct DrugWarning {
     /// Classification of toxicity type associated with the drug.
@@ -65,7 +65,7 @@ pub struct DrugWarnings {
 // ---- loaders ----
 
 pub type DrugWarningCache = Cache<String, Option<DrugWarning>>;
-static DRUG_CACHE: LazyLock<DrugWarningCache> = LazyLock::new(entity_cache);
+static DRUG_WARNING_CACHE: LazyLock<DrugWarningCache> = LazyLock::new(entity_cache);
 
 pub struct DrugWarningLoader {
     ch: ClickHouse,
@@ -74,4 +74,44 @@ pub struct DrugWarningLoader {
 impl DrugWarningLoader {
     #[must_use]
     pub fn new(ch: ClickHouse) -> Self { Self { ch } }
+}
+
+impl CachedLoader for DrugWarningLoader {
+    type Key = String;
+    type Value = DrugWarning;
+
+    fn cache(&self) -> &DrugWarningCache { &DRUG_WARNING_CACHE }
+    fn key_of(v: &Self::Value) -> Self::Key { v.id.clone() }
+
+    #[tracing::instrument(skip_all, level = "debug", fields(n = misses.len()))]
+    async fn fetch(&self, misses: &[Self::Key]) -> Result<Vec<Self::Value>, async_graphql::Error> {
+        self.ch
+            .query("SELECT ?fields FROM drug_warnings WHERE id IN ?")
+            .bind(misses)
+            .fetch_all::<DrugWarning>()
+            .await
+            .map_err(Into::into)
+    }
+}
+
+impl Loader<String> for DrugWarningLoader {
+    type Value = DrugWarning;
+    type Error = async_graphql::Error;
+
+    async fn load(&self, keys: &[String]) -> Result<HashMap<String, DrugWarning>, Self::Error> {
+        self.load_cached(keys).await
+    }
+}
+
+/// Loads DrugWarnings by their IDs from the cache or database.
+///
+/// # Returns
+/// A `Vec` of `DrugWarning` objects corresponding to the given IDs.
+/// # Errors
+/// Returns an error if the DrugWarnings could not be loaded.
+pub async fn load_drug_warnings(
+    ctx: &Context<'_>,
+    ids: &[String],
+) -> async_graphql::Result<Vec<DrugWarning>> {
+    load_ordered(ctx.data_unchecked::<DataLoader<DrugWarningLoader>>(), ids).await
 }
