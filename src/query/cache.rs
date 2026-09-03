@@ -10,6 +10,11 @@ pub fn entity_cache<V: Clone + Send + Sync + 'static>() -> Cache<String, Option<
     Cache::builder().max_capacity(CACHE_ENTITY_CAPACITY).build()
 }
 
+#[must_use]
+pub fn entity_cache_i64<V: Clone + Send + Sync + 'static>() -> Cache<i64, Option<V>> {
+    Cache::builder().max_capacity(CACHE_ENTITY_CAPACITY).build()
+}
+
 pub trait CachedLoader {
     type Key: Clone + Eq + Hash + Send + Sync + 'static;
     type Value: Clone + Send + Sync + 'static;

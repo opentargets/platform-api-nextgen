@@ -12,7 +12,7 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     query::{
         Entity, QueryExt,
-        cache::{CachedLoader, entity_cache},
+        cache::{CachedLoader, entity_cache_i64},
         load_ordered,
         paginate::{Page, Paged},
     },
@@ -65,7 +65,7 @@ pub struct DrugWarnings {
 // ---- loaders ----
 
 pub type DrugWarningCache = Cache<i64, Option<DrugWarning>>;
-static DRUG_WARNING_CACHE: LazyLock<DrugWarningCache> = LazyLock::new(entity_cache);
+static DRUG_WARNING_CACHE: LazyLock<DrugWarningCache> = LazyLock::new(entity_cache_i64);
 
 pub struct DrugWarningLoader {
     ch: ClickHouse,
