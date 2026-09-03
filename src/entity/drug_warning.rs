@@ -81,7 +81,12 @@ impl CachedLoader for DrugWarningLoader {
     type Value = DrugWarning;
 
     fn cache(&self) -> &DrugWarningCache { &DRUG_WARNING_CACHE }
-    fn key_of(v: &Self::Value) -> Self::Key { v.id.clone() }
+    // `id` is nullable in clickhouse, but rows come from `WHERE id IN ?`,
+    // which never returns a null id.
+    // if id was ever null, it's key would be 0, which matches no
+    // requested key, so the row is dropped and the key is cached as a miss.
+
+    fn key_of(v: &Self::Value) -> Self::Key { v.id.unwrap_or_default() }
 
     #[tracing::instrument(skip_all, level = "debug", fields(n = misses.len()))]
     async fn fetch(&self, misses: &[Self::Key]) -> Result<Vec<Self::Value>, async_graphql::Error> {
