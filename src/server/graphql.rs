@@ -18,6 +18,7 @@ use crate::{
         meta::{Meta, MetaQuery},
         search::SearchQuery,
         search_facet::FacetQuery,
+        sequence_ontology::SequenceOntologyTermLoader,
         study::{StudyLoader, StudyQuery},
         target::{TargetLoader, TargetQuery},
         variant::{VariantLoader, VariantQuery},
@@ -44,6 +45,8 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let variants = DataLoader::new(VariantLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
+    let so = DataLoader::new(SequenceOntologyTermLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
 
     let drugs =
         DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
@@ -65,6 +68,7 @@ pub async fn handler(
                 .data(os)
                 .data(drugs),
                 .data(variants),
+                .data(so),
         )
         .instrument(span)
         .await

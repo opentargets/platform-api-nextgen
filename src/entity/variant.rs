@@ -11,6 +11,7 @@ use serde_repr::Deserialize_repr;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::sequence_ontology::{SequenceOntologyTerm, SequenceOntologyTermLoader},
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -135,6 +136,7 @@ pub struct AlleleFrequency {
 #[allow(clippy::struct_field_names)]
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
+#[graphql(complex)]
 pub struct Variant {
     /// Unique identifier for the variant following schema: {chromosome}-{position}-{referenceAllele}-{alternateAllele}.
     variant_id: String,
@@ -148,8 +150,6 @@ pub struct Variant {
     alternate_allele: String,
     /// Predicted or measured effect of the variant based on various methods.
     variant_effect: Vec<VariantEffect>,
-    /// Sequence ontology identifier of the most severe consequence of the variant based on Ensembl VEP [bioregistry:so].
-    most_severe_consequence_id: String,
     /// Predicted consequences on transcript context.
     transcript_consequences: Vec<TranscriptConsequence>,
     /// RsIds for the variant.
@@ -162,6 +162,11 @@ pub struct Variant {
     hgvs_id: Option<String>,
     /// Short summary of the variant effect.
     variant_description: String,
+
+    // embedded fields
+    /// Sequence ontology identifier of the most severe consequence of the variant based on Ensembl VEP [bioregistry:so].
+    #[graphql(skip)]
+    most_severe_consequence_id: String,
 }
 
 // ---- query utilities ----
@@ -221,6 +226,8 @@ async fn load_variants(
     load_ordered(ctx.data_unchecked::<DataLoader<VariantLoader>>(), ids).await
 }
 
+
+
 // ---- resolvers ----
 #[derive(Default)]
 pub struct VariantQuery;
@@ -248,5 +255,17 @@ impl VariantQuery {
         ctx.data_unchecked::<DataLoader<VariantLoader>>()
             .load_one(variant_id)
             .await
+    }
+}
+
+#[ComplexObject]
+impl Variant {
+    /// The sequence ontology term of the most severe consequence of the variant based on Ensembl VEP.
+    async fn most_severe_consequence(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<SequenceOntologyTerm>> {
+        let item = ctx
+            .data_unchecked::<DataLoader<SequenceOntologyTermLoader>>()
+            .load_one(self.most_severe_consequence_id.clone().replace("_", ":"))
+            .await?;
+        Ok(item)
     }
 }
