@@ -75,3 +75,16 @@ impl Loader<String> for SequenceOntologyTermLoader {
         self.load_cached(keys).await
     }
 }
+
+pub async fn load_sequence_ontology_terms(
+    ctx: &Context<'_>,
+    ids: &[String],
+) -> async_graphql::Result<Vec<SequenceOntologyTerm>> {
+    load_ordered(ctx.data_unchecked::<DataLoader<SequenceOntologyTermLoader>>(), ids).await
+}
+
+pub async fn load_sequence_ontology_term(ctx: &Context<'_>, id: &str) -> async_graphql::Result<Option<SequenceOntologyTerm>> {
+    ctx.data_unchecked::<DataLoader<SequenceOntologyTermLoader>>()
+        .load_one(id.to_string())
+        .await
+}
