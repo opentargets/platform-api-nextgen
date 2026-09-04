@@ -6,6 +6,7 @@ use crate::{
         disease::Disease,
         disease_hpo::DiseasePhenotype,
         drug::Drug,
+        drug_warning::DrugWarning,
         hpo::Hpo,
         study::Study,
         target::Target,
@@ -36,6 +37,7 @@ impl Default for Page {
 #[graphql(concrete(name = "DiseasePhenotypePage", params(DiseasePhenotype)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
 #[graphql(concrete(name = "DrugPage", params(Drug)))]
+#[graphql(concrete(name = "DrugWarningPage", params(DrugWarning)))]
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
 #[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]

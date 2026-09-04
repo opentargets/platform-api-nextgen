@@ -4,6 +4,7 @@ pub mod association;
 pub mod disease;
 pub mod disease_hpo;
 pub mod drug;
+pub mod drug_warning;
 pub mod hpo;
 pub mod meta;
 pub mod search;

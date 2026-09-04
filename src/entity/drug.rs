@@ -1,7 +1,7 @@
-use std::{collections::HashMap, sync::LazyLock};
+use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    ComplexObject, Context, Object, SimpleObject,
+    ComplexObject, Context, Enum, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -10,11 +10,17 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::{
+        disease::{Disease, load_diseases},
+        drug_warning::{DrugWarning, load_drug_warnings},
+    },
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged},
+        search::Searchable,
+        sort::SortKey,
     },
 };
 
@@ -78,6 +84,41 @@ pub struct Drug {
 
 impl Entity for Drug {
     fn id(&self) -> &str { &self.id }
+}
+
+/// Contains the fields available for sorting drugs.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
+pub enum DrugSortField {
+    Id,
+    Name,
+    DrugType,
+    MaximumClinicalStage,
+}
+
+impl SortKey<Drug> for DrugSortField {
+    fn compare(&self, a: &Drug, b: &Drug) -> Ordering {
+        match self {
+            Self::Id => a.id.cmp(&b.id),
+            Self::Name => a.name.cmp(&b.name),
+            Self::DrugType => a.drug_type.cmp(&b.drug_type),
+            Self::MaximumClinicalStage => a.drug_type.cmp(&b.maximum_clinical_stage),
+        }
+    }
+}
+
+impl Searchable for Drug {
+    fn matches_search(&self, needle: &str) -> bool {
+        self.id.to_lowercase().contains(needle)
+            || self.name.to_lowercase().contains(needle)
+            || self
+                .description
+                .as_deref()
+                .is_some_and(|d| d.to_lowercase().contains(needle))
+            || self.synonyms.iter().flat_map(|s| &s.terms).any(|t| {
+                t.as_deref()
+                    .is_some_and(|f| f.to_lowercase().contains(needle))
+            })
+    }
 }
 
 // ---- loaders ----
@@ -173,5 +214,20 @@ impl Drug {
             }
             None => Ok(None),
         }
+    }
+
+    /// Direct children terms in the drug ontology
+    async fn children(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Disease>> {
+        load_diseases(ctx, &self.children).await
+    }
+
+    /// Drug warnings
+    async fn drug_warnings(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<DrugWarning>> {
+        let items = load_drug_warnings(ctx, &self.id).await?;
+        Ok(items.query().paginate(page))
     }
 }
