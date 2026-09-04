@@ -16,6 +16,7 @@ use crate::{
             load_associations,
         },
         disease::Disease,
+        mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
     },
     query::{
         Entity, QueryExt,
@@ -23,6 +24,7 @@ use crate::{
         load_ordered,
         paginate::{Page, Paged},
     },
+    server::graphql,
 };
 
 // ---- models ----
@@ -394,6 +396,7 @@ pub struct Transcripts {
 /// assemblies but encoding for a reviewed protein product according to the UniProt database.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
+#[graphql(complex)]
 pub struct Target {
     /// Unique identifier for the target [bioregistry:ensembl].
     id: String,
@@ -620,5 +623,16 @@ impl Target {
             page,
         };
         load_associations::<Disease>(ctx, &self.id, args)
+    }
+
+    /// Mouse phenotype information linking this human target to observed phenotypes in mouse
+    /// models. Provides data on phenotypes observed when the target gene is modified in mouse
+    /// models.
+    async fn mouse_phenotypes(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<MousePhenotype>> {
+        load_mouse_phenotype_by_target(&ctx, &self.id.clone(), page).await
     }
 }
