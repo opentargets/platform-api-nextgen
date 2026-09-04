@@ -15,6 +15,7 @@ use crate::{
             AssocArgs, AssociationSort, DatasourcePolicyOverride, DrugAssociation,
             EntityWithAssociations, load_associations,
         },
+        disease::{Disease, load_diseases},
         drug_warning::{DrugWarning, DrugWarningLoader},
     },
     query::{
