@@ -11,10 +11,7 @@ use serde::Deserialize;
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
-        association::{
-            AssocArgs, AssociationSort, DatasourcePolicyOverride, DrugAssociation,
-            EntityWithAssociations, load_associations,
-        },
+        association::{AssocArgs, AssociationSort, load_associations},
         disease::{Disease, load_diseases},
         drug_warning::{DrugWarning, load_drug_warnings},
     },
@@ -82,29 +79,6 @@ pub struct Drug {
     /// Mol Block is a chemical structure file format that serves as a connection table,
     /// representing molecules through a list of atoms, bonds, and spatial coordinates.
     molblock: Option<String>,
-}
-
-impl EntityWithAssociations for Drug {
-    const TABLE: &'static str = "associations_otf_drug";
-    async fn indirect_ids(ch: &ClickHouse, id: &str) -> async_graphql::Result<Vec<String>> {
-        let out = ch
-            .query("select childChemblIds from drug where id = ?")
-            .bind(id)
-            .fetch_optional::<Vec<String>>()
-            .await?;
-        Ok(out.unwrap_or_default())
-    }
-    async fn a_ids(
-        ch: &ClickHouse,
-        id: &str,
-        indirect: bool,
-    ) -> async_graphql::Result<Vec<String>> {
-        let mut a_ids = vec![id.to_string()];
-        if indirect {
-            a_ids.extend(Self::indirect_ids(ch, id).await?);
-        }
-        Ok(a_ids)
-    }
 }
 
 // ---- query utilities ----
