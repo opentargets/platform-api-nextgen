@@ -16,7 +16,7 @@ use crate::{
             EntityWithAssociations, load_associations,
         },
         disease::{Disease, load_diseases},
-        drug_warning::{DrugWarning, DrugWarningLoader},
+        drug_warning::{DrugWarning, load_drug_warnings},
     },
     query::{
         Entity, QueryExt,
@@ -254,11 +254,7 @@ impl Drug {
         ctx: &Context<'_>,
         #[graphql(default)] page: Page,
     ) -> async_graphql::Result<Paged<DrugWarning>> {
-        let items = ctx
-            .data_unchecked::<DataLoader<DrugWarningLoader>>()
-            .load_one(self.id.clone())
-            .await?
-            .unwrap_or_default();
+        let items = load_drug_warnings(ctx, &self.id).await?;
         Ok(items.query().paginate(page))
     }
 }
