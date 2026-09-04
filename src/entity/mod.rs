@@ -6,6 +6,7 @@ pub mod disease_hpo;
 pub mod drug;
 pub mod hpo;
 pub mod meta;
+pub mod protein_coding_coordinates;
 pub mod search;
 pub mod search_facet;
 pub mod sequence_ontology;

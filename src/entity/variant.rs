@@ -11,7 +11,7 @@ use serde_repr::Deserialize_repr;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::sequence_ontology::{SequenceOntologyTerm, SequenceOntologyTermLoader},
+    entity::{protein_coding_coordinates::{ProteinCodingCoordinates, ProteinCodingCoordinateVariantLoader}, sequence_ontology::{SequenceOntologyTerm, SequenceOntologyTermLoader}},
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -268,4 +268,18 @@ impl Variant {
             .await?;
         Ok(item)
     }
+    /// Protein coding coordinates linking this variant to its amino acid-level consequences in protein products. Describes variant consequences at the protein level including amino acid changes and their positions.
+    async fn protein_coding_coordinates(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<ProteinCodingCoordinates>> {
+        let items = ctx
+            .data_unchecked::<DataLoader<ProteinCodingCoordinateVariantLoader>>()
+            .load_one(self.variant_id.clone())
+            .await?
+            .unwrap_or_default();
+        Ok(items.query().paginate(page))
+    }
+
 }

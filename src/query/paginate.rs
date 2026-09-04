@@ -7,6 +7,7 @@ use crate::{
         disease_hpo::DiseasePhenotype,
         drug::Drug,
         hpo::Hpo,
+        protein_coding_coordinates::ProteinCodingCoordinates,
         study::Study,
         target::Target,
         variant::Variant,
@@ -39,6 +40,7 @@ impl Default for Page {
 #[graphql(concrete(name = "DrugPage", params(Drug)))]
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
 #[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
+#[graphql(concrete(name = "ProteinCodingCoordinatesPage", params(ProteinCodingCoordinates)))]
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "VariantPage", params(Variant)))]
 pub struct Paged<T: OutputType> {
