@@ -11,7 +11,6 @@ use serde::Deserialize;
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
-        association::{AssocArgs, AssociationSort, load_associations},
         disease::{Disease, load_diseases},
         drug_warning::{DrugWarning, load_drug_warnings},
     },
