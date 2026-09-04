@@ -10,6 +10,7 @@ pub mod gene_ontology;
 pub mod hpo;
 pub mod meta;
 pub mod mouse_phenotype;
+pub mod protein_coding_coordinates;
 pub mod search;
 pub mod search_facet;
 pub mod sequence_ontology;

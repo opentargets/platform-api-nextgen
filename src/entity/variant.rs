@@ -1,4 +1,4 @@
-use std::{char::CharTryFromError, cmp::Ordering, collections::HashMap, sync::LazyLock};
+use std::{collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
     ComplexObject, Context, Enum, Object, SimpleObject,
@@ -11,7 +11,7 @@ use serde_repr::Deserialize_repr;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::sequence_ontology::{SequenceOntologyTerm, SequenceOntologyTermLoader},
+    entity::{protein_coding_coordinates::{ProteinCodingCoordinates, ProteinCodingCoordinateVariantLoader}, sequence_ontology::{SequenceOntology, load_sequence_ontology_one}},
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -219,14 +219,18 @@ impl Loader<String> for VariantLoader {
     }
 }
 
-async fn load_variants(
+pub async fn load_variants(
     ctx: &Context<'_>,
     ids: &[String],
 ) -> async_graphql::Result<Vec<Variant>> {
     load_ordered(ctx.data_unchecked::<DataLoader<VariantLoader>>(), ids).await
 }
 
-
+pub async fn load_variant(ctx: &Context<'_>, id: &str) -> async_graphql::Result<Option<Variant>> {
+    ctx.data_unchecked::<DataLoader<VariantLoader>>()
+        .load_one(id.to_string())
+        .await
+}
 
 // ---- resolvers ----
 #[derive(Default)]
@@ -252,20 +256,28 @@ impl VariantQuery {
         ctx: &Context<'_>,
         variant_id: String,
     ) -> async_graphql::Result<Option<Variant>> {
-        ctx.data_unchecked::<DataLoader<VariantLoader>>()
-            .load_one(variant_id)
-            .await
+        load_variant(ctx, &variant_id).await
     }
 }
 
 #[ComplexObject]
 impl Variant {
     /// The sequence ontology term of the most severe consequence of the variant based on Ensembl VEP.
-    async fn most_severe_consequence(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<SequenceOntologyTerm>> {
-        let item = ctx
-            .data_unchecked::<DataLoader<SequenceOntologyTermLoader>>()
-            .load_one(self.most_severe_consequence_id.clone().replace("_", ":"))
-            .await?;
-        Ok(item)
+    async fn most_severe_consequence(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<SequenceOntology>> {
+        load_sequence_ontology_one(ctx, self.most_severe_consequence_id.clone().replace("_", ":")).await
     }
+    /// Protein coding coordinates linking this variant to its amino acid-level consequences in protein products. Describes variant consequences at the protein level including amino acid changes and their positions.
+    async fn protein_coding_coordinates(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<ProteinCodingCoordinates>> {
+        let items = ctx
+            .data_unchecked::<DataLoader<ProteinCodingCoordinateVariantLoader>>()
+            .load_one(self.variant_id.clone())
+            .await?
+            .unwrap_or_default();
+        Ok(items.query().paginate(page))
+    }
+
 }

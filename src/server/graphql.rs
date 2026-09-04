@@ -20,6 +20,7 @@ use crate::{
         hpo::HpoLoader,
         meta::{Meta, MetaQuery},
         mouse_phenotype::MousePhenotypeLoader,
+        protein_coding_coordinates::ProteinCodingCoordinateVariantLoader,
         search::SearchQuery,
         search_facet::FacetQuery,
         sequence_ontology::SequenceOntologyLoader,
@@ -58,6 +59,8 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let targets =
         DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
+    let protein_coding_coordinates = DataLoader::new(ProteinCodingCoordinateVariantLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
     let variants = DataLoader::new(VariantLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
 
@@ -79,10 +82,11 @@ pub async fn handler(
                 .data(hpos)
                 .data(os)
                 .data(phenotypes)
+                .data(protein_coding_coordinates)
                 .data(sequence_ontology)
                 .data(studies)
                 .data(targets)
-                .data(variants),
+                .data(variants)
         )
         .instrument(span)
         .await

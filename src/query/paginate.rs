@@ -10,6 +10,7 @@ use crate::{
         evidence::Evidence,
         hpo::Hpo,
         mouse_phenotype::MousePhenotype,
+        protein_coding_coordinates::ProteinCodingCoordinates,
         study::Study,
         target::Target,
         variant::Variant,
@@ -44,6 +45,7 @@ impl Default for Page {
 #[graphql(concrete(name = "EvidencePage", params(Evidence)))]
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
 #[graphql(concrete(name = "MousePhenotypePage", params(MousePhenotype)))]
+#[graphql(concrete(name = "ProteinCodingCoordinatesPage", params(ProteinCodingCoordinates)))]
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
 #[graphql(concrete(name = "VariantPage", params(Variant)))]
