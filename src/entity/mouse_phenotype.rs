@@ -1,20 +1,16 @@
-use std::{collections::HashMap, sync::LazyLock};
+use std::collections::HashMap;
 
 use async_graphql::{
-    Context, Object, SimpleObject,
+    Context, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
-use moka::future::Cache;
 use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::hpo::HpoCache,
     query::{
-        Entity, QueryExt,
-        cache::{CachedLoader, entity_cache},
-        load_ordered,
+        QueryExt,
         paginate::{Page, Paged},
     },
 };
