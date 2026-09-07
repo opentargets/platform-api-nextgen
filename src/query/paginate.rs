@@ -3,6 +3,7 @@ use async_graphql::{InputObject, OutputType, SimpleObject};
 use crate::{
     entity::{
         association::{DiseaseAssociation, TargetAssociation},
+        baseline_expression::BaselineExpression,
         disease::Disease,
         disease_hpo::DiseasePhenotype,
         drug::Drug,
@@ -45,6 +46,7 @@ impl Default for Page {
 #[graphql(concrete(name = "MousePhenotypePage", params(MousePhenotype)))]
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
+#[graphql(concrete(name = "BaselineExpressionPage", params(BaselineExpression)))]
 pub struct Paged<T: OutputType> {
     pub count: u64,
     pub rows: Vec<T>,
