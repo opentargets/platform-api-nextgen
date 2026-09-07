@@ -19,13 +19,17 @@ use crate::{
     },
 };
 
-// ---- helpers ----
+// ---- constants ----
 
 /// Precomputed harmonic series constant for scoring. See Basel Problem.
 /// Note: this was `1.644_924_066_898_242_3` in the old Scala API, because the approximation method
 /// was not precise enough. This makes the scores differ in their 5th decimal.
 // const MAX_HS: f64 = 1.644_924_066_898_242_3;
 const MAX_HS: f64 = PI * PI / 6.0;
+/// The weight of indirect associations.
+const INDIRECT_WEIGHT: f64 = 0.5;
+
+// ---- helpers ----
 
 /// Escape for a single-quoted ClickHouse literal.
 fn esc(s: &str) -> String { s.replace('\\', "\\\\").replace('\'', "\\'") }
@@ -41,8 +45,11 @@ fn quoted_set<S: AsRef<str>>(items: &[S]) -> String {
 
 // ---- models ----
 
+// ** The `Datasource` enum **
+// * Contains the data sources for evidences.
+
 /// Represents a datasource for association scoring.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Enum, EnumIter, IntoStaticStr)]
+#[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq, Hash, Enum, EnumIter, IntoStaticStr)]
 #[strum(serialize_all = "snake_case")]
 enum Datasource {
     /// Clinical evidence linking a target/disease via a drug that targets the gene product and is
@@ -137,33 +144,34 @@ impl AsRef<str> for Datasource {
     fn as_ref(&self) -> &str { (*self).into() }
 }
 
-// *************************************************************************************************
-// query arguemnts models
+// ** The `DatasourcePolicy` models **
+// * Represent the query settings for every Datasource
 
 /// Represents the policy for a datasource.
 #[derive(Debug, InputObject, Clone, Copy)]
 struct DatasourcePolicy {
     /// The weight of the datasource in association scoring. Range is [0.0, 1.0].
     weight: f64,
-    /// Whether the datasource should propagate its score to the overall association.
-    propagate: bool,
     /// Whether the datasource is required for the association to be considered valid.
     required: bool,
 }
 
 impl Default for DatasourcePolicy {
     #[rustfmt::skip]
-    fn default() -> Self { Self { weight: 1.0, propagate: true, required: false } }
+    fn default() -> Self { Self { weight: 1.0, required: false } }
 }
 
 impl Datasource {
-    #[rustfmt::skip]
+    /// Returns the default policy for the datasource.
     fn default_policy(self) -> DatasourcePolicy {
         let d = DatasourcePolicy::default();
         match self {
-            Self::CancerBiomarkers | Self::OtCrisprValidation | Self::OtCrispr | Self::Encore => { DatasourcePolicy { weight: 0.5, ..d } }
-            Self::Europepmc | Self::Impc => DatasourcePolicy { weight: 0.2, ..d },
-            Self::ExpressionAtlas => DatasourcePolicy { weight: 0.2, propagate: false, ..d },
+            Self::CancerBiomarkers | Self::OtCrisprValidation | Self::OtCrispr | Self::Encore => {
+                DatasourcePolicy { weight: 0.5, ..d }
+            }
+            Self::Europepmc | Self::ExpressionAtlas | Self::Impc => {
+                DatasourcePolicy { weight: 0.2, ..d }
+            }
             _ => d,
         }
     }
@@ -178,23 +186,58 @@ pub struct DatasourcePolicyOverride {
     policy: DatasourcePolicy,
 }
 
-/// Sort types. Contain the sort field and direction.
-#[derive(Debug, InputObject)]
-pub struct AssociationSort {
-    /// The key to sort by. Can either be `score` to use the overall association score (default), a
-    /// datasource id (e.g., `impc`), or a datatype id (e.g., `animal_model`).
-    #[graphql(default = "score")]
-    key: String,
-    /// The direction to sort in.
-    direction: SortDirection,
+/// A list of tuples `Datasource`, `DatasourcePolicy` to use in a query.
+struct DatasourcePolicies(Vec<(Datasource, DatasourcePolicy)>);
+
+impl DatasourcePolicies {
+    /// Creates a `DatasourcePolicies` from a list of `DatasourcePolicyOverride`s.
+    fn from_overrides(overrides: &[DatasourcePolicyOverride]) -> Self {
+        Datasource::iter()
+            .map(|ds| {
+                let p = overrides
+                    .iter()
+                    .find(|o| o.id == ds)
+                    .map_or_else(|| ds.default_policy(), |o| o.policy);
+                (ds, p)
+            })
+            .collect()
+    }
+
+    // Render methods: Helpers to put this into a SQL query.
+
+    /// Returns the Datasources as a string of the form `ds1, ds2, ...`.
+    fn render_datasources(&self) -> String {
+        self.0
+            .iter()
+            .map(|(ds, _)| format!("'{}'", esc((*ds).into())))
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
+    /// Returns Datasource weights into a string of the form `weight1, weight2, ...`.
+    fn render_weights(&self) -> String {
+        self.0
+            .iter()
+            .map(|(_, p)| format!("{:?}", p.weight))
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
+    /// Return datasource requirement policies as a string of the form `required1, required2, ...`.
+    fn render_requirements(&self) -> String {
+        self.0
+            .iter()
+            .filter(|(_, p)| p.required)
+            .map(|(ds, _)| format!("'{}'", esc((*ds).into())))
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
 }
 
-impl Default for AssociationSort {
-    fn default() -> Self {
-        Self {
-            key: "score".into(),
-            direction: SortDirection::Descending,
-        }
+impl FromIterator<(Datasource, DatasourcePolicy)> for DatasourcePolicies {
+    /// Creates a `DatasourcePolicies` from an iterator of `(Datasource, DatasourcePolicy)` pairs.
+    fn from_iter<T: IntoIterator<Item = (Datasource, DatasourcePolicy)>>(iter: T) -> Self {
+        DatasourcePolicies(iter.into_iter().collect())
     }
 }
 
@@ -217,11 +260,7 @@ pub struct AssociationArguments {
     pub b_filter: Option<String>,
     /// List of the facet IDs to filter the B dimension items by.
     pub facet_filters: Vec<String>,
-    /// Expand the association set indirectly: for a disease, include its ontology descendants;
-    /// for a target, include its interaction partners.
-    pub indirect: bool,
-    /// Whether to include diseases from the _measurement_ ontological family in B set. Default is
-    /// `false`.
+    /// Whether to include diseases from the _measurement_ family in `B` set. Default is `false`.
     pub include_measurements: Option<bool>,
     /// List of datasource policy overrides.
     pub datasource_policy_overrides: Vec<DatasourcePolicyOverride>,
@@ -231,46 +270,59 @@ pub struct AssociationArguments {
     pub page: Page,
 }
 
-// *************************************************************************************************
-// results models
+// ** Other query argument models **
+// * Represent other query settings exposed on GraphQL.
 
-/// A ClickHouse row representing an association, result from the AOTF query.
-#[derive(Row, Deserialize)]
-struct AssociationRow {
-    #[serde(rename = "B")]
-    id: String,
-    score: f64,
-    score_datatypes: Vec<(String, f64)>,
-    score_datasources: Vec<(String, f64)>,
-    novelty: Option<f64>,
-    count: u64,
+/// Sort types. Contain the sort field and direction.
+#[derive(Debug, Clone, InputObject)]
+pub struct AssociationSort {
+    /// The key to sort by. Can either be `score` to use the overall association score (default) or
+    /// a datasource id (e.g., `impc`).
+    #[graphql(default = "score")]
+    key: String,
+    /// The direction to sort in.
+    direction: SortDirection,
 }
 
-impl AssociationRow {
-    #[instrument(skip_all, level = "trace", fields(id = %self.id, score = %self.score))]
-    fn into_assoc<T: OutputType + 'static>(self) -> Association<T> {
-        let map = |v: Vec<(String, f64)>| {
-            v.into_iter()
-                .map(|(id, score)| ScoredComponent { id, score })
-                .collect()
-        };
-        Association {
-            id: self.id,
-            score: self.score,
-            datatype_scores: map(self.score_datatypes),
-            datasource_scores: map(self.score_datasources),
-            novelty: self.novelty,
-            _marker: PhantomData,
+impl Default for AssociationSort {
+    fn default() -> Self {
+        Self {
+            key: "score".into(),
+            direction: SortDirection::Descending,
         }
     }
 }
 
-/// A scored component used in association scoring.
+impl AssociationSort {
+    fn render_sort_by(&self) -> String {
+        match self.key.as_str() {
+            "score" => "score".into(),
+            "novelty" => "novelty".into(),
+            _ => "score_indexed".into(),
+        }
+    }
+    fn render_sort_datasource(&self) -> &'static str {
+        Datasource::iter()
+            .find(|d| <&str>::from(*d) == self.key)
+            .map_or_default(<&str>::from)
+    }
+    fn render_direction(&self) -> &'static str {
+        match self.direction {
+            SortDirection::Ascending => "ASC",
+            SortDirection::Descending => "DESC",
+        }
+    }
+}
+
+// ** The results models **
+// * Represent the results of association queries.
+
+/// A score for a datasource, used in association scoring.
 #[derive(Debug, Clone, SimpleObject)]
-pub struct ScoredComponent {
-    /// Component identifier (e.g., datatype or datasource name).
+pub struct Score {
+    /// Identifier of the Datasource (e.g., `impc`, `chembl`).
     id: String,
-    /// Association score for the component. Scores are normalized to a range of 0-1. The higher
+    /// Association score for the Datasource. Scores are normalized to a range of 0-1. The higher
     /// the score, the stronger the association.
     score: f64,
 }
@@ -286,11 +338,8 @@ pub struct Association<T: OutputType + 'static> {
     /// Overall association score aggregated across all evidence types. A higher score indicates a
     /// stronger association between target and disease. Scores are normalized to a range of 0-1.
     score: f64,
-    /// Association scores computed for every datatype (e.g., Genetic associations, Somatic,
-    /// Literature).
-    datatype_scores: Vec<ScoredComponent>,
     /// Association scores computed for every datasource (e.g., IMPC, ChEMBL, Gene2Phenotype).
-    datasource_scores: Vec<ScoredComponent>,
+    datasource_scores: Vec<Score>,
     /// A measure of how novel the target–disease association is, calculated based on the
     /// accumulation of direct evidence over time.
     novelty: Option<f64>,
@@ -299,23 +348,46 @@ pub struct Association<T: OutputType + 'static> {
     _marker: PhantomData<T>,
 }
 
+// The concrete association types
+/// Represents a scored association between a `Disease` and a `Target`.
 pub type DiseaseAssociation = Association<Disease>;
+/// Represents a scored association between a `Target` and a `Disease`.
 pub type TargetAssociation = Association<Target>;
 
-// *************************************************************************************************
-// sql query related models
-
-/// Contains the strings and other data needed to build an associations sql query.
-pub struct AotfSql<'a> {
-    table: &'static str,
-    a_ids: Vec<String>,
-    b_ids: Vec<String>,
-    b_filter: Vec<String>,
-    args: &'a AssociationArguments,
-    weights: String,
-    non_propagated: Vec<Datasource>,
-    required: Vec<Datasource>,
+/// A ClickHouse row representing an association, result from the AOTF query.
+///
+/// Internal, not exposed on GraphQL.
+#[derive(Row, Deserialize)]
+struct AssociationRow {
+    #[serde(rename = "B")]
+    id: String,
+    score: f64,
+    datasource_scores: Vec<(String, f64)>,
+    novelty: Option<f64>,
+    total: u64,
 }
+
+impl AssociationRow {
+    #[instrument(skip_all, level = "trace", fields(id = %self.id, score = %self.score))]
+    // Converts an internal `AssociationRow` into a `Association`.
+    fn into_association<T: OutputType + 'static>(self) -> Association<T> {
+        let map = |v: Vec<(String, f64)>| {
+            v.into_iter()
+                .map(|(id, score)| Score { id, score })
+                .collect()
+        };
+        Association {
+            id: self.id,
+            score: self.score,
+            datasource_scores: map(self.datasource_scores),
+            novelty: self.novelty,
+            _marker: PhantomData,
+        }
+    }
+}
+
+// ** The SQL query models.
+// * Represent an association query and all of the required data and traits needed for them.
 
 /// A trait for entities that have associations.
 pub trait EntityWithAssociations {
@@ -325,11 +397,101 @@ pub trait EntityWithAssociations {
     type B: OutputType + 'static;
     /// Generate the ID set to use this entity as A in an association query.
     #[allow(async_fn_in_trait)]
-    async fn a_ids(
-        ch: &ClickHouse,
-        anchor: &str,
-        indirect: bool,
-    ) -> async_graphql::Result<Vec<String>>;
+    async fn a_ids(ch: &ClickHouse, anchor: &str) -> async_graphql::Result<Vec<String>>;
+}
+
+/// Contains the strings and other data needed to build an associations sql query.
+pub struct AotfSql {
+    table: &'static str,
+    anchor: String,
+    a_ids: Vec<String>,
+    b_ids: Vec<String>,
+    b_filter: Option<String>,
+    policies: DatasourcePolicies,
+    include_measurements: Option<bool>,
+    sort: AssociationSort,
+    page: Page,
+}
+
+impl AotfSql {
+    /// Returns the WHERE clause for the association query.
+    ///
+    /// This is what compiles the set of association rows that will make it to the score calculation
+    /// for each `Datasource` in the query.
+    fn render_where(&self) -> String {
+        let a_set = quoted_set(
+            &std::iter::once(self.anchor.as_str())
+                .chain(self.a_ids.iter().map(String::as_str))
+                .collect::<Vec<_>>(),
+        );
+
+        // `anchor` term: keep the row if its `A` is in our `a_set`.
+        let mut conj = vec![format!("A IN ({a_set})")];
+
+        // `b_filter` term: match the rolled-up bucket's name, not the raw row's.
+        if let Some(filter) = &self.b_filter {
+            let terms: Vec<String> = filter
+                .split_whitespace()
+                .map(str::to_lowercase)
+                .map(|t| format!("lower(name) LIKE '%{}%'", esc(&t)))
+                .collect();
+            if !terms.is_empty() {
+                conj.push(format!(
+                    "b_indirect IN (SELECT id FROM disease WHERE {})",
+                    terms.join(" AND ")
+                ));
+            }
+        }
+
+        // `b_ids` term: keep the row if its `b_indirect` is in our `b_ids` set.
+        if !self.b_ids.is_empty() {
+            conj.push(format!("b_indirect IN ({})", quoted_set(&self.b_ids)));
+        }
+
+        // `include_measurements` term: keep the row unless it is a measurement and the policy is
+        // explicitly set to `false`.
+        if self.include_measurements == Some(false) {
+            conj.push("isMeasurement = false".into());
+        }
+
+        // Join it all with AND, so all conditions must be met for the row to be included.
+        conj.join(" AND ")
+    }
+
+    /// Returns the HAVING clause for the association query.
+    ///
+    /// This clause filters the results to only include rows that have evidence from at least one
+    /// required datasource.
+    fn render_having(&self) -> String {
+        let requirements = &self.policies.render_requirements();
+        if requirements.is_empty() {
+            return String::new();
+        }
+        // groupArray(datasourceId) at `GROUP BY B` = every datasource the bucket
+        // holds post-roll-up. hasAny = "has ≥1 of required" (matches old `IN`).
+        format!("HAVING hasAny(groupArray(datasourceId), [{requirements}])")
+    }
+
+    #[must_use]
+    fn build_query(&self) -> String {
+        format!(
+            include_str!("associations.sql"),
+            max_hs = MAX_HS,
+            indirect_w = INDIRECT_WEIGHT,
+            novelty = "noveltyDirect",
+            a_id = self.anchor,
+            table = self.table,
+            datasources = self.policies.render_datasources(),
+            weights = self.policies.render_weights(),
+            _where = self.render_where(),
+            _having = self.render_having(),
+            sort_by = self.sort.render_sort_by(),
+            sort_datasource = self.sort.render_sort_datasource(),
+            sort_direction = self.sort.render_direction(),
+            offset = self.page.index * self.page.size,
+            size = self.page.size,
+        )
+    }
 }
 
 // ---- loaders ----
@@ -356,9 +518,10 @@ async fn prepare_b_ids(
     }
 }
 
-/// Loads disease-target associations
+/// Loads disease-target associations.
+///
 /// # Returns
-/// A [`Paged`] with the [`Assocation`] entities.
+/// A [`Paged`] with the [`Association`] entities.
 /// # Errors
 /// Returns an [`async_graphql::Error`] if the database query fails.
 #[instrument(skip_all, level = "trace", fields(anchor = %anchor))]
@@ -378,8 +541,8 @@ where
     let ch = ctx.data_unchecked::<ClickHouse>();
     let os = ctx.data_unchecked::<OpenSearch>();
 
-    let a_ids = A::a_ids(ch, anchor, args.indirect).await?;
-    tracing::trace!("propagated to {} ids", a_ids.len());
+    let a_ids = A::a_ids(ch, anchor).await?;
+    tracing::trace!("found {} indirect ids", a_ids.len());
     let b_ids = prepare_b_ids(os, args).await?;
     if !args.facet_filters.is_empty() && b_ids.is_empty() {
         return Ok(Paged {
@@ -388,207 +551,29 @@ where
         });
     }
 
-    let sql = AotfSql::new(A::TABLE, a_ids, b_ids, args);
+    let sql = AotfSql {
+        table: A::TABLE,
+        anchor: anchor.to_string(),
+        a_ids,
+        b_ids,
+        b_filter: args.b_filter.clone(),
+        policies: DatasourcePolicies::from_overrides(&args.datasource_policy_overrides),
+        include_measurements: args.include_measurements,
+        sort: args.sort.clone(),
+        page: args.page,
+    };
+
     let rows_sql = sql.build_query();
     tracing::trace!("{rows_sql:}");
 
     let rows = ch.query(&rows_sql).fetch_all::<AssociationRow>().await?;
-    let total = if rows.is_empty() { 0 } else { rows[0].count };
+    let total = if rows.is_empty() { 0 } else { rows[0].total };
     let items = rows
         .into_iter()
-        .map(AssociationRow::into_assoc::<A::B>)
+        .map(AssociationRow::into_association::<A::B>)
         .collect();
 
     Ok(Paged { total, items })
-}
-
-// ---- query builder ----
-
-impl<'a> AotfSql<'a> {
-    /// Returns the anchor ID of the association.
-    fn anchor(&self) -> &str { &self.a_ids[0] }
-
-    /// Constructs a new `AotfSql` instance with the given parameters.
-    fn new(
-        table: &'static str,
-        a_ids: Vec<String>,
-        b_ids: Vec<String>,
-        args: &'a AssociationArguments,
-    ) -> Self {
-        let policies: Vec<(Datasource, DatasourcePolicy)> = Datasource::iter()
-            .map(|ds| {
-                let p = args
-                    .datasource_policy_overrides
-                    .iter()
-                    .find(|o| o.id == ds)
-                    .map_or_else(|| ds.default_policy(), |o| o.policy);
-                (ds, p)
-            })
-            .collect();
-
-        let b_filter = args
-            .b_filter
-            .as_deref()
-            .unwrap_or_default()
-            .split_whitespace()
-            .map(str::to_lowercase)
-            .map(|t| esc(&t))
-            .collect();
-
-        let weights = policies
-            .iter()
-            .map(|(ds, p)| format!("('{}', {:?})", esc((*ds).into()), p.weight))
-            .collect::<Vec<_>>()
-            .join(", ");
-
-        let non_propagated = policies
-            .iter()
-            .filter(|(_, p)| !p.propagate)
-            .map(|(ds, _)| *ds)
-            .collect();
-
-        let required = policies
-            .iter()
-            .filter(|(_, p)| p.required)
-            .map(|(ds, _)| *ds)
-            .collect();
-
-        Self {
-            table,
-            a_ids,
-            b_ids,
-            b_filter,
-            args,
-            weights,
-            non_propagated,
-            required,
-        }
-    }
-
-    /// Returns the WHERE clause for the association query.
-    ///
-    /// This is what compiles the set of association rows that will make it to the score calculation
-    /// for each `Datasource` in the query.
-    fn prewhere(&self) -> String {
-        let mut conj = Vec::new();
-
-        // `anchor` term: keep the row if its `A` is in our `a_ids` set.
-        conj.push(if self.non_propagated.is_empty() {
-            format!("A IN ({})", quoted_set(&self.a_ids))
-        // `non_propagated` sources present: keep the row if `A` is the anchor, or `A` is in
-        // `a_ids` and the `datasourceId` is not in the `non_propagated` set of `Datasources`.
-        } else {
-            format!(
-                "((A IN ({}) AND datasourceId NOT IN ({})) OR A = '{}')",
-                quoted_set(&self.a_ids),
-                quoted_set(&self.non_propagated),
-                self.anchor(),
-            )
-        });
-
-        // `b_filter`: separate `LIKE` clauses. Keep the row if _all match_.
-        conj.extend(
-            self.b_filter
-                .iter()
-                .map(|f| format!("searchB LIKE lower('%{f}%')")),
-        );
-
-        // `b_ids`: keep the row if its `B` is in our `b_ids` set.
-        if !self.b_ids.is_empty() {
-            conj.push(format!("B IN ({})", quoted_set(&self.b_ids)));
-        }
-
-        // `include_measurements`: keep the row unless it is a measurement and the policy is
-        // explicitly set to `false`.
-        if self.args.include_measurements == Some(false) {
-            conj.push("isMeasurement = false".into());
-        }
-
-        // `required`: keep the row if its `B` appears in some row whose `A` is in `a_ids` and whose
-        // `datasourceId` is in the `required` set. Gates B, doesn't filter scoring rows.
-        if !self.required.is_empty() {
-            let anchor = if self.non_propagated.is_empty() {
-                format!("A IN ({})", quoted_set(&self.a_ids))
-            } else {
-                format!(
-                    "((A IN ({}) AND datasourceId NOT IN ({})) OR A = '{}')",
-                    quoted_set(&self.a_ids),
-                    quoted_set(&self.non_propagated),
-                    self.anchor(),
-                )
-            };
-            conj.push(format!(
-                "B IN (SELECT B FROM {} PREWHERE {anchor} AND datasourceId IN ({}))",
-                self.table,
-                quoted_set(&self.required),
-            ));
-        }
-
-        // Join it all with AND, so all conditions must be met for the row to be included.
-        conj.join(" AND ")
-    }
-
-    #[must_use]
-    fn build_query(&self) -> String {
-        format!("
-WITH
-    {max_hs} AS max_hs_score,
-    arrayReverseSort(x -> x.2, groupArray((score_datasource / max_hs_score, (score_datasource * datasource_weight) / max_hs_score, datasourceId, datatypeId))) AS scores_vector,
-    arrayMap((i, j) -> (i.1, i.2 / pow(j, 2), i.3, i.4), scores_vector, arrayEnumerate(scores_vector)) AS datasource_scores,
-    arrayMap(x -> (x.3, x.1), datasource_scores) AS score_datasources,
-    arrayMap(x -> (x.4, x.1), datasource_scores) AS score_dt,
-    groupUniqArray(datatypeId) AS datatypes_v,
-    arrayMap(x -> (x, arrayReverseSort(arrayMap(b -> b.2, arrayFilter(a -> a.1 = x, score_dt)))), datatypes_v) AS mapped_dts,
-    arrayMap(x -> (x.1, arraySum((i, j) -> i / pow(j, 2), x.2, arrayEnumerate(x.2)) / arraySum(arrayMap((x, y) -> x / pow(y, 2), replicate(1.0, x.2), arrayEnumerate(x.2)))), mapped_dts) AS score_datatypes,
-    arraySum(datasource_scores.2) / max_hs_score AS score,
-    any(noveltyWhereA) AS novelty,
-    concat(score_datatypes, score_datasources) AS joint_scores,
-    if(indexOf(joint_scores.1, '{order_name}') != 0, joint_scores[indexOf(joint_scores.1, '{order_name}')].2, 0.0) AS score_indexed
-SELECT
-    B, score, score_datatypes, score_datasources, novelty,
-    count() OVER () AS total
-FROM (
-    WITH
-        arraySum(arrayMap((x, y) -> x / pow(y, 2), arrayReverseSort(groupArray(rowScore)), arrayEnumerate(groupArray(rowScore)))) AS score_datasource,
-        any(datatypeId) AS datatypeId,
-        ifNull(any(weight), 1.0) AS datasource_weight
-    SELECT
-        B, datasource_weight, datatypeId, datasourceId, score_datasource,
-        anyIf({novelty}, A = '{a_id}') AS noveltyWhereA
-    FROM {table} AS l
-    LEFT JOIN (
-        WITH arrayJoin([{weights}]) AS weightPair
-        SELECT weightPair.1 AS datasourceId, toNullable(weightPair.2) AS weight
-        ORDER BY datasourceId ASC
-    ) AS r USING (datasourceId)
-    PREWHERE {prewhere}
-    GROUP BY B, datasourceId
-)
-GROUP BY B
-ORDER BY {order_by} {dir}
-LIMIT {offset}, {size}
-            ",
-            max_hs = MAX_HS,
-            order_name = esc(&self.args.sort.key),
-            novelty = if self.args.indirect {
-                "noveltyIndirect"
-            } else {
-                "noveltyDirect"
-            },
-            a_id = self.anchor(),
-            table = self.table,
-            weights = self.weights,
-            prewhere = self.prewhere(),
-            dir = self.args.sort.direction.as_sql(),
-            order_by = match self.args.sort.key.as_str() {
-                "score" => "score",
-                "novelty" => "novelty",
-                _ => "score_indexed",
-            },
-            offset = self.args.page.index * self.args.page.size,
-            size = self.args.page.size,
-        )
-    }
 }
 
 // ---- resolvers ----

@@ -107,22 +107,13 @@ impl Disease {
 impl EntityWithAssociations for Disease {
     const TABLE: &'static str = "associations_otf_disease";
     type B = Target;
-    async fn a_ids(
-        ch: &ClickHouse,
-        anchor: &str,
-        indirect: bool,
-    ) -> async_graphql::Result<Vec<String>> {
-        let mut ids = vec![anchor.to_string()];
-        if indirect {
-            let descendants = ch
-                .query("SELECT descendants FROM disease WHERE id = ?")
-                .bind(anchor)
-                .fetch_optional::<Vec<String>>()
-                .await?
-                .unwrap_or_default();
-            ids.extend(descendants);
-        }
-        Ok(ids)
+    async fn a_ids(ch: &ClickHouse, anchor: &str) -> async_graphql::Result<Vec<String>> {
+        Ok(ch
+            .query("SELECT descendants FROM disease WHERE id = ?")
+            .bind(anchor)
+            .fetch_optional::<Vec<String>>()
+            .await?
+            .unwrap_or_default())
     }
 }
 
@@ -322,13 +313,6 @@ impl Disease {
 
         #[graphql(
             default,
-            desc = "Expand the association set indirectly: for a disease, include its ontology \
-                    descendants."
-        )]
-        indirect: bool,
-
-        #[graphql(
-            default,
             desc = "Optional list of datasource policy overrides with changes to the defaults."
         )]
         datasource_policy_overrides: Vec<DatasourcePolicyOverride>,
@@ -336,8 +320,7 @@ impl Disease {
         #[graphql(
             default,
             desc = "Ordering for the associations. Can either be `score` to use the overall \
-                    association score (default), a datasource id (e.g., `impc`), or a datatype id \
-                    (e.g., `animal_model`)."
+                    association score (default), or datasource id (e.g., `impc`)"
         )]
         sort: AssociationSort,
 
@@ -350,7 +333,6 @@ impl Disease {
                 bs,
                 b_filter,
                 facet_filters,
-                indirect,
                 include_measurements: None, // Used in target to include measurement diseases
                 datasource_policy_overrides,
                 sort,
