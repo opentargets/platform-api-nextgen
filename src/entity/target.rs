@@ -631,7 +631,7 @@ impl Target {
     async fn mouse_phenotypes(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default)] page: Page,
+        #[graphql(default, desc = "Pagination for mouse phenotypes.")] page: Page,
     ) -> async_graphql::Result<Paged<MousePhenotype>> {
         load_mouse_phenotype_by_target(&ctx, &self.id.clone(), page).await
     }
