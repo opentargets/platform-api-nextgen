@@ -15,6 +15,7 @@ use crate::{
             AssociationArguments, AssociationSort, Datasource, DatasourcePolicyOverride,
             DiseaseAssociation, EntityWithAssociations, load_associations,
         },
+        baseline_expression::{BaselineExpression, load_baseline_expression_by_target},
         disease::Disease,
         evidence::{Evidence, EvidenceKey, load_evidences},
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
@@ -679,5 +680,14 @@ impl Target {
         )
         .await?;
         Ok(all.query().paginate(page))
+    }
+
+    ///Baseline expression
+    async fn baseline_expression(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for baseline expression.")] page: Page,
+    ) -> async_graphql::Result<Paged<BaselineExpression>> {
+        load_baseline_expression_by_target(&ctx, &self.id.clone(), page).await
     }
 }
