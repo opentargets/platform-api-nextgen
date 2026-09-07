@@ -460,34 +460,10 @@ pub struct Target {
     transcripts: Vec<Transcripts>,
 }
 
-#[derive(clickhouse::Row, serde::Deserialize)]
-struct InteractionRow {
-    b: String,
-}
-
 impl EntityWithAssociations for Target {
     const TABLE: &'static str = "associations_otf_target";
     type B = Disease;
-    async fn a_ids(
-        ch: &ClickHouse,
-        anchor: &str,
-        indirect: bool,
-    ) -> async_graphql::Result<Vec<String>> {
-        let mut ids = vec![anchor.to_string()];
-        if indirect {
-            let rows = ch
-                .query(
-                    "SELECT DISTINCT tupleElement(i, 'targetB') AS b \
-                     FROM interaction ARRAY JOIN interactions AS i \
-                     WHERE targetA = ? AND b LIKE 'ENSG%'",
-                )
-                .bind(anchor)
-                .fetch_all::<InteractionRow>()
-                .await?;
-            ids.extend(rows.into_iter().map(|r| r.b).filter(|b| b != anchor));
-        }
-        Ok(ids)
-    }
+    async fn a_ids(_: &ClickHouse, _: &str) -> async_graphql::Result<Vec<String>> { Ok(Vec::new()) }
 }
 
 // ---- query utilities ----
@@ -605,26 +581,20 @@ impl Target {
         #[graphql(
             name = "Bs",
             default,
-            desc = "List of disease ids to use as the second dimension for associations."
+            desc = "List of `Disease` IDs to use as the second dimension for associations."
         )]
         bs: Vec<String>,
 
-        #[graphql(name = "BFilter", desc = "Filter to apply to the B dimension items.")]
+        #[graphql(name = "BFilter", desc = "Filter to apply to the `B` dimension items.")]
         b_filter: Option<String>,
 
-        #[graphql(default, desc = "List of the facet ids to filter by (using AND).")]
+        #[graphql(default, desc = "List of the Facet IDs to filter by (using AND).")]
         facet_filters: Vec<String>,
 
         #[graphql(
-            default,
-            desc = "Expand the association set indirectly: for a target, include its interaction \
-                    partners."
-        )]
-        indirect: bool,
-
-        #[graphql(
             default = false,
-            desc = "Whether to include measurements in the response. Defaults to false."
+            desc = "Whether to include diseases from the _measurement_ family in `B` set. Default is \
+                   `false`."
         )]
         include_measurements: bool,
 
@@ -651,7 +621,6 @@ impl Target {
                 bs,
                 b_filter,
                 facet_filters,
-                indirect,
                 include_measurements: Some(include_measurements),
                 datasource_policy_overrides,
                 sort,
