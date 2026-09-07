@@ -51,7 +51,8 @@ pub struct MousePhenotype {
 #[derive(Debug, Row, Deserialize)]
 struct MousePhenotypeRow {
     mouse_phenotypes: Vec<MousePhenotype>,
-    targetFromSourceId: String,
+    #[serde(rename = "targetFromSourceId")]
+    target_from_source_id: String,
 }
 
 // ---- loaders ----
@@ -77,7 +78,7 @@ impl Loader<String> for MousePhenotypeLoader {
             .await?;
         Ok(rows
             .into_iter()
-            .map(|r| (r.targetFromSourceId, r.mouse_phenotypes))
+            .map(|r| (r.target_from_source_id, r.mouse_phenotypes))
             .collect())
     }
 }
