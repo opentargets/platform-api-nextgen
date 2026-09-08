@@ -28,7 +28,7 @@ pub struct DrugWarningReference {
 pub struct DrugWarning {
     /// Classification of toxicity type associated with the drug.
     toxicity_class: Option<String>,
-    /// List of Open Targets molecule identifiers.
+    /// List of molecule identifiers associated with the warning.
     chembl_ids: Vec<String>,
     /// Country where the warning was issued.
     country: Option<String>,
@@ -42,11 +42,11 @@ pub struct DrugWarning {
     warning_type: String,
     /// Year when the warning was issued.
     year: Option<u16>,
-    /// List of disease labels.
+    /// List of disease labels associated with the warning.
     efo_term: Option<String>,
-    /// List of disease identifiers.
+    /// List of disease identifiers associated with the warning [bioregistry:efo].
     efo_id: Option<String>,
-    /// Disease identifier categorising the type of warning.
+    /// Disease identifier categorising the type of warning [bioregistry:efo]
     efo_id_for_warning_class: Option<String>,
 }
 
