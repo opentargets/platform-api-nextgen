@@ -12,6 +12,7 @@ use crate::{
     datasource::{clickhouse::ClickHouse, opensearch::OpenSearch},
     entity::{
         baseline_expression::{self, BaselineExpression, BaselineExpressionLoader},
+        biosample::{self, Biosample, BiosampleLoader},
         disease::{DiseaseLoader, DiseaseQuery},
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},
@@ -69,6 +70,8 @@ pub async fn handler(
     let baseline_expression =
         DataLoader::new(BaselineExpressionLoader::new(ch.clone()), tokio::spawn)
             .max_batch_size(MAX_BATCH_SIZE);
+    let biosample = DataLoader::new(BiosampleLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
 
     let inner = req.into_inner();
     let span = tracing::info_span!(
@@ -94,6 +97,7 @@ pub async fn handler(
                 .data(targets)
                 .data(mouse_phenotypes)
                 .data(baseline_expression)
+                .data(biosample)
                 .data(variants)
         )
         .instrument(span)
