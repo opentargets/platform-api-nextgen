@@ -10,10 +10,7 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{
-        disease::{Disease, load_diseases},
-        drug_warning::{DrugWarning, load_drug_warnings},
-    },
+    entity::drug_warning::{DrugWarning, load_drug_warnings},
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -71,6 +68,9 @@ pub struct Drug {
     /// Parent molecule for derivative compounds.
     #[graphql(skip)]
     parent_id: Option<String>,
+    /// Molecules corresponding to derivative compounds.
+    #[graphql(skip)]
+    child_chembl_ids: Vec<String>,
     /// Highest clinical stage reached by the drug or clinical candidate molecule.
     maximum_clinical_stage: String,
     /// Summary of the drug's clinical development.
@@ -114,10 +114,10 @@ impl Searchable for Drug {
                 .description
                 .as_deref()
                 .is_some_and(|d| d.to_lowercase().contains(needle))
-            || self.synonyms.iter().flat_map(|s| &s.terms).any(|t| {
-                t.as_deref()
-                    .is_some_and(|f| f.to_lowercase().contains(needle))
-            })
+            || self
+                .synonyms
+                .iter()
+                .any(|s| s.label.to_lowercase().contains(needle))
     }
 }
 
@@ -216,9 +216,9 @@ impl Drug {
         }
     }
 
-    /// Direct children terms in the drug ontology
-    async fn children(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Disease>> {
-        load_diseases(ctx, &self.children).await
+    /// List of molecules corresponding to derivative compounds.
+    async fn child_molecules(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Drug>> {
+        load_drugs(ctx, &self.child_chembl_ids).await
     }
 
     /// Drug warnings
