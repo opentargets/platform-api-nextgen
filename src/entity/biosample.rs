@@ -17,7 +17,8 @@ use crate::{
 
 // ---- models ----
 
-/// Integration of biosample metadata about tissues or cell types derived from multiple ontologies including EFO, UBERON, CL, GO and others.
+/// Integration of biosample metadata about tissues or cell types derived from multiple ontologies
+/// including EFO, UBERON, CL, GO and others.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct Biosample {
@@ -85,12 +86,10 @@ impl Loader<String> for BiosampleLoader {
 pub async fn load_biosample_by_id(
     ctx: &Context<'_>,
     id: &String,
-    page: Page,
-) -> async_graphql::Result<Paged<Biosample>> {
-    let items = ctx
+) -> async_graphql::Result<Vec<Biosample>> {
+    Ok(ctx
         .data_unchecked::<DataLoader<BiosampleLoader>>()
         .load_one(id.clone())
         .await?
-        .unwrap_or_default();
-    Ok(items.query().paginate(page))
+        .unwrap_or_default())
 }

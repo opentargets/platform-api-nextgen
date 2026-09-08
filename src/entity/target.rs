@@ -656,7 +656,8 @@ impl Target {
         ctx: &Context<'_>,
         #[graphql(default, desc = "Pagination for mouse phenotypes.")] page: Page,
     ) -> async_graphql::Result<Paged<MousePhenotype>> {
-        load_mouse_phenotype_by_target(ctx, self.id.clone(), page).await
+        let items = load_mouse_phenotype_by_target(ctx, self.id.clone()).await?;
+        Ok(items.query().paginate(page))
     }
 
     async fn evidences(
@@ -688,6 +689,7 @@ impl Target {
         ctx: &Context<'_>,
         #[graphql(default, desc = "Pagination for baseline expression.")] page: Page,
     ) -> async_graphql::Result<Paged<BaselineExpression>> {
-        load_baseline_expression_by_target(&ctx, &self.id.clone(), page).await
+        let items = load_baseline_expression_by_target(&ctx, &self.id.clone()).await?;
+        Ok(items.query().paginate(page))
     }
 }
