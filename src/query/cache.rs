@@ -6,7 +6,10 @@ use moka::future::Cache;
 use crate::config::CACHE_ENTITY_CAPACITY;
 
 #[must_use]
-pub fn entity_cache<V: Clone + Send + Sync + 'static>() -> Cache<String, Option<V>> {
+pub fn entity_cache<
+    V: Clone + Send + Sync + 'static,
+    K: Clone + Eq + Hash + Send + Sync + 'static,
+>() -> Cache<K, Option<V>> {
     Cache::builder().max_capacity(CACHE_ENTITY_CAPACITY).build()
 }
 

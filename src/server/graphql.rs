@@ -15,6 +15,7 @@ use crate::{
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},
         drug_warning::DrugWarningLoader,
+        evidence::EvidenceLoader,
         hpo::HpoLoader,
         meta::{Meta, MetaQuery},
         mouse_phenotype::MousePhenotypeLoader,
@@ -35,19 +36,21 @@ pub async fn handler(
 ) -> GraphQLResponse {
     let diseases = DataLoader::new(DiseaseLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
+    let drugs =
+        DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
+    let drug_warnings = DataLoader::new(DrugWarningLoader::new(ch.clone()), tokio::spawn);
+    let evidences = DataLoader::new(EvidenceLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
     let hpos =
         DataLoader::new(HpoLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
+    let mouse_phenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
     let studies =
         DataLoader::new(StudyLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let phenotypes = DataLoader::new(DiseasePhenotypeLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
     let targets =
         DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
-    let drugs =
-        DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
-    let drug_warnings = DataLoader::new(DrugWarningLoader::new(ch.clone()), tokio::spawn);
-    let mousePhenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
-        .max_batch_size(MAX_BATCH_SIZE);
 
     let inner = req.into_inner();
     let span = tracing::info_span!(
@@ -59,14 +62,15 @@ pub async fn handler(
         .execute(
             inner
                 .data(diseases)
-                .data(targets)
-                .data(hpos)
-                .data(phenotypes)
-                .data(studies)
-                .data(os)
                 .data(drugs)
                 .data(drug_warnings)
-                .data(mousePhenotypes),
+                .data(evidences)
+                .data(mouse_phenotypes)
+                .data(hpos)
+                .data(os)
+                .data(phenotypes)
+                .data(studies)
+                .data(targets),
         )
         .instrument(span)
         .await

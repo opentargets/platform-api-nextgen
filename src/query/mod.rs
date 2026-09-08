@@ -90,10 +90,10 @@ impl<T: OutputType> Query<T> {
 
     #[must_use]
     pub fn paginate(mut self, page: Page) -> Paged<T> {
-        let total = self.0.len() as u64;
+        let count = self.0.len() as u64;
         Paged {
-            total,
-            items: self.page_slice(page),
+            count,
+            rows: self.page_slice(page),
         }
     }
 
@@ -103,10 +103,10 @@ impl<T: OutputType> Query<T> {
         T: Statistics,
     {
         let stats = T::compute(&self.0);
-        let total = self.0.len() as u64;
+        let count = self.0.len() as u64;
         PagedWithStats {
-            total,
-            items: self.page_slice(page),
+            count,
+            rows: self.page_slice(page),
             stats,
         }
     }

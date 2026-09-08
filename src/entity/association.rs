@@ -2,7 +2,7 @@ use std::{collections::HashSet, f64::consts::PI, marker::PhantomData};
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, OutputType, SimpleObject};
 use clickhouse::Row;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use tracing::instrument;
 
@@ -49,9 +49,13 @@ fn quoted_set<S: AsRef<str>>(items: &[S]) -> String {
 // * Contains the data sources for evidences.
 
 /// Represents a datasource for association scoring.
-#[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq, Hash, Enum, EnumIter, IntoStaticStr)]
+#[derive(
+    Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash, Enum, EnumIter, IntoStaticStr,
+)]
+#[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-enum Datasource {
+#[graphql(rename_items = "snake_case")]
+pub enum Datasource {
     /// Clinical evidence linking a target/disease via a drug that targets the gene product and is
     /// indicated for the disease (approved or in development); inferred from clinical reports +
     /// drug MoA data.
@@ -77,7 +81,7 @@ enum Datasource {
     /// geneticist panels.
     /// See <https://platform-docs.opentargets.org/evidence#gene2phenotype>
     #[strum(serialize = "gene2phenotype")]
-    #[graphql(name = "GENE2PHENOTYPE")]
+    #[graphql(name = "gene2phenotype")]
     Gene2Phenotype,
     /// UniProt-curated target-disease relationships from publications supporting a protein's
     /// involvement in disease, aggregated per evidence.
@@ -304,7 +308,8 @@ impl AssociationSort {
     fn render_sort_datasource(&self) -> &'static str {
         Datasource::iter()
             .find(|d| <&str>::from(*d) == self.key)
-            .map_or_default(<&str>::from)
+            .map(<&str>::from)
+            .unwrap_or_default()
     }
     fn render_direction(&self) -> &'static str {
         match self.direction {
@@ -546,8 +551,8 @@ where
     let b_ids = prepare_b_ids(os, args).await?;
     if !args.facet_filters.is_empty() && b_ids.is_empty() {
         return Ok(Paged {
-            total: 0,
-            items: vec![],
+            count: 0,
+            rows: vec![],
         });
     }
 
@@ -567,13 +572,13 @@ where
     tracing::trace!("{rows_sql:}");
 
     let rows = ch.query(&rows_sql).fetch_all::<AssociationRow>().await?;
-    let total = if rows.is_empty() { 0 } else { rows[0].total };
-    let items = rows
+    let count = if rows.is_empty() { 0 } else { rows[0].total };
+    let rows = rows
         .into_iter()
         .map(AssociationRow::into_association::<A::B>)
         .collect();
 
-    Ok(Paged { total, items })
+    Ok(Paged { count, rows })
 }
 
 // ---- resolvers ----
