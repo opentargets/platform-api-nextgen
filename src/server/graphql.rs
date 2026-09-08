@@ -17,6 +17,7 @@ use crate::{
         drug_warning::DrugWarningLoader,
         hpo::HpoLoader,
         meta::{Meta, MetaQuery},
+        mouse_phenotype::MousePhenotypeLoader,
         search::SearchQuery,
         search_facet::FacetQuery,
         study::{StudyLoader, StudyQuery},
@@ -45,6 +46,7 @@ pub async fn handler(
     let drugs =
         DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let drug_warnings = DataLoader::new(DrugWarningLoader::new(ch.clone()), tokio::spawn)
+    let mousePhenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
 
     let inner = req.into_inner();
@@ -64,6 +66,7 @@ pub async fn handler(
                 .data(os)
                 .data(drugs)
                 .data(drug_warnings),
+                .data(mousePhenotypes),
         )
         .instrument(span)
         .await

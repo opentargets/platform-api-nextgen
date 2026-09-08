@@ -8,6 +8,7 @@ use crate::{
         drug::Drug,
         drug_warning::DrugWarning,
         hpo::Hpo,
+        mouse_phenotype::MousePhenotype,
         study::Study,
         target::Target,
     },
@@ -41,6 +42,7 @@ impl Default for Page {
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
 #[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
+#[graphql(concrete(name = "MousePhenotypePage", params(MousePhenotype)))]
 pub struct Paged<T: OutputType> {
     pub total: u64,
     pub items: Vec<T>,

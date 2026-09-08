@@ -7,6 +7,7 @@ pub mod drug;
 pub mod drug_warning;
 pub mod hpo;
 pub mod meta;
+pub mod mouse_phenotype;
 pub mod search;
 pub mod search_facet;
 pub mod study;
