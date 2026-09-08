@@ -4,6 +4,7 @@ use crate::{
     entity::{
         association::{DiseaseAssociation, TargetAssociation},
         baseline_expression::BaselineExpression,
+        biosample::Biosample,
         disease::Disease,
         disease_hpo::DiseasePhenotype,
         drug::Drug,
@@ -47,6 +48,7 @@ impl Default for Page {
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
 #[graphql(concrete(name = "BaselineExpressionPage", params(BaselineExpression)))]
+#[graphql(concrete(name = "BiosamplePage", params(Biosample)))]
 pub struct Paged<T: OutputType> {
     pub count: u64,
     pub rows: Vec<T>,

@@ -682,7 +682,7 @@ impl Target {
         Ok(all.query().paginate(page))
     }
 
-    ///Baseline expression
+    /// Baseline expression
     async fn baseline_expression(
         &self,
         ctx: &Context<'_>,
