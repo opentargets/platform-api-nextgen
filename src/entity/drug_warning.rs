@@ -30,12 +30,12 @@ pub struct DrugWarning {
     id: Option<u32>,
     /// Description of the drug adverse effect.
     description: Option<String>,
+    /// Classification of action taken (drug is withdrawn or has a black box warning).
+    warning_type: String,
     /// Classification of toxicity type associated with the drug.
     toxicity_class: Option<String>,
     /// List of molecule identifiers associated with the warning.
     chembl_ids: Vec<String>,
-    /// Classification of action taken (drug is withdrawn or has a black box warning).
-    warning_type: String,
     /// List of sources supporting the warning information.
     references: Vec<DrugWarningReference>,
     /// Year when the warning was issued.
