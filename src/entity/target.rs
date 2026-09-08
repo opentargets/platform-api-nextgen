@@ -85,7 +85,7 @@ pub struct URL {
 /// be used to modulate and study the function of proteins.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-pub struct ChemicalProbes {
+pub struct ChemicalProbe {
     /// Unique identifier for the chemical probe.
     id: String,
     /// Whether the chemical probe serves as a control.
@@ -226,7 +226,7 @@ pub struct Attributes {
 /// Hallmarks related to the target gene sourced from COSMIC.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-pub struct Hallmarks {
+pub struct Hallmark {
     /// Cancer hallmarks associated with the target gene.
     cancer_hallmarks: Vec<CancerHallmarks>,
     /// Attributes of the hallmark annotation.
@@ -280,7 +280,7 @@ pub struct IdAndSource {
 /// Biosamples used in safety assessments.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-pub struct Biosamples {
+pub struct SafetyBiosamples {
     /// Label of the biosample tissue.
     tissue_label: Option<String>,
     /// Tissue ID for the biosample.
@@ -296,7 +296,7 @@ pub struct Biosamples {
 /// Effects reported for safety events.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-pub struct Effects {
+pub struct SafetyEffects {
     /// Direction of the reported effect (e.g., increase or decrease).
     direction: String,
     /// Dosing conditions related to the reported effect.
@@ -306,7 +306,7 @@ pub struct Effects {
 /// Studies related to safety assessments.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-pub struct Studies {
+pub struct SafetyStudies {
     /// Name of the safety study.
     name: Option<String>,
     /// Description of the safety study.
@@ -319,13 +319,13 @@ pub struct Studies {
 /// Safety liabilities associated with the target.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-pub struct SafetyLiabilities {
+pub struct SafetyLiability {
     /// Biosamples used in safety assessments.
-    biosamples: Vec<Biosamples>,
+    biosamples: Vec<SafetyBiosamples>,
     /// Data source reporting the safety liability.
     datasource: String,
     /// Effects reported for the safety event.
-    effects: Vec<Effects>,
+    effects: Vec<SafetyEffects>,
     /// Safety event associated with the target.
     event: Option<String>,
     /// Unique identifier for the safety event.
@@ -335,13 +335,13 @@ pub struct SafetyLiabilities {
     /// URL linking to more details on safety liabilities.
     url: Option<String>,
     /// Studies related to safety assessments.
-    studies: Vec<Studies>,
+    studies: Vec<SafetyStudies>,
 }
 
 /// Subcellular location information with source.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-pub struct SubcellularLocations {
+pub struct LocationAndSource {
     /// Name of the subcellular compartment where the protein was found.
     location: String,
     /// Source database for the subcellular location.
@@ -393,7 +393,7 @@ pub struct Tractability {
 /// Transcript annotation for a target gene.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-pub struct Transcripts {
+pub struct Transcript {
     /// Ensembl transcript identifier.
     transcript_id: String,
     /// Biotype classification of the transcript.
@@ -433,9 +433,9 @@ pub struct Target {
     /// The Ensembl canonical transcript of the target gene.
     canonical_transcript: CanonicalTranscript,
     /// Chemical probes with high selectivity and specificity for the target.
-    chemical_probes: Vec<ChemicalProbes>,
+    chemical_probes: Vec<ChemicalProbe>,
     /// Database cross-references for the target.
-    db_xrefs: Vec<DBXrefs>,
+    db_xrefs: Vec<IdAndSource>,
     /// Functional descriptions of the target gene sourced from UniProt.
     function_descriptions: Vec<String>,
     #[graphql(name = "geneticConstraint")]
@@ -446,7 +446,7 @@ pub struct Target {
     /// List of Gene Ontology (GO) annotations related to the target.
     go: Vec<GeneOntologyAnnotation>,
     /// Hallmarks related to the target gene sourced from COSMIC.
-    hallmarks: Hallmarks,
+    hallmarks: Hallmark,
     /// Homologues of the target gene in other species.
     homologues: Vec<Homologue>,
     /// Pathway annotations for the target.
@@ -454,9 +454,9 @@ pub struct Target {
     /// Protein identifiers associated with the target.
     protein_ids: Vec<IdAndSource>,
     /// Known target safety effects and target safety risk information.
-    safety_liabilities: Vec<SafetyLiabilities>,
+    safety_liabilities: Vec<SafetyLiability>,
     /// List of subcellular locations where the target protein is found.
-    subcellular_locations: Vec<SubcellularLocations>,
+    subcellular_locations: Vec<LocationAndSource>,
     /// List of synonyms for the target gene.
     synonyms: Vec<LabelSource>,
     /// List of symbol-based synonyms for the target gene.
@@ -475,7 +475,7 @@ pub struct Target {
     /// List of Ensembl transcript identifiers associated with the target.
     transcript_ids: Vec<String>,
     /// List of transcripts associated with the target including protein and structure annotations.
-    transcripts: Vec<Transcripts>,
+    transcripts: Vec<Transcript>,
 }
 
 impl EntityWithAssociations for Target {
