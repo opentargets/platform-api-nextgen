@@ -26,22 +26,22 @@ pub struct DrugWarningReference {
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct DrugWarning {
-    /// Internal identifier for the drug warning record.
-    id: Option<u32>,
-    /// Description of the drug adverse effect.
-    description: Option<String>,
-    /// Classification of action taken (drug is withdrawn or has a black box warning).
-    warning_type: String,
     /// Classification of toxicity type associated with the drug.
     toxicity_class: Option<String>,
     /// List of molecule identifiers associated with the warning.
     chembl_ids: Vec<String>,
-    /// List of sources supporting the warning information.
-    references: Vec<DrugWarningReference>,
-    /// Year when the warning was issued.
-    year: Option<u16>,
     /// Country where the warning was issued.
     country: Option<String>,
+    /// Description of the drug adverse effect.
+    description: Option<String>,
+    /// Internal identifier for the drug warning record.
+    id: Option<u32>,
+    /// List of sources supporting the warning information.
+    references: Vec<DrugWarningReference>,
+    /// Classification of action taken (drug is withdrawn or has a black box warning).
+    warning_type: String,
+    /// Year when the warning was issued.
+    year: Option<u16>,
     /// List of disease labels associated with the warning.
     efo_term: Option<String>,
     /// List of disease identifiers associated with the warning [bioregistry:efo].
