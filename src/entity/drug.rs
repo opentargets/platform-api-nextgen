@@ -221,7 +221,7 @@ impl Drug {
         load_drugs(ctx, &self.child_chembl_ids).await
     }
 
-    /// Drug warnings
+    /// Warnings present on drug as identified by ChEMBL.
     async fn drug_warnings(
         &self,
         ctx: &Context<'_>,
