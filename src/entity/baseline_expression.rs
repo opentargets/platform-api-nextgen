@@ -97,14 +97,12 @@ impl Loader<String> for BaselineExpressionLoader {
 pub async fn load_baseline_expression_by_target(
     ctx: &Context<'_>,
     id: &String,
-    page: Page,
-) -> async_graphql::Result<Paged<BaselineExpression>> {
-    let items = ctx
+) -> async_graphql::Result<Vec<BaselineExpression>> {
+    Ok(ctx
         .data_unchecked::<DataLoader<BaselineExpressionLoader>>()
         .load_one(id.clone())
         .await?
-        .unwrap_or_default();
-    Ok(items.query().paginate(page))
+        .unwrap_or_default())
 }
 
 #[ComplexObject]
@@ -116,7 +114,10 @@ impl BaselineExpression {
         #[graphql(default, desc = "Pagination for tissue biosample.")] page: Page,
     ) -> async_graphql::Result<Paged<Biosample>> {
         match self.tissue_biosample_id.as_ref() {
-            Some(id) => load_biosample_by_id(&ctx, &id, page).await,
+            Some(id) => Ok(load_biosample_by_id(&ctx, &id)
+                .await?
+                .query()
+                .paginate(page)),
             None => Ok(Paged {
                 total: 0,
                 items: Vec::new(),
@@ -130,7 +131,10 @@ impl BaselineExpression {
         #[graphql(default, desc = "Pagination for tissue biosample parent.")] page: Page,
     ) -> async_graphql::Result<Paged<Biosample>> {
         match self.tissue_biosample_parent_id.as_ref() {
-            Some(id) => load_biosample_by_id(&ctx, &id, page).await,
+            Some(id) => Ok(load_biosample_by_id(&ctx, &id)
+                .await?
+                .query()
+                .paginate(page)),
             None => Ok(Paged {
                 total: 0,
                 items: Vec::new(),
@@ -144,7 +148,10 @@ impl BaselineExpression {
         #[graphql(default, desc = "Pagination for celltype biosample.")] page: Page,
     ) -> async_graphql::Result<Paged<Biosample>> {
         match self.celltype_biosample_id.as_ref() {
-            Some(id) => load_biosample_by_id(&ctx, &id, page).await,
+            Some(id) => Ok(load_biosample_by_id(&ctx, &id)
+                .await?
+                .query()
+                .paginate(page)),
             None => Ok(Paged {
                 total: 0,
                 items: Vec::new(),
@@ -158,7 +165,10 @@ impl BaselineExpression {
         #[graphql(default, desc = "Pagination for celltype biosample parent.")] page: Page,
     ) -> async_graphql::Result<Paged<Biosample>> {
         match self.celltype_biosample_parent_id.as_ref() {
-            Some(id) => load_biosample_by_id(&ctx, &id, page).await,
+            Some(id) => Ok(load_biosample_by_id(&ctx, &id)
+                .await?
+                .query()
+                .paginate(page)),
             None => Ok(Paged {
                 total: 0,
                 items: Vec::new(),

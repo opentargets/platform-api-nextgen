@@ -111,13 +111,11 @@ impl Loader<String> for MousePhenotypeLoader {
 /// Returns an error if the Mouse Phenotypes could not be loaded.
 pub async fn load_mouse_phenotype_by_target(
     ctx: &Context<'_>,
-    id: String,
-    page: Page,
-) -> async_graphql::Result<Paged<MousePhenotype>> {
-    let items = ctx
+    id: &String,
+) -> async_graphql::Result<Vec<MousePhenotype>> {
+    Ok(ctx
         .data_unchecked::<DataLoader<MousePhenotypeLoader>>()
         .load_one(id)
         .await?
-        .unwrap_or_default();
-    Ok(items.query().paginate(page))
+        .unwrap_or_default())
 }
