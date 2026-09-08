@@ -101,7 +101,7 @@ impl SortKey<Drug> for DrugSortField {
             Self::Id => a.id.cmp(&b.id),
             Self::Name => a.name.cmp(&b.name),
             Self::DrugType => a.drug_type.cmp(&b.drug_type),
-            Self::MaximumClinicalStage => a.drug_type.cmp(&b.maximum_clinical_stage),
+            Self::MaximumClinicalStage => a.maximum_clinical_stage.cmp(&b.maximum_clinical_stage),
         }
     }
 }
