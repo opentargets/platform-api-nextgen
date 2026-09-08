@@ -21,6 +21,7 @@ use crate::{
         mouse_phenotype::MousePhenotypeLoader,
         search::SearchQuery,
         search_facet::FacetQuery,
+        sequence_ontology::SequenceOntologyLoader,
         study::{StudyLoader, StudyQuery},
         target::{TargetLoader, TargetQuery},
     },
@@ -44,6 +45,8 @@ pub async fn handler(
     let hpos =
         DataLoader::new(HpoLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let mouse_phenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
+    let sequence_ontology = DataLoader::new(SequenceOntologyLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
     let studies =
         DataLoader::new(StudyLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
@@ -69,6 +72,7 @@ pub async fn handler(
                 .data(hpos)
                 .data(os)
                 .data(phenotypes)
+                .data(sequence_ontology)
                 .data(studies)
                 .data(targets),
         )
