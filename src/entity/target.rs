@@ -12,10 +12,11 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         association::{
-            AssociationArguments, AssociationSort, DatasourcePolicyOverride, DiseaseAssociation,
-            EntityWithAssociations, load_associations,
+            AssociationArguments, AssociationSort, Datasource, DatasourcePolicyOverride,
+            DiseaseAssociation, EntityWithAssociations, load_associations,
         },
         disease::Disease,
+        evidence::{Evidence, EvidenceKey, load_evidences},
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
     },
     query::{
@@ -639,5 +640,24 @@ impl Target {
         #[graphql(default, desc = "Pagination for mouse phenotypes.")] page: Page,
     ) -> async_graphql::Result<Paged<MousePhenotype>> {
         load_mouse_phenotype_by_target(&ctx, &self.id.clone(), page).await
+    }
+
+    async fn evidences(
+        &self,
+        ctx: &Context<'_>,
+        efo_ids: Vec<String>,
+        #[graphql(default)] datasource_ids: Vec<Datasource>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<Evidence>> {
+        let all = load_evidences(
+            ctx,
+            EvidenceKey {
+                efo_ids,
+                ensembl_ids: vec![self.id.clone()],
+                datasource_ids,
+            },
+        )
+        .await?;
+        Ok(all.query().paginate(page))
     }
 }

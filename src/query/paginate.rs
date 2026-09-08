@@ -7,6 +7,7 @@ use crate::{
         disease_hpo::DiseasePhenotype,
         drug::Drug,
         drug_warning::DrugWarning,
+        evidence::Evidence,
         hpo::Hpo,
         mouse_phenotype::MousePhenotype,
         study::Study,
@@ -34,18 +35,19 @@ impl Default for Page {
 
 /// The result of a paginated query, containing the total number of items and the items.
 #[derive(Debug, SimpleObject)]
+#[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
 #[graphql(concrete(name = "DiseasePage", params(Disease)))]
 #[graphql(concrete(name = "DiseasePhenotypePage", params(DiseasePhenotype)))]
-#[graphql(concrete(name = "TargetPage", params(Target)))]
 #[graphql(concrete(name = "DrugPage", params(Drug)))]
 #[graphql(concrete(name = "DrugWarningPage", params(DrugWarning)))]
+#[graphql(concrete(name = "EvidencePage", params(Evidence)))]
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
-#[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
-#[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "MousePhenotypePage", params(MousePhenotype)))]
+#[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
+#[graphql(concrete(name = "TargetPage", params(Target)))]
 pub struct Paged<T: OutputType> {
-    pub total: u64,
-    pub items: Vec<T>,
+    pub count: u64,
+    pub rows: Vec<T>,
 }
 
 /// The result of a paginated query, containing the total number of items, the items, and statistics
@@ -53,7 +55,7 @@ pub struct Paged<T: OutputType> {
 #[derive(Debug, SimpleObject)]
 #[graphql(concrete(name = "StudyPage", params(Study)))]
 pub struct PagedWithStats<T: OutputType + Statistics> {
-    pub total: u64,
-    pub items: Vec<T>,
+    pub count: u64,
+    pub rows: Vec<T>,
     pub stats: T::Stats,
 }

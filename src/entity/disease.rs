@@ -12,10 +12,11 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         association::{
-            AssociationArguments, AssociationSort, DatasourcePolicyOverride,
+            AssociationArguments, AssociationSort, Datasource, DatasourcePolicyOverride,
             EntityWithAssociations, TargetAssociation, load_associations,
         },
         disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
+        evidence::{Evidence, EvidenceKey, load_evidences},
         target::Target,
     },
     query::{
@@ -340,5 +341,28 @@ impl Disease {
             },
         )
         .await
+    }
+
+    async fn evidences(
+        &self,
+        ctx: &Context<'_>,
+        ensembl_ids: Vec<String>,
+        #[graphql(default)] datasource_ids: Vec<Datasource>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<Evidence>> {
+        // Rollup descendant diseases into the request.
+        let mut efo_ids = self.descendants.clone();
+        efo_ids.push(self.id.clone());
+
+        let all = load_evidences(
+            ctx,
+            EvidenceKey {
+                efo_ids,
+                ensembl_ids,
+                datasource_ids,
+            },
+        )
+        .await?;
+        Ok(all.query().paginate(page))
     }
 }
