@@ -17,17 +17,27 @@ use crate::{
 
 // ---- models ----
 
+/// Integration of biosample metadata about tissues or cell types derived from multiple ontologies including EFO, UBERON, CL, GO and others.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct Biosample {
+    /// Unique identifier for the biosample.
     biosample_id: String,
+    /// Name of the biosample.
     biosample_name: String,
+    /// Description of the biosample.
     description: Option<String>,
+    /// Cross-reference IDs from other ontologies.
     xrefs: Vec<String>,
+    /// List of synonymous names for the term.
     synonyms: Vec<String>,
+    /// Direct parent biosample IDs in the ontology.
     parents: Vec<String>,
+    /// List of ancestor biosample IDs in the ontology.
     ancestors: Vec<String>,
+    /// Direct child biosample IDs in the ontology.
     children: Vec<String>,
+    /// List of descendant biosample IDs in the ontology.
     descendants: Vec<String>,
 }
 
