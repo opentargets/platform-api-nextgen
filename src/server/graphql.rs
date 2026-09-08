@@ -14,6 +14,7 @@ use crate::{
         disease::{DiseaseLoader, DiseaseQuery},
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},
+        drug_warning::DrugWarningLoader,
         hpo::HpoLoader,
         meta::{Meta, MetaQuery},
         mouse_phenotype::MousePhenotypeLoader,
@@ -34,8 +35,6 @@ pub async fn handler(
 ) -> GraphQLResponse {
     let diseases = DataLoader::new(DiseaseLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
-    let targets =
-        DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let hpos =
         DataLoader::new(HpoLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let studies =
@@ -44,9 +43,9 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let targets =
         DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
-
     let drugs =
         DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
+    let drug_warnings = DataLoader::new(DrugWarningLoader::new(ch.clone()), tokio::spawn)
     let mousePhenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
 
@@ -66,6 +65,7 @@ pub async fn handler(
                 .data(studies)
                 .data(os)
                 .data(drugs)
+                .data(drug_warnings),
                 .data(mousePhenotypes),
         )
         .instrument(span)

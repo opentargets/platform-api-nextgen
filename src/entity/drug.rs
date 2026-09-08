@@ -1,7 +1,7 @@
-use std::{collections::HashMap, sync::LazyLock};
+use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    ComplexObject, Context, Object, SimpleObject,
+    ComplexObject, Context, Enum, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -10,11 +10,14 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::drug_warning::{DrugWarning, load_drug_warnings},
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged},
+        search::Searchable,
+        sort::SortKey,
     },
 };
 
@@ -65,6 +68,9 @@ pub struct Drug {
     /// Parent molecule for derivative compounds.
     #[graphql(skip)]
     parent_id: Option<String>,
+    /// Molecules corresponding to derivative compounds.
+    #[graphql(skip)]
+    child_chembl_ids: Vec<String>,
     /// Highest clinical stage reached by the drug or clinical candidate molecule.
     maximum_clinical_stage: String,
     /// Summary of the drug's clinical development.
@@ -78,6 +84,41 @@ pub struct Drug {
 
 impl Entity for Drug {
     fn id(&self) -> &str { &self.id }
+}
+
+/// Contains the fields available for sorting drugs.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
+pub enum DrugSortField {
+    Id,
+    Name,
+    DrugType,
+    MaximumClinicalStage,
+}
+
+impl SortKey<Drug> for DrugSortField {
+    fn compare(&self, a: &Drug, b: &Drug) -> Ordering {
+        match self {
+            Self::Id => a.id.cmp(&b.id),
+            Self::Name => a.name.cmp(&b.name),
+            Self::DrugType => a.drug_type.cmp(&b.drug_type),
+            Self::MaximumClinicalStage => a.maximum_clinical_stage.cmp(&b.maximum_clinical_stage),
+        }
+    }
+}
+
+impl Searchable for Drug {
+    fn matches_search(&self, needle: &str) -> bool {
+        self.id.to_lowercase().contains(needle)
+            || self.name.to_lowercase().contains(needle)
+            || self
+                .description
+                .as_deref()
+                .is_some_and(|d| d.to_lowercase().contains(needle))
+            || self
+                .synonyms
+                .iter()
+                .any(|s| s.label.to_lowercase().contains(needle))
+    }
 }
 
 // ---- loaders ----
@@ -173,5 +214,20 @@ impl Drug {
             }
             None => Ok(None),
         }
+    }
+
+    /// List of molecules corresponding to derivative compounds.
+    async fn child_molecules(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Drug>> {
+        load_drugs(ctx, &self.child_chembl_ids).await
+    }
+
+    /// Warnings present on drug as identified by ChEMBL.
+    async fn drug_warnings(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<DrugWarning>> {
+        let items = load_drug_warnings(ctx, &self.id).await?;
+        Ok(items.query().paginate(page))
     }
 }
