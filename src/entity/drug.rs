@@ -222,7 +222,12 @@ impl Drug {
     }
 
     /// Warnings present on drug as identified by ChEMBL.
-    async fn drug_warnings(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<DrugWarning>> {
-        load_drug_warnings(ctx, &self.id).await
+    async fn drug_warnings(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default)] page: Page,
+    ) -> async_graphql::Result<Paged<DrugWarning>> {
+        let items = load_drug_warnings(ctx, &self.id).await?;
+        Ok(items.query().paginate(page))
     }
 }
