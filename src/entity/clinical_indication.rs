@@ -1,3 +1,4 @@
+use async_graphql::SimpleObject;
 use clickhouse::Row;
 use serde::Deserialize;
 
