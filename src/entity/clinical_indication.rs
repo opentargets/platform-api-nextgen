@@ -1,10 +1,14 @@
+use clickhouse::Row;
+use serde::Deserialize;
+
+#[derive(Debug, Clone, Deserialize, Row, SimpleObject)]
+#[serde(rename_all = "camelCase")]
 pub struct ClinicalIndication {
+    /// Hash of drugId and diseaseId.
     id: String,
-    /// Hash of drugId
-    drugId: Option<String>,
-    /// Hash of diseaseId
-    diseaseId: Option<String>,
+    drug_id: Option<String>,
+    disease_id: Option<String>,
     /// Maximum Clinical Development Status for the association.
-    maxClinicalStage: String,
-    clinicalReportIds: Vec<String>,
+    max_clinical_stage: String,
+    clinical_report_ids: Vec<String>,
 }
