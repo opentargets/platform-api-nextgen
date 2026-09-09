@@ -45,7 +45,7 @@ pub async fn handler(
         DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let drugs =
         DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
-    let drug_warnings = DataLoader::new(DrugWarningLoader::new(ch.clone()), tokio::spawn)
+    let drug_warnings = DataLoader::new(DrugWarningLoader::new(ch.clone()), tokio::spawn);
     let mousePhenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
 
@@ -65,7 +65,7 @@ pub async fn handler(
                 .data(studies)
                 .data(os)
                 .data(drugs)
-                .data(drug_warnings),
+                .data(drug_warnings)
                 .data(mousePhenotypes),
         )
         .instrument(span)
