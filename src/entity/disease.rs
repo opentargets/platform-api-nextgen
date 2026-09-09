@@ -15,6 +15,7 @@ use crate::{
             AssociationArguments, AssociationSort, Datasource, DatasourcePolicyOverride,
             EntityWithAssociations, TargetAssociation, load_associations,
         },
+        clinical_indication::{ClinicalIndication, load_clinical_indications_from_disease},
         disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
         evidence::{Evidence, EvidenceKey, load_evidences},
         target::Target,
@@ -267,6 +268,16 @@ impl DiseaseQuery {
 
 #[ComplexObject]
 impl Disease {
+    /// Clinical indications for this disease as reported by clinical trial records.
+    async fn drug_and_clinical_candidates(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the drug and clinical candidates.")] page: Page,
+    ) -> async_graphql::Result<Paged<ClinicalIndication>> {
+        let items = load_clinical_indications_from_disease(ctx, &self.id).await?;
+        Ok(items.query().paginate(page))
+    }
+
     /// Direct parent terms in the disease ontology.
     async fn parents(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Disease>> {
         load_diseases(ctx, &self.parents).await

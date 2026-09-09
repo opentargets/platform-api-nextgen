@@ -10,7 +10,10 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::drug_warning::{DrugWarning, load_drug_warnings},
+    entity::{
+        clinical_indication::{ClinicalIndication, load_clinical_indications_from_drug},
+        drug_warning::{DrugWarning, load_drug_warnings},
+    },
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -225,9 +228,19 @@ impl Drug {
     async fn drug_warnings(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default)] page: Page,
+        #[graphql(default, desc = "Pagination for the drug warnings.")] page: Page,
     ) -> async_graphql::Result<Paged<DrugWarning>> {
         let items = load_drug_warnings(ctx, &self.id).await?;
+        Ok(items.query().paginate(page))
+    }
+
+    /// Clinical indications for this drug as reported by clinical trial records.
+    async fn indications(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the clinical indications.")] page: Page,
+    ) -> async_graphql::Result<Paged<ClinicalIndication>> {
+        let items = load_clinical_indications_from_drug(ctx, &self.id).await?;
         Ok(items.query().paginate(page))
     }
 }

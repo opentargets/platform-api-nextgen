@@ -13,6 +13,9 @@ use crate::{
     entity::{
         baseline_expression::BaselineExpressionLoader,
         biosample::BiosampleLoader,
+        clinical_indication::{
+            ClinicalIndicationFromDiseaseLoader, ClinicalIndicationFromDrugLoader,
+        },
         disease::{DiseaseLoader, DiseaseQuery},
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},
@@ -49,9 +52,24 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let diseases = DataLoader::new(DiseaseLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
+    let clinical_indication_from_drug = DataLoader::new(
+        ClinicalIndicationFromDrugLoader::new(ch.clone()),
+        tokio::spawn,
+    )
+    .max_batch_size(MAX_BATCH_SIZE);
     let drugs =
         DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let drug_warnings = DataLoader::new(DrugWarningLoader::new(ch.clone()), tokio::spawn);
+    let clinical_indication_from_drug = DataLoader::new(
+        ClinicalIndicationFromDrugLoader::new(ch.clone()),
+        tokio::spawn,
+    )
+    .max_batch_size(MAX_BATCH_SIZE);
+    let clinical_indication_from_disease = DataLoader::new(
+        ClinicalIndicationFromDiseaseLoader::new(ch.clone()),
+        tokio::spawn,
+    )
+    .max_batch_size(MAX_BATCH_SIZE);
     let evidences = DataLoader::new(EvidenceLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
     let gene_ontology = DataLoader::new(GeneOntologyLoader::new(ch.clone()), tokio::spawn)
@@ -74,13 +92,13 @@ pub async fn handler(
     let target_prioritisations =
         DataLoader::new(TargetPrioritisationsLoader::new(ch.clone()), tokio::spawn)
             .max_batch_size(MAX_BATCH_SIZE);
-    let variants = DataLoader::new(VariantLoader::new(ch.clone()), tokio::spawn)
-        .max_batch_size(MAX_BATCH_SIZE);
     let mouse_phenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
     let target_essentiality =
         DataLoader::new(TargetEssentialityLoader::new(ch.clone()), tokio::spawn)
             .max_batch_size(MAX_BATCH_SIZE);
+    let variants = DataLoader::new(VariantLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
 
     let inner = req.into_inner();
     let span = tracing::info_span!(
@@ -94,6 +112,8 @@ pub async fn handler(
                 .data(baseline_expression)
                 .data(biosample)
                 .data(diseases)
+                .data(clinical_indication_from_drug)
+                .data(clinical_indication_from_disease)
                 .data(drugs)
                 .data(drug_warnings)
                 .data(evidences)
@@ -106,9 +126,9 @@ pub async fn handler(
                 .data(sequence_ontology)
                 .data(studies)
                 .data(targets)
+                .data(target_essentiality)
                 .data(target_prioritisations)
-                .data(variants)
-                .data(target_essentiality),
+                .data(variants),
         )
         .instrument(span)
         .await
