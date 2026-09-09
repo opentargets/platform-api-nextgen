@@ -1,22 +1,10 @@
-package models.entities
-
-import play.api.libs.json.{Json, OFormat}
-import slick.jdbc.GetResult
-import utils.OTLogging
-import utils.db.DbJsonParser.fromPositionedResult
-
-case class ClinicalIndication(
+pub struct ClinicalIndication {
     id: String,
-    drugId: Option[String],
-    diseaseId: Option[String],
+    /// Hash of drugId
+    drugId: Option<String>,
+    /// Hash of diseaseId
+    diseaseId: Option<String>,
+    /// Maximum Clinical Development Status for the association.
     maxClinicalStage: String,
-    clinicalReportIds: Seq[String]
-)
-
-object ClinicalIndication extends OTLogging {
-
-  implicit val getClinicalIndicationsFromDB: GetResult[ClinicalIndication] =
-    GetResult(fromPositionedResult[ClinicalIndication])
-
-  implicit val clinicalIndicationsF: OFormat[ClinicalIndication] = Json.format[ClinicalIndication]
+    clinicalReportIds: Vec<String>,
 }
