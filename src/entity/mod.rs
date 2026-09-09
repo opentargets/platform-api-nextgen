@@ -3,6 +3,7 @@
 pub mod association;
 pub mod baseline_expression;
 pub mod biosample;
+pub mod clinical_indication;
 pub mod disease;
 pub mod disease_hpo;
 pub mod drug;
@@ -18,6 +19,6 @@ pub mod search_facet;
 pub mod sequence_ontology;
 pub mod study;
 pub mod target;
-pub mod target_prioritisation;
 pub mod target_essentiality;
+pub mod target_prioritisation;
 pub mod variant;

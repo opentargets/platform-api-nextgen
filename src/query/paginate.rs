@@ -6,6 +6,7 @@ use crate::{
         association::{DiseaseAssociation, TargetAssociation},
         baseline_expression::BaselineExpression,
         biosample::Biosample,
+        clinical_indication::ClinicalIndication,
         disease::Disease,
         disease_hpo::DiseasePhenotype,
         drug::Drug,
@@ -42,6 +43,7 @@ impl Default for Page {
 /// The result of a paginated query, containing the total number of items and the items.
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
+#[graphql(concrete(name = "ClinicalIndicationPage", params(ClinicalIndication)))]
 #[graphql(concrete(name = "DiseasePage", params(Disease)))]
 #[graphql(concrete(name = "DiseasePhenotypePage", params(DiseasePhenotype)))]
 #[graphql(concrete(name = "DrugPage", params(Drug)))]
