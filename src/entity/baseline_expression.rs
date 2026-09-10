@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use core::range;
+use std::{collections::HashMap, fmt::format};
 
 use async_graphql::{
     ComplexObject, Context, SimpleObject,
@@ -45,6 +46,21 @@ pub struct BaselineExpression {
     datatype_id: String,
     unit: String,
     quality_controls: Vec<String>,
+    pub total: u64,
+}
+
+#[derive(Debug, Clone, Deserialize, SimpleObject, Eq, PartialEq, Hash)]
+#[serde(rename_all = "camelCase")]
+pub struct TestKey {
+    id: String,
+    page: String,
+}
+
+#[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
+#[serde(rename_all = "camelCase")]
+pub struct BaselineExpressionRow {
+    id: TestKey,
+    baseline_expressions: Vec<BaselineExpression>,
 }
 
 // ---- loaders ----
@@ -57,34 +73,85 @@ impl BaselineExpressionLoader {
     pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
-impl Loader<String> for BaselineExpressionLoader {
+impl Loader<(String, Page)> for BaselineExpressionLoader {
     type Value = Vec<BaselineExpression>;
     type Error = async_graphql::Error;
 
-    async fn load(&self, key: &[String]) -> Result<HashMap<String, Self::Value>, Self::Error> {
-        let rows: Vec<BaselineExpression> = self
-            .ch
-            .query(
-                "SELECT \
-                    targetId, targetFromSourceId, \
-                    tissueBiosampleId, tissueBiosampleParentId, tissueBiosampleFromSource, \
-                    celltypeBiosampleId, celltypeBiosampleParentId, celltypeBiosampleFromSource, \
-                    min, q1, median, q3, max, \
-                    distribution_score, specificity_score, \
-                    datasourceId, datatypeId, unit, qualityControls \
-                 FROM platform2606.baseline_expression \
-                 WHERE targetId IN ?",
-            )
-            .bind(key)
-            .fetch_all()
-            .await?;
-        Ok(rows.into_iter().fold(
-            key.iter().cloned().map(|k| (k, Vec::new())).collect(),
-            |mut acc: HashMap<String, Vec<BaselineExpression>>, row| {
-                acc.entry(row.target_id.clone()).or_default().push(row);
-                acc
+    async fn load(
+        &self,
+        keys: &[(String, Page)],
+    ) -> Result<HashMap<(String, Page), Self::Value>, Self::Error> {
+        let baseQuery = "((WITH paged AS (
+            SELECT *, COUNT() OVER() as total
+            FROM platform2606.baseline_expression
+            WHERE targetId IN (?)
+            LIMIT ?, ?
+        )
+        SELECT
+            (any(paged.targetId), ?) AS id,
+            groupArray((
+                paged.targetId,
+                paged.targetFromSourceId,
+                paged.tissueBiosampleId,
+                paged.tissueBiosampleParentId,
+                paged.tissueBiosampleFromSource,
+                paged.celltypeBiosampleId,
+                paged.celltypeBiosampleParentId,
+                paged.celltypeBiosampleFromSource,
+                paged.min, paged.q1, paged.median, paged.q3, paged.max,
+                paged.distribution_score,
+                paged.specificity_score,
+                paged.datasourceId, paged.datatypeId, paged.unit,
+                paged.qualityControls,
+                paged.total
+            )) AS baselineExpressions
+        FROM paged
+        GROUP BY paged.targetId))";
+
+        let queries: Vec<String> = keys.iter().map(|k| baseQuery.to_string()).collect();
+
+        // let mut full_query = self.ch.query(&queries.join(" UNION ALL "));
+
+        let full_query = keys.iter().fold(
+            self.ch.query(&queries.join(" UNION ALL ")),
+            |acc: clickhouse::query::Query, key| {
+                acc.bind(&key.0)
+                    .bind(&key.1.index * &key.1.size)
+                    .bind(&key.1.size)
+                    .bind(format!("{},{}", &key.1.index, &key.1.size))
             },
-        ))
+        );
+
+        println!("full query: {}", full_query.sql_display());
+
+        // for key in keys {
+        //     full_query = full_query
+        //         .bind(&key.0)
+        //         .bind(&key.1.size)
+        //         .bind(&key.1.index)
+        //         .clone();
+        // }
+
+        let result = full_query.fetch_all::<BaselineExpressionRow>().await?;
+
+        let result2 = result
+            .iter()
+            .map(|res| {
+                let page_iter = res.id.page.split_once(",").unwrap_or_default();
+                (
+                    (
+                        res.id.id.clone(),
+                        (Page {
+                            index: page_iter.0.to_string().parse::<usize>().unwrap(),
+                            size: page_iter.1.to_string().parse::<usize>().unwrap(),
+                        }),
+                    ),
+                    res.baseline_expressions.clone(),
+                )
+            })
+            .collect();
+
+        Ok(result2)
     }
 }
 
@@ -97,10 +164,11 @@ impl Loader<String> for BaselineExpressionLoader {
 pub async fn load_baseline_expression_by_target(
     ctx: &Context<'_>,
     id: &String,
+    page: Page,
 ) -> async_graphql::Result<Vec<BaselineExpression>> {
     Ok(ctx
         .data_unchecked::<DataLoader<BaselineExpressionLoader>>()
-        .load_one(id.clone())
+        .load_one((id.clone(), page))
         .await?
         .unwrap_or_default())
 }
