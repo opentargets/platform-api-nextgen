@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    ComplexObject, Context, Object, SimpleObject,
+    ComplexObject, Context, Enum, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -29,9 +29,21 @@ use crate::{
 
 // ---- models ----
 
+/// Strand orientation of a genomic feature.
+#[derive(Debug, Clone, Deserialize, Copy, Eq, PartialEq, Enum)]
+pub enum Strand {
+    /// Positive strand orientation.
+    Positive,
+    /// Negative strand orientation.
+    Negative,
+    /// Unknown strand orientation.
+    Unknown,
+}
+
 /// The Ensembl canonical transcript of the target gene.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
+#[graphql(complex)]
 pub struct CanonicalTranscript {
     /// The Ensembl transcript identifier for the canonical transcript.
     id: String,
@@ -40,9 +52,22 @@ pub struct CanonicalTranscript {
     /// Genomic start position of the canonical transcript.
     start: i32,
     /// Genomic end position of the canonical transcript.
-    end: u32,
+    end: i32,
     /// Strand orientation of the canonical transcript.
-    strand: String,
+    #[graphql(skip)]
+    strand: i8,
+}
+
+#[ComplexObject]
+impl CanonicalTranscript {
+    /// Strand orientation of the canonical transcript.
+    async fn strand(&self) -> Strand {
+        match self.strand {
+            1 => Strand::Positive,
+            -1 => Strand::Negative,
+            _ => Strand::Unknown,
+        }
+    }
 }
 
 /// External resource link with an optional display name.
@@ -73,8 +98,6 @@ pub struct ChemicalProbes {
     is_high_quality: bool,
     /// Origin of the chemical probe.
     origin: Vec<String>,
-    /// Score from ProbeMiner for chemical probe quality.
-    probe_miner_score: Option<f64>,
     /// Score for chemical probes related to druggability.
     probes_drugs_score: Option<f64>,
     /// Score indicating chemical probe activity in cells.
@@ -130,6 +153,7 @@ pub struct Constraint {
 /// Genomic location information of the target gene.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
+#[graphql(complex)]
 pub struct GenomicLocation {
     /// Chromosome on which the target is located.
     chromosome: String,
@@ -138,7 +162,20 @@ pub struct GenomicLocation {
     /// Genomic end position of the target gene.
     end: u32,
     /// Strand orientation of the target gene.
+    #[graphql(skip)]
     strand: i8,
+}
+
+#[ComplexObject]
+impl GenomicLocation {
+    /// Strand orientation of the canonical transcript.
+    async fn strand(&self) -> Strand {
+        match self.strand {
+            1 => Strand::Positive,
+            -1 => Strand::Negative,
+            _ => Strand::Unknown,
+        }
+    }
 }
 
 /// Gene Ontology (GO) annotations related to the target.
@@ -338,22 +375,6 @@ pub struct TargetClass {
     level: String,
 }
 
-/// Target Enabling Package (TEP) information.
-#[derive(Debug, Clone, Deserialize, SimpleObject)]
-#[serde(rename_all = "camelCase")]
-pub struct TEP {
-    #[graphql(name = "uri")]
-    /// URL linking to more information on the TEP target.
-    url: String,
-    #[graphql(name = "name")]
-    /// Ensembl gene ID for the TEP target.
-    target_from_source_id: String,
-    /// Therapeutic area associated with the TEP target.
-    therapeutic_area: String,
-    /// Description of the TEP target.
-    description: String,
-}
-
 /// Tractability information for the target. Indicates the feasibility of targeting the gene/protein
 /// with different therapeutic modalities.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
@@ -448,8 +469,6 @@ pub struct Target {
     /// Target classification categories from ChEMBL.
     #[allow(clippy::struct_field_names)]
     target_class: Vec<TargetClass>,
-    /// Target Enabling Package (TEP) information.
-    tep: TEP,
     /// Tractability information for the target.
     tractability: Vec<Tractability>,
     /// List of Ensembl transcript identifiers associated with the target.

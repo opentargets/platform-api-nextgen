@@ -1,4 +1,4 @@
-data_release = "26.06"
+data_release = "26.09"
 product = "platform"
 log_level = "trace"
 

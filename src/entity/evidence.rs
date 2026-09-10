@@ -303,7 +303,7 @@ pub struct Evidence {
     #[allow(clippy::struct_field_names)]
     evidence_date: Option<String>,
     /// Description of the interaction between the two genes.
-    gene_interaction_type: Option<String>,
+    genetic_interaction_type: Option<String>,
     /// The strength of the genetic interaction. Directionality is captured as well: antagonistics
     /// < 0 < cooperative.
     genetic_interaction_score: Option<f64>,

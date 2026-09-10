@@ -47,10 +47,10 @@ FROM (
     SELECT b_indirect AS B, datasourceId, datasource_score, datasource_weight, anyIf({novelty}, A = '{a_id}') AS noveltyWhereA
     FROM {table} AS l
     ARRAY JOIN
-        arrayPushBack(l.ancestors, l.B)  -- Build an array of `B`'s ancestors plus `B` itself.
-    AS b_indirect                        -- Explode it into rows with same `A`/`B`/`rowScore`, and a `b_indirect` each from the array.
-    WHERE {_where}                       -- Where clause filtering evidence rows at least to those with `A` in our `a_set`.
-    GROUP BY b_indirect, datasourceId    -- Group by ancestor, so a parent B absorbs all its descendants' evidence.
+        arrayPushBack(l.indirect, l.B)  -- Build an array of `B`'s indirect ids plus `B` itself.
+    AS b_indirect                       -- Explode it into rows with same `A`/`B`/`rowScore`, and a `b_indirect` each from the array.
+    WHERE {_where}                      -- Where clause filtering evidence rows at least to those with `A` in our `a_set`.
+    GROUP BY b_indirect, datasourceId   -- Group by each indirect, so a parent B absorbs all its descendants' evidence.
 )
 GROUP BY B
 {_having}
