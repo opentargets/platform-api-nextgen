@@ -11,6 +11,7 @@ use crate::{
     AppState,
     datasource::{clickhouse::ClickHouse, opensearch::OpenSearch},
     entity::{
+        clinical_indication_from_drug::ClinicalIndicationFromDrugLoader,
         disease::{DiseaseLoader, DiseaseQuery},
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},
@@ -57,6 +58,16 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let targets =
         DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
+    let drugs =
+        DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
+    let drug_warnings = DataLoader::new(DrugWarningLoader::new(ch.clone()), tokio::spawn);
+    let mousePhenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
+    let clinical_indication_from_drug = DataLoader::new(
+        ClinicalIndicationFromDrugLoader::new(ch.clone()),
+        tokio::spawn,
+    )
+    .max_batch_size(MAX_BATCH_SIZE);
 
     let inner = req.into_inner();
     let span = tracing::info_span!(
@@ -79,6 +90,8 @@ pub async fn handler(
                 .data(sequence_ontology)
                 .data(studies)
                 .data(targets),
+                .data(mousePhenotypes)
+                .data(clinical_indication_from_drug),
         )
         .instrument(span)
         .await
