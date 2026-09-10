@@ -421,9 +421,8 @@ pub struct Target {
     constraint: Vec<Constraint>,
     /// Genomic location information of the target gene.
     genomic_location: GenomicLocation,
-    #[graphql(name = "geneOntology")]
     /// List of Gene Ontology (GO) annotations related to the target.
-    gene_ontology: Vec<GeneOntologyAnnotation>,
+    go: Vec<GeneOntologyAnnotation>,
     /// Hallmarks related to the target gene sourced from COSMIC.
     hallmarks: Hallmarks,
     /// Homologues of the target gene in other species.
