@@ -644,9 +644,13 @@ impl Target {
     async fn evidences(
         &self,
         ctx: &Context<'_>,
-        efo_ids: Vec<String>,
-        #[graphql(default)] datasource_ids: Vec<Datasource>,
-        #[graphql(default)] page: Page,
+        #[graphql(desc = "A list of disease ids to filter evidences on.")] efo_ids: Vec<String>,
+        #[graphql(
+            default,
+            desc = "A list of datasources to narrow down the selection of evidences."
+        )]
+        datasource_ids: Vec<Datasource>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
     ) -> async_graphql::Result<Paged<Evidence>> {
         let all = load_evidences(
             ctx,

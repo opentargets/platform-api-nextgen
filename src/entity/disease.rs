@@ -346,18 +346,18 @@ impl Disease {
     async fn evidences(
         &self,
         ctx: &Context<'_>,
-        ensembl_ids: Vec<String>,
-        #[graphql(default)] datasource_ids: Vec<Datasource>,
-        #[graphql(default)] page: Page,
+        #[graphql(desc = "A list of target ids to filter evidences on.")] ensembl_ids: Vec<String>,
+        #[graphql(
+            default,
+            desc = "A list of datasources to narrow down the selection of evidences."
+        )]
+        datasource_ids: Vec<Datasource>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
     ) -> async_graphql::Result<Paged<Evidence>> {
-        // Rollup descendant diseases into the request.
-        let mut efo_ids = self.descendants.clone();
-        efo_ids.push(self.id.clone());
-
         let all = load_evidences(
             ctx,
             EvidenceKey {
-                efo_ids,
+                efo_ids: vec![self.id.clone()],
                 ensembl_ids,
                 datasource_ids,
             },
