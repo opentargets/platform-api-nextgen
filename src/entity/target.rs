@@ -687,9 +687,13 @@ impl Target {
     async fn baseline_expression(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Pagination for baseline expression.")] page: Page,
+        page: Page,
     ) -> async_graphql::Result<Paged<BaselineExpression>> {
-        let items = load_baseline_expression_by_target(&ctx, &self.id.clone()).await?;
-        Ok(items.query().paginate(page))
+        let items = load_baseline_expression_by_target(&ctx, &self.id.clone(), page).await?;
+        let total: u64 = match items.first() {
+            Some(it) => it.total,
+            None => 0,
+        };
+        Ok(Paged { total, items })
     }
 }
