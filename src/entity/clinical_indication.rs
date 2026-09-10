@@ -58,11 +58,7 @@ impl CachedLoader for ClinicalIndicationFromDrugLoader {
         // The table holds one row per drug-disease pair, so the rows are grouped into one
         // value per drug. The tuple must list the columns in `ClinicalIndication` field order.
         self.ch
-            .query(
-                "SELECT drugId, \
-                 groupArray((id, drugId, diseaseId, maxClinicalStage, clinicalReportIds)) \
-                 FROM clinical_indication_drug WHERE drugId IN ? GROUP BY drugId",
-            )
+            .query("SELECT ?fields FROM clinical_indication_drug WHERE drugId IN ?")
             .bind(misses)
             .fetch_all::<ClinicalIndicationFromDrug>()
             .await

@@ -11,7 +11,7 @@ use crate::{
     AppState,
     datasource::{clickhouse::ClickHouse, opensearch::OpenSearch},
     entity::{
-        clinical_indication_from_drug::ClinicalIndicationFromDrugLoader,
+        clinical_indication::ClinicalIndicationFromDrugLoader,
         disease::{DiseaseLoader, DiseaseQuery},
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},
@@ -89,7 +89,7 @@ pub async fn handler(
                 .data(phenotypes)
                 .data(sequence_ontology)
                 .data(studies)
-                .data(targets),
+                .data(targets)
                 .data(mousePhenotypes)
                 .data(clinical_indication_from_drug),
         )
