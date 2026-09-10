@@ -25,7 +25,6 @@ use crate::{
         load_ordered,
         paginate::{Page, Paged},
     },
-    server::graphql,
 };
 
 // ---- models ----
@@ -638,7 +637,7 @@ impl Target {
         ctx: &Context<'_>,
         #[graphql(default, desc = "Pagination for mouse phenotypes.")] page: Page,
     ) -> async_graphql::Result<Paged<MousePhenotype>> {
-        load_mouse_phenotype_by_target(&ctx, &self.id.clone(), page).await
+        load_mouse_phenotype_by_target(ctx, self.id.clone(), page).await
     }
 
     async fn evidences(
