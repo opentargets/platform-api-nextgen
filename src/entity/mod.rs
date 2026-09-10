@@ -6,6 +6,7 @@ pub mod disease_hpo;
 pub mod drug;
 pub mod drug_warning;
 pub mod evidence;
+pub mod gene_ontology;
 pub mod hpo;
 pub mod meta;
 pub mod mouse_phenotype;

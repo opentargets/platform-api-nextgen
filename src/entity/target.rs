@@ -145,8 +145,7 @@ pub struct GenomicLocation {
 /// Gene Ontology (GO) annotations related to the target.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-#[graphql(name = "GeneOntology")]
-pub struct GO {
+pub struct GeneOntologyAnnotation {
     #[graphql(visible = false)]
     /// Gene ontology term identifier [bioregistry:go].
     id: String, //TODO: replace with loader from GeneOntologyTerm
@@ -425,7 +424,7 @@ pub struct Target {
     genomic_location: GenomicLocation,
     #[graphql(name = "geneOntology")]
     /// List of Gene Ontology (GO) annotations related to the target.
-    go: Vec<GO>,
+    gene_ontology: Vec<GeneOntologyAnnotation>,
     /// Hallmarks related to the target gene sourced from COSMIC.
     hallmarks: Hallmarks,
     /// Homologues of the target gene in other species.

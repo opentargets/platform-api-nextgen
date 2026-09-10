@@ -16,6 +16,7 @@ use crate::{
         drug::{DrugLoader, DrugQuery},
         drug_warning::DrugWarningLoader,
         evidence::EvidenceLoader,
+        gene_ontology::GeneOntologyLoader,
         hpo::HpoLoader,
         meta::{Meta, MetaQuery},
         mouse_phenotype::MousePhenotypeLoader,
@@ -41,6 +42,8 @@ pub async fn handler(
         DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let drug_warnings = DataLoader::new(DrugWarningLoader::new(ch.clone()), tokio::spawn);
     let evidences = DataLoader::new(EvidenceLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
+    let gene_ontology = DataLoader::new(GeneOntologyLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
     let hpos =
         DataLoader::new(HpoLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
@@ -68,6 +71,7 @@ pub async fn handler(
                 .data(drugs)
                 .data(drug_warnings)
                 .data(evidences)
+                .data(gene_ontology)
                 .data(mouse_phenotypes)
                 .data(hpos)
                 .data(os)
