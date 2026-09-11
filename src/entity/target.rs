@@ -689,11 +689,11 @@ impl Target {
         ctx: &Context<'_>,
         page: Page,
     ) -> async_graphql::Result<Paged<BaselineExpression>> {
-        let items = load_baseline_expression_by_target(&ctx, &self.id.clone(), page).await?;
-        let total: u64 = match items.first() {
+        let rows = load_baseline_expression_by_target(&ctx, &self.id.clone(), page).await?;
+        let count: u64 = match rows.first() {
             Some(it) => it.total,
             None => 0,
         };
-        Ok(Paged { total, items })
+        Ok(Paged { count, rows })
     }
 }

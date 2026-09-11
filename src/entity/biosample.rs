@@ -55,7 +55,7 @@ impl Loader<String> for BiosampleLoader {
             .ch
             .query(
                 "SELECT ?fields \
-                 FROM platform2606.biosample \
+                 FROM biosample \
                  WHERE biosampleId IN ?",
             )
             .bind(key)

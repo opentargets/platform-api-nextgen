@@ -88,7 +88,6 @@ pub async fn handler(
                 .data(sequence_ontology)
                 .data(studies)
                 .data(targets)
-                .data(mouse_phenotypes)
                 .data(baseline_expression)
                 .data(biosample),
         )

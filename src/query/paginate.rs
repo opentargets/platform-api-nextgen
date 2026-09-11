@@ -64,15 +64,6 @@ impl<T: OutputType> Default for Paged<T> {
     }
 }
 
-impl<T: OutputType> Default for Paged<T> {
-    fn default() -> Self {
-        Self {
-            total: 0,
-            items: Vec::new(),
-        }
-    }
-}
-
 /// The result of a paginated query, containing the total number of items, the items, and statistics
 /// about the query.
 #[derive(Debug, SimpleObject)]

@@ -105,7 +105,7 @@ impl Loader<String> for MousePhenotypeLoader {
 /// Returns an error if the Mouse Phenotypes could not be loaded.
 pub async fn load_mouse_phenotype_by_target(
     ctx: &Context<'_>,
-    id: &String,
+    id: String,
 ) -> async_graphql::Result<Vec<MousePhenotype>> {
     Ok(ctx
         .data_unchecked::<DataLoader<MousePhenotypeLoader>>()
