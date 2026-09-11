@@ -83,7 +83,7 @@ impl Loader<(String, Page)> for BaselineExpressionLoader {
     ) -> Result<HashMap<(String, Page), Self::Value>, Self::Error> {
         let base_query = "((WITH paged AS (
             SELECT *, COUNT() OVER() as total
-            FROM platform2606.baseline_expression
+            FROM baseline_expression
             WHERE targetId IN (?)
             LIMIT ?, ?
         )
@@ -177,8 +177,8 @@ impl BaselineExpression {
                 .query()
                 .paginate(page)),
             None => Ok(Paged {
-                total: 0,
-                items: Vec::new(),
+                count: 0,
+                rows: Vec::new(),
             }),
         }
     }
@@ -194,8 +194,8 @@ impl BaselineExpression {
                 .query()
                 .paginate(page)),
             None => Ok(Paged {
-                total: 0,
-                items: Vec::new(),
+                count: 0,
+                rows: Vec::new(),
             }),
         }
     }
@@ -211,8 +211,8 @@ impl BaselineExpression {
                 .query()
                 .paginate(page)),
             None => Ok(Paged {
-                total: 0,
-                items: Vec::new(),
+                count: 0,
+                rows: Vec::new(),
             }),
         }
     }
@@ -228,8 +228,8 @@ impl BaselineExpression {
                 .query()
                 .paginate(page)),
             None => Ok(Paged {
-                total: 0,
-                items: Vec::new(),
+                count: 0,
+                rows: Vec::new(),
             }),
         }
     }
