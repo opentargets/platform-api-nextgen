@@ -7,13 +7,7 @@ use async_graphql::{
 use clickhouse::Row;
 use serde::Deserialize;
 
-use crate::{
-    datasource::clickhouse::ClickHouse,
-    query::{
-        QueryExt,
-        paginate::{Page, Paged},
-    },
-};
+use crate::datasource::clickhouse::ClickHouse;
 
 // ---- models ----
 
