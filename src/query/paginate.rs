@@ -3,6 +3,7 @@ use async_graphql::{InputObject, OutputType, SimpleObject};
 use crate::{
     entity::{
         association::{DiseaseAssociation, TargetAssociation},
+        clinical_indication::ClinicalIndication,
         disease::Disease,
         disease_hpo::DiseasePhenotype,
         drug::Drug,
@@ -36,6 +37,7 @@ impl Default for Page {
 /// The result of a paginated query, containing the total number of items and the items.
 #[derive(Debug, SimpleObject)]
 #[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
+#[graphql(concrete(name = "ClinicalIndicationPage", params(ClinicalIndication)))]
 #[graphql(concrete(name = "DiseasePage", params(Disease)))]
 #[graphql(concrete(name = "DiseasePhenotypePage", params(DiseasePhenotype)))]
 #[graphql(concrete(name = "DrugPage", params(Drug)))]
