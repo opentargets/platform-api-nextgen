@@ -11,8 +11,8 @@ use crate::{
     AppState,
     datasource::{clickhouse::ClickHouse, opensearch::OpenSearch},
     entity::{
-        baseline_expression::{self, BaselineExpression, BaselineExpressionLoader},
-        biosample::{self, Biosample, BiosampleLoader},
+        baseline_expression::BaselineExpressionLoader,
+        biosample::BiosampleLoader,
         disease::{DiseaseLoader, DiseaseQuery},
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},

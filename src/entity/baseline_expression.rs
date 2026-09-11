@@ -1,5 +1,4 @@
-use core::range;
-use std::{collections::HashMap, fmt::format};
+use std::collections::HashMap;
 
 use async_graphql::{
     ComplexObject, Context, SimpleObject,
@@ -52,14 +51,15 @@ pub struct BaselineExpression {
 #[derive(Debug, Clone, Deserialize, SimpleObject, Eq, PartialEq, Hash)]
 #[serde(rename_all = "camelCase")]
 pub struct TestKey {
-    id: String,
-    page: String,
+    target_id: String,
+    index: usize,
+    size: usize,
 }
 
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct BaselineExpressionRow {
-    id: TestKey,
+    key: TestKey,
     baseline_expressions: Vec<BaselineExpression>,
 }
 
@@ -81,14 +81,14 @@ impl Loader<(String, Page)> for BaselineExpressionLoader {
         &self,
         keys: &[(String, Page)],
     ) -> Result<HashMap<(String, Page), Self::Value>, Self::Error> {
-        let baseQuery = "((WITH paged AS (
+        let base_query = "((WITH paged AS (
             SELECT *, COUNT() OVER() as total
             FROM platform2606.baseline_expression
             WHERE targetId IN (?)
             LIMIT ?, ?
         )
         SELECT
-            (any(paged.targetId), ?) AS id,
+            any(paged.targetId) as targetId, CAST(? AS UInt64) as size, CAST(? AS UInt64) as limit,
             groupArray((
                 paged.targetId,
                 paged.targetFromSourceId,
@@ -108,42 +108,32 @@ impl Loader<(String, Page)> for BaselineExpressionLoader {
         FROM paged
         GROUP BY paged.targetId))";
 
-        let queries: Vec<String> = keys.iter().map(|k| baseQuery.to_string()).collect();
-
-        // let mut full_query = self.ch.query(&queries.join(" UNION ALL "));
+        let queries: Vec<String> = keys.iter().map(|_| base_query.to_string()).collect();
 
         let full_query = keys.iter().fold(
             self.ch.query(&queries.join(" UNION ALL ")),
             |acc: clickhouse::query::Query, key| {
                 acc.bind(&key.0)
-                    .bind(&key.1.index * &key.1.size)
-                    .bind(&key.1.size)
-                    .bind(format!("{},{}", &key.1.index, &key.1.size))
+                    .bind(key.1.index * key.1.size)
+                    .bind(key.1.size)
+                    .bind(key.1.index)
+                    .bind(key.1.size)
             },
         );
 
         println!("full query: {}", full_query.sql_display());
-
-        // for key in keys {
-        //     full_query = full_query
-        //         .bind(&key.0)
-        //         .bind(&key.1.size)
-        //         .bind(&key.1.index)
-        //         .clone();
-        // }
 
         let result = full_query.fetch_all::<BaselineExpressionRow>().await?;
 
         let result2 = result
             .iter()
             .map(|res| {
-                let page_iter = res.id.page.split_once(",").unwrap_or_default();
                 (
                     (
-                        res.id.id.clone(),
+                        res.key.target_id.clone(),
                         (Page {
-                            index: page_iter.0.to_string().parse::<usize>().unwrap(),
-                            size: page_iter.1.to_string().parse::<usize>().unwrap(),
+                            index: res.key.index,
+                            size: res.key.size,
                         }),
                     ),
                     res.baseline_expressions.clone(),
