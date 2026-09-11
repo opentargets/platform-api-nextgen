@@ -19,6 +19,7 @@ use crate::{
         disease::Disease,
         evidence::{Evidence, EvidenceKey, load_evidences},
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
+        target_prioritisation::{TargetPrioritisations, load_target_prioritisations},
     },
     query::{
         Entity, QueryExt,
@@ -662,6 +663,9 @@ impl Target {
         Ok(items.query().paginate(page))
     }
 
+    /// Target-disease evidence from all data sources supporting associations between this target
+    /// and diseases or phenotypes. Evidence entries are reported and scored according to confidence
+    /// in the association.
     async fn evidences(
         &self,
         ctx: &Context<'_>,
@@ -697,5 +701,16 @@ impl Target {
             None => 0,
         };
         Ok(Paged { count, rows })
+    }
+
+    /// Target-specific properties used to prioritise targets for further investigation.
+    /// Prioritisation factors cover several areas around clinical precedence, tractability,
+    /// do-ability, and safety of the target. Values range from -1 (unfavourable/deprioritised) to 1
+    /// (favourable/prioritised).
+    async fn prioritisation(
+        &self,
+        ctx: &Context<'_>,
+    ) -> async_graphql::Result<TargetPrioritisations> {
+        load_target_prioritisations(ctx, &self.id).await
     }
 }

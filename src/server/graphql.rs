@@ -27,7 +27,8 @@ use crate::{
         search_facet::FacetQuery,
         sequence_ontology::SequenceOntologyLoader,
         study::{StudyLoader, StudyQuery},
-        target::{TargetLoader, TargetQuery},
+        target::TargetLoader,
+        target_prioritisation::TargetPrioritisationsLoader,
         variant::{VariantLoader, VariantQuery},
     },
 };
@@ -40,6 +41,11 @@ pub async fn handler(
     Extension(os): Extension<OpenSearch>,
     req: GraphQLRequest,
 ) -> GraphQLResponse {
+    let baseline_expression =
+        DataLoader::new(BaselineExpressionLoader::new(ch.clone()), tokio::spawn)
+            .max_batch_size(MAX_BATCH_SIZE);
+    let biosample = DataLoader::new(BiosampleLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
     let diseases = DataLoader::new(DiseaseLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
     let drugs =
@@ -57,21 +63,19 @@ pub async fn handler(
         DataLoader::new(StudyLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let phenotypes = DataLoader::new(DiseasePhenotypeLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
-    let targets =
-        DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let protein_coding_coordinates = DataLoader::new(
         ProteinCodingCoordinateVariantLoader::new(ch.clone()),
         tokio::spawn,
     )
     .max_batch_size(MAX_BATCH_SIZE);
+    let targets =
+        DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
+    let target_prioritisations =
+        DataLoader::new(TargetPrioritisationsLoader::new(ch.clone()), tokio::spawn)
+            .max_batch_size(MAX_BATCH_SIZE);
     let variants = DataLoader::new(VariantLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
     let mouse_phenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
-        .max_batch_size(MAX_BATCH_SIZE);
-    let baseline_expression =
-        DataLoader::new(BaselineExpressionLoader::new(ch.clone()), tokio::spawn)
-            .max_batch_size(MAX_BATCH_SIZE);
-    let biosample = DataLoader::new(BiosampleLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
 
     let inner = req.into_inner();
@@ -83,6 +87,8 @@ pub async fn handler(
     schema
         .execute(
             inner
+                .data(baseline_expression)
+                .data(biosample)
                 .data(diseases)
                 .data(drugs)
                 .data(drug_warnings)
@@ -96,8 +102,7 @@ pub async fn handler(
                 .data(sequence_ontology)
                 .data(studies)
                 .data(targets)
-                .data(baseline_expression)
-                .data(biosample)
+                .data(target_prioritisations)
                 .data(variants),
         )
         .instrument(span)
