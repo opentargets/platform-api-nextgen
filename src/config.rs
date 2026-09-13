@@ -30,6 +30,11 @@ pub struct Args {
     pub config: Option<PathBuf>,
 }
 
+#[derive(Deserialize)]
+struct PluginBody {
+    base_url: String,
+}
+
 /// The configuration for the API.
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -164,10 +169,8 @@ fn plugins<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<Plugin>, D::Error> {
 
         fn visit_map<M: MapAccess<'de>>(self, mut map: M) -> Result<Self::Value, M::Error> {
             let mut plugins = Vec::new();
-            while let Some((name, base_url)) = map.next_entry::<String, String>()? {
-                plugins.push(Plugin::new(&name, &base_url).map_err(|e| {
-                    M::Error::custom(format!("invalid plugin '{name}={base_url}': {e:?}"))
-                })?);
+            while let Some((name, body)) = map.next_entry::<String, PluginBody>()? {
+                plugins.push(Plugin::new(&name, &body.base_url).map_err(M::Error::custom)?);
             }
             Ok(plugins)
         }

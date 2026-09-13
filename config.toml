@@ -9,6 +9,7 @@ opensearch_timeout = "10s"
 max_depth = 20
 max_complexity = 1000
 
-[plugins]
-"ai-api" = "http://localhost:8081"
-"gsea" = "http://localhost:8082"
+[plugins.ai-api]
+base_url = "http://localhost:8081"
+[plugins.gsea]
+base_url = "http://localhost:8082"
