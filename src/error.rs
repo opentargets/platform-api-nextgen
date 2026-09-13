@@ -17,9 +17,14 @@ impl IntoResponse for ApiError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum PluginError {
+    #[error("not found")]
     NotFound,
+
+    #[error("invalid plugin name '{0}'")]
     InvalidName(String),
-    InvalidBaseUrl,
+
+    #[error("invalid base url: {0}")]
+    Url(#[from] url::ParseError),
 }
