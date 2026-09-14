@@ -55,11 +55,7 @@ impl Loader<String> for BiosampleLoader {
     async fn load(&self, key: &[String]) -> Result<HashMap<String, Self::Value>, Self::Error> {
         let rows: Vec<Biosample> = self
             .ch
-            .query(
-                "SELECT ?fields \
-                 FROM biosample \
-                 WHERE biosampleId IN ?",
-            )
+            .query("SELECT ?fields FROM biosample WHERE biosampleId IN ?")
             .bind(key)
             .fetch_all()
             .await?;

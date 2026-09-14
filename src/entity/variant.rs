@@ -11,14 +11,17 @@ use serde_repr::Deserialize_repr;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{protein_coding_coordinates::{ProteinCodingCoordinates, ProteinCodingCoordinateVariantLoader}, sequence_ontology::{SequenceOntology, load_sequence_ontology_one}},
+    entity::{
+        protein_coding_coordinates::{
+            ProteinCodingCoordinateVariantLoader, ProteinCodingCoordinates,
+        },
+        sequence_ontology::{SequenceOntology, load_sequence_ontology_one},
+    },
     query::{
-        Entity, QueryExt,
+        QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged},
-        // search::Searchable,
-        // sort::{Sort, SortKey},
     },
 };
 
@@ -305,5 +308,4 @@ impl Variant {
             .unwrap_or_default();
         Ok(items.query().paginate(page))
     }
-
 }

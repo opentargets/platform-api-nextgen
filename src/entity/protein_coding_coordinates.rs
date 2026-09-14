@@ -1,31 +1,20 @@
-use std::{char::CharTryFromError, cmp::Ordering, collections::HashMap, sync::LazyLock};
+use std::collections::HashMap;
 
-use async_graphql::{
-    ComplexObject, Context, Enum, Object, SimpleObject,
-    dataloader::{DataLoader, Loader},
-};
+use async_graphql::{ComplexObject, Context, SimpleObject, dataloader::Loader};
 use clickhouse::Row;
-use moka::future::Cache;
 use serde::Deserialize;
-use serde_repr::Deserialize_repr;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{disease::{Disease, load_diseases}, sequence_ontology::{SequenceOntology, load_sequence_ontology_many}, target::{Target, load_target}, variant::{Variant, load_variant}},
-    query::{
-        Entity, QueryExt,
-        cache::{CachedLoader, entity_cache},
-        load_ordered,
-        paginate::{Page, Paged},
-        // search::Searchable,
-        // sort::{Sort, SortKey},
-    }
+    entity::{
+        disease::{Disease, load_diseases},
+        sequence_ontology::{SequenceOntology, load_sequence_ontology_many},
+        target::{Target, load_target},
+        variant::{Variant, load_variant},
+    },
 };
 
-
-
 // ---- models ----
-
 
 /// Data source information for protein coding coordinates.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
@@ -71,7 +60,6 @@ pub struct ProteinCodingCoordinates {
     datasources: Vec<Datasource>,
     /// Therapeutic areas associated with the variant-consequence relationship.
     therapeutic_areas: Vec<String>,
-
 }
 
 // A ClickHouse row representing a protein coding coordinates.
@@ -82,7 +70,6 @@ struct ProteinCodingCoordinatesVariantRow {
 }
 
 // ---- loaders ----
-
 
 pub struct ProteinCodingCoordinateVariantLoader {
     ch: ClickHouse,
@@ -114,7 +101,6 @@ impl Loader<String> for ProteinCodingCoordinateVariantLoader {
     }
 }
 
-
 // --- resolvers ---
 
 #[ComplexObject]
@@ -131,8 +117,20 @@ impl ProteinCodingCoordinates {
     async fn variant(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Variant>> {
         load_variant(ctx, &self.variant_id).await
     }
-    /// The sequence ontology term capturing the consequence of the variant based on Ensembl VEP in the context of the transcript [bioregistry:so].\
-    async fn variant_consequences(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<SequenceOntology>> {
-        load_sequence_ontology_many(ctx, &self.variant_functional_consequence_ids.iter().map(|id| id.replace('_', ":")).collect::<Vec<String>>()).await
+    /// The sequence ontology term capturing the consequence of the variant based on Ensembl VEP in
+    /// the context of the transcript [bioregistry:so].\
+    async fn variant_consequences(
+        &self,
+        ctx: &Context<'_>,
+    ) -> async_graphql::Result<Vec<SequenceOntology>> {
+        load_sequence_ontology_many(
+            ctx,
+            &self
+                .variant_functional_consequence_ids
+                .iter()
+                .map(|id| id.replace('_', ":"))
+                .collect::<Vec<String>>(),
+        )
+        .await
     }
 }
