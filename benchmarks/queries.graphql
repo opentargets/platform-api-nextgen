@@ -1,7 +1,7 @@
 query study_single {
     studies(diseaseIds: ["MONDO_0004992"], enableIndirect: true, page: { index: 0, size: 10 }) {
-        total
-        items {
+        count
+        rows {
             id
             nSamples
             traitFromSource
@@ -28,8 +28,8 @@ query study_multiple {
         # dir: DESC
         page: { index: 0, size: 10 }
     ) {
-        total
-        items {
+        count
+        rows {
             id
             nSamples
             traitFromSource
@@ -65,8 +65,8 @@ query disease_with_evidence {
         id
         name
         phenotypes(page: { index: 0, size: 1000 }) {
-            total
-            items {
+            count
+            rows {
                 evidence {
                     aspect
                     bioCuration
@@ -77,7 +77,7 @@ query disease_with_evidence {
                         id
                         name
                         description
-                        namespace
+                        # namespace
                     }
                     onset {
                         id
@@ -90,7 +90,7 @@ query disease_with_evidence {
                     id
                     name
                     description
-                    namespace
+                    # namespace
                 }
                 phenotypeEFO {
                     id
@@ -177,8 +177,8 @@ query facets {
 
 query study_with_stats($dids: [String!]) {
     studies(studyIds: $dids, enableIndirect: true, page: { index: 0, size: 10000 }) {
-        total
-        items {
+        count
+        rows {
             id
             publicationTitle
         }
@@ -2363,8 +2363,8 @@ query study_with_stats($dids: [String!]) {
 
 query targets($eids: [String!]!) {
     targets(ensemblIds: $eids) {
-        total
-        items {
+        count
+        rows {
             id
         }
     }
@@ -3378,6 +3378,7 @@ query targets($eids: [String!]!) {
 
 # ---
 
+# this query is for the old api, won't work in the rust api
 query AOTFTOld {
     target(ensemblId: "ENSG00000184937") {
         id
@@ -3455,41 +3456,37 @@ query AOTFTNew {
                 "hIDS854BUCcyDrzNL8-3"
                 "hoDS854BUCcyDrzNL8-3"
             ]
-            indirect: false
             includeMeasurements: false
             datasourcePolicyOverrides: [
-                { id: CLINICAL_PRECEDENCE, policy: { propagate: true, required: false, weight: 1 } }
-                { id: GWAS_CREDIBLE_SETS, policy: { propagate: true, required: false, weight: 1 } }
-                { id: GENE_BURDEN, policy: { propagate: true, required: false, weight: 1 } }
-                { id: EVA, policy: { propagate: true, required: false, weight: 1 } }
-                { id: GENOMICS_ENGLAND, policy: { propagate: true, required: false, weight: 1 } }
-                { id: GENE2PHENOTYPE, policy: { propagate: true, required: false, weight: 1 } }
-                { id: UNIPROT_LITERATURE, policy: { propagate: true, required: false, weight: 1 } }
-                { id: UNIPROT_VARIANTS, policy: { propagate: true, required: false, weight: 1 } }
-                { id: ORPHANET, policy: { propagate: true, required: false, weight: 1 } }
-                { id: CLINGEN, policy: { propagate: true, required: false, weight: 1 } }
-                { id: CANCER_GENE_CENSUS, policy: { propagate: true, required: false, weight: 1 } }
-                { id: INTOGEN, policy: { propagate: true, required: false, weight: 1 } }
-                { id: EVA_SOMATIC, policy: { propagate: true, required: false, weight: 1 } }
-                { id: CANCER_BIOMARKERS, policy: { propagate: true, required: false, weight: 1 } }
-                { id: CRISPR_SCREEN, policy: { propagate: true, required: false, weight: 1 } }
-                { id: CRISPR, policy: { propagate: true, required: false, weight: 1 } }
-                { id: REACTOME, policy: { propagate: true, required: false, weight: 1 } }
-                { id: EUROPEPMC, policy: { propagate: true, required: false, weight: 0.2 } }
-                { id: EXPRESSION_ATLAS, policy: { propagate: false, required: true, weight: 0.2 } }
-                { id: IMPC, policy: { propagate: true, required: false, weight: 0.2 } }
-                {
-                    id: OT_CRISPR_VALIDATION
-                    policy: { propagate: true, required: false, weight: 0.5 }
-                }
-                { id: OT_CRISPR, policy: { propagate: true, required: false, weight: 0.5 } }
-                { id: ENCORE, policy: { propagate: true, required: false, weight: 0.5 } }
+                { id: clinical_precedence, policy: { required: false, weight: 1 } }
+                { id: gwas_credible_sets, policy: { required: false, weight: 1 } }
+                { id: gene_burden, policy: { required: false, weight: 1 } }
+                { id: eva, policy: { required: false, weight: 1 } }
+                { id: genomics_england, policy: { required: false, weight: 1 } }
+                { id: gene2phenotype, policy: { required: false, weight: 1 } }
+                { id: uniprot_literature, policy: { required: false, weight: 1 } }
+                { id: uniprot_variants, policy: { required: false, weight: 1 } }
+                { id: orphanet, policy: { required: false, weight: 1 } }
+                { id: clingen, policy: { required: false, weight: 1 } }
+                { id: cancer_gene_census, policy: { required: false, weight: 1 } }
+                { id: intogen, policy: { required: false, weight: 1 } }
+                { id: eva_somatic, policy: { required: false, weight: 1 } }
+                { id: cancer_biomarkers, policy: { required: false, weight: 1 } }
+                { id: crispr_screen, policy: { required: false, weight: 1 } }
+                { id: crispr, policy: { required: false, weight: 1 } }
+                { id: reactome, policy: { required: false, weight: 1 } }
+                { id: europepmc, policy: { required: false, weight: 0.2 } }
+                { id: expression_atlas, policy: { required: true, weight: 0.2 } }
+                { id: impc, policy: { required: false, weight: 0.2 } }
+                { id: ot_crispr_validation, policy: { required: false, weight: 0.5 } }
+                { id: ot_crispr, policy: { required: false, weight: 0.5 } }
+                { id: encore, policy: { required: false, weight: 0.5 } }
             ]
             sort: { key: "score", direction: DESCENDING }
             page: { index: 0, size: 25 }
         ) {
-            total
-            items {
+            count
+            rows {
                 novelty
                 # disease {
                 #     id
@@ -3507,6 +3504,7 @@ query AOTFTNew {
 
 # ---
 
+# this query is for the old api, won't work in the rust api
 query AOTFDOld {
     disease(efoId: "MONDO_0005180") {
         id
@@ -3567,40 +3565,36 @@ query AOTFDNew {
             Bs: []
             BFilter: "LRRK2"
             facetFilters: []
-            indirect: false
             datasourcePolicyOverrides: [
-                { id: CLINICAL_PRECEDENCE, policy: { propagate: true, required: false, weight: 1 } }
-                { id: GWAS_CREDIBLE_SETS, policy: { propagate: true, required: false, weight: 1 } }
-                { id: GENE_BURDEN, policy: { propagate: true, required: false, weight: 1 } }
-                { id: EVA, policy: { propagate: true, required: false, weight: 1 } }
-                { id: GENOMICS_ENGLAND, policy: { propagate: true, required: false, weight: 1 } }
-                { id: GENE2PHENOTYPE, policy: { propagate: true, required: false, weight: 1 } }
-                { id: UNIPROT_LITERATURE, policy: { propagate: true, required: false, weight: 1 } }
-                { id: UNIPROT_VARIANTS, policy: { propagate: true, required: false, weight: 1 } }
-                { id: ORPHANET, policy: { propagate: true, required: false, weight: 1 } }
-                { id: CLINGEN, policy: { propagate: true, required: false, weight: 1 } }
-                { id: CANCER_GENE_CENSUS, policy: { propagate: true, required: false, weight: 1 } }
-                { id: INTOGEN, policy: { propagate: true, required: false, weight: 1 } }
-                { id: EVA_SOMATIC, policy: { propagate: true, required: false, weight: 1 } }
-                { id: CANCER_BIOMARKERS, policy: { propagate: true, required: false, weight: 1 } }
-                { id: CRISPR_SCREEN, policy: { propagate: true, required: false, weight: 1 } }
-                { id: CRISPR, policy: { propagate: true, required: false, weight: 1 } }
-                { id: REACTOME, policy: { propagate: true, required: false, weight: 1 } }
-                { id: EUROPEPMC, policy: { propagate: true, required: false, weight: 0.2 } }
-                { id: EXPRESSION_ATLAS, policy: { propagate: false, required: false, weight: 0.2 } }
-                { id: IMPC, policy: { propagate: true, required: false, weight: 0.2 } }
-                {
-                    id: OT_CRISPR_VALIDATION
-                    policy: { propagate: true, required: false, weight: 0.5 }
-                }
-                { id: OT_CRISPR, policy: { propagate: true, required: false, weight: 0.5 } }
-                { id: ENCORE, policy: { propagate: true, required: false, weight: 0.5 } }
+                { id: clinical_precedence, policy: { required: false, weight: 1 } }
+                { id: gwas_credible_sets, policy: { required: false, weight: 1 } }
+                { id: gene_burden, policy: { required: false, weight: 1 } }
+                { id: eva, policy: { required: false, weight: 1 } }
+                { id: genomics_england, policy: { required: false, weight: 1 } }
+                { id: gene2phenotype, policy: { required: false, weight: 1 } }
+                { id: uniprot_literature, policy: { required: false, weight: 1 } }
+                { id: uniprot_variants, policy: { required: false, weight: 1 } }
+                { id: orphanet, policy: { required: false, weight: 1 } }
+                { id: clingen, policy: { required: false, weight: 1 } }
+                { id: cancer_gene_census, policy: { required: false, weight: 1 } }
+                { id: intogen, policy: { required: false, weight: 1 } }
+                { id: eva_somatic, policy: { required: false, weight: 1 } }
+                { id: cancer_biomarkers, policy: { required: false, weight: 1 } }
+                { id: crispr_screen, policy: { required: false, weight: 1 } }
+                { id: crispr, policy: { required: false, weight: 1 } }
+                { id: reactome, policy: { required: false, weight: 1 } }
+                { id: europepmc, policy: { required: false, weight: 0.2 } }
+                { id: expression_atlas, policy: { required: false, weight: 0.2 } }
+                { id: impc, policy: { required: false, weight: 0.2 } }
+                { id: ot_crispr_validation, policy: { required: false, weight: 0.5 } }
+                { id: ot_crispr, policy: { required: false, weight: 0.5 } }
+                { id: encore, policy: { required: false, weight: 0.5 } }
             ]
             sort: { key: "score", direction: DESCENDING }
             page: { index: 0, size: 25 }
         ) {
-            total
-            items {
+            count
+            rows {
                 novelty
                 score
                 datasourceScores {
