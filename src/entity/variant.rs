@@ -77,7 +77,8 @@ pub struct VariantEffect {
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct TranscriptConsequence {
-    /// The sequence ontology identifier of the consequence of the variant based on Ensembl VEP in the context of the transcript [bioregistry:so].
+    /// The sequence ontology identifier of the consequence of the variant based on Ensembl VEP in
+    /// the context of the transcript [bioregistry:so].
     variant_functional_consequence_ids: Vec<String>,
     /// Amino acid change caused by this variant on this gene.
     amino_acid_change: Option<String>,
@@ -138,7 +139,8 @@ pub struct AlleleFrequency {
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 pub struct Variant {
-    /// Unique identifier for the variant following schema: {chromosome}-{position}-{referenceAllele}-{alternateAllele}.
+    /// Unique identifier for the variant following schema:
+    /// {chromosome}-{position}-{referenceAllele}-{alternateAllele}.
     variant_id: String,
     /// Chromosome on which the variant is located.
     chromosome: Chromosome,
@@ -152,7 +154,7 @@ pub struct Variant {
     variant_effect: Vec<VariantEffect>,
     /// Predicted consequences on transcript context.
     transcript_consequences: Vec<TranscriptConsequence>,
-    /// RsIds for the variant.
+    /// `RsIds` for the variant.
     rs_ids: Vec<String>,
     /// Cross-references for the variant in different databases.
     db_xrefs: Vec<DbXref>,
@@ -164,7 +166,8 @@ pub struct Variant {
     variant_description: String,
 
     // embedded fields
-    /// Sequence ontology identifier of the most severe consequence of the variant based on Ensembl VEP [bioregistry:so].
+    /// Sequence ontology identifier of the most severe consequence of the variant based on Ensembl
+    /// VEP [bioregistry:so].
     #[graphql(skip)]
     most_severe_consequence_id: String,
 }
@@ -219,6 +222,12 @@ impl Loader<String> for VariantLoader {
     }
 }
 
+/// Loads variants by their IDs.
+///
+/// # Returns
+/// Returns a vector of [`Variant`] objects.
+/// # Errors
+/// Returns an error if the variants could not be loaded.
 pub async fn load_variants(
     ctx: &Context<'_>,
     ids: &[String],
@@ -226,6 +235,12 @@ pub async fn load_variants(
     load_ordered(ctx.data_unchecked::<DataLoader<VariantLoader>>(), ids).await
 }
 
+/// Loads a single variant by its ID.
+///
+/// # Returns
+/// Returns an [`Option<Variant>`] object.
+/// # Errors
+/// Returns an error if the variant could not be loaded.
 pub async fn load_variant(ctx: &Context<'_>, id: &str) -> async_graphql::Result<Option<Variant>> {
     ctx.data_unchecked::<DataLoader<VariantLoader>>()
         .load_one(id.to_string())
@@ -238,23 +253,24 @@ pub struct VariantQuery;
 
 #[Object]
 impl VariantQuery {
-    /// Fetch variants by ID.
+    /// Retrieve a list of variants by their identifier in the format of CHROM_POS_REF_ALT for SNPs
+    /// and short indels (e.g. 19_44908684_T_C).
     async fn variants(
         &self,
         ctx: &Context<'_>,
-        variant_ids: Vec<String>,
-        #[graphql(default)] page: Page,
+        #[graphql(desc = "List of variant IDs to get.")] variant_ids: Vec<String>,
+        #[graphql(default, desc = "Pagination for the variants.")] page: Page,
     ) -> async_graphql::Result<Paged<Variant>> {
         let items = load_variants(ctx, &variant_ids).await?;
-        Ok(items
-            .query()
-            .paginate(page))
+        Ok(items.query().paginate(page))
     }
 
+    /// Retrieve a variant by identifier in the format of CHROM_POS_REF_ALT for SNPs and short
+    /// indels (e.g. 19_44908684_T_C).
     async fn variant(
         &self,
         ctx: &Context<'_>,
-        variant_id: String,
+        #[graphql(desc = "Variant ID to get.")] variant_id: String,
     ) -> async_graphql::Result<Option<Variant>> {
         load_variant(ctx, &variant_id).await
     }
@@ -262,15 +278,25 @@ impl VariantQuery {
 
 #[ComplexObject]
 impl Variant {
-    /// The sequence ontology term of the most severe consequence of the variant based on Ensembl VEP.
-    async fn most_severe_consequence(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<SequenceOntology>> {
-        load_sequence_ontology_one(ctx, self.most_severe_consequence_id.clone().replace("_", ":")).await
+    /// The sequence ontology term of the most severe consequence of the variant based on Ensembl
+    /// VEP.
+    async fn most_severe_consequence(
+        &self,
+        ctx: &Context<'_>,
+    ) -> async_graphql::Result<Option<SequenceOntology>> {
+        load_sequence_ontology_one(
+            ctx,
+            self.most_severe_consequence_id.clone().replace('_', ":"),
+        )
+        .await
     }
-    /// Protein coding coordinates linking this variant to its amino acid-level consequences in protein products. Describes variant consequences at the protein level including amino acid changes and their positions.
+    /// Protein coding coordinates linking this variant to its amino acid-level consequences in
+    /// protein products. Describes variant consequences at the protein level including amino acid
+    /// changes and their positions.
     async fn protein_coding_coordinates(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default)] page: Page,
+        #[graphql(default, desc = "Pagination for the protein coding coordinates.")] page: Page,
     ) -> async_graphql::Result<Paged<ProteinCodingCoordinates>> {
         let items = ctx
             .data_unchecked::<DataLoader<ProteinCodingCoordinateVariantLoader>>()

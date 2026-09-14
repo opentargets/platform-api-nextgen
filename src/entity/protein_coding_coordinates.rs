@@ -31,6 +31,7 @@ use crate::{
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[graphql(name = "ProteinCodingCoordinateDatasource")]
 #[serde(rename_all = "camelCase")]
+#[allow(clippy::struct_field_names)]
 pub struct Datasource {
     /// Count of evidence from this data source.
     datasource_count: u32,

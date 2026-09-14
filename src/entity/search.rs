@@ -117,7 +117,7 @@ pub struct SearchResults {
     total: u64,
     /// Combined list of search hits across requested entities.
     hits: Vec<SearchResult>,
-    // Facet aggregations by entity and category for the current query.
+    /// Facet aggregations by entity and category for the current query.
     aggregations: Option<SearchResultAggs>,
 }
 
@@ -376,12 +376,15 @@ pub struct SearchQuery;
 #[Object]
 impl SearchQuery {
     #[instrument(skip(self, ctx))]
+    /// Full-text, multi-entity search across all types of entities (targets, diseases, drugs,
+    /// variants or studies).
     async fn search(
         &self,
         ctx: &Context<'_>,
-        query_string: String,
+        #[graphql(desc = "Search query string.")] query_string: String,
+        #[graphql(desc = "List of entity names to search for (target, disease, drug, etc.).")]
         entity_names: Option<Vec<String>>,
-        #[graphql(default)] page: Page,
+        #[graphql(default, desc = "Pagination for the search results.")] page: Page,
     ) -> Result<SearchResults, async_graphql::Error> {
         if query_string.is_empty() {
             return Ok(SearchResults {

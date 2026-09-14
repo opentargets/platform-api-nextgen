@@ -190,15 +190,16 @@ pub struct FacetQuery;
 
 #[Object]
 impl FacetQuery {
-    /// Faceted search over the `facet_search_*` indices.
+    /// Search sets of targets or diseases used to facet associations.
     #[instrument(skip(self, ctx))]
     async fn facets(
         &self,
         ctx: &Context<'_>,
-        query_string: String,
+        #[graphql(desc = "Search query string.")] query_string: String,
+        #[graphql(desc = "List of entity names to search for (target, disease, drug, etc.).")]
         entity_names: Option<Vec<String>>,
-        category: Option<String>,
-        #[graphql(default)] page: Page,
+        #[graphql(desc = "Category filter.")] category: Option<String>,
+        #[graphql(default, desc = "Pagination for the facet search results.")] page: Page,
     ) -> Result<SearchFacetsResults, async_graphql::Error> {
         let os = ctx.data::<OpenSearch>()?;
         let indices = facet_indices(entity_names.as_deref());

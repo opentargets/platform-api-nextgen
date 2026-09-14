@@ -97,7 +97,6 @@ pub struct SumStatQC {
 /// Molecular QTL studies are split by their target trait (e.g. gene, splice junction, etc),
 /// biosample (tissue, cell type or cell line) and condition (e.g. stimulation, time period, etc),
 /// potentially leading to tens of thousands of studies derived from the same publication.
-#[allow(clippy::struct_field_names)]
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
@@ -105,10 +104,12 @@ pub struct Study {
     // Identity
     /// The GWAS or molQTL study identifier (e.g. GCST004132).
     #[graphql(name = "id")]
+    #[allow(clippy::struct_field_names)]
     study_id: String,
     /// Identifier of the source project collection that the study information is derived from.
     project_id: String,
     /// Field specifying if study contains phenotype/disease or molecular genetic associations.
+    #[allow(clippy::struct_field_names)]
     study_type: StudyType,
 
     // Trait

@@ -17,8 +17,10 @@ use crate::datasource::clickhouse::ClickHouse;
 #[serde(rename_all = "camelCase")]
 pub struct Biosample {
     /// Unique identifier for the biosample.
+    #[allow(clippy::struct_field_names)]
     biosample_id: String,
     /// Name of the biosample.
+    #[allow(clippy::struct_field_names)]
     biosample_name: String,
     /// Description of the biosample.
     description: Option<String>,

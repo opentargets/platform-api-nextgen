@@ -18,5 +18,8 @@ doc-valid-idents = [
     "GnomAD",
     "ProbeMiner",
     "SwissProt",
+    "ClinPGx",
+    "CHROM_POS_REF_ALT",
+    "19_44908684_T_C",
     ".."  # this appends default valid idents
 ]

@@ -92,6 +92,7 @@ pub struct ChemicalProbe {
     control: Option<String>,
     /// Drug ID associated with the chemical probe.
     drug_id: Option<String>,
+    /// Probe identifier from the source, used to cross-reference drug information.
     drug_from_source_id: Option<String>,
     /// Mechanism of action of the chemical probe.
     mechanism_of_action: Vec<String>,
@@ -395,6 +396,7 @@ pub struct Tractability {
 #[serde(rename_all = "camelCase")]
 pub struct Transcript {
     /// Ensembl transcript identifier.
+    #[allow(clippy::struct_field_names)]
     transcript_id: String,
     /// Biotype classification of the transcript.
     biotype: String,
@@ -654,7 +656,7 @@ impl Target {
     async fn mouse_phenotypes(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Pagination for mouse phenotypes.")] page: Page,
+        #[graphql(default, desc = "Pagination for the mouse phenotypes.")] page: Page,
     ) -> async_graphql::Result<Paged<MousePhenotype>> {
         let items = load_mouse_phenotype_by_target(ctx, self.id.clone()).await?;
         Ok(items.query().paginate(page))
@@ -687,7 +689,7 @@ impl Target {
     async fn baseline_expression(
         &self,
         ctx: &Context<'_>,
-        page: Page,
+        #[graphql(desc = "Pagination for the baseline expressions.")] page: Page,
     ) -> async_graphql::Result<Paged<BaselineExpression>> {
         let rows = load_baseline_expression_by_target(&ctx, &self.id.clone(), page).await?;
         let count: u64 = match rows.first() {
