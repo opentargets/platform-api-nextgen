@@ -35,6 +35,7 @@ pub struct ModelPhenotypeClasses {
     label: String,
 }
 
+// CHRSNAMEDTUPLE The fields in this should be reordered to something more sane.
 /// Mouse phenotype information linking human targets to observed phenotypes in mouse models.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
@@ -47,8 +48,9 @@ pub struct MousePhenotype {
     model_phenotype_id: String,
     /// Human-readable label describing the observed phenotype.
     model_phenotype_label: String,
+    // CHRSNAMEDTUPLE Unused, but we must parse this until clickhouse-rs support named tuples.
     #[graphql(skip)]
-    /// Identifier for the human target as provided by the data source.
+    #[allow(unused)]
     target_from_source_id: String,
     /// Name of the target gene as represented in the mouse model.
     target_in_model: String,

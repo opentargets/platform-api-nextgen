@@ -40,8 +40,10 @@ pub struct Datasource {
     datasource_nice_name: String,
 }
 
-
-/// Protein coding coordinates linking this variant to its amino acid-level consequences in protein products. Describes variant consequences at the protein level including amino acid changes and their positions.
+// CHRSNAMEDTUPLE The fields in this should be reordered to something more sane.
+/// Protein coding coordinates linking this variant to its amino acid-level consequences in protein
+/// products. Describes variant consequences at the protein level including amino acid changes and
+/// their positions.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]

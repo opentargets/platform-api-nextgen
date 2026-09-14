@@ -22,6 +22,7 @@ pub struct DrugWarningReference {
     url: String,
 }
 
+// CHRSNAMEDTUPLE The fields in this should be reordered to something more sane.
 /// Blackbox and withdrawn information for drugs molecules included in ChEMBL database.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]

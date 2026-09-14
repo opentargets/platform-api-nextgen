@@ -18,7 +18,7 @@ use crate::{
 
 // ---- models ----
 
-// Note: we cannot reorder this one as it is a nested tuple and those are deserialized in order
+// CHRSNAMEDTUPLE The fields in this should be reordered to something more sane.
 /// A container for all evidence-related attributes supporting the disease-phenotype association.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]

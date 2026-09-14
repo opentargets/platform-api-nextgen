@@ -149,6 +149,7 @@ impl EvidenceVariation {
     }
 }
 
+// CHRSNAMEDTUPLE The fields in this should be reordered to something more sane.
 /// Sentences of a publication supporting the disease/target relationship.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]

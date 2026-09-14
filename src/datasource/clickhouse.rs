@@ -14,6 +14,8 @@ impl ClickHouse {
             .with_database(config.data_namespace())
             // We have to disable validation until clickhouse-rs adds named tuple support,
             // see: https://github.com/ClickHouse/clickhouse-rs/issues/351
+            // Once support is added, check out all comments labelled with CHRSNAMEDTUPLE
+            // because those require actions.
             .with_validation(false)
             .with_setting("wait_end_of_query", "1")
             .with_setting(
