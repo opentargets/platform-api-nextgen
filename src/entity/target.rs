@@ -693,7 +693,7 @@ impl Target {
     ) -> async_graphql::Result<Paged<BaselineExpression>> {
         let rows = load_baseline_expression_by_target(&ctx, &self.id.clone(), page).await?;
         let count: u64 = match rows.first() {
-            Some(it) => it.total,
+            Some(it) => it.total(),
             None => 0,
         };
         Ok(Paged { count, rows })

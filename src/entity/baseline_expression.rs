@@ -59,7 +59,14 @@ pub struct BaselineExpression {
     unit: String,
     /// Quality control flags or notes for baseline expression.
     quality_controls: Vec<String>,
+    #[graphql(skip)]
     pub total: u64,
+}
+
+impl BaselineExpression {
+    /// Returns the total count of baseline expressions.
+    #[must_use]
+    pub fn total(&self) -> u64 { self.total }
 }
 
 #[derive(Debug, Clone, Deserialize, SimpleObject, Eq, PartialEq, Hash)]
