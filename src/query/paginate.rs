@@ -16,6 +16,7 @@ use crate::{
         protein_coding_coordinates::ProteinCodingCoordinates,
         study::Study,
         target::Target,
+        target_essentiality::{DepMapEssentiality, TargetEssentiality},
         variant::Variant,
     },
     query::statistics::Statistics,
@@ -48,12 +49,16 @@ impl Default for Page {
 #[graphql(concrete(name = "EvidencePage", params(Evidence)))]
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
 #[graphql(concrete(name = "MousePhenotypePage", params(MousePhenotype)))]
-#[graphql(concrete(name = "ProteinCodingCoordinatesPage", params(ProteinCodingCoordinates)))]
+#[graphql(concrete(
+    name = "ProteinCodingCoordinatesPage",
+    params(ProteinCodingCoordinates)
+))]
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
 #[graphql(concrete(name = "VariantPage", params(Variant)))]
 #[graphql(concrete(name = "BaselineExpressionPage", params(BaselineExpression)))]
 #[graphql(concrete(name = "BiosamplePage", params(Biosample)))]
+#[graphql(concrete(name = "DepMapEssentialityPage", params(DepMapEssentiality)))]
 pub struct Paged<T: OutputType> {
     pub count: u64,
     pub rows: Vec<T>,
