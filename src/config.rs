@@ -6,6 +6,7 @@ use std::{
     time::Duration,
 };
 
+use async_graphql::{Context, Enum};
 use clap::Parser;
 use figment::{
     Figment,
@@ -15,8 +16,9 @@ use serde::{
     Deserialize, Deserializer,
     de::{Error, MapAccess, Visitor},
 };
+use strum::Display;
 
-use crate::plugin::plugin::Plugin;
+use crate::{entity::meta::Meta, plugin::plugin::Plugin};
 
 const DEFAULT_CONFIG_FILE: &str = "config.toml";
 pub const CACHE_REQUEST_SIZE: u64 = 2 * 1024 * 1024 * 1024; // 2GB
@@ -35,14 +37,32 @@ struct PluginBody {
     base_url: String,
 }
 
+/// The product served by the API (platform/ppp).
+#[derive(Debug, Clone, Copy, Deserialize, Display, Enum, Eq, PartialEq)]
+#[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum Product {
+    /// Open Targets Platform Public version.
+    Platform,
+    /// Open Targets Partner Preview Platform version.
+    Ppp,
+}
+
+/// Returns `true` if the product is `ppp`.
+#[must_use]
+pub fn is_ppp(ctx: &Context<'_>) -> bool {
+    ctx.data::<Meta>().is_ok_and(|m| m.product == Product::Ppp)
+}
+
 /// The configuration for the API.
 #[derive(Deserialize, Debug)]
 pub struct Config {
     /// The data release used by the API. Either `YY.MM` or `YY.MM.rev`.
     #[serde(deserialize_with = "release")]
     pub data_release: String,
-    /// The product served by the API (platform/ppp).
-    pub product: String,
+    /// The product served by the API (platform/ppp). Defaults to `platform`.
+    #[serde(default = "default_product")]
+    pub product: Product,
     /// The log level to use. Defaults to `info`.
     #[serde(default = "default_log_level")]
     pub log_level: String,
@@ -114,6 +134,7 @@ impl Config {
     pub fn data_release_main(&self) -> String { self.data_release.split('.').take(2).collect() }
 }
 
+fn default_product() -> Product { Product::Platform }
 fn default_log_level() -> String { "info".to_string() }
 fn default_bind_address() -> String { "0.0.0.0:8080".to_string() }
 fn default_opensearch_timeout() -> Duration { Duration::from_secs(10) }

@@ -7,6 +7,7 @@ use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use tracing::instrument;
 
 use crate::{
+    config::is_ppp,
     datasource::{clickhouse::ClickHouse, opensearch::OpenSearch},
     entity::{
         disease::{Disease, load_disease},
@@ -139,8 +140,19 @@ pub enum Datasource {
     /// by human-mouse phenotypic similarity (PhenoDigm).
     /// See <https://platform-docs.opentargets.org/evidence#impc>
     Impc,
+    /// Pre-publication orthogonal validation of primary project target-disease evidence performed
+    /// by the Open Targets Validation Lab.
+    /// See <https://home.opentargets.org/OTAR2059>
+    #[graphql(visible = "is_ppp")]
     OtCrisprValidation,
+    /// Pre-publication target-disease evidence derived from Open Targets CRISPR screenings.
+    /// See <https://home.opentargets.org/ppp-documentation>
+    #[graphql(visible = "is_ppp")]
     OtCrispr,
+    /// Target-disease evidence derived from dual CRISPR screenings performed in cancer cell
+    /// lines.
+    /// See <https://home.opentargets.org/OTAR2062>
+    #[graphql(visible = "is_ppp")]
     Encore,
 }
 

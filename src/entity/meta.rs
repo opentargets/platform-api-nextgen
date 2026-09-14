@@ -2,7 +2,7 @@
 
 use async_graphql::{Context, Object, SimpleObject};
 
-use crate::config::Config;
+use crate::config::{Config, Product};
 
 // ---- models ----
 
@@ -24,7 +24,7 @@ pub struct Meta {
     /// Name of the API.
     name: String,
     /// Open Targets platform API product name.
-    product: String,
+    pub product: Product,
     /// API version information.
     api_version: Version,
     /// Data release version information.
@@ -55,7 +55,7 @@ impl Meta {
         let name = format!("Open Targets {} API {}", config.product, api_version);
 
         Self {
-            product: config.product.clone(),
+            product: config.product,
             name,
             api_version: Version {
                 year: api_year,
