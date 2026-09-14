@@ -7,13 +7,7 @@ use async_graphql::{
 use clickhouse::Row;
 use serde::Deserialize;
 
-use crate::{
-    datasource::clickhouse::ClickHouse,
-    query::{
-        QueryExt,
-        paginate::{Page, Paged},
-    },
-};
+use crate::datasource::clickhouse::ClickHouse;
 
 // ---- models ----
 
@@ -112,12 +106,10 @@ impl Loader<String> for MousePhenotypeLoader {
 pub async fn load_mouse_phenotype_by_target(
     ctx: &Context<'_>,
     id: String,
-    page: Page,
-) -> async_graphql::Result<Paged<MousePhenotype>> {
-    let items = ctx
+) -> async_graphql::Result<Vec<MousePhenotype>> {
+    Ok(ctx
         .data_unchecked::<DataLoader<MousePhenotypeLoader>>()
         .load_one(id)
         .await?
-        .unwrap_or_default();
-    Ok(items.query().paginate(page))
+        .unwrap_or_default())
 }

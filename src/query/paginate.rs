@@ -1,8 +1,11 @@
 use async_graphql::{InputObject, OutputType, SimpleObject};
+use serde::Serialize;
 
 use crate::{
     entity::{
         association::{DiseaseAssociation, TargetAssociation},
+        baseline_expression::BaselineExpression,
+        biosample::Biosample,
         disease::Disease,
         disease_hpo::DiseasePhenotype,
         drug::Drug,
@@ -21,7 +24,7 @@ use crate::{
 pub const MAX_PAGE_SIZE: usize = 100_000;
 
 /// Represents a paginated list of items.
-#[derive(Debug, Clone, Copy, InputObject)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InputObject, Serialize)]
 pub struct Page {
     /// The index of the page to fetch, starting from 0.
     #[graphql(default = 0)]
@@ -36,7 +39,7 @@ impl Default for Page {
 }
 
 /// The result of a paginated query, containing the total number of items and the items.
-#[derive(Debug, SimpleObject)]
+#[derive(Debug, Clone, SimpleObject)]
 #[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
 #[graphql(concrete(name = "DiseasePage", params(Disease)))]
 #[graphql(concrete(name = "DiseasePhenotypePage", params(DiseasePhenotype)))]
@@ -49,9 +52,20 @@ impl Default for Page {
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
 #[graphql(concrete(name = "VariantPage", params(Variant)))]
+#[graphql(concrete(name = "BaselineExpressionPage", params(BaselineExpression)))]
+#[graphql(concrete(name = "BiosamplePage", params(Biosample)))]
 pub struct Paged<T: OutputType> {
     pub count: u64,
     pub rows: Vec<T>,
+}
+
+impl<T: OutputType> Default for Paged<T> {
+    fn default() -> Self {
+        Self {
+            count: 0,
+            rows: Vec::new(),
+        }
+    }
 }
 
 /// The result of a paginated query, containing the total number of items, the items, and statistics

@@ -11,6 +11,8 @@ use crate::{
     AppState,
     datasource::{clickhouse::ClickHouse, opensearch::OpenSearch},
     entity::{
+        baseline_expression::BaselineExpressionLoader,
+        biosample::BiosampleLoader,
         disease::{DiseaseLoader, DiseaseQuery},
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},
@@ -49,8 +51,6 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let hpos =
         DataLoader::new(HpoLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
-    let mouse_phenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
-        .max_batch_size(MAX_BATCH_SIZE);
     let sequence_ontology = DataLoader::new(SequenceOntologyLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
     let studies =
@@ -59,9 +59,19 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let targets =
         DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
-    let protein_coding_coordinates = DataLoader::new(ProteinCodingCoordinateVariantLoader::new(ch.clone()), tokio::spawn)
-        .max_batch_size(MAX_BATCH_SIZE);
+    let protein_coding_coordinates = DataLoader::new(
+        ProteinCodingCoordinateVariantLoader::new(ch.clone()),
+        tokio::spawn,
+    )
+    .max_batch_size(MAX_BATCH_SIZE);
     let variants = DataLoader::new(VariantLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
+    let mouse_phenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
+    let baseline_expression =
+        DataLoader::new(BaselineExpressionLoader::new(ch.clone()), tokio::spawn)
+            .max_batch_size(MAX_BATCH_SIZE);
+    let biosample = DataLoader::new(BiosampleLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
 
     let inner = req.into_inner();
@@ -86,7 +96,9 @@ pub async fn handler(
                 .data(sequence_ontology)
                 .data(studies)
                 .data(targets)
-                .data(variants)
+                .data(baseline_expression)
+                .data(biosample)
+                .data(variants),
         )
         .instrument(span)
         .await
@@ -102,6 +114,7 @@ pub struct Query(
     StudyQuery,   // Studies
     DrugQuery,    // Drugs
     VariantQuery, // Variants
+    TargetQuery,  // Targets
 );
 
 pub type ApiSchema = Schema<Query, EmptyMutation, EmptySubscription>;
