@@ -4,6 +4,7 @@ pub mod entity;
 pub mod error;
 pub mod logging;
 pub mod plugin;
+pub mod product;
 pub mod query;
 pub mod server;
 
@@ -13,12 +14,13 @@ use config::Config;
 use datasource::{clickhouse::ClickHouse, opensearch::OpenSearch};
 use plugin::registry::PluginRegistry;
 
+use crate::product::Api;
+
 #[derive(Clone)]
 pub struct AppState {
     pub config: Arc<Config>,
-    pub clickhouse: ClickHouse,
-    pub opensearch: OpenSearch,
     pub plugin_registry: PluginRegistry,
+    pub api: Api,
     pub http: reqwest::Client,
 }
 
@@ -27,9 +29,8 @@ impl AppState {
     pub fn new(config: Config) -> Self {
         Self {
             plugin_registry: PluginRegistry::new(&config),
+            api: Api::new(&config, ClickHouse::new(&config), &OpenSearch::new(&config)),
             http: reqwest::Client::new(),
-            clickhouse: ClickHouse::new(&config),
-            opensearch: OpenSearch::new(&config),
             config: Arc::new(config),
         }
     }

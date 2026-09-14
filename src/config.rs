@@ -16,7 +16,10 @@ use serde::{
     de::{Error, MapAccess, Visitor},
 };
 
-use crate::plugin::Plugin;
+use crate::{
+    plugin::Plugin,
+    product::{CurrentProduct, Product},
+};
 
 const DEFAULT_CONFIG_FILE: &str = "config.toml";
 pub const CACHE_REQUEST_SIZE: u64 = 2 * 1024 * 1024 * 1024; // 2GB
@@ -41,8 +44,6 @@ pub struct Config {
     /// The data release used by the API. Either `YY.MM` or `YY.MM.rev`.
     #[serde(deserialize_with = "release")]
     pub data_release: String,
-    /// The product served by the API (platform/ppp).
-    pub product: String,
     /// The log level to use. Defaults to `info`.
     #[serde(default = "default_log_level")]
     pub log_level: String,
@@ -105,8 +106,9 @@ impl Config {
     /// the trailing four digits are `YYMM`. Revision suffixes are stripped.
     #[must_use]
     pub fn data_namespace(&self) -> String {
+        let product_name = <CurrentProduct as Product>::NAME;
         let release: String = self.data_release.split('.').take(2).collect();
-        format!("{}{}", self.product, release)
+        format!("{product_name}{release}")
     }
 
     /// The data release in the form `YY.MM`, without revision suffixes.
