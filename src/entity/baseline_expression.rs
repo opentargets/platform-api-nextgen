@@ -10,10 +10,7 @@ use serde::Deserialize;
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::biosample::{Biosample, load_biosample_by_id},
-    query::{
-        QueryExt,
-        paginate::{Page, Paged},
-    },
+    query::paginate::Page,
 };
 
 // ---- models ----
@@ -169,68 +166,40 @@ impl BaselineExpression {
     async fn tissue_biosample(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Pagination for tissue biosample.")] page: Page,
-    ) -> async_graphql::Result<Paged<Biosample>> {
+    ) -> async_graphql::Result<Option<Biosample>> {
         match self.tissue_biosample_id.as_ref() {
-            Some(id) => Ok(load_biosample_by_id(&ctx, &id)
-                .await?
-                .query()
-                .paginate(page)),
-            None => Ok(Paged {
-                count: 0,
-                rows: Vec::new(),
-            }),
+            Some(id) => Ok(load_biosample_by_id(&ctx, &id).await?),
+            None => Ok(None),
         }
     }
     /// Tissue biosample entity.
     async fn tissue_biosample_parent(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Pagination for tissue biosample parent.")] page: Page,
-    ) -> async_graphql::Result<Paged<Biosample>> {
+    ) -> async_graphql::Result<Option<Biosample>> {
         match self.tissue_biosample_parent_id.as_ref() {
-            Some(id) => Ok(load_biosample_by_id(&ctx, &id)
-                .await?
-                .query()
-                .paginate(page)),
-            None => Ok(Paged {
-                count: 0,
-                rows: Vec::new(),
-            }),
+            Some(id) => Ok(load_biosample_by_id(&ctx, &id).await?),
+            None => Ok(None),
         }
     }
     /// Cell type biosample entity.
     async fn celltype_biosample(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Pagination for celltype biosample.")] page: Page,
-    ) -> async_graphql::Result<Paged<Biosample>> {
+    ) -> async_graphql::Result<Option<Biosample>> {
         match self.celltype_biosample_id.as_ref() {
-            Some(id) => Ok(load_biosample_by_id(&ctx, &id)
-                .await?
-                .query()
-                .paginate(page)),
-            None => Ok(Paged {
-                count: 0,
-                rows: Vec::new(),
-            }),
+            Some(id) => Ok(load_biosample_by_id(&ctx, &id).await?),
+            None => Ok(None),
         }
     }
     /// Cell type biosample parent entity.
     async fn celltype_biosample_parent(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Pagination for celltype biosample parent.")] page: Page,
-    ) -> async_graphql::Result<Paged<Biosample>> {
+    ) -> async_graphql::Result<Option<Biosample>> {
         match self.celltype_biosample_parent_id.as_ref() {
-            Some(id) => Ok(load_biosample_by_id(&ctx, &id)
-                .await?
-                .query()
-                .paginate(page)),
-            None => Ok(Paged {
-                count: 0,
-                rows: Vec::new(),
-            }),
+            Some(id) => Ok(load_biosample_by_id(&ctx, &id).await?),
+            None => Ok(None),
         }
     }
 }

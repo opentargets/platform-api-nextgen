@@ -47,7 +47,7 @@ impl BiosampleLoader {
 }
 
 impl Loader<String> for BiosampleLoader {
-    type Value = Vec<Biosample>;
+    type Value = Biosample;
     type Error = async_graphql::Error;
 
     async fn load(&self, key: &[String]) -> Result<HashMap<String, Self::Value>, Self::Error> {
@@ -61,13 +61,12 @@ impl Loader<String> for BiosampleLoader {
             .bind(key)
             .fetch_all()
             .await?;
-        Ok(rows.into_iter().fold(
-            key.iter().cloned().map(|k| (k, Vec::new())).collect(),
-            |mut acc: HashMap<String, Vec<Biosample>>, row| {
-                acc.entry(row.biosample_id.clone()).or_default().push(row);
-                acc
-            },
-        ))
+        println!("{}", rows.len());
+        let mut results: HashMap<String, Biosample> = HashMap::new();
+        for row in rows {
+            results.entry(row.biosample_id.clone()).or_insert(row);
+        }
+        Ok(results)
     }
 }
 
@@ -80,10 +79,9 @@ impl Loader<String> for BiosampleLoader {
 pub async fn load_biosample_by_id(
     ctx: &Context<'_>,
     id: &String,
-) -> async_graphql::Result<Vec<Biosample>> {
-    Ok(ctx
-        .data_unchecked::<DataLoader<BiosampleLoader>>()
+) -> async_graphql::Result<Option<Biosample>> {
+    println!("loading {id}");
+    ctx.data_unchecked::<DataLoader<BiosampleLoader>>()
         .load_one(id.clone())
-        .await?
-        .unwrap_or_default())
+        .await
 }

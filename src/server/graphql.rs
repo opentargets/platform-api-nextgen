@@ -51,8 +51,6 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let hpos =
         DataLoader::new(HpoLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
-    let mouse_phenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
-        .max_batch_size(MAX_BATCH_SIZE);
     let sequence_ontology = DataLoader::new(SequenceOntologyLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
     let studies =
