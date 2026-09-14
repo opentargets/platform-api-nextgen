@@ -19,4 +19,5 @@ pub mod sequence_ontology;
 pub mod study;
 pub mod target;
 pub mod target_prioritisation;
+pub mod target_essentiality;
 pub mod variant;

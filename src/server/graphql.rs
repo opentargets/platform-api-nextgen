@@ -27,8 +27,9 @@ use crate::{
         search_facet::FacetQuery,
         sequence_ontology::SequenceOntologyLoader,
         study::{StudyLoader, StudyQuery},
-        target::TargetLoader,
+        target::{TargetLoader, TargetQuery},
         target_prioritisation::TargetPrioritisationsLoader,
+        target_essentiality::{self, TargetEssentialityLoader},
         variant::{VariantLoader, VariantQuery},
     },
 };
@@ -77,6 +78,9 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let mouse_phenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
+    let target_essentiality =
+        DataLoader::new(TargetEssentialityLoader::new(ch.clone()), tokio::spawn)
+            .max_batch_size(MAX_BATCH_SIZE);
 
     let inner = req.into_inner();
     let span = tracing::info_span!(
@@ -103,7 +107,8 @@ pub async fn handler(
                 .data(studies)
                 .data(targets)
                 .data(target_prioritisations)
-                .data(variants),
+                .data(variants)
+                .data(target_essentiality),
         )
         .instrument(span)
         .await
