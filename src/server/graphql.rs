@@ -59,8 +59,11 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let targets =
         DataLoader::new(TargetLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
-    let protein_coding_coordinates = DataLoader::new(ProteinCodingCoordinateVariantLoader::new(ch.clone()), tokio::spawn)
-        .max_batch_size(MAX_BATCH_SIZE);
+    let protein_coding_coordinates = DataLoader::new(
+        ProteinCodingCoordinateVariantLoader::new(ch.clone()),
+        tokio::spawn,
+    )
+    .max_batch_size(MAX_BATCH_SIZE);
     let variants = DataLoader::new(VariantLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
     let mouse_phenotypes = DataLoader::new(MousePhenotypeLoader::new(ch.clone()), tokio::spawn)
@@ -95,7 +98,7 @@ pub async fn handler(
                 .data(targets)
                 .data(baseline_expression)
                 .data(biosample)
-                .data(variants)
+                .data(variants),
         )
         .instrument(span)
         .await
@@ -111,6 +114,7 @@ pub struct Query(
     StudyQuery,   // Studies
     DrugQuery,    // Drugs
     VariantQuery, // Variants
+    TargetQuery,  // Targets
 );
 
 pub type ApiSchema = Schema<Query, EmptyMutation, EmptySubscription>;
