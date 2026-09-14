@@ -14,28 +14,42 @@ use crate::datasource::clickhouse::ClickHouse;
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct TargetEssentiality {
+    /// Target identifier the essentiality was measured on [bioregistry:ensembl].
     target_id: String,
+    /// Boolean flag indicating whether the tested gene is considered essential in the given
+    /// context.
     pub is_essential: Option<bool>,
+    /// Essentiality measurements extraced from DepMap, stratified by tissue or anatomical units.
     pub dep_map_essentiality: Vec<DepMapEssentiality>,
 }
 
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneEssentialityScreen {
+    /// Name of the cancer cell line in which the gene essentiality was assessed.
     cell_line_name: Option<String>,
+    /// Unique identifier of the assay in DepMap.
     depmap_id: Option<String>,
+    /// Cell model passport identifier of a cell line modelling a disease.
     disease_cell_line_id: Option<String>,
+    /// Disease associated with the cell line as reported in the source data.
     disease_from_source: Option<String>,
+    /// Gene expression level in the corresponding cell line.
     expression: Option<f64>,
+    /// Gene effect score indicating the impact of gene knockout.
     gene_effect: Option<f64>,
+    /// Background mutation in the tested cell line.
     mutation: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct DepMapEssentiality {
+    /// List of CRISPR screening experiments supporting the essentiality assessment.
     screens: Vec<GeneEssentialityScreen>,
+    /// Identifier of the tissue from where the cells were sampled for assay [bioregistry:uberon].
     tissue_id: Option<String>,
+    /// Name of the tissue from where the cells were sampled for assay.
     tissue_name: Option<String>,
 }
 

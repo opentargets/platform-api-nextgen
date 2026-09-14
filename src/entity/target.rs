@@ -715,6 +715,10 @@ impl Target {
         load_target_prioritisations(ctx, &self.id).await
     }
 
+    ///Essentiality measurements extracted from DepMap, stratified by tissue or anatomical units.
+    /// Gene essentiality is assessed based on dependencies exhibited when knocking out genes in
+    /// cancer cellular models using CRISPR screenings from the Cancer Dependency Map (DepMap)
+    /// Project. Gene effects below -1 can be considered dependencies.
     async fn dep_map_essentiality(
         &self,
         ctx: &Context<'_>,
@@ -728,6 +732,9 @@ impl Target {
         Ok(dep_map.query().paginate(page))
     }
 
+    ///Flag indicating whether this target is essential based on CRISPR screening data from cancer
+    /// cell line models. Essential genes are those that show dependency when knocked out in
+    /// cellular models.
     async fn is_essential(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<bool>> {
         let target_essentiality = load_target_essentiality_by_target(&ctx, self.id.clone()).await?;
         Ok(target_essentiality
