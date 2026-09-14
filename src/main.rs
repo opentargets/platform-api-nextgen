@@ -2,8 +2,7 @@ use clap::Parser;
 use platform_api::{
     AppState,
     config::{Args, Config},
-    logging,
-    server::{self, graphql::build_schema},
+    logging, server,
 };
 
 #[tokio::main]
@@ -12,7 +11,6 @@ async fn main() {
     logging::init(&config);
 
     let app_state = AppState::new(config);
-    let schema = build_schema(&app_state);
 
-    server::http::serve(app_state, schema).await;
+    server::http::serve(app_state).await;
 }

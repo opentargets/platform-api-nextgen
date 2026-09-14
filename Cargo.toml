@@ -3,6 +3,11 @@ name = "platform-api"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = []
+product-platform = []
+product-ppp = []
+
 [dependencies]
 async-graphql = { version = "7.2.1", features = ["chrono", "dataloader", "tracing"] }
 async-graphql-axum = "7.2.1"

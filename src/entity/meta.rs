@@ -2,7 +2,10 @@
 
 use async_graphql::{Context, Object, SimpleObject};
 
-use crate::config::Config;
+use crate::{
+    config::Config,
+    product::{CurrentProduct, Flavor, Product},
+};
 
 // ---- models ----
 
@@ -52,11 +55,14 @@ impl Meta {
         let api_version = env!("CARGO_PKG_VERSION").to_string();
         let (api_year, api_month, api_revision) = split_version(&api_version);
         let (data_year, data_month, data_revision) = split_version(&config.data_release);
-        let name = format!("Open Targets {} API {}", config.product, api_version);
+        let product = <CurrentProduct as Product>::NAME;
+        let name = format!("Open Targets {product} API {api_version}");
+        let data_namespace = format!("{product}{data_year}{data_month}");
 
         Self {
-            product: config.product.clone(),
+            product,
             name,
+            data_namespace,
             api_version: Version {
                 year: api_year,
                 month: api_month,
@@ -67,7 +73,6 @@ impl Meta {
                 month: data_month,
                 revision: data_revision,
             },
-            data_namespace: config.data_namespace(),
             downloads: None,
         }
     }
