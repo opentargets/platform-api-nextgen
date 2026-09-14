@@ -59,7 +59,6 @@ impl Loader<String> for BiosampleLoader {
             .bind(key)
             .fetch_all()
             .await?;
-        println!("{}", rows.len());
         let mut results: HashMap<String, Biosample> = HashMap::new();
         for row in rows {
             results.entry(row.biosample_id.clone()).or_insert(row);

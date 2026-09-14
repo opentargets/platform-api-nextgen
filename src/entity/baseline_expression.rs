@@ -143,10 +143,7 @@ impl Loader<(String, Page)> for BaselineExpressionLoader {
             },
         );
 
-        println!("full query: {}", full_query.sql_display());
-
         let result = full_query.fetch_all::<BaselineExpressionRow>().await?;
-
         let result2 = result
             .iter()
             .map(|res| {
@@ -175,12 +172,12 @@ impl Loader<(String, Page)> for BaselineExpressionLoader {
 /// Returns an error if the Baseline Expression could not be loaded.
 pub async fn load_baseline_expression_by_target(
     ctx: &Context<'_>,
-    id: &String,
+    id: String,
     page: Page,
 ) -> async_graphql::Result<Vec<BaselineExpression>> {
     Ok(ctx
         .data_unchecked::<DataLoader<BaselineExpressionLoader>>()
-        .load_one((id.clone(), page))
+        .load_one((id, page))
         .await?
         .unwrap_or_default())
 }
@@ -193,7 +190,7 @@ impl BaselineExpression {
         ctx: &Context<'_>,
     ) -> async_graphql::Result<Option<Biosample>> {
         match self.tissue_biosample_id.as_ref() {
-            Some(id) => Ok(load_biosample_by_id(&ctx, &id).await?),
+            Some(id) => Ok(load_biosample_by_id(ctx, id).await?),
             None => Ok(None),
         }
     }
