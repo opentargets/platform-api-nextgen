@@ -28,8 +28,8 @@ use crate::{
         sequence_ontology::SequenceOntologyLoader,
         study::{StudyLoader, StudyQuery},
         target::{TargetLoader, TargetQuery},
+        target_essentiality::TargetEssentialityLoader,
         target_prioritisation::TargetPrioritisationsLoader,
-        target_essentiality::{self, TargetEssentialityLoader},
         variant::{VariantLoader, VariantQuery},
     },
 };

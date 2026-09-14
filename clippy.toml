@@ -21,5 +21,6 @@ doc-valid-idents = [
     "ClinPGx",
     "CHROM_POS_REF_ALT",
     "19_44908684_T_C",
+    "DepMap",
     ".."  # this appends default valid idents
 ]

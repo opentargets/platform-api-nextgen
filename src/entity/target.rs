@@ -19,8 +19,8 @@ use crate::{
         disease::Disease,
         evidence::{Evidence, EvidenceKey, load_evidences},
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
-        target_prioritisation::{TargetPrioritisations, load_target_prioritisations},
         target_essentiality::{DepMapEssentiality, load_target_essentiality_by_target},
+        target_prioritisation::{TargetPrioritisations, load_target_prioritisations},
     },
     query::{
         Entity, QueryExt,
@@ -694,7 +694,7 @@ impl Target {
     async fn baseline_expression(
         &self,
         ctx: &Context<'_>,
-        #[graphql(desc = "Pagination for the baseline expressions.")] page: Page,
+        #[graphql(desc = "Pagination for baseline expressions.")] page: Page,
     ) -> async_graphql::Result<Paged<BaselineExpression>> {
         let rows = load_baseline_expression_by_target(ctx, self.id.clone(), page).await?;
         let count: u64 = match rows.first() {
@@ -715,16 +715,16 @@ impl Target {
         load_target_prioritisations(ctx, &self.id).await
     }
 
-    ///Essentiality measurements extracted from DepMap, stratified by tissue or anatomical units.
+    /// Essentiality measurements extracted from DepMap, stratified by tissue or anatomical units.
     /// Gene essentiality is assessed based on dependencies exhibited when knocking out genes in
     /// cancer cellular models using CRISPR screenings from the Cancer Dependency Map (DepMap)
     /// Project. Gene effects below -1 can be considered dependencies.
     async fn dep_map_essentiality(
         &self,
         ctx: &Context<'_>,
-        page: Page,
+        #[graphql(desc = "Pagination for essentiality measurements.")] page: Page,
     ) -> async_graphql::Result<Paged<DepMapEssentiality>> {
-        let target_essentiality = load_target_essentiality_by_target(&ctx, self.id.clone()).await?;
+        let target_essentiality = load_target_essentiality_by_target(ctx, self.id.clone()).await?;
         let dep_map = match target_essentiality {
             Some(te) => te.dep_map_essentiality,
             None => Vec::new(),
@@ -732,11 +732,11 @@ impl Target {
         Ok(dep_map.query().paginate(page))
     }
 
-    ///Flag indicating whether this target is essential based on CRISPR screening data from cancer
+    /// Flag indicating whether this target is essential based on CRISPR screening data from cancer
     /// cell line models. Essential genes are those that show dependency when knocked out in
     /// cellular models.
     async fn is_essential(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<bool>> {
-        let target_essentiality = load_target_essentiality_by_target(&ctx, self.id.clone()).await?;
+        let target_essentiality = load_target_essentiality_by_target(ctx, self.id.clone()).await?;
         Ok(target_essentiality
             .map(|t| t.is_essential)
             .unwrap_or_default())
