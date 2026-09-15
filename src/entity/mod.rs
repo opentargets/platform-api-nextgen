@@ -4,6 +4,7 @@ pub mod association;
 pub mod baseline_expression;
 pub mod biosample;
 pub mod clinical_indication;
+pub mod clinical_report;
 pub mod disease;
 pub mod disease_hpo;
 pub mod drug;
