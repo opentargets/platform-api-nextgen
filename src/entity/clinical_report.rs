@@ -1,35 +1,36 @@
-
 #[serde(rename_all = "camelCase")]
-pub struct ClinRepDrugListItem{
+pub struct ClinRepDrugListItem {
     drug_from_source: Option<String>,
     drug_id: Option<String>,
 }
 
 #[serde(rename_all = "camelCase")]
-pub struct TrialSponsor{
+pub struct TrialSponsor {
     agency_class: Option<String>,
     name: Option<String>,
 }
 
 #[serde(rename_all = "camelCase")]
-pub struct  TrialLiterature{
+pub struct TrialLiterature {
     id: String,
-    `type`: String,
+    _type: String,
 }
 
 #[serde(rename_all = "camelCase")]
-pub struct ClinicalReport{
+#[graphql(complex)]
+pub struct ClinicalReport {
     id: String,
     source: String,
     clinicalStage: String,
     phaseFromSource: Option<String>,
-    `type`: Vec<ClinicalReportType>,
+    clinicalReportType: Vec<ClinicalReportType>,
     title: Option<String>,
     trialStudyType: Option<String>,
     trialDescription: Option<String>,
     trialNumberOfArms: Option<i32>,
     trialStartDate: Option<String>,
-    trialLiterature: Vec<TrialLiterature>,
+    #[graphql(skip)]
+    trialLiteratureStruct: Vec<TrialLiterature>,
     trialOverallStatus: Option<String>,
     trialWhyStopped: Option<String>,
     trialPrimaryPurpose: Option<String>,
@@ -45,5 +46,10 @@ pub struct ClinicalReport{
     trialOfficialTitle: Option<String>,
     url: Option<String>,
     origin: String,
-    provider: String
+    provider: String,
+}
+
+#[graphql(complex)]
+impl ClinicalReport {
+    pub fn trial_literature(&self) -> Vec<String> { &self.trialLiteratureStruct.id }
 }
