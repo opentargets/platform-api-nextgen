@@ -32,13 +32,14 @@ pub struct TrialSponsor {
     name: Option<String>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TrialLiterature {
     /// PubMed identifier of the reference, when the source records one.
     id: String,
     /// How the reference relates to the trial: RESULT and DERIVED report its outcome, BACKGROUND
     /// is literature its authors cited.
-    _type: String,
+    r#type: String,
 }
 
 /// A clinical record (e.g. trial, drug label) reporting on drugs and diseases.
@@ -72,7 +73,7 @@ pub struct ClinicalReport {
     trial_start_date: Option<NaiveDate>,
     /// Literature references associated with the clinical trial.
     #[graphql(skip)]
-    trial_literature_struct: Vec<TrialLiterature>,
+    trial_literature: Vec<TrialLiterature>,
     /// Overall status of the clinical trial (e.g. Completed, Terminated).
     trial_overall_status: Option<String>,
     /// Reason provided for stopping the clinical trial.
@@ -114,5 +115,23 @@ pub struct ClinicalReport {
 
 #[ComplexObject]
 impl ClinicalReport {
-    pub fn trial_literature(&self) -> Vec<String> { &self.trialLiteratureStruct.id }
+    /// Kind of evidence the report describes: INDICATION for a drug/disease claim, SAFETY for a
+    /// drug warning.
+    async fn r#type(&self) -> Option<ClinicalReportType> {
+        match self.r#type.as_deref()? {
+            "INDICATION" => Some(ClinicalReportType::Indication),
+            "SAFETY" => Some(ClinicalReportType::Safety),
+            _ => None,
+        }
+    }
+
+    /// Start date of the clinical trial.
+    async fn trial_start_date(&self) -> Option<String> {
+        self.trial_start_date.map(|date| date.to_string())
+    }
+
+    /// Lead sponsor associated with the clinical trial.
+    async fn trial_sponsor(&self) -> Option<&TrialSponsor> { Some(&self.trial_sponsor) }
+
+    pub fn trial_literature(&self) -> Vec<String> { &self.trialLiterature.id }
 }
