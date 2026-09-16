@@ -20,6 +20,7 @@ use crate::{
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},
         drug_warning::DrugWarningLoader,
+        enhancer_to_gene::{self, EnhancerToGeneLoader},
         evidence::EvidenceLoader,
         gene_ontology::GeneOntologyLoader,
         hpo::HpoLoader,
@@ -52,11 +53,6 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let diseases = DataLoader::new(DiseaseLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
-    let clinical_indication_from_drug = DataLoader::new(
-        ClinicalIndicationFromDrugLoader::new(ch.clone()),
-        tokio::spawn,
-    )
-    .max_batch_size(MAX_BATCH_SIZE);
     let drugs =
         DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let drug_warnings = DataLoader::new(DrugWarningLoader::new(ch.clone()), tokio::spawn);
@@ -67,6 +63,11 @@ pub async fn handler(
     .max_batch_size(MAX_BATCH_SIZE);
     let clinical_indication_from_disease = DataLoader::new(
         ClinicalIndicationFromDiseaseLoader::new(ch.clone()),
+        tokio::spawn,
+    )
+    .max_batch_size(MAX_BATCH_SIZE);
+    let enhancer_to_gene = DataLoader::new(
+        EnhancerToGeneLoader::new(ch.clone()),
         tokio::spawn,
     )
     .max_batch_size(MAX_BATCH_SIZE);
@@ -116,6 +117,7 @@ pub async fn handler(
                 .data(clinical_indication_from_disease)
                 .data(drugs)
                 .data(drug_warnings)
+                .data(enhancer_to_gene)
                 .data(evidences)
                 .data(gene_ontology)
                 .data(mouse_phenotypes)
