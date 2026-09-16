@@ -1,6 +1,6 @@
-use std::sync::LazyLock;
+use std::{collections::HashMap, sync::LazyLock};
 
-use async_graphql::{ComplexObject, Enum, SimpleObject};
+use async_graphql::{ComplexObject, Enum, SimpleObject, dataloader::Loader};
 use chrono::NaiveDate;
 use clickhouse::Row;
 use moka::future::Cache;
@@ -8,10 +8,7 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    query::{
-        Entity, QueryExt,
-        cache::{CachedLoader, entity_cache},
-    },
+    query::cache::{CachedLoader, entity_cache},
 };
 
 // ---- models ----
@@ -152,6 +149,18 @@ impl CachedLoader for ClinicalReportLoader {
             .fetch_all::<ClinicalReport>()
             .await
             .map_err(Into::into)
+    }
+}
+
+impl Loader<String> for ClinicalReportLoader {
+    type Value = ClinicalReport;
+    type Error = async_graphql::Error;
+
+    async fn load(
+        &self,
+        keys: &[String],
+    ) -> Result<HashMap<String, ClinicalReport>, async_graphql::Error> {
+        self.load_cached(keys).await
     }
 }
 
