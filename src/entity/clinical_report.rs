@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    ComplexObject, Context, Enum, SimpleObject,
+    ComplexObject, Context, Enum, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use chrono::NaiveDate;
@@ -196,6 +196,9 @@ pub async fn load_clinical_report(
 
 #[derive(Default)]
 pub struct ClinicalReportQuery;
+
+#[Object]
+impl ClinicalReportQuery {}
 
 #[ComplexObject]
 impl ClinicalReport {
