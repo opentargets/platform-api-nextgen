@@ -14,6 +14,7 @@ pub enum ClinicalReportType {
     Safety,
 }
 
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct ClinRepDrugListItem {
     /// Drug name as reported in the source.
