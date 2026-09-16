@@ -81,11 +81,12 @@ impl<T: OutputType> Query<T> {
     fn page_slice(&mut self, page: Page) -> Vec<T> {
         // Using drain here is much faster than into_iter().skip()/take() because it avoids copying
         // the items into a new vector, and instead moves them directly into the Paged struct.
-        let total = self.0.len();
+        #[allow(clippy::cast_possible_truncation)]
+        let total = self.0.len() as u32;
         let size = page.size.min(MAX_PAGE_SIZE);
         let start = (page.index * size).min(total);
         let end = (start + size).min(total);
-        self.0.drain(start..end).collect()
+        self.0.drain(start as usize..end as usize).collect()
     }
 
     #[must_use]
