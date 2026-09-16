@@ -194,6 +194,9 @@ pub async fn load_clinical_report(
 
 // ---- resolvers ----
 
+#[derive(Default)]
+pub struct ClinicalReportQuery;
+
 #[ComplexObject]
 impl ClinicalReport {
     /// Kind of evidence the report describes: INDICATION for a drug/disease claim, SAFETY for a
