@@ -222,9 +222,9 @@ pub async fn load_diseases(
 /// An [`Option`] of [`Disease`] entity.
 /// # Errors
 /// Returns an [`async_graphql::Error`] if the database query fails.
-pub async fn load_disease(ctx: &Context<'_>, id: &str) -> async_graphql::Result<Option<Disease>> {
+pub async fn load_disease(ctx: &Context<'_>, id: String) -> async_graphql::Result<Option<Disease>> {
     ctx.data_unchecked::<DataLoader<DiseaseLoader>>()
-        .load_one(id.to_string())
+        .load_one(id)
         .await
 }
 
@@ -271,7 +271,7 @@ impl Disease {
         ctx: &Context<'_>,
         #[graphql(default, desc = "Pagination for the drug and clinical candidates.")] page: Page,
     ) -> async_graphql::Result<Paged<ClinicalIndication>> {
-        let items = load_clinical_indications_from_disease(ctx, &self.id).await?;
+        let items = load_clinical_indications_from_disease(ctx, self.id.clone()).await?;
         Ok(items.query().paginate(page))
     }
 

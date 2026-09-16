@@ -108,11 +108,11 @@ impl ProteinCodingCoordinates {
     }
     /// Target (gene/protein) the protein coding variant has been associated with.
     async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
-        load_target(ctx, &self.target_id).await
+        load_target(ctx, self.target_id.clone()).await
     }
     /// Protein coding variant
     async fn variant(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Variant>> {
-        load_variant(ctx, &self.variant_id).await
+        load_variant(ctx, self.variant_id.clone()).await
     }
     /// The sequence ontology term capturing the consequence of the variant based on Ensembl VEP in
     /// the context of the transcript [bioregistry:so].\

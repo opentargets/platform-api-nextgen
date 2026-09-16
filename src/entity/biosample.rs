@@ -73,9 +73,8 @@ impl Loader<String> for BiosampleLoader {
 /// Returns an error if the Biosample could not be loaded.
 pub async fn load_biosample_by_id(
     ctx: &Context<'_>,
-    id: &String,
+    id: String,
 ) -> async_graphql::Result<Option<Biosample>> {
-    println!("loading {id}");
     ctx.data_unchecked::<DataLoader<BiosampleLoader>>()
         .load_one(id.clone())
         .await

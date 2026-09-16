@@ -17,6 +17,7 @@ use crate::{
         evidence::EvidenceLoader,
         gene_ontology::GeneOntologyLoader,
         hpo::HpoLoader,
+        interaction::InteractionLoader,
         meta::MetaQuery,
         mouse_phenotype::MousePhenotypeLoader,
         protein_coding_coordinates::ProteinCodingCoordinateVariantLoader,
@@ -54,22 +55,23 @@ impl Product for Platform {
     fn prepare_request(req: Request, ch: &ClickHouse) -> Request {
         req.data(loader::<BaselineExpressionLoader>(ch))
             .data(loader::<BiosampleLoader>(ch))
-            .data(loader::<DiseaseLoader>(ch))
             .data(loader::<ClinicalIndicationFromDrugLoader>(ch))
             .data(loader::<ClinicalIndicationFromDiseaseLoader>(ch))
+            .data(loader::<DiseaseLoader>(ch))
+            .data(loader::<DiseasePhenotypeLoader>(ch))
             .data(loader::<DrugLoader>(ch))
             .data(loader::<DrugWarningLoader>(ch))
             .data(loader::<EvidenceLoader>(ch))
             .data(loader::<GeneOntologyLoader>(ch))
             .data(loader::<HpoLoader>(ch))
+            .data(loader::<InteractionLoader>(ch))
+            .data(loader::<MousePhenotypeLoader>(ch))
+            .data(loader::<ProteinCodingCoordinateVariantLoader>(ch))
             .data(loader::<SequenceOntologyLoader>(ch))
             .data(loader::<StudyLoader>(ch))
-            .data(loader::<DiseasePhenotypeLoader>(ch))
-            .data(loader::<ProteinCodingCoordinateVariantLoader>(ch))
             .data(loader::<TargetLoader>(ch))
-            .data(loader::<TargetPrioritisationsLoader>(ch))
-            .data(loader::<MousePhenotypeLoader>(ch))
             .data(loader::<TargetEssentialityLoader>(ch))
+            .data(loader::<TargetPrioritisationsLoader>(ch))
             .data(loader::<VariantLoader>(ch))
     }
 }

@@ -168,9 +168,9 @@ pub async fn load_drugs(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Res
 }
 
 #[allow(clippy::missing_errors_doc)]
-pub async fn load_drug(ctx: &Context<'_>, id: &str) -> async_graphql::Result<Option<Drug>> {
+pub async fn load_drug(ctx: &Context<'_>, id: String) -> async_graphql::Result<Option<Drug>> {
     ctx.data_unchecked::<DataLoader<DrugLoader>>()
-        .load_one(id.to_string())
+        .load_one(id)
         .await
 }
 
@@ -210,7 +210,7 @@ impl Drug {
     async fn parent_molecule(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Drug>> {
         match &self.parent_id {
             Some(pid) => {
-                return load_drug(ctx, pid).await;
+                return load_drug(ctx, pid.clone()).await;
             }
             None => Ok(None),
         }
@@ -227,7 +227,7 @@ impl Drug {
         ctx: &Context<'_>,
         #[graphql(default, desc = "Pagination for the drug warnings.")] page: Page,
     ) -> async_graphql::Result<Paged<DrugWarning>> {
-        let items = load_drug_warnings(ctx, &self.id).await?;
+        let items = load_drug_warnings(ctx, self.id.clone()).await?;
         Ok(items.query().paginate(page))
     }
 
@@ -237,7 +237,7 @@ impl Drug {
         ctx: &Context<'_>,
         #[graphql(default, desc = "Pagination for the clinical indications.")] page: Page,
     ) -> async_graphql::Result<Paged<ClinicalIndication>> {
-        let items = load_clinical_indications_from_drug(ctx, &self.id).await?;
+        let items = load_clinical_indications_from_drug(ctx, self.id.clone()).await?;
         Ok(items.query().paginate(page))
     }
 }

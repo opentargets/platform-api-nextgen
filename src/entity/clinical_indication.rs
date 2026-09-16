@@ -104,11 +104,11 @@ fn group_by(
 /// Returns an error if the clinical indications could not be loaded.
 pub async fn load_clinical_indications_from_drug(
     ctx: &Context<'_>,
-    chembl_id: &str,
+    chembl_id: String,
 ) -> async_graphql::Result<Vec<ClinicalIndication>> {
     Ok(ctx
         .data_unchecked::<DataLoader<ClinicalIndicationFromDrugLoader>>()
-        .load_one(chembl_id.to_owned())
+        .load_one(chembl_id)
         .await?
         .unwrap_or_default())
 }
@@ -121,11 +121,11 @@ pub async fn load_clinical_indications_from_drug(
 /// Returns an error if the clinical indications could not be loaded.
 pub async fn load_clinical_indications_from_disease(
     ctx: &Context<'_>,
-    efo_id: &str,
+    efo_id: String,
 ) -> async_graphql::Result<Vec<ClinicalIndication>> {
     Ok(ctx
         .data_unchecked::<DataLoader<ClinicalIndicationFromDiseaseLoader>>()
-        .load_one(efo_id.to_owned())
+        .load_one(efo_id)
         .await?
         .unwrap_or_default())
 }
@@ -134,14 +134,14 @@ pub async fn load_clinical_indications_from_disease(
 impl ClinicalIndication {
     /// The molecule entity related to this clinical indication.
     async fn drug(&self, ctx: &Context<'_>) -> async_graphql::Result<Drug> {
-        load_drug(ctx, &self.drug_id)
+        load_drug(ctx, self.drug_id.clone())
             .await?
             .ok_or_else(|| async_graphql::Error::new("drug not found"))
     }
 
     /// The disease entity related to this clinical indication.
     async fn disease(&self, ctx: &Context<'_>) -> async_graphql::Result<Disease> {
-        load_disease(ctx, &self.disease_id)
+        load_disease(ctx, self.disease_id.clone())
             .await?
             .ok_or_else(|| async_graphql::Error::new("disease not found"))
     }

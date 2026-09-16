@@ -13,6 +13,7 @@ use crate::{
         drug_warning::DrugWarning,
         evidence::Evidence,
         hpo::Hpo,
+        interaction::Interaction,
         mouse_phenotype::MousePhenotype,
         protein_coding_coordinates::ProteinCodingCoordinates,
         study::Study,
@@ -61,6 +62,7 @@ impl Default for Page {
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
 #[graphql(concrete(name = "VariantPage", params(Variant)))]
+#[graphql(concrete(name = "InteractionPage", params(Interaction)))]
 pub struct Paged<T: OutputType> {
     pub count: u64,
     pub rows: Vec<T>,

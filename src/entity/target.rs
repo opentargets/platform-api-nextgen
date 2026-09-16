@@ -19,6 +19,7 @@ use crate::{
         baseline_expression::{BaselineExpression, load_baseline_expression_by_target},
         disease::Disease,
         evidence::{Evidence, EvidenceKey, load_evidences},
+        interaction::{Interaction, InteractionSourceDatabase, load_interaction_by_target_a},
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
         target_essentiality::{DepMapEssentiality, load_target_essentiality_by_target},
         target_prioritisation::{TargetPrioritisations, load_target_prioritisations},
@@ -552,9 +553,9 @@ pub async fn load_targets(ctx: &Context<'_>, ids: &[String]) -> async_graphql::R
 /// An [`Option`] of [`Target`] entity.
 /// # Errors
 /// Returns an [`async_graphql::Error`] if the database query fails.
-pub async fn load_target(ctx: &Context<'_>, id: &str) -> async_graphql::Result<Option<Target>> {
+pub async fn load_target(ctx: &Context<'_>, id: String) -> async_graphql::Result<Option<Target>> {
     ctx.data_unchecked::<DataLoader<TargetLoader>>()
-        .load_one(id.to_string())
+        .load_one(id)
         .await
 }
 // ---- resolvers ----
@@ -737,5 +738,21 @@ impl Target {
         Ok(target_essentiality
             .map(|t| t.is_essential)
             .unwrap_or_default())
+    }
+
+    async fn interactions(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(desc = "Threshold similarity between 0 and 1.")] score_threshold: Option<f64>,
+        #[graphql(desc = "Source database name.")] source_database: Option<
+            InteractionSourceDatabase,
+        >,
+        #[graphql(desc = "Pagination for the interactions.")] page: Page,
+    ) -> async_graphql::Result<Paged<Interaction>> {
+        let interactions =
+            load_interaction_by_target_a(ctx, self.id.clone(), score_threshold, source_database)
+                .await?
+                .unwrap_or_default();
+        Ok(interactions.query().paginate(page))
     }
 }

@@ -66,7 +66,6 @@ impl Loader<String> for TargetEssentialityLoader {
     type Error = async_graphql::Error;
 
     async fn load(&self, key: &[String]) -> Result<HashMap<String, Self::Value>, Self::Error> {
-        println!("start load");
         let rows: Vec<TargetEssentiality> = self
             .ch
             .query("SELECT ?fields FROM target_essentiality WHERE targetId IN ?")
@@ -74,8 +73,6 @@ impl Loader<String> for TargetEssentialityLoader {
             .clone()
             .fetch_all()
             .await?;
-
-        println!("full query: {}", rows.len());
 
         Ok(rows.into_iter().fold(HashMap::new(), |mut acc, row| {
             acc.insert(row.target_id.clone(), row);
