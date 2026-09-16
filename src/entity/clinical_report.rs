@@ -1,6 +1,9 @@
 use std::{collections::HashMap, sync::LazyLock};
 
-use async_graphql::{ComplexObject, Enum, SimpleObject, dataloader::Loader};
+use async_graphql::{
+    ComplexObject, Context, Enum, SimpleObject,
+    dataloader::{DataLoader, Loader},
+};
 use chrono::NaiveDate;
 use clickhouse::Row;
 use moka::future::Cache;
@@ -8,7 +11,10 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    query::cache::{CachedLoader, entity_cache},
+    query::{
+        cache::{CachedLoader, entity_cache},
+        load_ordered,
+    },
 };
 
 // ---- models ----
@@ -162,6 +168,28 @@ impl Loader<String> for ClinicalReportLoader {
     ) -> Result<HashMap<String, ClinicalReport>, async_graphql::Error> {
         self.load_cached(keys).await
     }
+}
+
+#[allow(clippy::missing_errors_doc)]
+pub async fn load_clinical_reports(
+    ctx: &Context<'_>,
+    ids: &[String],
+) -> async_graphql::Result<Vec<ClinicalReport>> {
+    load_ordered(
+        ctx.data_unchecked::<DataLoader<ClinicalReportLoader>>(),
+        ids,
+    )
+    .await
+}
+
+#[allow(clippy::missing_errors_doc)]
+pub async fn load_clinical_report(
+    ctx: &Context<'_>,
+    id: &str,
+) -> async_graphql::Result<Option<ClinicalReport>> {
+    ctx.data_unchecked::<DataLoader<ClinicalReportLoader>>()
+        .load_one(id.to_string())
+        .await
 }
 
 // ---- resolvers ----
