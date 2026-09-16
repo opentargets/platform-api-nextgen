@@ -1,7 +1,18 @@
+use std::sync::LazyLock;
+
 use async_graphql::{ComplexObject, Enum, SimpleObject};
 use chrono::NaiveDate;
 use clickhouse::Row;
+use moka::future::Cache;
 use serde::Deserialize;
+
+use crate::{
+    datasource::clickhouse::ClickHouse,
+    query::{
+        Entity, QueryExt,
+        cache::{CachedLoader, entity_cache},
+    },
+};
 
 // ---- models ----
 
@@ -110,6 +121,38 @@ pub struct ClinicalReport {
     /// Resource or organisation that distributes the data fetched from the primary source (e.g.
     /// AACT, ChEMBL, EMA, PMDA, TTD).
     provider: String,
+}
+
+// ---- loaders ----
+
+pub type ClinicalReportCache = Cache<String, Option<ClinicalReport>>;
+static CLINICAL_REPORT_CACHE: LazyLock<ClinicalReportCache> = LazyLock::new(entity_cache);
+
+pub struct ClinicalReportLoader {
+    ch: ClickHouse,
+}
+
+impl ClinicalReportLoader {
+    #[must_use]
+    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
+}
+
+impl CachedLoader for ClinicalReportLoader {
+    type Key = String;
+    type Value = ClinicalReport;
+
+    fn cache(&self) -> &ClinicalReportCache { &CLINICAL_REPORT_CACHE }
+    fn key_of(v: &Self::Value) -> Self::Key { v.id.clone() }
+
+    #[tracing::instrument(skip_all, level = "debug", fields(n = misses.len()))]
+    async fn fetch(&self, misses: &[Self::Key]) -> Result<Vec<Self::Value>, async_graphql::Error> {
+        self.ch
+            .query("SELECT ?fields FROM clinical_report WHERE id IN ?")
+            .bind(misses)
+            .fetch_all::<ClinicalReport>()
+            .await
+            .map_err(Into::into)
+    }
 }
 
 // ---- resolvers ----
