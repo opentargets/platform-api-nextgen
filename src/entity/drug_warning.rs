@@ -104,11 +104,11 @@ impl Loader<String> for DrugWarningLoader {
 /// Returns an error if the warnings could not be loaded.
 pub async fn load_drug_warnings(
     ctx: &Context<'_>,
-    chembl_id: &str,
+    chembl_id: String,
 ) -> async_graphql::Result<Vec<DrugWarning>> {
     Ok(ctx
         .data_unchecked::<DataLoader<DrugWarningLoader>>()
-        .load_one(chembl_id.to_owned())
+        .load_one(chembl_id)
         .await?
         .map(|w| w.drug_warnings)
         .unwrap_or_default())

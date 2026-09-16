@@ -633,7 +633,7 @@ where
 impl Association<Disease> {
     /// Associated disease entity.
     async fn disease(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Disease>> {
-        load_disease(ctx, &self.id).await
+        load_disease(ctx, self.id.clone()).await
     }
 }
 
@@ -641,6 +641,6 @@ impl Association<Disease> {
 impl Association<Target> {
     /// Associated target entity.
     async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
-        load_target(ctx, &self.id).await
+        load_target(ctx, self.id.clone()).await
     }
 }

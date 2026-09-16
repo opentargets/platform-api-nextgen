@@ -187,7 +187,7 @@ impl BaselineExpression {
         ctx: &Context<'_>,
     ) -> async_graphql::Result<Option<Biosample>> {
         match self.tissue_biosample_id.as_ref() {
-            Some(id) => Ok(load_biosample_by_id(ctx, id).await?),
+            Some(id) => Ok(load_biosample_by_id(ctx, id.clone()).await?),
             None => Ok(None),
         }
     }
@@ -197,7 +197,7 @@ impl BaselineExpression {
         ctx: &Context<'_>,
     ) -> async_graphql::Result<Option<Biosample>> {
         match self.tissue_biosample_parent_id.as_ref() {
-            Some(id) => Ok(load_biosample_by_id(ctx, id).await?),
+            Some(id) => Ok(load_biosample_by_id(ctx, id.clone()).await?),
             None => Ok(None),
         }
     }
@@ -207,7 +207,7 @@ impl BaselineExpression {
         ctx: &Context<'_>,
     ) -> async_graphql::Result<Option<Biosample>> {
         match self.celltype_biosample_id.as_ref() {
-            Some(id) => Ok(load_biosample_by_id(ctx, id).await?),
+            Some(id) => Ok(load_biosample_by_id(ctx, id.clone()).await?),
             None => Ok(None),
         }
     }
@@ -217,7 +217,7 @@ impl BaselineExpression {
         ctx: &Context<'_>,
     ) -> async_graphql::Result<Option<Biosample>> {
         match self.celltype_biosample_parent_id.as_ref() {
-            Some(id) => Ok(load_biosample_by_id(ctx, id).await?),
+            Some(id) => Ok(load_biosample_by_id(ctx, id.clone()).await?),
             None => Ok(None),
         }
     }

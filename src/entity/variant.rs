@@ -241,9 +241,9 @@ pub async fn load_variants(
 /// Returns an [`Option<Variant>`] object.
 /// # Errors
 /// Returns an error if the variant could not be loaded.
-pub async fn load_variant(ctx: &Context<'_>, id: &str) -> async_graphql::Result<Option<Variant>> {
+pub async fn load_variant(ctx: &Context<'_>, id: String) -> async_graphql::Result<Option<Variant>> {
     ctx.data_unchecked::<DataLoader<VariantLoader>>()
-        .load_one(id.to_string())
+        .load_one(id)
         .await
 }
 
@@ -272,7 +272,7 @@ impl VariantQuery {
         ctx: &Context<'_>,
         #[graphql(desc = "Variant ID to get.")] variant_id: String,
     ) -> async_graphql::Result<Option<Variant>> {
-        load_variant(ctx, &variant_id).await
+        load_variant(ctx, variant_id.clone()).await
     }
 }
 

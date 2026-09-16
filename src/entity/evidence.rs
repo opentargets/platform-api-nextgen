@@ -511,19 +511,19 @@ pub async fn load_evidences(
 impl Evidence {
     /// Disease for which the target is associated in this evidence.
     async fn disease(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Disease>> {
-        load_disease(ctx, &self.disease_id).await
+        load_disease(ctx, self.disease_id.clone()).await
     }
 
     /// Target for which the disease is associated in this evidence.
     async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
-        load_target(ctx, &self.target_id).await
+        load_target(ctx, self.target_id.clone()).await
     }
 
     /// Drug or clinical candidate targeting the target and studied/approved for the specific
     /// disease as potential indication [bioregistry:chembl].
     async fn drug(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Drug>> {
         match &self.drug_id {
-            Some(drug_id) => return load_drug(ctx, drug_id).await,
+            Some(drug_id) => return load_drug(ctx, drug_id.clone()).await,
             None => Ok(None),
         }
     }
@@ -531,7 +531,7 @@ impl Evidence {
     /// Observed patterns of drug response.
     async fn drug_response(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Drug>> {
         match &self.drug_response {
-            Some(drug_response) => return load_drug(ctx, drug_response).await,
+            Some(drug_response) => return load_drug(ctx, drug_response.clone()).await,
             None => Ok(None),
         }
     }

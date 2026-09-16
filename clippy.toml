@@ -22,5 +22,7 @@ doc-valid-idents = [
     "CHROM_POS_REF_ALT",
     "19_44908684_T_C",
     "DepMap",
+    "IntAct",
+    "STRINGdb",
     ".."  # this appends default valid idents
 ]
