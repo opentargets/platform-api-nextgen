@@ -72,16 +72,16 @@ impl BaselineExpression {
 
 #[derive(Debug, Clone, Deserialize, SimpleObject, Eq, PartialEq, Hash)]
 #[serde(rename_all = "camelCase")]
-pub struct TestKey {
+pub struct Key {
     target_id: String,
-    index: usize,
-    size: usize,
+    index: u32,
+    size: u32,
 }
 
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct BaselineExpressionRow {
-    key: TestKey,
+    key: Key,
     baseline_expressions: Vec<BaselineExpression>,
 }
 
@@ -107,7 +107,7 @@ impl Loader<(String, Page)> for BaselineExpressionLoader {
             LIMIT ?, ?
         )
         SELECT
-            any(paged.targetId) as targetId, CAST(? AS UInt64) as size, CAST(? AS UInt64) as limit,
+            any(paged.targetId) as targetId, CAST(? AS UInt32) as index, CAST(? AS UInt32) as size,
             groupArray((
                 paged.targetId,
                 paged.targetFromSourceId,

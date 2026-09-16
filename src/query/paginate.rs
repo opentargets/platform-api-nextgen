@@ -1,5 +1,5 @@
 use async_graphql::{InputObject, OutputType, SimpleObject};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     entity::{
@@ -12,6 +12,7 @@ use crate::{
         disease_hpo::DiseasePhenotype,
         drug::Drug,
         drug_warning::DrugWarning,
+        enhancer_to_gene::EnhancerToGene,
         evidence::Evidence,
         hpo::Hpo,
         interaction::Interaction,
@@ -25,17 +26,17 @@ use crate::{
     query::statistics::Statistics,
 };
 
-pub const MAX_PAGE_SIZE: usize = 100_000;
+pub const MAX_PAGE_SIZE: u32 = 100_000;
 
 /// Represents a paginated list of items.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InputObject, Serialize)]
 pub struct Page {
     /// The index of the page to fetch, starting from 0.
     #[graphql(default = 0)]
-    pub index: usize,
+    pub index: u32,
     /// The number of items per page.
     #[graphql(default = 10, validator(minimum = 1, maximum = 100_000))]
-    pub size: usize,
+    pub size: u32,
 }
 
 impl Default for Page {
@@ -43,7 +44,7 @@ impl Default for Page {
 }
 
 /// The result of a paginated query, containing the total number of items and the items.
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[graphql(concrete(name = "AssociationTimeseriesPage", params(AssociationTimeseries)))]
 #[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
 #[graphql(concrete(name = "ClinicalIndicationPage", params(ClinicalIndication)))]
@@ -51,6 +52,7 @@ impl Default for Page {
 #[graphql(concrete(name = "DiseasePhenotypePage", params(DiseasePhenotype)))]
 #[graphql(concrete(name = "DrugPage", params(Drug)))]
 #[graphql(concrete(name = "DrugWarningPage", params(DrugWarning)))]
+#[graphql(concrete(name = "EnhancerToGenePage", params(EnhancerToGene)))]
 #[graphql(concrete(name = "EvidencePage", params(Evidence)))]
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
 #[graphql(concrete(name = "MousePhenotypePage", params(MousePhenotype)))]

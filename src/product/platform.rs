@@ -14,6 +14,7 @@ use crate::{
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},
         drug_warning::DrugWarningLoader,
+        enhancer_to_gene::EnhancerToGeneLoader,
         evidence::EvidenceLoader,
         gene_ontology::GeneOntologyLoader,
         hpo::HpoLoader,
@@ -61,6 +62,7 @@ impl Product for Platform {
             .data(loader::<DiseasePhenotypeLoader>(ch))
             .data(loader::<DrugLoader>(ch))
             .data(loader::<DrugWarningLoader>(ch))
+            .data(loader::<EnhancerToGeneLoader>(ch))
             .data(loader::<EvidenceLoader>(ch))
             .data(loader::<GeneOntologyLoader>(ch))
             .data(loader::<HpoLoader>(ch))

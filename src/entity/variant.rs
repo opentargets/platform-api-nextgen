@@ -8,15 +8,14 @@ use clickhouse::Row;
 use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
-use serde_repr::Deserialize_repr;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
-        protein_coding_coordinates::{
+        enhancer_to_gene, protein_coding_coordinates::{
             ProteinCodingCoordinateVariantLoader, ProteinCodingCoordinates,
-        },
-        sequence_ontology::{SequenceOntology, load_sequence_ontology_one},
+        }, sequence_ontology::{SequenceOntology, load_sequence_ontology_one}
     },
     query::{
         QueryExt,
@@ -28,7 +27,7 @@ use crate::{
 
 // ---- models ----
 /// Chromosome type.
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr, Serialize_repr)]
 #[repr(i8)]
 #[graphql(rename_items = "lowercase")]
 pub enum Chromosome {
@@ -304,5 +303,13 @@ impl Variant {
             .await?
             .unwrap_or_default();
         Ok(items.query().paginate(page))
+    }
+    async fn enhancer_to_gene(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the enhancer-to-gene relationships.")] page: Page,
+    ) -> async_graphql::Result<Paged<enhancer_to_gene::EnhancerToGene>> {
+        let e2g_key = enhancer_to_gene::Key::new(self.chromosome, self.position, self.position, page.index, page.size);
+        enhancer_to_gene::load_enhancer_to_genes(ctx, e2g_key).await
     }
 }

@@ -9,6 +9,7 @@ pub mod disease;
 pub mod disease_hpo;
 pub mod drug;
 pub mod drug_warning;
+pub mod enhancer_to_gene;
 pub mod evidence;
 pub mod gene_ontology;
 pub mod hpo;
