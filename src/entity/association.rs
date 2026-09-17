@@ -7,7 +7,6 @@ use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use tracing::instrument;
 
 use crate::{
-    config::is_ppp,
     datasource::{clickhouse::ClickHouse, opensearch::OpenSearch},
     entity::{
         disease::{Disease, load_disease},
@@ -60,98 +59,105 @@ pub enum Datasource {
     /// Clinical evidence linking a target/disease via a drug that targets the gene product and is
     /// indicated for the disease (approved or in development); inferred from clinical reports +
     /// drug MoA data.
-    /// See <https://platform-docs.opentargets.org/evidence#clinical-precedence>
+    /// See <https://platform-docs.opentargets.org/evidence#clinical-precedence>.
     ClinicalPrecedence,
     /// Target-disease relationships from GWAS-significant signals, fine-mapped, colocalised against
     /// molQTL, and scored by the Locus-to-Gene (L2G) ML method; evidence is any credible set with
     /// L2G > 0.05.
-    /// See <https://platform-docs.opentargets.org/evidence#gwas-associations>
+    /// See <https://platform-docs.opentargets.org/evidence#gwas-associations>.
     GwasCredibleSets,
     /// Gene–phenotype relationships observed in gene-level association tests using rare variant
     /// collapsing analyses.
-    /// See <https://platform-docs.opentargets.org/evidence#gene-burden>
+    /// See <https://platform-docs.opentargets.org/evidence#gene-burden>.
     GeneBurden,
     /// Germline variant-phenotype relationships from ClinVar (NIH archive), the germline subset;
     /// each evidence captures a single RCV record.
-    /// See <https://platform-docs.opentargets.org/evidence#clinvar>
+    /// See <https://platform-docs.opentargets.org/evidence#clinvar>.
     Eva,
     /// Gene-disease relationships from Genomics England PanelApp expert-reviewed gene panels.
-    /// See <https://platform-docs.opentargets.org/evidence#genomics-england-gel-panelapp>
+    /// See <https://platform-docs.opentargets.org/evidence#genomics-england-gel-panelapp>.
     GenomicsEngland,
     /// Gene-disease relationships from Gene2Phenotype (G2P), literature-curated by expert clinical
     /// geneticist panels.
-    /// See <https://platform-docs.opentargets.org/evidence#gene2phenotype>
+    /// See <https://platform-docs.opentargets.org/evidence#gene2phenotype>.
     #[strum(serialize = "gene2phenotype")]
     #[graphql(name = "gene2phenotype")]
     Gene2Phenotype,
     /// UniProt-curated target-disease relationships from publications supporting a protein's
     /// involvement in disease, aggregated per evidence.
-    /// See <https://platform-docs.opentargets.org/evidence#uniprot-literature>
+    /// See <https://platform-docs.opentargets.org/evidence#uniprot-literature>.
     UniprotLiterature,
     /// UniProt-curated variants known to alter protein function in disease, aggregated from
     /// supporting publications.
-    /// See <https://platform-docs.opentargets.org/evidence#uniprot-curated-variants>
+    /// See <https://platform-docs.opentargets.org/evidence#uniprot-curated-variants>.
     UniprotVariants,
     /// Orphanet gene-disease associations for rare disorders of genetic origin, with relationship
     /// classification, mutation type, and supporting references.
-    /// See <https://platform-docs.opentargets.org/evidence#orphanet>
+    /// See <https://platform-docs.opentargets.org/evidence#orphanet>.
     Orphanet,
     /// ClinGen gene-disease validity curation: evaluates the strength of evidence for a gene
     /// causing a disease, classified via a semi-quantitative framework.
-    /// See <https://platform-docs.opentargets.org/evidence#clingen>
+    /// See <https://platform-docs.opentargets.org/evidence#clingen>.
     Clingen,
     /// Cancer Gene Census (CGC, part of COSMIC): curated genes with mutations causally implicated
     /// in cancer, aggregated per target-disease.
-    /// See <https://platform-docs.opentargets.org/evidence#cancer-gene-census>
+    /// See <https://platform-docs.opentargets.org/evidence#cancer-gene-census>.
     CancerGeneCensus,
     /// IntOGen consensus cancer driver genes from harmonised tumour sequencing (PCAWG and others);
     /// each evidence is a significant driver in one cohort.
-    /// See <https://platform-docs.opentargets.org/evidence#intogen>
+    /// See <https://platform-docs.opentargets.org/evidence#intogen>.
     Intogen,
     /// Somatic variant-phenotype relationships from ClinVar (NIH archive), the somatic subset; each
     /// evidence captures a single RCV record.
-    /// See <https://platform-docs.opentargets.org/evidence#clinvar-somatic>
+    /// See <https://platform-docs.opentargets.org/evidence#clinvar-somatic>.
     EvaSomatic,
     /// Expert-curated cancer biomarkers of drug sensitivity, resistance, and toxicity from Cancer
     /// Genome Interpreter, by cancer type.
-    /// See <https://platform-docs.opentargets.org/evidence#cancer-biomarkers>
+    /// See <https://platform-docs.opentargets.org/evidence#cancer-biomarkers>.
     CancerBiomarkers,
     /// Target-disease evidence from genome-wide CRISPRi/a/KO functional genomics screens in human
     /// brain cell types (CRISPRbrain), linking cell types to diseases.
-    /// See <https://platform-docs.opentargets.org/evidence#crispr-screens>
+    /// See <https://platform-docs.opentargets.org/evidence#crispr-screens>.
     CrisprScreen,
     /// Cancer target dependencies from whole-genome CRISPR-Cas9 fitness screens in cell lines
     /// (Project Score, Sanger), mapped to tumours; targets scoring ≥ 36.0.
-    /// See <https://platform-docs.opentargets.org/evidence#project-score>
+    /// See <https://platform-docs.opentargets.org/evidence#project-score>.
     Crispr,
     /// Reactome-curated reaction pathways affected by disease, linking target to disease via
     /// protein-coding mutation or altered expression.
-    /// See <https://platform-docs.opentargets.org/evidence#reactome>
+    /// See <https://platform-docs.opentargets.org/evidence#reactome>.
     Reactome,
     /// Target-disease co-occurrences mined from Europe PMC literature via deep-learning NER,
     /// aggregated per publication with a confidence assessment.
-    /// See <https://platform-docs.opentargets.org/evidence#europe-pmc>
+    /// See <https://platform-docs.opentargets.org/evidence#europe-pmc>.
     Europepmc,
     /// Target-disease evidence from differentially expressed genes (disease vs control) in EMBL-EBI
     /// Expression Atlas; each study contrast is one evidence.
-    /// See <https://platform-docs.opentargets.org/evidence#expression-atlas>
+    /// See <https://platform-docs.opentargets.org/evidence#expression-atlas>.
     ExpressionAtlas,
     /// Target-disease evidence from mouse knockout genotype-phenotype associations (IMPC), scored
     /// by human-mouse phenotypic similarity (PhenoDigm).
-    /// See <https://platform-docs.opentargets.org/evidence#impc>
+    /// See <https://platform-docs.opentargets.org/evidence#impc>.
     Impc,
     /// Pre-publication orthogonal validation of primary project target-disease evidence performed
     /// by the Open Targets Validation Lab.
-    /// See <https://home.opentargets.org/OTAR2059>
+    ///
+    /// **PPP-Only data source**.
+    ///
+    /// See <https://home.opentargets.org/OTAR2059>.
     #[cfg(feature = "product-ppp")]
     OtCrisprValidation,
     /// Pre-publication target-disease evidence derived from Open Targets CRISPR screenings.
-    /// See <https://home.opentargets.org/ppp-documentation>
+    ///
+    /// **PPP-Only data source**.
     #[cfg(feature = "product-ppp")]
     OtCrispr,
     /// Target-disease evidence derived from dual CRISPR screenings performed in cancer cell
     /// lines.
-    /// See <https://home.opentargets.org/OTAR2062>
+    ///
+    /// **PPP-Only data source**.
+    ///
+    /// See <https://home.opentargets.org/OTAR2062>.
     #[cfg(feature = "product-ppp")]
     Encore,
 }
@@ -182,11 +188,13 @@ impl Datasource {
     fn default_policy(self) -> DatasourcePolicy {
         let d = DatasourcePolicy::default();
         match self {
-            Self::CancerBiomarkers | Self::OtCrisprValidation | Self::OtCrispr | Self::Encore => {
-                DatasourcePolicy { weight: 0.5, ..d }
-            }
+            Self::CancerBiomarkers => DatasourcePolicy { weight: 0.5, ..d },
             Self::Europepmc | Self::ExpressionAtlas | Self::Impc => {
                 DatasourcePolicy { weight: 0.2, ..d }
+            }
+            #[cfg(feature = "product-ppp")]
+            Self::OtCrisprValidation | Self::OtCrispr | Self::Encore => {
+                DatasourcePolicy { weight: 0.5, ..d }
             }
             _ => d,
         }
@@ -359,6 +367,7 @@ pub struct Association<T: OutputType + 'static> {
     datasource_scores: Vec<Score>,
     /// A measure of how novel the target–disease association is, calculated based on the
     /// accumulation of direct evidence over time.
+    #[cfg(feature = "product-ppp")]
     novelty: Option<f64>,
     // marker for the actual embedded type (Disease or Target)
     #[graphql(skip)]
@@ -380,6 +389,7 @@ struct AssociationRow {
     id: String,
     score: f64,
     datasource_scores: Vec<(String, f64)>,
+    #[cfg(feature = "product-ppp")]
     novelty: Option<f64>,
     total: u64,
 }
@@ -397,6 +407,7 @@ impl AssociationRow {
             id: self.id,
             score: self.score,
             datasource_scores: map(self.datasource_scores),
+            #[cfg(feature = "product-ppp")]
             novelty: self.novelty,
             _marker: PhantomData,
         }
@@ -490,9 +501,32 @@ impl AotfSql {
     }
 
     #[must_use]
+    #[cfg(feature = "product-platform")]
     fn build_query(&self) -> String {
         format!(
             include_str!("associations.sql"),
+            max_hs = MAX_HS,
+            indirect_w = INDIRECT_WEIGHT,
+            a_id = self.anchor,
+            table = self.table,
+            datasources = self.policies.render_datasources(),
+            weights = self.policies.render_weights(),
+            _where = self.render_where(),
+            _having = self.render_having(),
+            sort_by = self.sort.render_sort_by(),
+            sort_datasource = self.sort.render_sort_datasource(),
+            sort_direction = self.sort.render_direction(),
+            offset = self.page.index * self.page.size,
+            size = self.page.size,
+        )
+    }
+
+    #[must_use]
+    #[cfg(feature = "product-ppp")]
+    fn build_query(&self) -> String {
+        #[cfg(feature = "product-ppp")]
+        format!(
+            include_str!("associations_ppp.sql"),
             max_hs = MAX_HS,
             indirect_w = INDIRECT_WEIGHT,
             novelty = "noveltyDirect",
