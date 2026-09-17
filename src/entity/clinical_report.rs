@@ -207,6 +207,15 @@ impl ClinicalReportQuery {
     ) -> async_graphql::Result<Option<ClinicalReport>> {
         load_clinical_report(ctx, &clinical_report_id).await
     }
+
+    /// Retrieve a list of clinical reports by identifiers.
+    async fn clinical_reports(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(desc = "List of Clinical Report IDs.")] clinical_reports_ids: Vec<String>,
+    ) -> async_graphql::Result<Vec<ClinicalReport>> {
+        load_clinical_reports(ctx, &clinical_reports_ids).await
+    }
 }
 
 #[ComplexObject]
