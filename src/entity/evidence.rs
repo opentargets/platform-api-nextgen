@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use serde::Deserialize;
 
 use crate::{
@@ -428,13 +429,9 @@ impl Entity for Evidence {
 
 // ---- loaders ----
 
+#[derive(From)]
 pub struct EvidenceLoader {
     ch: ClickHouse,
-}
-
-impl EvidenceLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl Loader<EvidenceKey> for EvidenceLoader {

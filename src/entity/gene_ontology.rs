@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 
@@ -64,13 +65,9 @@ impl Searchable for GeneOntology {
 pub type GeneOntologyCache = Cache<String, Option<GeneOntology>>;
 static SO_CACHE: LazyLock<GeneOntologyCache> = LazyLock::new(entity_cache);
 
+#[derive(From)]
 pub struct GeneOntologyLoader {
     ch: ClickHouse,
-}
-
-impl GeneOntologyLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl CachedLoader for GeneOntologyLoader {

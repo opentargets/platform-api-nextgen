@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use async_graphql::{ComplexObject, Context, SimpleObject, dataloader::Loader};
 use clickhouse::Row;
+use derive_more::From;
 use serde::Deserialize;
 
 use crate::{
@@ -71,13 +72,9 @@ struct ProteinCodingCoordinatesVariantRow {
 
 // ---- loaders ----
 
+#[derive(From)]
 pub struct ProteinCodingCoordinateVariantLoader {
     ch: ClickHouse,
-}
-
-impl ProteinCodingCoordinateVariantLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl Loader<String> for ProteinCodingCoordinateVariantLoader {

@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use serde::Deserialize;
 
 use crate::{
@@ -86,13 +87,9 @@ pub struct BaselineExpressionRow {
 
 // ---- loaders ----
 
+#[derive(From)]
 pub struct BaselineExpressionLoader {
     ch: ClickHouse,
-}
-
-impl BaselineExpressionLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl Loader<(String, Page)> for BaselineExpressionLoader {

@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use serde::Deserialize;
 
 use crate::datasource::clickhouse::ClickHouse;
@@ -72,13 +73,10 @@ struct MousePhenotypeRow {
 }
 
 // ---- loaders ----
+
+#[derive(From)]
 pub struct MousePhenotypeLoader {
     ch: ClickHouse,
-}
-
-impl MousePhenotypeLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl Loader<String> for MousePhenotypeLoader {

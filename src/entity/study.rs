@@ -9,6 +9,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
@@ -274,13 +275,9 @@ impl Statistics for Study {
 pub type StudyCache = Cache<String, Option<Study>>;
 static STUDY_CACHE: LazyLock<StudyCache> = LazyLock::new(entity_cache);
 
+#[derive(From)]
 pub struct StudyLoader {
     ch: ClickHouse,
-}
-
-impl StudyLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl CachedLoader for StudyLoader {

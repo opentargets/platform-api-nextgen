@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
@@ -186,13 +187,9 @@ pub struct Variant {
 pub type VariantCache = Cache<String, Option<Variant>>;
 static VARIANT_CACHE: LazyLock<VariantCache> = LazyLock::new(entity_cache);
 
+#[derive(From)]
 pub struct VariantLoader {
     ch: ClickHouse,
-}
-
-impl VariantLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl CachedLoader for VariantLoader {

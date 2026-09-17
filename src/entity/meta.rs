@@ -24,7 +24,7 @@ pub struct Meta {
     /// Name of the API.
     name: String,
     /// Open Targets platform API product name.
-    product: String,
+    pub product: &'static Flavor,
     /// API version information.
     api_version: Version,
     /// Data release version information.

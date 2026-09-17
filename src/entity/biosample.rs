@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use serde::Deserialize;
 
 use crate::datasource::clickhouse::ClickHouse;
@@ -39,13 +40,10 @@ pub struct Biosample {
 }
 
 // ---- loaders ----
+
+#[derive(From)]
 pub struct BiosampleLoader {
     ch: ClickHouse,
-}
-
-impl BiosampleLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl Loader<String> for BiosampleLoader {

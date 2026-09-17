@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use serde::Deserialize;
 
 use crate::datasource::clickhouse::ClickHouse;
@@ -55,13 +56,9 @@ pub struct DepMapEssentiality {
 
 // ---- loaders ----
 
+#[derive(From)]
 pub struct TargetEssentialityLoader {
     ch: ClickHouse,
-}
-
-impl TargetEssentialityLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl Loader<String> for TargetEssentialityLoader {
