@@ -14,16 +14,18 @@ WITH
     arrayMap(x -> (x.1, x.2), datasource_scores_with_hs) AS datasource_scores,
     -- Sums the decayed scores of all datasources in a row into the overall score.
     arraySum(datasource_scores_with_hs.3) / max_hs_score AS score,
+    -- Grabs novelty.
+    any(noveltyWhereA) AS novelty,
     -- If we are ordering by one of the datasources, return its score. If not present, ArrayFirst returns 0.0.
     arrayFirst(x -> x.1 = '{sort_datasource}', datasource_scores).2 AS score_indexed
 
 SELECT
     -- Also returns the total count on every row, so we don't have to query twice to calculate it independently.
-    B, score, datasource_scores, count() OVER () AS total
+    B, score, datasource_scores, novelty, count() OVER () AS total
 
 -- INNER: runs on each `prewhere` row, produces one row per (`B` * `datasourceId`).
 -- Groups all evidence rows into a row per (`B` * `datasourceId`), and computes a decaying harmonic sum that becomes that datasource score.
--- Also adds the weights from the policies.
+-- Also adds the weights from the policies, and the novelty score.
 FROM (
     WITH
         -- Compute scores for every (`B` * `datasource`):
@@ -42,7 +44,7 @@ FROM (
         mapFromArrays([{datasources}], [{weights}])[datasourceId] AS datasource_weight  -- Adds the policy weigthts for each datasource
 
     -- The output of this inner query. `b_indirect` becomes `B` again as we've already done the indirect scoring propagation.
-    SELECT b_indirect AS B, datasourceId, datasource_score, datasource_weight
+    SELECT b_indirect AS B, datasourceId, datasource_score, datasource_weight, anyIf({novelty}, A = '{a_id}') AS noveltyWhereA
     FROM {table} AS l
     ARRAY JOIN
         arrayPushBack(l.indirect, l.B)  -- Build an array of `B`'s indirect ids plus `B` itself.
