@@ -238,5 +238,11 @@ impl ClinicalReport {
     /// Lead sponsor associated with the clinical trial.
     async fn trial_sponsor(&self) -> Option<&TrialSponsor> { Some(&self.trial_sponsor) }
 
-    pub fn trial_literature(&self) -> Vec<String> { &self.trialLiterature.id }
+    /// Literature references associated with the clinical trial.
+    async fn trial_literature(&self) -> Vec<String> {
+        self.trial_literature
+            .iter()
+            .map(|literature| literature.id.clone())
+            .collect()
+    }
 }
