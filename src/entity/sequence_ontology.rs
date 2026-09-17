@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 
@@ -65,13 +66,9 @@ impl Searchable for SequenceOntology {
 pub type SequenceOntologyCache = Cache<String, Option<SequenceOntology>>;
 static SO_CACHE: LazyLock<SequenceOntologyCache> = LazyLock::new(entity_cache);
 
+#[derive(From)]
 pub struct SequenceOntologyLoader {
     ch: ClickHouse,
-}
-
-impl SequenceOntologyLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl CachedLoader for SequenceOntologyLoader {

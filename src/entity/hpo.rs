@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 
@@ -74,13 +75,9 @@ impl Searchable for Hpo {
 pub type HpoCache = Cache<String, Option<Hpo>>;
 static HPO_CACHE: LazyLock<HpoCache> = LazyLock::new(entity_cache);
 
+#[derive(From)]
 pub struct HpoLoader {
     ch: ClickHouse,
-}
-
-impl HpoLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl CachedLoader for HpoLoader {

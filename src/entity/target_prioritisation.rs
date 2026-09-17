@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 
@@ -42,13 +43,9 @@ pub type TargetPrioritisationsCache = Cache<String, Option<TargetPrioritisations
 static TARGET_PRIORITISATIONS_CACHE: LazyLock<TargetPrioritisationsCache> =
     LazyLock::new(entity_cache);
 
+#[derive(From)]
 pub struct TargetPrioritisationsLoader {
     ch: ClickHouse,
-}
-
-impl TargetPrioritisationsLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl CachedLoader for TargetPrioritisationsLoader {

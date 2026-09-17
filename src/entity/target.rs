@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 
@@ -499,13 +500,9 @@ impl Entity for Target {
 pub type TargetCache = Cache<String, Option<Target>>;
 static TARGET_CACHE: LazyLock<TargetCache> = LazyLock::new(entity_cache);
 
+#[derive(From)]
 pub struct TargetLoader {
     ch: ClickHouse,
-}
-
-impl TargetLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl CachedLoader for TargetLoader {

@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use serde::Deserialize;
 
 use crate::{
@@ -35,13 +36,9 @@ pub struct ClinicalIndication {
 
 // ---- loaders ----
 
+#[derive(From)]
 pub struct ClinicalIndicationFromDrugLoader {
     ch: ClickHouse,
-}
-
-impl ClinicalIndicationFromDrugLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl Loader<String> for ClinicalIndicationFromDrugLoader {
@@ -63,13 +60,9 @@ impl Loader<String> for ClinicalIndicationFromDrugLoader {
     }
 }
 
+#[derive(From)]
 pub struct ClinicalIndicationFromDiseaseLoader {
     ch: ClickHouse,
-}
-
-impl ClinicalIndicationFromDiseaseLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl Loader<String> for ClinicalIndicationFromDiseaseLoader {

@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 
@@ -63,13 +64,9 @@ pub struct DrugWarnings {
 pub type DrugWarningCache = Cache<String, Option<DrugWarnings>>;
 static DRUG_WARNING_CACHE: LazyLock<DrugWarningCache> = LazyLock::new(entity_cache);
 
+#[derive(From)]
 pub struct DrugWarningLoader {
     ch: ClickHouse,
-}
-
-impl DrugWarningLoader {
-    #[must_use]
-    pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
 impl CachedLoader for DrugWarningLoader {
