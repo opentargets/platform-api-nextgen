@@ -4,10 +4,12 @@ use clickhouse::{Client, error::Result};
 
 use crate::config::Config;
 
+/// A ClickHouse client wrapper.
 #[derive(Clone)]
 pub struct ClickHouse(Client);
 
 impl ClickHouse {
+    /// Creates a new ClickHouse client from the given config.
     pub fn new(config: &Config) -> Self {
         let client = Client::default()
             .with_url(&config.clickhouse_url)

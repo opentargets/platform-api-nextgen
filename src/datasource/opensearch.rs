@@ -11,6 +11,7 @@ use serde_json::Value;
 
 use crate::config::Config;
 
+/// An OpenSearch client wrapper.
 #[derive(Clone)]
 pub struct OpenSearch {
     client: Client,
