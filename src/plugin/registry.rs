@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use crate::{config::Config, plugin::plugin::Plugin};
+use crate::{config::Config, plugin::Plugin};
 
 /// The plugins available to the API.
 ///
