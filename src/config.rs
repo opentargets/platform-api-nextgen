@@ -16,7 +16,7 @@ use serde::{
     de::{Error, MapAccess, Visitor},
 };
 
-use crate::plugin::plugin::Plugin;
+use crate::plugin::Plugin;
 
 const DEFAULT_CONFIG_FILE: &str = "config.toml";
 pub const CACHE_REQUEST_SIZE: u64 = 2 * 1024 * 1024 * 1024; // 2GB
