@@ -198,7 +198,16 @@ pub async fn load_clinical_report(
 pub struct ClinicalReportQuery;
 
 #[Object]
-impl ClinicalReportQuery {}
+impl ClinicalReportQuery {
+    /// Retrieve a clinical report by an identifier.
+    async fn clinical_report(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(desc = "Clinical Report ID.")] clinical_report_id: String,
+    ) -> async_graphql::Result<Option<ClinicalReport>> {
+        load_clinical_report(ctx, &clinical_report_id).await
+    }
+}
 
 #[ComplexObject]
 impl ClinicalReport {
