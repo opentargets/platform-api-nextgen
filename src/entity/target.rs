@@ -16,6 +16,10 @@ use crate::{
             AssociationArguments, AssociationSort, Datasource, DatasourcePolicyOverride,
             DiseaseAssociation, EntityWithAssociations, load_associations,
         },
+        association_timeseries_ppp::{
+            AggregationType, AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
+            load_association_timeseries,
+        },
         baseline_expression::{BaselineExpression, load_baseline_expression_by_target},
         disease::Disease,
         evidence::{Evidence, EvidenceKey, load_evidences},
@@ -740,6 +744,11 @@ impl Target {
             .unwrap_or_default())
     }
 
+    /// Molecular interactions reporting experimental or functional interactions between this target
+    /// and other molecules. This dataset contains pair-wise interactions deposited in several
+    /// databases capturing: physical interactions (e.g. IntAct), directional interactions (e.g.
+    /// Signor), pathway relationships (e.g. Reactome) or functional interactions (e.g.
+    /// STRINGdb).
     async fn interactions(
         &self,
         ctx: &Context<'_>,
@@ -754,5 +763,33 @@ impl Target {
                 .await?
                 .unwrap_or_default();
         Ok(interactions.query().paginate(page))
+    }
+
+    /// Association time series.
+    async fn association_time_series(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(desc = "EFO ID of the disease.")] efo_id: String,
+        #[graphql(desc = "Whether to include only direct associations.")] is_direct: bool,
+        #[graphql(desc = "Aggregation types.")] aggregation_types: Option<Vec<AggregationType>>,
+        #[graphql(desc = "Year at the lower end of the filter.")] start_year: Option<i32>,
+        #[graphql(desc = "Year at the higher end of the filter.")] end_year: Option<i32>,
+        #[graphql(default, desc = "Pagination for the Associations time series.")] page: Page,
+    ) -> async_graphql::Result<Paged<AssociationTimeseries>> {
+        load_association_timeseries(
+            ctx,
+            TimeseriesKey {
+                disease_id: efo_id,
+                target_id: self.id.clone(),
+            },
+            &AssociationTimeseriesArguments {
+                is_direct,
+                aggregation_types,
+                start_year,
+                end_year,
+                page,
+            },
+        )
+        .await
     }
 }

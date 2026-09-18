@@ -55,8 +55,8 @@ impl Product for Platform {
     fn prepare_request(req: Request, ch: &ClickHouse) -> Request {
         req.data(loader::<BaselineExpressionLoader>(ch))
             .data(loader::<BiosampleLoader>(ch))
-            .data(loader::<ClinicalIndicationFromDrugLoader>(ch))
             .data(loader::<ClinicalIndicationFromDiseaseLoader>(ch))
+            .data(loader::<ClinicalIndicationFromDrugLoader>(ch))
             .data(loader::<DiseaseLoader>(ch))
             .data(loader::<DiseasePhenotypeLoader>(ch))
             .data(loader::<DrugLoader>(ch))

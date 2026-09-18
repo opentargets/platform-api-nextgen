@@ -102,11 +102,10 @@ pub struct ParticipantDetectionMethod {
     short_name: Option<String>,
 }
 
-/// Integration of molecular interactions reporting experimental or functional interactions between
-/// molecules represented as Platform targets. This dataset contains pair-wise interactions
-/// deposited in several databases capturing: physical interactions (e.g. IntAct), directional
-/// interactions (e.g. Signor), pathway relationships (e.g. Reactome) or functional interactions
-/// (e.g. STRINGdb).
+/// Molecular interactions reporting experimental or functional interactions between this target and
+/// other molecules. This dataset contains pair-wise interactions deposited in several databases
+/// capturing: physical interactions (e.g. IntAct), directional interactions (e.g. Signor), pathway
+/// relationships (e.g. Reactome) or functional interactions (e.g. STRINGdb).
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]

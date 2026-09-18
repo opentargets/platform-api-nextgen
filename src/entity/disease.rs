@@ -16,6 +16,10 @@ use crate::{
             AssociationArguments, AssociationSort, Datasource, DatasourcePolicyOverride,
             EntityWithAssociations, TargetAssociation, load_associations,
         },
+        association_timeseries_ppp::{
+            AggregationType, AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
+            load_association_timeseries,
+        },
         clinical_indication::{ClinicalIndication, load_clinical_indications_from_disease},
         disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
         evidence::{Evidence, EvidenceKey, load_evidences},
@@ -372,5 +376,33 @@ impl Disease {
         )
         .await?;
         Ok(all.query().paginate(page))
+    }
+
+    /// Association time series.
+    async fn association_time_series(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(desc = "Ensembl ID of the target.")] ensembl_id: String,
+        #[graphql(desc = "Whether to include only direct associations.")] is_direct: bool,
+        #[graphql(desc = "Aggregation types.")] aggregation_types: Option<Vec<AggregationType>>,
+        #[graphql(desc = "Year at the lower end of the filter.")] start_year: Option<i32>,
+        #[graphql(desc = "Year at the higher end of the filter.")] end_year: Option<i32>,
+        #[graphql(default, desc = "Pagination for the Associations time series.")] page: Page,
+    ) -> async_graphql::Result<Paged<AssociationTimeseries>> {
+        load_association_timeseries(
+            ctx,
+            TimeseriesKey {
+                disease_id: self.id.clone(),
+                target_id: ensembl_id,
+            },
+            &AssociationTimeseriesArguments {
+                is_direct,
+                aggregation_types,
+                start_year,
+                end_year,
+                page,
+            },
+        )
+        .await
     }
 }
