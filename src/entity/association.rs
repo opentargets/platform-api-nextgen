@@ -80,6 +80,7 @@ pub enum Datasource {
     /// Gene-disease relationships from Gene2Phenotype (G2P), literature-curated by expert clinical
     /// geneticist panels.
     /// See <https://platform-docs.opentargets.org/evidence#gene2phenotype>.
+    #[serde(rename = "gene2phenotype")]
     #[strum(serialize = "gene2phenotype")]
     #[graphql(name = "gene2phenotype")]
     Gene2Phenotype,

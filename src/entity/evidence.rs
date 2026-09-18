@@ -23,17 +23,6 @@ use crate::{
 
 // ---- models ----
 
-/// The key for filtering evidences.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct EvidenceKey {
-    /// A list of disease ids to match on.
-    pub efo_ids: Vec<String>,
-    /// A list of target ids to match on.
-    pub ensembl_ids: Vec<String>,
-    /// A list of datasource ids to match on.
-    pub datasource_ids: Vec<Datasource>,
-}
-
 /// Assays used in the study.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
@@ -428,6 +417,14 @@ impl Entity for Evidence {
 }
 
 // ---- loaders ----
+
+/// The key for filtering evidences.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct EvidenceKey {
+    pub efo_ids: Vec<String>,
+    pub ensembl_ids: Vec<String>,
+    pub datasource_ids: Vec<Datasource>,
+}
 
 #[derive(From)]
 pub struct EvidenceLoader {

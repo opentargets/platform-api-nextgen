@@ -1,6 +1,7 @@
 //! Entity layer of the application, including models, retrievers and resolvers.
 
 pub mod association;
+pub mod association_timeseries_ppp;
 pub mod baseline_expression;
 pub mod biosample;
 pub mod clinical_indication;
