@@ -5,6 +5,7 @@ use async_graphql::{
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
+use humantime_serde::re;
 use moka::future::Cache;
 use serde::Deserialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -313,11 +314,6 @@ impl Variant {
         #[graphql(default, desc = "Pagination for the enhancer-to-gene relationships.")] page: Page,
     ) -> async_graphql::Result<Paged<enhancer_to_gene::EnhancerToGene>> {
         let e2g_key = enhancer_to_gene::Key::new(self.chromosome, self.position, self.position, page.index, page.size);
-        let rows = enhancer_to_gene::load_enhancer_to_genes(ctx, e2g_key, page).await?;
-        let count: u64 = match rows.first() {
-            Some(it) => it.total(),
-            None => 0,
-        };
-        Ok(Paged { count, rows })
+        Ok(enhancer_to_gene::load_enhancer_to_genes(ctx, e2g_key, page).await?)
     }
 }

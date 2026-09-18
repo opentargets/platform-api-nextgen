@@ -66,17 +66,8 @@ pub struct EnhancerToGene {
     study_id: String,
     /// Quality control flags for this interval.
     quality_controls: Vec<String>,
-    // meta
-    #[graphql(skip)]
-    total: u64,
 }
 
-
-impl EnhancerToGene {
-    /// Returns the total count of enhancer-to-gene predictions.
-    #[must_use]
-    pub fn total(&self) -> u64 { self.total }
-}
 
 #[derive(Debug, Clone, Deserialize, SimpleObject, Eq, PartialEq, Hash)]
 #[serde(rename_all = "camelCase")]
@@ -113,7 +104,7 @@ impl Key {
 #[serde(rename_all = "camelCase")]
 pub struct EnhancerToGeneRow {
     key: u64,
-    enhancer_to_genes: Vec<EnhancerToGene>,
+    enhancer_to_genes: Paged<EnhancerToGene>,
 }
 
 
@@ -129,7 +120,7 @@ impl EnhancerToGeneLoader {
 }
 
 impl Loader<Key> for EnhancerToGeneLoader {
-    type Value = Vec<EnhancerToGene>;
+    type Value = Paged<EnhancerToGene>;
     type Error = async_graphql::Error;
 
     async fn load(
@@ -138,27 +129,40 @@ impl Loader<Key> for EnhancerToGeneLoader {
     ) -> Result<HashMap<Key, Self::Value>, Self::Error> {
         let base_query = "
             WITH
-            ? as q_chromosome,
-            ? as q_start,
-            ? as q_end,
-            ? as q_offset,
-            ? as q_size,
-            CAST(? AS UInt64) as query_id,
-            paged AS (
-                SELECT *, COUNT() OVER() AS total
-                FROM enhancer_to_gene
-                WHERE
-                    chromosome = q_chromosome AND start <= q_start AND end >= q_end
-                LIMIT q_offset, q_size
-            )
+                ? AS q_chromosome,
+                ? AS q_start,
+                ? AS q_end,
+                ? AS q_index,
+                ? AS q_size,
+                CAST(? AS UInt64) AS query_id,
+                filtered AS
+                (
+                    SELECT *
+                    FROM enhancer_to_gene
+                    WHERE chromosome = q_chromosome
+                      AND start <= q_start
+                      AND end >= q_end
+                ),
+                (
+                    SELECT count()
+                    FROM filtered
+                ) as count,
+                paged AS
+                (
+                    SELECT *
+                    FROM filtered
+                    ORDER BY start, end
+                    LIMIT q_size OFFSET q_index
+                )
             SELECT
                 query_id,
-                groupArray(
-                    tuple(*)
-                ) AS enhancer_to_genes
+                tuple(
+                        CAST(count AS UInt64),
+                        groupArray(tuple(*)) as rows
+                    )
             FROM paged
             GROUP BY query_id
-                ";
+            ";
         let queries: Vec<String> = keys.iter().map(|_| base_query.to_string()).collect();
         let full_query = keys.iter().enumerate().fold(
                     self.ch.query(&queries.join(" UNION ALL ")),
@@ -190,7 +194,7 @@ pub async fn load_enhancer_to_genes(
     ctx: &async_graphql::Context<'_>,
     key: enhancer_to_gene::Key,
     page: Page,
-) -> async_graphql::Result<Vec<EnhancerToGene>> {
+) -> async_graphql::Result<Paged<EnhancerToGene>> {
     Ok(ctx
         .data_unchecked::<DataLoader<EnhancerToGeneLoader>>()
         .load_one(key)

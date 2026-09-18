@@ -1,5 +1,5 @@
 use async_graphql::{InputObject, OutputType, SimpleObject};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     entity::{
@@ -42,7 +42,7 @@ impl Default for Page {
 }
 
 /// The result of a paginated query, containing the total number of items and the items.
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
 #[graphql(concrete(name = "ClinicalIndicationPage", params(ClinicalIndication)))]
 #[graphql(concrete(name = "DiseasePage", params(Disease)))]
