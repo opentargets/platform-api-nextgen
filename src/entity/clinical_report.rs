@@ -57,6 +57,13 @@ pub struct TrialLiterature {
     r#type: String,
 }
 
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
+#[serde(rename_all = "camelCase")]
+pub struct ClinicalDiseaseListItem {
+    disease_from_source: Option<String>,
+    disease_id: Option<String>,
+}
+
 /// A clinical record (e.g. trial, drug label) reporting on drugs and diseases.
 #[derive(Debug, Clone, Deserialize, Row, SimpleObject)]
 #[serde(rename_all = "camelCase")]
