@@ -16,6 +16,7 @@ use crate::{
         clinical_indication::{
             ClinicalIndicationFromDiseaseLoader, ClinicalIndicationFromDrugLoader,
         },
+        clinical_report::{ClinicalReportLoader, ClinicalReportQuery},
         disease::{DiseaseLoader, DiseaseQuery},
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},
@@ -52,11 +53,6 @@ pub async fn handler(
         .max_batch_size(MAX_BATCH_SIZE);
     let diseases = DataLoader::new(DiseaseLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
-    let clinical_indication_from_drug = DataLoader::new(
-        ClinicalIndicationFromDrugLoader::new(ch.clone()),
-        tokio::spawn,
-    )
-    .max_batch_size(MAX_BATCH_SIZE);
     let drugs =
         DataLoader::new(DrugLoader::new(ch.clone()), tokio::spawn).max_batch_size(MAX_BATCH_SIZE);
     let drug_warnings = DataLoader::new(DrugWarningLoader::new(ch.clone()), tokio::spawn);
@@ -70,6 +66,8 @@ pub async fn handler(
         tokio::spawn,
     )
     .max_batch_size(MAX_BATCH_SIZE);
+    let clinical_reports = DataLoader::new(ClinicalReportLoader::new(ch.clone()), tokio::spawn)
+        .max_batch_size(MAX_BATCH_SIZE);
     let evidences = DataLoader::new(EvidenceLoader::new(ch.clone()), tokio::spawn)
         .max_batch_size(MAX_BATCH_SIZE);
     let gene_ontology = DataLoader::new(GeneOntologyLoader::new(ch.clone()), tokio::spawn)
@@ -114,6 +112,7 @@ pub async fn handler(
                 .data(diseases)
                 .data(clinical_indication_from_drug)
                 .data(clinical_indication_from_disease)
+                .data(clinical_reports)
                 .data(drugs)
                 .data(drug_warnings)
                 .data(evidences)
@@ -137,14 +136,15 @@ pub async fn handler(
 
 #[derive(MergedObject, Default)]
 pub struct Query(
-    MetaQuery,    // API data (version, data release, product, etc.)
-    SearchQuery,  // Search bar functionality
-    FacetQuery,   // Facet search for AOTF
-    DiseaseQuery, // Diseases
-    StudyQuery,   // Studies
-    DrugQuery,    // Drugs
-    VariantQuery, // Variants
-    TargetQuery,  // Targets
+    MetaQuery,           // API data (version, data release, product, etc.)
+    SearchQuery,         // Search bar functionality
+    FacetQuery,          // Facet search for AOTF
+    DiseaseQuery,        // Diseases
+    StudyQuery,          // Studies
+    DrugQuery,           // Drugs
+    VariantQuery,        // Variants
+    TargetQuery,         // Targets
+    ClinicalReportQuery, // Clinical reports
 );
 
 pub type ApiSchema = Schema<Query, EmptyMutation, EmptySubscription>;
