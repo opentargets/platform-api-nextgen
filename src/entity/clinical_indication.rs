@@ -11,6 +11,7 @@ use serde::Deserialize;
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
+        clinical_report::{ClinicalReport, load_clinical_reports},
         disease::{Disease, load_disease},
         drug::{Drug, load_drug},
     },
@@ -31,6 +32,7 @@ pub struct ClinicalIndication {
     disease_id: String,
     /// Maximum Clinical Development Status for the association.
     max_clinical_stage: String,
+    #[graphql(skip)]
     clinical_report_ids: Vec<String>,
 }
 
@@ -144,5 +146,12 @@ impl ClinicalIndication {
         load_disease(ctx, self.disease_id.clone())
             .await?
             .ok_or_else(|| async_graphql::Error::new("disease not found"))
+    }
+
+    async fn clinical_reports(
+        &self,
+        ctx: &Context<'_>,
+    ) -> async_graphql::Result<Vec<ClinicalReport>> {
+        load_clinical_reports(ctx, &self.clinical_report_ids).await
     }
 }

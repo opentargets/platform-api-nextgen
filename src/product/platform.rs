@@ -10,6 +10,7 @@ use crate::{
         clinical_indication::{
             ClinicalIndicationFromDiseaseLoader, ClinicalIndicationFromDrugLoader,
         },
+        clinical_report::ClinicalReportLoader,
         disease::{DiseaseLoader, DiseaseQuery},
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},
@@ -58,6 +59,7 @@ impl Product for Platform {
             .data(loader::<BiosampleLoader>(ch))
             .data(loader::<ClinicalIndicationFromDiseaseLoader>(ch))
             .data(loader::<ClinicalIndicationFromDrugLoader>(ch))
+            .data(loader::<ClinicalReportLoader>(ch))
             .data(loader::<DiseaseLoader>(ch))
             .data(loader::<DiseasePhenotypeLoader>(ch))
             .data(loader::<DrugLoader>(ch))

@@ -520,7 +520,7 @@ impl Evidence {
     /// disease as potential indication [bioregistry:chembl].
     async fn drug(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Drug>> {
         match &self.drug_id {
-            Some(drug_id) => return load_drug(ctx, drug_id.clone()).await,
+            Some(drug_id) => load_drug(ctx, drug_id.clone()).await,
             None => Ok(None),
         }
     }
@@ -528,7 +528,7 @@ impl Evidence {
     /// Observed patterns of drug response.
     async fn drug_response(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Drug>> {
         match &self.drug_response {
-            Some(drug_response) => return load_drug(ctx, drug_response.clone()).await,
+            Some(drug_response) => load_drug(ctx, drug_response.clone()).await,
             None => Ok(None),
         }
     }
