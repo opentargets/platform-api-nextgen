@@ -11,7 +11,7 @@ use moka::future::Cache;
 use serde::Deserialize;
 
 use crate::{
-    datasource::clickhouse::ClickHouse,
+    datasource::clickhouse::{ClickHouse, from_nullable_string_opt, from_string},
     entity::{
         disease::{Disease, load_disease},
         drug::{Drug, load_drug},
@@ -31,6 +31,104 @@ pub enum ClinicalReportType {
     Indication,
     /// Clinical evidence informing about a drug's safety event.
     Safety,
+}
+
+/// Nature of the record the report originates from.
+#[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq, Enum)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+pub enum Origin {
+    /// TODO DESCRIPTION: Clinical trial record.
+    ClinicalTrial,
+    /// TODO DESCRIPTION: Drug label record.
+    DrugLabel,
+    /// TODO DESCRIPTION: Regulatory agency record.
+    RegulatoryAgency,
+    /// TODO DESCRIPTION: Curated resource record.
+    CuratedResource,
+}
+
+// TODO: This should become an enum in CH, then we don't need to rename it all.
+// We also have to figure out some more descriptive descriptions. :)
+/// Clinical stage of the report.
+#[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq, Enum)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+pub enum ClinicalStage {
+    /// Unknown phase.
+    Unknown,
+    /// Preclinical stage.
+    Preclinical,
+    /// Ind.
+    Ind,
+    /// Early phase 1.
+    #[serde(rename = "EARLY_PHASE_1")]
+    #[graphql(name = "EARLY_PHASE_1")]
+    EarlyPhase1,
+    /// Phase 1.
+    #[serde(rename = "PHASE_1")]
+    #[graphql(name = "PHASE_1")]
+    Phase1,
+    /// Phase 1/2.
+    #[serde(rename = "PHASE_1_2")]
+    #[graphql(name = "PHASE_1_2")]
+    Phase12,
+    /// Phase 2.
+    #[serde(rename = "PHASE_2")]
+    #[graphql(name = "PHASE_2")]
+    Phase2,
+    /// Phase 2/3.
+    #[serde(rename = "PHASE_2_3")]
+    #[graphql(name = "PHASE_2_3")]
+    Phase23,
+    /// Phase 3.
+    #[serde(rename = "PHASE_3")]
+    #[graphql(name = "PHASE_3")]
+    Phase3,
+    /// Preapproval.
+    Preapproval,
+    /// The drog is approved for general use.
+    Approval,
+    /// Phase 4.
+    #[serde(rename = "PHASE_4")]
+    #[graphql(name = "PHASE_4")]
+    Phase4,
+    /// The drug has been Withdrawn.
+    Withdrawal,
+}
+
+/// Type of clinical study.
+#[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq, Enum)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+pub enum TrialStudyType {
+    /// Interventional.
+    Interventional,
+    /// Observational.
+    Observational,
+    /// Expanded access.
+    ExpandedAccess,
+}
+
+/// Source that provided the clinical report.
+#[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq, Enum)]
+#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+pub enum Provider {
+    /// ChEMBL.
+    #[serde(rename = "ChEMBL")]
+    Chembl,
+    /// Therapeutic Target Database.
+    #[serde(rename = "TTD")]
+    Ttd,
+    /// Aggregate Analysis of ClinicalTrials.gov.
+    #[serde(rename = "AACT")]
+    Aact,
+    /// European Medicines Agency.
+    #[serde(rename = "EMA")]
+    Ema,
+    /// Pharmaceuticals and Medical Devices Agency.
+    #[serde(rename = "PMDA")]
+    Pmda,
 }
 
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
@@ -64,14 +162,14 @@ pub struct TrialSponsor {
 }
 
 /// Literature references associated with the clinical trial.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct TrialLiterature {
     /// PubMed identifier of the reference, when the source records one.
     id: String,
     /// How the reference relates to the trial: RESULT and DERIVED report its outcome, BACKGROUND
     /// is literature its authors cited.
-    #[allow(dead_code)]
+    #[graphql(name = "referenceType")]
     r#type: String,
 }
 
@@ -123,24 +221,26 @@ impl ClinicalSideEffectListItem {
 /// A clinical record (e.g. trial, drug label) reporting on drugs and diseases.
 #[derive(Debug, Clone, Deserialize, Row, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-#[graphql(complex)]
 pub struct ClinicalReport {
     /// Unique identifier for the clinical report.
     id: String,
     /// Source database or registry from which the clinical report was obtained.
     source: String,
     /// Clinical stage of the report.
-    clinical_stage: String,
+    #[serde(deserialize_with = "from_string")]
+    clinical_stage: ClinicalStage,
     /// Clinical phase as reported in the source.
     phase_from_source: Option<String>,
     /// Kind of evidence the report describes: INDICATION for a drug/disease claim, SAFETY for a
     /// drug warning.
-    #[graphql(skip)]
+    #[graphql(name = "evidenceType")]
+    #[serde(deserialize_with = "from_nullable_string_opt")]
     r#type: Option<String>,
     /// Title of the clinical report.
     title: Option<String>,
     /// Type of clinical study (e.g. Interventional, Observational).
-    trial_study_type: Option<String>,
+    #[serde(deserialize_with = "from_nullable_string_opt")]
+    trial_study_type: Option<TrialStudyType>,
     /// Brief description of the clinical trial.
     trial_description: Option<String>,
     /// Number of arms in the clinical trial.
@@ -149,7 +249,6 @@ pub struct ClinicalReport {
     #[serde(with = "clickhouse::serde::chrono::date::option")]
     trial_start_date: Option<NaiveDate>,
     /// Literature references associated with the clinical trial.
-    #[graphql(skip)]
     trial_literature: Vec<TrialLiterature>,
     /// Overall status of the clinical trial (e.g. Completed, Terminated).
     trial_overall_status: Option<String>,
@@ -162,7 +261,6 @@ pub struct ClinicalReport {
     /// Categories describing reasons why the trial was stopped.
     trial_stop_reason_categories: Vec<String>,
     /// Lead sponsor associated with the clinical trial.
-    #[graphql(skip)]
     trial_sponsor: TrialSponsor,
     /// Quality control flags or notes for the clinical report.
     quality_controls: Vec<String>,
@@ -180,12 +278,12 @@ pub struct ClinicalReport {
     trial_official_title: Option<String>,
     /// URL linking to the source record.
     url: Option<String>,
-    /// Nature of the record the report originates from (e.g. CLINICAL_TRIAL, DRUG_LABEL,
-    /// REGULATORY_AGENCY, CURATED_RESOURCE).
-    origin: String,
-    /// Resource or organisation that distributes the data fetched from the primary source (e.g.
-    /// AACT, ChEMBL, EMA, PMDA, TTD).
-    provider: String,
+    /// Nature of the record the report originates from.
+    #[serde(deserialize_with = "from_string")]
+    origin: Origin,
+    /// Resource or organisation that distributes the data fetched from the primary source.
+    #[serde(deserialize_with = "from_string")]
+    provider: Provider,
 }
 
 // ---- loaders ----
@@ -273,29 +371,5 @@ impl ClinicalReportQuery {
         #[graphql(desc = "List of Clinical Report IDs.")] clinical_reports_ids: Vec<String>,
     ) -> async_graphql::Result<Vec<ClinicalReport>> {
         load_clinical_reports(ctx, &clinical_reports_ids).await
-    }
-}
-
-#[ComplexObject]
-impl ClinicalReport {
-    /// Kind of evidence the report describes: INDICATION for a drug/disease claim, SAFETY for a
-    /// drug warning.
-    async fn r#type(&self) -> Option<ClinicalReportType> {
-        match self.r#type.as_deref()? {
-            "INDICATION" => Some(ClinicalReportType::Indication),
-            "SAFETY" => Some(ClinicalReportType::Safety),
-            _ => None,
-        }
-    }
-
-    /// Lead sponsor associated with the clinical trial.
-    async fn trial_sponsor(&self) -> Option<&TrialSponsor> { Some(&self.trial_sponsor) }
-
-    /// Literature references associated with the clinical trial.
-    async fn trial_literature(&self) -> Vec<String> {
-        self.trial_literature
-            .iter()
-            .map(|literature| literature.id.clone())
-            .collect()
     }
 }
