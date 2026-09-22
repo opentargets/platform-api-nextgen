@@ -11,7 +11,7 @@ use serde::Deserialize;
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::biosample::{Biosample, load_biosample_by_id},
-    query::paginate::Page,
+    query::paginate::{Page, Paged},
 };
 
 // ---- models ----
@@ -60,14 +60,6 @@ pub struct BaselineExpression {
     unit: String,
     /// Quality control flags or notes for baseline expression.
     quality_controls: Vec<String>,
-    #[graphql(skip)]
-    pub total: u64,
-}
-
-impl BaselineExpression {
-    /// Returns the total count of baseline expressions.
-    #[must_use]
-    pub fn total(&self) -> u64 { self.total }
 }
 
 #[derive(Debug, Clone, Deserialize, SimpleObject, Eq, PartialEq, Hash)]
@@ -81,8 +73,8 @@ pub struct Key {
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct BaselineExpressionRow {
-    key: Key,
-    baseline_expressions: Vec<BaselineExpression>,
+    key: usize,
+    baseline_expressions: Paged<BaselineExpression>,
 }
 
 // ---- loaders ----
@@ -93,85 +85,74 @@ pub struct BaselineExpressionLoader {
 }
 
 impl Loader<(String, Page)> for BaselineExpressionLoader {
-    type Value = Vec<BaselineExpression>;
+    type Value = Paged<BaselineExpression>;
     type Error = async_graphql::Error;
 
     async fn load(
         &self,
         keys: &[(String, Page)],
     ) -> Result<HashMap<(String, Page), Self::Value>, Self::Error> {
-        let base_query = "((WITH paged AS (
-            SELECT *, COUNT() OVER() as total
+        let base_query = "
+        WITH (?) as q_targetIds,
+        ? as q_offset,
+        ? as q_limit,
+        CAST(? AS UInt64) AS query_id,
+        filtered AS (
+            SELECT *
             FROM baseline_expression
-            WHERE targetId IN (?)
-            LIMIT ?, ?
+            WHERE targetId IN q_targetIds
+        ),
+        (
+            SELECT count()
+            FROM filtered
+        ) as count,
+        paged AS (
+            SELECT *
+            FROM filtered
+            LIMIT q_limit OFFSET q_offset
         )
         SELECT
-            any(paged.targetId) as targetId, CAST(? AS UInt32) as index, CAST(? AS UInt32) as size,
-            groupArray((
-                paged.targetId,
-                paged.targetFromSourceId,
-                paged.tissueBiosampleId,
-                paged.tissueBiosampleParentId,
-                paged.tissueBiosampleFromSource,
-                paged.celltypeBiosampleId,
-                paged.celltypeBiosampleParentId,
-                paged.celltypeBiosampleFromSource,
-                paged.min, paged.q1, paged.median, paged.q3, paged.max,
-                paged.distribution_score,
-                paged.specificity_score,
-                paged.datasourceId, paged.datatypeId, paged.unit,
-                paged.qualityControls,
-                paged.total
-            )) AS baselineExpressions
+            query_id,
+            tuple(
+                CAST(count AS UInt64),
+                groupArray(tuple(*)) as rows
+            )
         FROM paged
-        GROUP BY paged.targetId))";
+        GROUP BY query_id";
 
         let queries: Vec<String> = keys.iter().map(|_| base_query.to_string()).collect();
 
-        let full_query = keys.iter().fold(
+        let full_query = keys.iter().enumerate().fold(
             self.ch.query(&queries.join(" UNION ALL ")),
-            |acc: clickhouse::query::Query, key| {
+            |acc: clickhouse::query::Query, (i, key)| {
                 acc.bind(&key.0)
                     .bind(key.1.index * key.1.size)
                     .bind(key.1.size)
-                    .bind(key.1.index)
-                    .bind(key.1.size)
+                    .bind(i as u64)
             },
         );
 
         let result = full_query.fetch_all::<BaselineExpressionRow>().await?;
-        let result2 = result
+        let results_with_keys = result
             .iter()
-            .map(|res| {
-                (
-                    (
-                        res.key.target_id.clone(),
-                        (Page {
-                            index: res.key.index,
-                            size: res.key.size,
-                        }),
-                    ),
-                    res.baseline_expressions.clone(),
-                )
-            })
+            .map(|res| (keys[res.key].clone(), res.baseline_expressions.clone()))
             .collect();
 
-        Ok(result2)
+        Ok(results_with_keys)
     }
 }
 
-/// Loads Baseline Expressions by the target id from the cache or database.
+/// Loads Baseline Expressions by the target id from the database.
 ///
 /// # Returns
-/// A `Vec` of `BaselineExpression` objects corresponding to the given target IDs.
+/// A `Paged` of `BaselineExpression` objects corresponding to the given target IDs.
 /// # Errors
 /// Returns an error if the Baseline Expression could not be loaded.
 pub async fn load_baseline_expression_by_target(
     ctx: &Context<'_>,
     id: String,
     page: Page,
-) -> async_graphql::Result<Vec<BaselineExpression>> {
+) -> async_graphql::Result<Paged<BaselineExpression>> {
     Ok(ctx
         .data_unchecked::<DataLoader<BaselineExpressionLoader>>()
         .load_one((id, page))
