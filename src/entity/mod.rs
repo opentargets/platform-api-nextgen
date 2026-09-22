@@ -18,6 +18,7 @@ pub mod interaction;
 pub mod meta;
 pub mod mouse_phenotype;
 pub mod protein_coding_coordinates;
+pub mod publication;
 pub mod search;
 pub mod search_facet;
 pub mod sequence_ontology;

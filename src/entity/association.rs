@@ -505,7 +505,7 @@ impl AotfSql {
     #[cfg(feature = "product-platform")]
     fn build_query(&self) -> String {
         format!(
-            include_str!("associations.sql"),
+            include_str!("association.sql"),
             max_hs = MAX_HS,
             indirect_w = INDIRECT_WEIGHT,
             a_id = self.anchor,
@@ -527,7 +527,7 @@ impl AotfSql {
     fn build_query(&self) -> String {
         #[cfg(feature = "product-ppp")]
         format!(
-            include_str!("associations_ppp.sql"),
+            include_str!("association_ppp.sql"),
             max_hs = MAX_HS,
             indirect_w = INDIRECT_WEIGHT,
             novelty = "noveltyDirect",

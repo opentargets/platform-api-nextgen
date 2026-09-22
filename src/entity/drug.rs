@@ -14,6 +14,9 @@ use crate::{
     entity::{
         clinical_indication::{ClinicalIndication, load_clinical_indications_from_drug},
         drug_warning::{DrugWarning, load_drug_warnings},
+        publication::{
+            LiteratureOcurrences, PublicationsArg, load_paged_publications_by_keyword_id_date,
+        },
     },
     query::{
         Entity, QueryExt,
@@ -239,5 +242,48 @@ impl Drug {
     ) -> async_graphql::Result<Paged<ClinicalIndication>> {
         let items = load_clinical_indications_from_drug(ctx, self.id.clone()).await?;
         Ok(items.query().paginate(page))
+    }
+
+    /// Return the list of publications that mention the main entity, alone or in combination with
+    /// other entities
+    async fn literature_ocurrences(
+        &self,
+        ctx: &Context<'_>,
+        additional_ids: Option<Vec<String>>,
+        start_year: Option<u32>,
+        start_month: Option<u32>,
+        end_year: Option<u32>,
+        end_month: Option<u32>,
+        #[graphql(desc = "Pagination for the interactions.")] page: Page,
+    ) -> async_graphql::Result<LiteratureOcurrences> {
+        let mut ids = additional_ids.unwrap_or_default().clone();
+        ids.push(self.id.clone());
+
+        let result = load_paged_publications_by_keyword_id_date(
+            ctx,
+            PublicationsArg {
+                ids,
+                start_year,
+                start_month,
+                end_year,
+                end_month,
+                page,
+            },
+        )
+        .await?;
+
+        let paged_result = match result {
+            Some(publ) => LiteratureOcurrences {
+                earliest_pub_year: publ.earliest_pub_year,
+                total_count: publ.count,
+                publications: Paged {
+                    count: publ.filtered_count,
+                    rows: publ.rows,
+                },
+            },
+            None => LiteratureOcurrences::default(),
+        };
+
+        Ok(paged_result)
     }
 }

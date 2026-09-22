@@ -25,6 +25,9 @@ use crate::{
         evidence::{Evidence, EvidenceKey, load_evidences},
         interaction::{Interaction, InteractionSourceDatabase, load_interaction_by_target_a},
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
+        publication::{
+            LiteratureOcurrences, PublicationsArg, load_paged_publications_by_keyword_id_date,
+        },
         target_essentiality::{DepMapEssentiality, load_target_essentiality_by_target},
         target_prioritisation::{TargetPrioritisations, load_target_prioritisations},
     },
@@ -454,6 +457,7 @@ pub struct Target {
     /// Genomic location information of the target gene.
     genomic_location: GenomicLocation,
     /// List of Gene Ontology (GO) annotations related to the target.
+    #[graphql(name = "geneOnthology")]
     go: Vec<GeneOntologyAnnotation>,
     /// Hallmarks related to the target gene sourced from COSMIC.
     hallmarks: Hallmark,
@@ -786,5 +790,57 @@ impl Target {
             },
         )
         .await
+    }
+
+    /// Return the list of publications that mention the main entity, alone or in combination with
+    /// other entities
+    async fn literature_ocurrences(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            desc = "List of IDs (EFO disease IDs, Ensembl gene IDs, or ChEMBL molecule IDs)"
+        )]
+        additional_ids: Option<Vec<String>>,
+        #[graphql(desc = "Year at the lower end of the filter.")] start_year: Option<u32>,
+        #[graphql(
+            desc = "Month at the lower end of the filter. This value will be ignored if startYear is not set."
+        )]
+        start_month: Option<u32>,
+        #[graphql(desc = "Year at the higher end of the filter.")] end_year: Option<u32>,
+        #[graphql(
+            desc = "Month at the higher end of the filter. This value will be ignored if endYear is not set."
+        )]
+        end_month: Option<u32>,
+        #[graphql(default, desc = "Pagination for the publications.")] page: Page,
+    ) -> async_graphql::Result<LiteratureOcurrences> {
+        let mut ids = additional_ids.unwrap_or_default().clone();
+        ids.push(self.id.clone());
+
+        let result = load_paged_publications_by_keyword_id_date(
+            ctx,
+            PublicationsArg {
+                ids,
+                start_year,
+                start_month,
+                end_year,
+                end_month,
+                page,
+            },
+        )
+        .await?;
+
+        let paged_result = match result {
+            Some(publ) => LiteratureOcurrences {
+                earliest_pub_year: publ.earliest_pub_year,
+                total_count: publ.count,
+                publications: Paged {
+                    count: publ.filtered_count,
+                    rows: publ.rows,
+                },
+            },
+            None => LiteratureOcurrences::default(),
+        };
+
+        Ok(paged_result)
     }
 }
