@@ -370,7 +370,10 @@ impl StudyQuery {
                     the intersection of the two is returned."
         )]
         disease_ids: Option<Vec<String>>,
-        #[graphql(desc = "Whether to add studies for ontology-descendant diseases in the result.")]
+        #[graphql(
+            default = false,
+            desc = "Whether to add studies for ontology-descendant diseases in the result."
+        )]
         enable_indirect: bool,
         #[graphql(desc = "Search term to filter by.")] search: Option<String>,
         #[graphql(desc = "Filter criteria to apply.")] filter: Option<StudyFilter>,
