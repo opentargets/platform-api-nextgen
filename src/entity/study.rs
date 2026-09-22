@@ -182,27 +182,13 @@ impl Entity for Study {
 /// Contains the fields available for sorting studies.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
 pub enum StudySortField {
-    StudyId,
-    ProjectId,
-    TraitFromSource,
     NSamples,
-    NCases,
-    NControls,
-    PublicationDate,
-    StudyType,
 }
 
 impl SortKey<Study> for StudySortField {
     fn compare(&self, a: &Study, b: &Study) -> Ordering {
         match self {
-            Self::StudyId => a.study_id.cmp(&b.study_id),
-            Self::ProjectId => a.project_id.cmp(&b.project_id),
-            Self::TraitFromSource => a.trait_from_source.cmp(&b.trait_from_source),
             Self::NSamples => nulls_last(&a.n_samples, &b.n_samples),
-            Self::NCases => nulls_last(&a.n_cases, &b.n_cases),
-            Self::NControls => nulls_last(&a.n_controls, &b.n_controls),
-            Self::PublicationDate => nulls_last(&a.publication_date, &b.publication_date),
-            Self::StudyType => a.study_type.cmp(&b.study_type),
         }
     }
 }
