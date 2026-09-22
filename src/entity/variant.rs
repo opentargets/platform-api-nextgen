@@ -19,6 +19,7 @@ use crate::{
             ProteinCodingCoordinateVariantLoader, ProteinCodingCoordinates,
         },
         sequence_ontology::{SequenceOntology, load_sequence_ontology_one},
+        target::{Target, load_target},
     },
     query::{
         QueryExt,
@@ -84,6 +85,7 @@ pub struct VariantEffect {
 /// Predicted consequences on transcript context.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
+#[graphql(complex)]
 pub struct TranscriptConsequence {
     /// The sequence ontology identifier of the consequence of the variant based on Ensembl VEP in
     /// the context of the transcript [bioregistry:so].
@@ -101,6 +103,7 @@ pub struct TranscriptConsequence {
     /// Distance of the variant from the transcription start site.
     distance_from_tss: i32,
     /// Open Target target identifier of the transcript [bioregistry:ensembl].
+    #[graphql(skip)]
     target_id: Option<String>,
     /// Ensembl VEP predicted impact of the variant on the transcript.
     impact: Option<String>,
@@ -116,6 +119,17 @@ pub struct TranscriptConsequence {
     transcript_index: u32,
     /// Score assigned to transcript based on Ensembl VEP consequence.
     consequence_score: f64,
+}
+
+#[ComplexObject]
+impl TranscriptConsequence {
+    /// The target (gene/protein) associated with the transcript.
+    async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
+        match &self.target_id {
+            Some(target_id) => load_target(ctx, target_id.clone()).await,
+            None => Ok(None),
+        }
+    }
 }
 
 /// Cross-references for the variant in different databases.
