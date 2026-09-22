@@ -358,13 +358,22 @@ impl StudyQuery {
     async fn studies(
         &self,
         ctx: &Context<'_>,
+        #[graphql(
+            desc = "List of Study IDs to fetch. If both `studyIds` and `diseaseIds` are provided,
+                    the intersection of the two is returned."
+        )]
         study_ids: Option<Vec<String>>,
+        #[graphql(
+            desc = "List of Disease IDs to fetch. If both `studyIds` and `diseaseIds` are provided,
+                    the intersection of the two is returned."
+        )]
         disease_ids: Option<Vec<String>>,
-        #[graphql(default)] enable_indirect: bool,
-        search: Option<String>,
-        filter: Option<StudyFilter>,
-        sort: Option<Sort<StudySortField>>,
-        #[graphql(default)] page: Page,
+        #[graphql(desc = "Whether to add studies for ontology-descendant diseases in the result.")]
+        enable_indirect: bool,
+        #[graphql(desc = "Search term to filter by.")] search: Option<String>,
+        #[graphql(desc = "Filter criteria to apply.")] filter: Option<StudyFilter>,
+        #[graphql(desc = "Sort field and direction.")] sort: Option<Sort<StudySortField>>,
+        #[graphql(default, desc = "Pagination for the Studies.")] page: Page,
     ) -> async_graphql::Result<PagedWithStats<Study>> {
         if study_ids.is_none() && disease_ids.is_none() {
             return Err("one of studyIds or diseaseIds is required".into());
@@ -387,7 +396,7 @@ impl StudyQuery {
     async fn study(
         &self,
         ctx: &Context<'_>,
-        study_id: String,
+        #[graphql(desc = "The Study ID to fetch.")] study_id: String,
     ) -> async_graphql::Result<Option<Study>> {
         ctx.data_unchecked::<DataLoader<StudyLoader>>()
             .load_one(study_id)

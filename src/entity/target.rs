@@ -573,8 +573,8 @@ impl TargetQuery {
     async fn targets(
         &self,
         ctx: &Context<'_>,
-        #[graphql(desc = "List of Ensembl IDs.")] ensembl_ids: Vec<String>,
-        #[graphql(default)] page: Page,
+        #[graphql(desc = "List of Ensembl IDs of targets to fetch.")] ensembl_ids: Vec<String>,
+        #[graphql(default, desc = "Pagination for the targets.")] page: Page,
     ) -> async_graphql::Result<Paged<Target>> {
         let targets = load_targets(ctx, &ensembl_ids).await?;
         Ok(targets.query().paginate(page))
@@ -584,7 +584,7 @@ impl TargetQuery {
     async fn target(
         &self,
         ctx: &Context<'_>,
-        #[graphql(desc = "Ensembl ID")] ensembl_id: String,
+        #[graphql(desc = "Ensembl ID of the target to fetch.")] ensembl_id: String,
     ) -> async_graphql::Result<Option<Target>> {
         ctx.data_unchecked::<DataLoader<TargetLoader>>()
             .load_one(ensembl_id)
@@ -696,7 +696,7 @@ impl Target {
     async fn baseline_expression(
         &self,
         ctx: &Context<'_>,
-        #[graphql(desc = "Pagination for baseline expressions.")] page: Page,
+        #[graphql(default, desc = "Pagination for baseline expressions.")] page: Page,
     ) -> async_graphql::Result<Paged<BaselineExpression>> {
         load_baseline_expression_by_target(ctx, self.id.clone(), page).await
     }
@@ -719,7 +719,7 @@ impl Target {
     async fn dep_map_essentiality(
         &self,
         ctx: &Context<'_>,
-        #[graphql(desc = "Pagination for essentiality measurements.")] page: Page,
+        #[graphql(default, desc = "Pagination for essentiality measurements.")] page: Page,
     ) -> async_graphql::Result<Paged<DepMapEssentiality>> {
         let target_essentiality = load_target_essentiality_by_target(ctx, self.id.clone()).await?;
         let dep_map = match target_essentiality {
@@ -751,7 +751,7 @@ impl Target {
         #[graphql(desc = "Source database name.")] source_database: Option<
             InteractionSourceDatabase,
         >,
-        #[graphql(desc = "Pagination for the interactions.")] page: Page,
+        #[graphql(default, desc = "Pagination for the interactions.")] page: Page,
     ) -> async_graphql::Result<Paged<Interaction>> {
         let interactions =
             load_interaction_by_target_a(ctx, self.id.clone(), score_threshold, source_database)

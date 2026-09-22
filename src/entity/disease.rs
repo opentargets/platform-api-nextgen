@@ -243,10 +243,10 @@ impl DiseaseQuery {
     async fn diseases(
         &self,
         ctx: &Context<'_>,
-        efo_ids: Vec<String>,
-        search: Option<String>,
-        sort: Option<Sort<DiseaseSortField>>,
-        #[graphql(default)] page: Page,
+        #[graphql(desc = "List of EFO IDs of diseases to fetch.")] efo_ids: Vec<String>,
+        #[graphql(desc = "Search term to filter by.")] search: Option<String>,
+        #[graphql(desc = "Sort field and direction.")] sort: Option<Sort<DiseaseSortField>>,
+        #[graphql(default, desc = "Pagination for the Diseases.")] page: Page,
     ) -> async_graphql::Result<Paged<Disease>> {
         let items = load_diseases(ctx, &efo_ids).await?;
         Ok(items
@@ -259,7 +259,7 @@ impl DiseaseQuery {
     async fn disease(
         &self,
         ctx: &Context<'_>,
-        efo_id: String,
+        #[graphql(desc = "EFO ID of the disease to fetch.")] efo_id: String,
     ) -> async_graphql::Result<Option<Disease>> {
         ctx.data_unchecked::<DataLoader<DiseaseLoader>>()
             .load_one(efo_id)
@@ -294,7 +294,7 @@ impl Disease {
     async fn phenotypes(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default)] page: Page,
+        #[graphql(default, desc = "Pagination for the Phenotypes.")] page: Page,
     ) -> async_graphql::Result<Paged<DiseasePhenotype>> {
         let items = ctx
             .data_unchecked::<DataLoader<DiseasePhenotypeLoader>>()

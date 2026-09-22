@@ -185,8 +185,8 @@ impl DrugQuery {
     async fn drugs(
         &self,
         ctx: &Context<'_>,
-        #[graphql(desc = "List of Chembl IDs.")] chembl_ids: Vec<String>,
-        #[graphql(default)] page: Page,
+        #[graphql(desc = "List of Chembl IDs of the drugs to fetch.")] chembl_ids: Vec<String>,
+        #[graphql(default, desc = "Pagination for the Drugs.")] page: Page,
     ) -> async_graphql::Result<Paged<Drug>> {
         let drugs = load_drugs(ctx, &chembl_ids).await?;
         Ok(drugs.query().paginate(page))
@@ -196,7 +196,7 @@ impl DrugQuery {
     async fn drug(
         &self,
         ctx: &Context<'_>,
-        #[graphql(desc = "Chembl ID.")] chembl_id: String,
+        #[graphql(desc = "Chembl ID of the drug to fetch.")] chembl_id: String,
     ) -> async_graphql::Result<Option<Drug>> {
         ctx.data_unchecked::<DataLoader<DrugLoader>>()
             .load_one(chembl_id)
