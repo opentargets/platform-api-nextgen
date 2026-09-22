@@ -1,5 +1,6 @@
+attr_fn_like_width = 100
+comment_width = 100
 fn_single_line = true
 group_imports = "StdExternalCrate"
 imports_granularity = "Crate"
 wrap_comments = true
-comment_width = 100

@@ -18,6 +18,7 @@ use crate::{
         interaction::Interaction,
         mouse_phenotype::MousePhenotype,
         protein_coding_coordinates::ProteinCodingCoordinates,
+        publication::Publication,
         study::Study,
         target::Target,
         target_essentiality::DepMapEssentiality,
@@ -53,8 +54,11 @@ impl Default for Page {
 /// The result of a paginated query, containing the total number of items and the items.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[graphql(concrete(name = "AssociationTimeseriesPage", params(AssociationTimeseries)))]
-#[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
+#[graphql(concrete(name = "BaselineExpressionPage", params(BaselineExpression)))]
+#[graphql(concrete(name = "BiosamplePage", params(Biosample)))]
 #[graphql(concrete(name = "ClinicalIndicationPage", params(ClinicalIndication)))]
+#[graphql(concrete(name = "DepMapEssentialityPage", params(DepMapEssentiality)))]
+#[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
 #[graphql(concrete(name = "DiseasePage", params(Disease)))]
 #[graphql(concrete(name = "DiseasePhenotypePage", params(DiseasePhenotype)))]
 #[graphql(concrete(name = "DrugPage", params(Drug)))]
@@ -62,18 +66,13 @@ impl Default for Page {
 #[graphql(concrete(name = "EnhancerToGenePage", params(EnhancerToGene)))]
 #[graphql(concrete(name = "EvidencePage", params(Evidence)))]
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
+#[graphql(concrete(name = "InteractionPage", params(Interaction)))]
 #[graphql(concrete(name = "MousePhenotypePage", params(MousePhenotype)))]
-#[graphql(concrete(
-    name = "ProteinCodingCoordinatesPage",
-    params(ProteinCodingCoordinates)
-))]
-#[graphql(concrete(name = "BaselineExpressionPage", params(BaselineExpression)))]
-#[graphql(concrete(name = "BiosamplePage", params(Biosample)))]
-#[graphql(concrete(name = "DepMapEssentialityPage", params(DepMapEssentiality)))]
+#[graphql(concrete(name = "PublicationPage", params(Publication)))]
+#[graphql(concrete(name = "ProteinCodingCoordinatesPage", params(ProteinCodingCoordinates)))]
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
 #[graphql(concrete(name = "VariantPage", params(Variant)))]
-#[graphql(concrete(name = "InteractionPage", params(Interaction)))]
 pub struct Paged<T: OutputType> {
     pub count: u64,
     pub rows: Vec<T>,

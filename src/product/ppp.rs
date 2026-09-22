@@ -24,6 +24,7 @@ use crate::{
         meta::MetaQuery,
         mouse_phenotype::MousePhenotypeLoader,
         protein_coding_coordinates::ProteinCodingCoordinateVariantLoader,
+        publications::PublicationLoader,
         search::SearchQuery,
         search_facet::FacetQuery,
         sequence_ontology::SequenceOntologyLoader,
@@ -73,6 +74,7 @@ impl Product for Ppp {
             .data(loader::<InteractionLoader>(ch))
             .data(loader::<MousePhenotypeLoader>(ch))
             .data(loader::<ProteinCodingCoordinateVariantLoader>(ch))
+            .data(loader::<PublicationLoader>(ch))
             .data(loader::<SequenceOntologyLoader>(ch))
             .data(loader::<StudyLoader>(ch))
             .data(loader::<TargetLoader>(ch))
