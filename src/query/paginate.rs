@@ -27,20 +27,27 @@ use crate::{
 };
 
 pub const MAX_PAGE_SIZE: u32 = 100_000;
+pub const DEFAULT_PAGE_INDEX: u32 = 0;
+pub const DEFAULT_PAGE_SIZE: u32 = 10;
 
 /// Represents a paginated list of items.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InputObject, Serialize)]
 pub struct Page {
     /// The index of the page to fetch, starting from 0.
-    #[graphql(default = 0)]
+    #[graphql(default_with = "DEFAULT_PAGE_INDEX")]
     pub index: u32,
     /// The number of items per page.
-    #[graphql(default = 10, validator(minimum = 1, maximum = 100_000))]
+    #[graphql(default_with = "DEFAULT_PAGE_SIZE", validator(minimum = 1, maximum = 100_000))]
     pub size: u32,
 }
 
 impl Default for Page {
-    fn default() -> Self { Self { index: 0, size: 10 } }
+    fn default() -> Self {
+        Self {
+            index: DEFAULT_PAGE_INDEX,
+            size: DEFAULT_PAGE_SIZE,
+        }
+    }
 }
 
 /// The result of a paginated query, containing the total number of items and the items.
