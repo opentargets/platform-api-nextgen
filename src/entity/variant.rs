@@ -67,6 +67,7 @@ pub enum Chromosome {
 /// Predicted or measured effect of the variant based on various methods.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
+#[graphql(complex)]
 pub struct VariantEffect {
     /// Method name used to predict the effect of the variant.
     method: Option<String>,
@@ -77,9 +78,21 @@ pub struct VariantEffect {
     /// Flagging if the variant effect is considered pathogenic.
     assessment_flag: Option<String>,
     /// Target identifier on which the variant effect is interpreted [bioregistry:ensembl].
+    #[graphql(skip)]
     target_id: Option<String>,
     /// Variant effect normalised between -1 and 1.
     normalised_score: Option<f64>,
+}
+
+#[ComplexObject]
+impl VariantEffect {
+    /// The target (gene/protein) on which the variant effect is interpreted.
+    async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
+        match &self.target_id {
+            Some(target_id) => load_target(ctx, target_id.clone()).await,
+            None => Ok(None),
+        }
+    }
 }
 
 /// Predicted consequences on transcript context.
@@ -89,6 +102,7 @@ pub struct VariantEffect {
 pub struct TranscriptConsequence {
     /// The sequence ontology identifier of the consequence of the variant based on Ensembl VEP in
     /// the context of the transcript [bioregistry:so].
+    #[graphql(skip)]
     variant_functional_consequence_ids: Vec<String>,
     /// Amino acid change caused by this variant on this gene.
     amino_acid_change: Option<String>,
@@ -119,6 +133,26 @@ pub struct TranscriptConsequence {
     transcript_index: u32,
     /// Score assigned to transcript based on Ensembl VEP consequence.
     consequence_score: f64,
+}
+
+#[ComplexObject]
+impl TranscriptConsequence {
+    /// The target (gene/protein) associated with the transcript.
+    async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
+        match &self.target_id {
+            Some(target_id) => load_target(ctx, target_id.clone()).await,
+            None => Ok(None),
+        }
+    }
+
+    /// The sequence ontology term of the consequence of the variant based on Ensembl VEP in the
+    /// context of the transcript.
+    async fn variant_consequences(
+        &self,
+        ctx: &Context<'_>,
+    ) -> async_graphql::Result<Vec<SequenceOntologyTerm>> {
+        load_sequence_ontology_many(ctx, &self.variant_functional_consequence_ids).await
+    }
 }
 
 #[ComplexObject]
