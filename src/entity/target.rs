@@ -540,7 +540,7 @@ impl Loader<String> for TargetLoader {
     }
 }
 
-/// Load targets by their EFO IDs.
+/// Load targets by their Ensembl IDs.
 ///
 /// This function uses a [`DataLoader`] to fetch targets from the cache or database.
 ///
@@ -552,7 +552,7 @@ pub async fn load_targets(ctx: &Context<'_>, ids: &[String]) -> async_graphql::R
     load_ordered(ctx.data_unchecked::<DataLoader<TargetLoader>>(), ids).await
 }
 
-/// Load a target by its ID.
+/// Load a target by its Ensembl ID.
 ///
 /// This function uses a [`DataLoader`] to fetch a target from the cache or database.
 ///
