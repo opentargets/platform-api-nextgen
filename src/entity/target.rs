@@ -25,6 +25,7 @@ use crate::{
         evidence::{Evidence, EvidenceKey, load_evidences},
         interaction::{Interaction, InteractionSourceDatabase, load_interaction_by_target_a},
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
+        pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_target},
         publication::{
             LiteratureOcurrences, PublicationsArg, load_paged_publications_by_keyword_id_date,
         },
@@ -842,5 +843,17 @@ impl Target {
         };
 
         Ok(paged_result)
+    }
+
+    /// Pharmacogenomics data linking genetic variants affecting this target to drug responses. Data
+    /// is integrated from sources including ClinPGx and describes how genetic variants influence
+    /// individual drug responses when targeting this gene product.
+    async fn pharmacogenomics(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the Associations time series.")] page: Page,
+    ) -> async_graphql::Result<Paged<Pharmacogenomics>> {
+        let pharmacogenomics = load_pharmacogenomics_by_target(ctx, self.id.clone()).await?;
+        Ok(pharmacogenomics.unwrap_or_default().query().paginate(page))
     }
 }

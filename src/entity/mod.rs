@@ -17,6 +17,7 @@ pub mod hpo;
 pub mod interaction;
 pub mod meta;
 pub mod mouse_phenotype;
+pub mod pharmacogenomics;
 pub mod protein_coding_coordinates;
 pub mod publication;
 pub mod search;
