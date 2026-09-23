@@ -173,7 +173,7 @@ fn build_query(key: &(String, Option<u64>, Option<InteractionSourceDatabase>)) -
         "arrayReverseSort(i->i.scoring,arrayFilter(i->(and({score_filter},{database_filter})),t.interactions))"
     );
     format!(
-        "(WITH ? as q_score, ? as q_db, SELECT {sort_filter} AS interactions, t.targetA FROM platform2609.interaction as t WHERE (in(t.targetA,(?))))"
+        "(WITH ? as q_score, ? as q_db, SELECT {sort_filter} AS interactions, t.targetA FROM interaction as t WHERE (in(t.targetA,(?))))"
     )
 }
 

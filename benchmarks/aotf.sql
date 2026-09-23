@@ -30,7 +30,7 @@ FROM
         datasourceId,
         score_datasource,
         anyIf(noveltyDirect, A = 'ENSG00000105397') AS noveltyWhereA
-    FROM platform2606.associations_otf_target AS l
+    FROM associations_otf_target AS l
     LEFT JOIN
     (
         WITH arrayJoin([('clinical_precedence', 1.), ('gwas_credible_sets', 1.), ('gene_burden', 1.), ('eva', 1.), ('genomics_england', 1.), ('gene2phenotype', 1.), ('uniprot_literature', 1.), ('uniprot_variants', 1.), ('orphanet', 1.), ('clingen', 1.), ('cancer_gene_census', 1.), ('intogen', 1.), ('eva_somatic', 1.), ('cancer_biomarkers', 1.), ('crispr_screen', 1.), ('crispr', 1.), ('reactome', 1.), ('europepmc', 0.2), ('expression_atlas', 0.2), ('impc', 0.2), ('ot_crispr_validation', 0.5), ('ot_crispr', 0.5), ('encore', 0.5)]) AS weightPair
