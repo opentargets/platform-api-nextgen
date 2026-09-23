@@ -31,7 +31,7 @@ use crate::{
         publications::PublicationLoader,
         search::SearchQuery,
         search_facet::FacetQuery,
-        sequence_ontology::SequenceOntologyLoader,
+        sequence_ontology::SequenceOntologyTermLoader,
         study::{StudyLoader, StudyQuery},
         target::{TargetLoader, TargetQuery},
         target_essentiality::TargetEssentialityLoader,
@@ -82,7 +82,7 @@ impl Product for Ppp {
             .data(loader::<PharmacogenomicsByVariantLoader>(ch))
             .data(loader::<ProteinCodingCoordinateVariantLoader>(ch))
             .data(loader::<PublicationLoader>(ch))
-            .data(loader::<SequenceOntologyLoader>(ch))
+            .data(loader::<SequenceOntologyTermLoader>(ch))
             .data(loader::<StudyLoader>(ch))
             .data(loader::<TargetLoader>(ch))
             .data(loader::<TargetEssentialityLoader>(ch))

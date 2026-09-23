@@ -15,7 +15,7 @@ use crate::{
         disease::{Disease, load_disease},
         drug::{Drug, load_drug},
         gene_ontology::{GeneOntology, load_gene_ontology_one},
-        sequence_ontology::{SequenceOntology, load_sequence_ontology_one},
+        sequence_ontology::{SequenceOntologyTerm, load_sequence_ontology_one},
         target::{Target, load_target},
     },
     query::Entity,
@@ -87,7 +87,7 @@ impl GeneticVariation {
     async fn functional_consequence(
         &self,
         ctx: &Context<'_>,
-    ) -> async_graphql::Result<Option<SequenceOntology>> {
+    ) -> async_graphql::Result<Option<SequenceOntologyTerm>> {
         match &self.functional_consequence_id {
             Some(id) => load_sequence_ontology_one(ctx, id.clone()).await,
             None => Ok(None),
@@ -131,7 +131,7 @@ impl EvidenceVariation {
     async fn functional_consequence(
         &self,
         ctx: &Context<'_>,
-    ) -> async_graphql::Result<Option<SequenceOntology>> {
+    ) -> async_graphql::Result<Option<SequenceOntologyTerm>> {
         match &self.functional_consequence_id {
             Some(id) => load_sequence_ontology_one(ctx, id.clone()).await,
             None => Ok(None),
@@ -537,7 +537,7 @@ impl Evidence {
     async fn variant_functional_consequence(
         &self,
         ctx: &Context<'_>,
-    ) -> async_graphql::Result<Option<SequenceOntology>> {
+    ) -> async_graphql::Result<Option<SequenceOntologyTerm>> {
         match &self.variant_functional_consequence_id {
             Some(id) => load_sequence_ontology_one(ctx, id.clone()).await,
             None => Ok(None),
@@ -548,7 +548,7 @@ impl Evidence {
     async fn variant_functional_consequence_from_qtl(
         &self,
         ctx: &Context<'_>,
-    ) -> async_graphql::Result<Option<SequenceOntology>> {
+    ) -> async_graphql::Result<Option<SequenceOntologyTerm>> {
         match &self.variant_functional_consequence_from_qtl_id {
             Some(id) => load_sequence_ontology_one(ctx, id.clone()).await,
             None => Ok(None),

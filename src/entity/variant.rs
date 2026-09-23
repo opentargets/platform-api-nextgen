@@ -18,7 +18,7 @@ use crate::{
         protein_coding_coordinates::{
             ProteinCodingCoordinateVariantLoader, ProteinCodingCoordinates,
         },
-        sequence_ontology::{SequenceOntology, load_sequence_ontology_one},
+        sequence_ontology::{SequenceOntologyTerm, load_sequence_ontology_one},
         target::{Target, load_target},
     },
     query::{
@@ -301,7 +301,7 @@ impl Variant {
     async fn most_severe_consequence(
         &self,
         ctx: &Context<'_>,
-    ) -> async_graphql::Result<Option<SequenceOntology>> {
+    ) -> async_graphql::Result<Option<SequenceOntologyTerm>> {
         load_sequence_ontology_one(
             ctx,
             self.most_severe_consequence_id.clone().replace('_', ":"),

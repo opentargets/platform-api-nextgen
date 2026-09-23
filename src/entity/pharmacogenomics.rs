@@ -12,7 +12,7 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         drug::{Drug, load_drug},
-        sequence_ontology::{SequenceOntology, load_sequence_ontology_one},
+        sequence_ontology::{SequenceOntologyTerm, load_sequence_ontology_one},
         target::{Target, load_target},
     },
 };
@@ -260,7 +260,7 @@ impl Pharmacogenomics {
     async fn variant_functional_consequence(
         &self,
         ctx: &Context<'_>,
-    ) -> async_graphql::Result<Option<SequenceOntology>> {
+    ) -> async_graphql::Result<Option<SequenceOntologyTerm>> {
         match &self.variant_functional_consequence_id {
             Some(id) => load_sequence_ontology_one(ctx, id.replace('_', ":")).await,
             None => Ok(None),
