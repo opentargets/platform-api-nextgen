@@ -180,9 +180,9 @@ pub struct DbXref {
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct AlleleFrequency {
-    /// Name of the population.
+    /// Name of the population where the allele frequency was measured.
     population_name: Option<String>,
-    /// Frequency of the alternate allele in the population.
+    /// Frequency of the alternate allele in the population (ranging from 0 to 1).
     allele_frequency: Option<f64>,
 }
 
@@ -206,7 +206,7 @@ pub struct Variant {
     reference_allele: String,
     /// Alternate allele for the variant.
     alternate_allele: String,
-    /// Predicted or measured effect of the variant based on various methods.
+    /// List of predicted or measured effects of the variant based on various methods.
     variant_effect: Vec<VariantEffect>,
     /// Predicted consequences on transcript context.
     transcript_consequences: Vec<TranscriptConsequence>,
