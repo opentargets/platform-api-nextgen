@@ -14,6 +14,7 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         enhancer_to_gene,
+        pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_variant},
         protein_coding_coordinates::{
             ProteinCodingCoordinateVariantLoader, ProteinCodingCoordinates,
         },
@@ -321,5 +322,18 @@ impl Variant {
             page.size,
         );
         enhancer_to_gene::load_enhancer_to_genes(ctx, e2g_key).await
+    }
+
+    ///Pharmacogenomics data linking this genetic variant to drug responses. Data is integrated
+    /// from sources including ClinPGx and describes how genetic variants influence individual drug
+    /// responses.
+    async fn pharmacogenomics(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the Associations time series.")] page: Page,
+    ) -> async_graphql::Result<Paged<Pharmacogenomics>> {
+        let pharmacogenomics =
+            load_pharmacogenomics_by_variant(ctx, self.variant_id.clone()).await?;
+        Ok(pharmacogenomics.unwrap_or_default().query().paginate(page))
     }
 }

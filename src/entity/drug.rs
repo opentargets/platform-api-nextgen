@@ -14,6 +14,7 @@ use crate::{
     entity::{
         clinical_indication::{ClinicalIndication, load_clinical_indications_from_drug},
         drug_warning::{DrugWarning, load_drug_warnings},
+        pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_drug},
         publication::{
             LiteratureOcurrences, PublicationsArg, load_paged_publications_by_keyword_id_date,
         },
@@ -285,5 +286,17 @@ impl Drug {
         };
 
         Ok(paged_result)
+    }
+
+    /// Pharmacogenomics data linking genetic variants to responses to this drug. Data is integrated
+    /// from sources including ClinPGx and describes how genetic variants influence individual
+    /// responses to this drug.
+    async fn pharmacogenomics(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the pharmacogenomics.")] page: Page,
+    ) -> async_graphql::Result<Paged<Pharmacogenomics>> {
+        let pharmacogenomics = load_pharmacogenomics_by_drug(ctx, self.id.clone()).await?;
+        Ok(pharmacogenomics.unwrap_or_default().query().paginate(page))
     }
 }

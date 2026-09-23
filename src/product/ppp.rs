@@ -23,6 +23,10 @@ use crate::{
         interaction::InteractionLoader,
         meta::MetaQuery,
         mouse_phenotype::MousePhenotypeLoader,
+        pharmacogenomics::{
+            PharmacogenomicsByDrugLoader, PharmacogenomicsByTargetLoader,
+            PharmacogenomicsByVariantLoader,
+        },
         protein_coding_coordinates::ProteinCodingCoordinateVariantLoader,
         publications::PublicationLoader,
         search::SearchQuery,
@@ -73,6 +77,9 @@ impl Product for Ppp {
             .data(loader::<HpoLoader>(ch))
             .data(loader::<InteractionLoader>(ch))
             .data(loader::<MousePhenotypeLoader>(ch))
+            .data(loader::<PharmacogenomicsByDrugLoader>(ch))
+            .data(loader::<PharmacogenomicsByTargetLoader>(ch))
+            .data(loader::<PharmacogenomicsByVariantLoader>(ch))
             .data(loader::<ProteinCodingCoordinateVariantLoader>(ch))
             .data(loader::<PublicationLoader>(ch))
             .data(loader::<SequenceOntologyLoader>(ch))
