@@ -93,6 +93,7 @@ impl<T: OutputType> Default for Paged<T> {
 /// about the query.
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(concrete(name = "StudyPage", params(Study)))]
+#[graphql(concrete(name = "PublicationPage", params(Publication)))]
 pub struct PagedWithStats<T: OutputType + HasStats> {
     pub count: u64,
     pub rows: Vec<T>,
