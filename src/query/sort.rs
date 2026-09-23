@@ -3,7 +3,10 @@ use std::cmp::Ordering;
 use async_graphql::{Enum, InputObject, InputType};
 
 use crate::{
-    entity::{disease::DiseaseSortField, hpo::HpoSortField, study::StudySortField},
+    entity::{
+        disease::DiseaseSortField, hpo::HpoSortField, study::StudySortField,
+        variant::TranscriptConsequenceSortField,
+    },
     query::Entity,
 };
 
@@ -18,10 +21,14 @@ pub enum SortDirection {
 }
 
 /// Sort types. Contain the sort field and direction.
-#[derive(Debug, Clone, Copy, InputObject)]
+#[derive(Debug, Clone, Copy, InputObject, Default)]
 #[graphql(concrete(name = "DiseaseSort", params(DiseaseSortField)))]
-#[graphql(concrete(name = "StudySort", params(StudySortField)))]
 #[graphql(concrete(name = "HpoSort", params(HpoSortField)))]
+#[graphql(concrete(name = "StudySort", params(StudySortField)))]
+#[graphql(concrete(
+    name = "TranscriptConsequenceSort",
+    params(TranscriptConsequenceSortField)
+))]
 pub struct Sort<K: InputType> {
     /// The field to sort by.
     pub key: K,

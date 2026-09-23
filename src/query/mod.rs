@@ -40,6 +40,9 @@ pub struct Query<T>(Vec<T>);
 
 impl<T: OutputType> Query<T> {
     #[must_use]
+    pub fn into_vec(self) -> Vec<T> { self.0 }
+
+    #[must_use]
     pub fn filter(mut self, filter: Option<&impl Filter<T>>) -> Self {
         let _s = tracing::debug_span!("filter", n = self.0.len()).entered();
         if let Some(f) = filter {

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::LazyLock};
+use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
     ComplexObject, Context, Enum, Object, SimpleObject,
@@ -18,14 +18,17 @@ use crate::{
         protein_coding_coordinates::{
             ProteinCodingCoordinateVariantLoader, ProteinCodingCoordinates,
         },
-        sequence_ontology::{SequenceOntologyTerm, load_sequence_ontology_one},
-        target::{Target, load_target},
+        sequence_ontology::{
+            SequenceOntologyTerm, load_sequence_ontology_many, load_sequence_ontology_one,
+        },
+        target::{Target, TargetLoader, load_target},
     },
     query::{
-        QueryExt,
+        Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged},
+        sort::{Sort, SortKey, nulls_last},
     },
 };
 
@@ -133,6 +136,11 @@ pub struct TranscriptConsequence {
     transcript_index: u32,
     /// Score assigned to transcript based on Ensembl VEP consequence.
     consequence_score: f64,
+
+    // sort fields
+    #[graphql(skip)]
+    #[serde(skip)]
+    target: Option<Target>,
 }
 
 #[ComplexObject]
@@ -155,14 +163,26 @@ impl TranscriptConsequence {
     }
 }
 
-#[ComplexObject]
 impl TranscriptConsequence {
-    /// The target (gene/protein) associated with the transcript.
-    async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
-        match &self.target_id {
-            Some(target_id) => load_target(ctx, target_id.clone()).await,
-            None => Ok(None),
+    fn approved_symbol(&self) -> Option<&str> {
+        self.target.as_ref().map(|t| t.approved_symbol.as_str())
+    }
+
+    /// Sets `target` on each `TranscriptConsequence`, for sorting by target fields.
+    async fn fetch_targets(
+        ctx: &Context<'_>,
+        rows: &mut [TranscriptConsequence],
+    ) -> async_graphql::Result<()> {
+        let loader = ctx.data_unchecked::<DataLoader<TargetLoader>>();
+        let ids = rows.iter().filter_map(|tc| tc.target_id.clone());
+        let targets = loader.load_many(ids).await?;
+
+        for tc in rows {
+            if let Some(id) = &tc.target_id {
+                tc.target = targets.get(id).cloned();
+            }
         }
+        Ok(())
     }
 }
 
@@ -209,6 +229,7 @@ pub struct Variant {
     /// List of predicted or measured effects of the variant based on various methods.
     variant_effect: Vec<VariantEffect>,
     /// Predicted consequences on transcript context.
+    #[graphql(skip)]
     transcript_consequences: Vec<TranscriptConsequence>,
     /// `RsIds` for the variant.
     rs_ids: Vec<String>,
@@ -220,7 +241,6 @@ pub struct Variant {
     hgvs_id: Option<String>,
     /// Short summary of the variant effect.
     variant_description: String,
-
     // embedded fields
     /// Sequence ontology identifier of the most severe consequence of the variant based on Ensembl
     /// VEP [bioregistry:so].
@@ -230,9 +250,36 @@ pub struct Variant {
 
 // ---- query utilities ----
 
-// impl Entity for Variant {
-//     fn id(&self) -> &str { &self.variant_id }
-// }
+impl Entity for TranscriptConsequence {
+    fn id(&self) -> &str { self.transcript_id.as_deref().unwrap_or_default() }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Enum)]
+pub enum TranscriptConsequenceSortField {
+    /// Approved gene symbol of the target (gene/protein) associated with the transcript.
+    TargetApprovedSymbol,
+    #[default]
+    /// Distance of the variant from the transcript.
+    DistanceFromFootprint,
+    /// Distance of the variant from the transcription start site.
+    DistanceFromTss,
+}
+
+impl TranscriptConsequenceSortField {
+    fn needs_target(self) -> bool { matches!(self, Self::TargetApprovedSymbol) }
+}
+
+impl SortKey<TranscriptConsequence> for TranscriptConsequenceSortField {
+    fn compare(&self, a: &TranscriptConsequence, b: &TranscriptConsequence) -> Ordering {
+        match self {
+            Self::TargetApprovedSymbol => nulls_last(&a.approved_symbol(), &b.approved_symbol()),
+            Self::DistanceFromFootprint => {
+                a.distance_from_footprint.cmp(&b.distance_from_footprint)
+            }
+            Self::DistanceFromTss => a.distance_from_tss.cmp(&b.distance_from_tss),
+        }
+    }
+}
 
 // ---- loaders ----
 
@@ -330,6 +377,22 @@ impl VariantQuery {
 
 #[ComplexObject]
 impl Variant {
+    /// Predicted consequences on transcript context.
+    async fn transcript_consequences(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Sort field and direction.")] sort: Sort<
+            TranscriptConsequenceSortField,
+        >,
+    ) -> async_graphql::Result<Vec<TranscriptConsequence>> {
+        // If the sort is by `target.approved_symbol`, we need to fetch the targets.
+        let mut rows = self.transcript_consequences.clone();
+        if sort.key.needs_target() {
+            TranscriptConsequence::fetch_targets(ctx, &mut rows).await?;
+        }
+        Ok(rows.query().sort(Some(&sort)).into_vec())
+    }
+
     /// The sequence ontology term of the most severe consequence of the variant based on Ensembl
     /// VEP.
     async fn most_severe_consequence(
