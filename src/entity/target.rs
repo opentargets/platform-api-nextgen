@@ -437,7 +437,7 @@ pub struct Target {
     /// List of alternative Ensembl gene identifiers mapped to non-canonical chromosomes.
     alternative_genes: Vec<String>,
     /// Approved gene symbol of the target.
-    approved_symbol: String,
+    pub(crate) approved_symbol: String,
     /// Approved full name of the target gene.
     approved_name: String,
     /// Biotype classification of the target gene, indicating if the gene is protein coding.
