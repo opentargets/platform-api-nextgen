@@ -9,7 +9,7 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         disease::{Disease, load_diseases},
-        sequence_ontology::{SequenceOntology, load_sequence_ontology_many},
+        sequence_ontology::{SequenceOntologyTerm, load_sequence_ontology_many},
         target::{Target, load_target},
         variant::{Variant, load_variant},
     },
@@ -119,7 +119,7 @@ impl ProteinCodingCoordinates {
     async fn variant_consequences(
         &self,
         ctx: &Context<'_>,
-    ) -> async_graphql::Result<Vec<SequenceOntology>> {
+    ) -> async_graphql::Result<Vec<SequenceOntologyTerm>> {
         load_sequence_ontology_many(
             ctx,
             &self
