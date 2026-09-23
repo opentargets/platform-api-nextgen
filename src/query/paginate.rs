@@ -25,7 +25,7 @@ use crate::{
         target_essentiality::DepMapEssentiality,
         variant::Variant,
     },
-    query::statistics::Statistics,
+    query::stats::HasStats,
 };
 
 pub const MAX_PAGE_SIZE: u32 = 100_000;
@@ -91,9 +91,9 @@ impl<T: OutputType> Default for Paged<T> {
 
 /// The result of a paginated query, containing the total number of items, the items, and statistics
 /// about the query.
-#[derive(Debug, SimpleObject)]
+#[derive(Debug, Clone, SimpleObject)]
 #[graphql(concrete(name = "StudyPage", params(Study)))]
-pub struct PagedWithStats<T: OutputType + Statistics> {
+pub struct PagedWithStats<T: OutputType + HasStats> {
     pub count: u64,
     pub rows: Vec<T>,
     pub stats: T::Stats,

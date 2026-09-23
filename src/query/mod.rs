@@ -10,7 +10,7 @@ use crate::query::{
     paginate::{MAX_PAGE_SIZE, Page, Paged, PagedWithStats},
     search::Searchable,
     sort::{Sort, SortDirection, SortKey, sort_items},
-    statistics::Statistics,
+    stats::ComputeStats,
 };
 
 pub mod cache;
@@ -18,7 +18,6 @@ pub mod filter;
 pub mod paginate;
 pub mod search;
 pub mod sort;
-pub mod statistics;
 pub mod stats;
 
 /// A row with a primary key, used as a stable sort tiebreaker.
@@ -101,7 +100,7 @@ impl<T: OutputType> Query<T> {
     #[must_use]
     pub fn paginate_with_stats(mut self, page: Page) -> PagedWithStats<T>
     where
-        T: Statistics,
+        T: ComputeStats,
     {
         let stats = T::compute(&self.0);
         let count = self.0.len() as u64;

@@ -9,7 +9,7 @@ use crate::entity::study::StudyType;
 type OptionBool = Option<bool>;
 
 /// A bucket for a distribution of values.
-#[derive(SimpleObject)]
+#[derive(Clone, SimpleObject)]
 #[graphql(concrete(name = "StudyTypeBucket", params(StudyType)))]
 #[graphql(concrete(name = "OptBoolBucket", params(OptionBool)))]
 pub struct StatsBucket<K: OutputType> {
