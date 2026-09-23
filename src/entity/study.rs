@@ -26,8 +26,8 @@ use crate::{
         paginate::{Page, PagedWithStats},
         search::Searchable,
         sort::{Sort, SortKey, nulls_last},
-        statistics::Statistics,
         stats::{
+            ComputeStats, HasStats,
             distribution::{StatsBucket, distribution},
             sumstats::{Sumstats, sumstats},
         },
@@ -243,7 +243,7 @@ impl Filter<Study> for StudyFilter {
 }
 
 /// Statistics for a set of studies.
-#[derive(SimpleObject)]
+#[derive(Clone, SimpleObject)]
 pub struct StudyStats {
     /// The distribution of study types.
     study_type: Vec<StatsBucket<StudyType>>,
@@ -255,16 +255,18 @@ pub struct StudyStats {
     samples_by_case: Sumstats,
 }
 
-impl Statistics for Study {
+impl HasStats for Study {
     type Stats = StudyStats;
+}
+
+impl ComputeStats for Study {
     fn compute(items: &[Self]) -> StudyStats {
         StudyStats {
             study_type: distribution(items, |s| s.study_type),
             has_sumstats: distribution(items, |s| s.has_sumstats),
             n_samples: sumstats(items, |s| s.n_samples.unwrap_or_default()),
             samples_by_case: sumstats(items, |s| {
-                f64::from(s.n_cases.unwrap_or_default())
-                    / f64::from(s.n_samples.unwrap_or_default())
+                f64::from(s.n_cases.unwrap_or_default()) / f64::from(s.n_samples.unwrap_or(0))
             }),
         }
     }
