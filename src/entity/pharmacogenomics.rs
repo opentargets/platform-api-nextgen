@@ -31,7 +31,7 @@ pub struct DrugWithIdentifiers {
 }
 
 /// Genetic variants influencing individual drug responses. Pharmacogenetics data is integrated from
-/// sources including Pharmacogenomics Knowledgebase (PharmGKB).
+/// sources including Pharmacogenomics Knowledgebase (`PharmGKB`).
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct VariantAnnotation {
@@ -61,7 +61,7 @@ pub struct VariantAnnotation {
 pub struct Pharmacogenomics {
     /// Identifier for the data provider.
     datasource_id: String,
-    /// Classification of the type of pharmacogenomic data (e.g., clinical_annotation).
+    /// Classification of the type of pharmacogenomic data (e.g., `clinical_annotation`).
     datatype_id: String,
     /// List of drugs or clinical candidates associated with the pharmacogenomic data.
     drugs: Vec<DrugWithIdentifiers>,
@@ -71,7 +71,7 @@ pub struct Pharmacogenomics {
     genotype: Option<String>,
     /// Explanation of the genotype's clinical significance.
     genotype_annotation_text: Option<String>,
-    /// Identifier for the specific genetic variant combination (e.g., 1_1500_A_A,T).
+    /// Identifier for the specific genetic variant combination (e.g., `1_1500_A_A,T`).
     genotype_id: Option<String>,
     /// Haplotype ID in the ClinPGx dataset.
     haplotype_from_source_id: Option<String>,

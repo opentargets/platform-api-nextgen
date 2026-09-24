@@ -28,5 +28,8 @@ doc-valid-idents = [
     "DRUG_LABEL",
     "REGULATORY_AGENCY",
     "CURATED_RESOURCE",
+    "PharmGKB",
+    "clinical_annotation",
+    "1_1500_A_A,T",
     ".."  # this appends default valid idents
 ]
