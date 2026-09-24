@@ -3478,20 +3478,12 @@ query AOTFTNew {
                 { id: europepmc, policy: { required: false, weight: 0.2 } }
                 { id: expression_atlas, policy: { required: true, weight: 0.2 } }
                 { id: impc, policy: { required: false, weight: 0.2 } }
-                { id: ot_crispr_validation, policy: { required: false, weight: 0.5 } }
-                { id: ot_crispr, policy: { required: false, weight: 0.5 } }
-                { id: encore, policy: { required: false, weight: 0.5 } }
             ]
             sort: { key: "score", direction: DESCENDING }
             page: { index: 0, size: 25 }
         ) {
             count
             rows {
-                novelty
-                # disease {
-                #     id
-                #     name
-                # }
                 score
                 datasourceScores {
                     componentId: id
@@ -3586,16 +3578,12 @@ query AOTFDNew {
                 { id: europepmc, policy: { required: false, weight: 0.2 } }
                 { id: expression_atlas, policy: { required: false, weight: 0.2 } }
                 { id: impc, policy: { required: false, weight: 0.2 } }
-                { id: ot_crispr_validation, policy: { required: false, weight: 0.5 } }
-                { id: ot_crispr, policy: { required: false, weight: 0.5 } }
-                { id: encore, policy: { required: false, weight: 0.5 } }
             ]
             sort: { key: "score", direction: DESCENDING }
             page: { index: 0, size: 25 }
         ) {
             count
             rows {
-                novelty
                 score
                 datasourceScores {
                     componentId: id

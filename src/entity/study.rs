@@ -179,16 +179,47 @@ impl Entity for Study {
     fn id(&self) -> &str { &self.study_id }
 }
 
+impl Study {
+    fn build_publication_author_date(&self) -> Option<String> {
+        match (&self.publication_first_author, &self.publication_date) {
+            (Some(author), Some(date)) => Some(format!("{author} et al. ({date})")),
+            (Some(author), None) => Some(format!("{} et al.", author.clone())),
+            (None, Some(date)) => Some(format!("({date})")),
+            (None, None) => None,
+        }
+    }
+}
+
 /// Contains the fields available for sorting studies.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
 pub enum StudySortField {
+    StudyId,
+    TraitFromSource,
     NSamples,
+    Cohorts,
+    PublicationAuthorDate,
 }
 
 impl SortKey<Study> for StudySortField {
     fn compare(&self, a: &Study, b: &Study) -> Ordering {
         match self {
+            Self::StudyId => a.study_id.cmp(&b.study_id),
+            Self::TraitFromSource => a.trait_from_source.cmp(&b.trait_from_source),
             Self::NSamples => nulls_last(&a.n_samples, &b.n_samples),
+            Self::Cohorts => a.cohorts.len().cmp(&b.cohorts.len()),
+            // When comparing publication author-date, sort by date first, then by author.
+            // Also keeping nulls last.
+            Self::PublicationAuthorDate => {
+                fn key(s: &Study) -> (bool, &Option<String>, bool, &Option<String>) {
+                    (
+                        s.publication_date.is_none(),
+                        &s.publication_date,
+                        s.publication_first_author.is_none(),
+                        &s.publication_first_author,
+                    )
+                }
+                key(a).cmp(&key(b))
+            }
         }
     }
 }
@@ -400,5 +431,10 @@ impl Study {
     /// Disease associated with a studied trait.
     async fn diseases(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Disease>> {
         load_diseases(ctx, &self.disease_ids).await
+    }
+
+    /// Publication in the narrative-in-text author-date style.
+    async fn publication_author_date(&self) -> Option<String> {
+        self.build_publication_author_date()
     }
 }
