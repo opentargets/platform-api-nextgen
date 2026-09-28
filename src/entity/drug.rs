@@ -16,6 +16,7 @@ use crate::{
         drug_warning::{DrugWarning, load_drug_warnings},
         pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_drug},
         publication::{Publication, PublicationArguments, load_publications},
+        similar_entities::{SimilarEntityArguments, Similarity, load_similar_entities},
     },
     query::{
         Entity, QueryExt,
@@ -297,5 +298,30 @@ impl Drug {
     ) -> async_graphql::Result<Paged<Pharmacogenomics>> {
         let pharmacogenomics = load_pharmacogenomics_by_drug(ctx, self.id.clone()).await?;
         Ok(pharmacogenomics.unwrap_or_default().query().paginate(page))
+    }
+
+    /// Semantically similar drugs based on a PubMed word embedding model.
+    async fn similar_entities(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(desc = "List of ChEMBL molecule IDs.")] additional_ids: Option<Vec<String>>,
+        #[graphql(desc = "List of entity names to search for (target, disease, drug,...)")]
+        entity_names: Option<Vec<String>>,
+        #[graphql(
+            desc = "Threshold similarity between 0 and 1",
+            validator(minimum = 0, maximum = 1)
+        )]
+        threshold: Option<f64>,
+        #[graphql(default, desc = "Pagination for Similar Entities.")] page: Page,
+    ) -> async_graphql::Result<Paged<Similarity>> {
+        let args = SimilarEntityArguments {
+            id: self.id.clone(),
+            ids: additional_ids.unwrap_or_default(),
+            categories: entity_names.unwrap_or_default(),
+            threshold: threshold.unwrap_or(0.1),
+            page,
+        };
+        let entities = load_similar_entities(ctx, args).await?;
+        Ok(entities)
     }
 }

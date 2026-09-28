@@ -31,6 +31,7 @@ use crate::{
         search::SearchQuery,
         search_facet::FacetQuery,
         sequence_ontology::SequenceOntologyTermLoader,
+        similar_entities::SimilarEntityLoader,
         study::{StudyLoader, StudyQuery},
         target::{TargetLoader, TargetQuery},
         target_essentiality::TargetEssentialityLoader,
@@ -81,6 +82,7 @@ impl Product for Platform {
             .data(loader::<ProteinCodingCoordinateVariantLoader>(ch))
             .data(loader::<PublicationLoader>(ch))
             .data(loader::<SequenceOntologyTermLoader>(ch))
+            .data(loader::<SimilarEntityLoader>(ch))
             .data(loader::<StudyLoader>(ch))
             .data(loader::<TargetLoader>(ch))
             .data(loader::<TargetEssentialityLoader>(ch))
