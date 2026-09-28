@@ -27,6 +27,7 @@ use crate::{
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
         pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_target},
         publication::{Publication, PublicationArguments, load_publications},
+        similar_entities::{SimilarEntityArguments, Similarity, load_similar_entities},
         target_essentiality::{DepMapEssentiality, load_target_essentiality_by_target},
         target_prioritisation::{TargetPrioritisations, load_target_prioritisations},
     },
@@ -842,5 +843,30 @@ impl Target {
     ) -> async_graphql::Result<Paged<Pharmacogenomics>> {
         let pharmacogenomics = load_pharmacogenomics_by_target(ctx, self.id.clone()).await?;
         Ok(pharmacogenomics.unwrap_or_default().query().paginate(page))
+    }
+
+    /// Return similar labels using a model Word2CVec trained with PubMed.
+    async fn similar_entities(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(desc = "List of Ensembl gene IDs.")] additional_ids: Option<Vec<String>>,
+        #[graphql(desc = "List of entity names to search for (target, disease, drug,...)")]
+        entity_names: Option<Vec<String>>,
+        #[graphql(
+            desc = "Threshold similarity between 0 and 1",
+            validator(minimum = 0, maximum = 1)
+        )]
+        threshold: Option<f64>,
+        #[graphql(default, desc = "Pagination for Similar Entities.")] page: Page,
+    ) -> async_graphql::Result<Paged<Similarity>> {
+        let args = SimilarEntityArguments {
+            id: self.id.clone(),
+            ids: additional_ids.unwrap_or_default(),
+            categories: entity_names.unwrap_or_default(),
+            threshold: threshold.unwrap_or(0.1),
+            page,
+        };
+        let entities = load_similar_entities(ctx, args).await?;
+        Ok(entities)
     }
 }

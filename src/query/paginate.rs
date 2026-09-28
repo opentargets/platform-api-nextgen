@@ -20,6 +20,7 @@ use crate::{
         pharmacogenomics::Pharmacogenomics,
         protein_coding_coordinates::ProteinCodingCoordinates,
         publication::Publication,
+        similar_entities::Similarity,
         study::Study,
         target::Target,
         target_essentiality::DepMapEssentiality,
@@ -72,6 +73,7 @@ impl Default for Page {
 #[graphql(concrete(name = "PharmacogenomicsPage", params(Pharmacogenomics)))]
 #[graphql(concrete(name = "ProteinCodingCoordinatesPage", params(ProteinCodingCoordinates)))]
 #[graphql(concrete(name = "PublicationPage", params(Publication)))]
+#[graphql(concrete(name = "SimilarEntityPage", params(Similarity)))]
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
 #[graphql(concrete(name = "VariantPage", params(Variant)))]

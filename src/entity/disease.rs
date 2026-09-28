@@ -24,6 +24,7 @@ use crate::{
         disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
         evidence::{Evidence, EvidenceKey, load_evidences},
         publication::{Publication, PublicationArguments, load_publications},
+        similar_entities::{SimilarEntityArguments, Similarity, load_similar_entities},
         target::Target,
     },
     query::{
@@ -447,5 +448,30 @@ impl Disease {
         )
         .await?
         .ok_or_else(|| "missing publication".into())
+    }
+
+    /// Semantically similar diseases based on a PubMed word embedding model.
+    async fn similar_entities(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(desc = "List of EFO disease IDs.")] additional_ids: Option<Vec<String>>,
+        #[graphql(desc = "List of entity names to search for (target, disease, drug,...)")]
+        entity_names: Option<Vec<String>>,
+        #[graphql(
+            desc = "Threshold similarity between 0 and 1",
+            validator(minimum = 0, maximum = 1)
+        )]
+        threshold: Option<f64>,
+        #[graphql(default, desc = "Pagination for Similar Entities.")] page: Page,
+    ) -> async_graphql::Result<Paged<Similarity>> {
+        let args = SimilarEntityArguments {
+            id: self.id.clone(),
+            ids: additional_ids.unwrap_or_default(),
+            categories: entity_names.unwrap_or_default(),
+            threshold: threshold.unwrap_or(0.1),
+            page,
+        };
+        let entities = load_similar_entities(ctx, args).await?;
+        Ok(entities)
     }
 }
