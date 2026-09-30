@@ -31,5 +31,6 @@ doc-valid-idents = [
     "PharmGKB",
     "clinical_annotation",
     "1_1500_A_A,T",
+    "Word2CVec",
     ".."  # this appends default valid idents
 ]
