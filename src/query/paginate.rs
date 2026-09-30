@@ -17,6 +17,7 @@ use crate::{
         hpo::Hpo,
         interaction::Interaction,
         mouse_phenotype::MousePhenotype,
+        otar_project_ppp::OtarProject,
         pharmacogenomics::Pharmacogenomics,
         protein_coding_coordinates::ProteinCodingCoordinates,
         publication::Publication,
@@ -70,6 +71,7 @@ impl Default for Page {
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
 #[graphql(concrete(name = "InteractionPage", params(Interaction)))]
 #[graphql(concrete(name = "MousePhenotypePage", params(MousePhenotype)))]
+#[graphql(concrete(name = "ProjectPage", params(OtarProject)))]
 #[graphql(concrete(name = "PharmacogenomicsPage", params(Pharmacogenomics)))]
 #[graphql(concrete(name = "ProteinCodingCoordinatesPage", params(ProteinCodingCoordinates)))]
 #[graphql(concrete(name = "PublicationPage", params(Publication)))]

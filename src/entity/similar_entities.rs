@@ -33,6 +33,7 @@ pub struct Similarity {
     /// Similarity score between this entity and the query label. Scores are normalised between 0
     /// and 1; higher scores indicate more similar entities.
     #[graphql(name = "score")]
+    #[allow(clippy::struct_field_names)]
     similarity: f64,
 }
 
@@ -45,6 +46,7 @@ pub struct SimilarEntityRow {
 }
 
 #[derive(Union)]
+#[allow(clippy::large_enum_variant)]
 pub enum SimilarityUnion {
     Target(Target),
     Drug(Drug),

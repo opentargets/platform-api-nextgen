@@ -9,6 +9,8 @@ use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 
+#[cfg(feature = "product-ppp")]
+use crate::entity::otar_project_ppp::{OtarProject, load_otar_projects};
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
@@ -473,5 +475,18 @@ impl Disease {
         };
         let entities = load_similar_entities(ctx, args).await?;
         Ok(entities)
+    }
+
+    /// Open Targets (OTAR) projects linked to this disease. Data only available in Partner Platform
+    /// Preview (PPP).
+    #[cfg(feature = "product-ppp")]
+    async fn otar_projects(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the publications.")] page: Page,
+    ) -> async_graphql::Result<Paged<OtarProject>> {
+        load_otar_projects(ctx, self.id.clone())
+            .await
+            .map(|pr| pr.query().paginate(page))
     }
 }
