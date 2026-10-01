@@ -192,7 +192,7 @@ impl DrugQuery {
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "List of Chembl IDs of the drugs to fetch.")] chembl_ids: Vec<String>,
-        #[graphql(default, desc = "Pagination for the Drugs.")] page: Page,
+        #[graphql(default, desc = "Pagination for the drugs.")] page: Page,
     ) -> async_graphql::Result<Paged<Drug>> {
         let drugs = load_drugs(ctx, &chembl_ids).await?;
         Ok(drugs.query().paginate(page))
