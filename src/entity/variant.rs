@@ -387,7 +387,7 @@ impl Variant {
     async fn transcript_consequences(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Sort field and direction.")] sort: Vec<
+        #[graphql(default, desc = "List of sort statements.")] sort: Vec<
             Sort<TranscriptConsequenceSortField>,
         >,
     ) -> async_graphql::Result<Vec<TranscriptConsequence>> {
@@ -447,7 +447,7 @@ impl Variant {
     async fn pharmacogenomics(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Pagination for the Associations time series.")] page: Page,
+        #[graphql(default, desc = "Pagination for the associations time series.")] page: Page,
     ) -> async_graphql::Result<Paged<Pharmacogenomics>> {
         let pharmacogenomics =
             load_pharmacogenomics_by_variant(ctx, self.variant_id.clone()).await?;

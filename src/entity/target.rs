@@ -773,7 +773,7 @@ impl Target {
         #[graphql(desc = "Aggregation types.")] aggregation_types: Option<Vec<AggregationType>>,
         #[graphql(desc = "Year at the lower end of the filter.")] start_year: Option<i32>,
         #[graphql(desc = "Year at the higher end of the filter.")] end_year: Option<i32>,
-        #[graphql(default, desc = "Pagination for the Associations time series.")] page: Page,
+        #[graphql(default, desc = "Pagination for the associations time series.")] page: Page,
     ) -> async_graphql::Result<Paged<AssociationTimeseries>> {
         load_association_timeseries(
             ctx,
@@ -839,7 +839,7 @@ impl Target {
     async fn pharmacogenomics(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Pagination for the Associations time series.")] page: Page,
+        #[graphql(default, desc = "Pagination for the associations time series.")] page: Page,
     ) -> async_graphql::Result<Paged<Pharmacogenomics>> {
         let pharmacogenomics = load_pharmacogenomics_by_target(ctx, self.id.clone()).await?;
         Ok(pharmacogenomics.unwrap_or_default().query().paginate(page))

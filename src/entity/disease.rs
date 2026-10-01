@@ -248,8 +248,8 @@ impl DiseaseQuery {
         ctx: &Context<'_>,
         #[graphql(desc = "List of EFO IDs of diseases to fetch.")] efo_ids: Vec<String>,
         #[graphql(desc = "Search term to filter by.")] search: Option<String>,
-        #[graphql(desc = "Sort field and direction.")] sort: Vec<Sort<DiseaseSortField>>,
-        #[graphql(default, desc = "Pagination for the Diseases.")] page: Page,
+        #[graphql(desc = "List of sort statements.")] sort: Vec<Sort<DiseaseSortField>>,
+        #[graphql(default, desc = "Pagination for the diseases.")] page: Page,
     ) -> async_graphql::Result<Paged<Disease>> {
         let items = load_diseases(ctx, &efo_ids).await?;
         Ok(items
@@ -297,7 +297,7 @@ impl Disease {
     async fn phenotypes(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Pagination for the Phenotypes.")] page: Page,
+        #[graphql(default, desc = "Pagination for the phenotypes.")] page: Page,
     ) -> async_graphql::Result<Paged<DiseasePhenotype>> {
         let items = ctx
             .data_unchecked::<DataLoader<DiseasePhenotypeLoader>>()
@@ -390,7 +390,7 @@ impl Disease {
         #[graphql(desc = "Aggregation types.")] aggregation_types: Option<Vec<AggregationType>>,
         #[graphql(desc = "Year at the lower end of the filter.")] start_year: Option<i32>,
         #[graphql(desc = "Year at the higher end of the filter.")] end_year: Option<i32>,
-        #[graphql(default, desc = "Pagination for the Associations time series.")] page: Page,
+        #[graphql(default, desc = "Pagination for the associations time series.")] page: Page,
     ) -> async_graphql::Result<Paged<AssociationTimeseries>> {
         load_association_timeseries(
             ctx,
@@ -462,7 +462,7 @@ impl Disease {
             validator(minimum = 0, maximum = 1)
         )]
         threshold: Option<f64>,
-        #[graphql(default, desc = "Pagination for Similar Entities.")] page: Page,
+        #[graphql(default, desc = "Pagination for similar entities.")] page: Page,
     ) -> async_graphql::Result<Paged<Similarity>> {
         let args = SimilarEntityArguments {
             id: self.id.clone(),

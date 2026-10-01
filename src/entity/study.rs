@@ -394,7 +394,7 @@ impl StudyQuery {
         enable_indirect: bool,
         #[graphql(desc = "Search term to filter by.")] search: Option<String>,
         #[graphql(desc = "Filter criteria to apply.")] filter: Option<StudyFilter>,
-        #[graphql(desc = "Sort field and direction.")] sort: Vec<Sort<StudySortField>>,
+        #[graphql(desc = "List of sort statements.")] sort: Vec<Sort<StudySortField>>,
         #[graphql(default, desc = "Pagination for the Studies.")] page: Page,
     ) -> async_graphql::Result<PagedWithStats<Study>> {
         if study_ids.is_none() && disease_ids.is_none() {
