@@ -367,6 +367,15 @@ async fn load_studies(
     load_ordered(study_loader, &study_ids_from_diseases).await
 }
 
+pub async fn load_study(
+    ctx: &Context<'_>,
+    study_id: String,
+) -> async_graphql::Result<Option<Study>> {
+    ctx.data_unchecked::<DataLoader<StudyLoader>>()
+        .load_one(study_id)
+        .await
+}
+
 // ---- resolvers ----
 
 #[derive(Default)]
