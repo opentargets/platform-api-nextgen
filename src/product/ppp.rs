@@ -13,6 +13,7 @@ use crate::{
             ClinicalIndicationFromDiseaseLoader, ClinicalIndicationFromDrugLoader,
         },
         clinical_report::ClinicalReportLoader,
+        credible_set::{CredibleSetLoader, CredibleSetQuery},
         disease::{DiseaseLoader, DiseaseQuery},
         disease_hpo::DiseasePhenotypeLoader,
         drug::{DrugLoader, DrugQuery},
@@ -47,14 +48,15 @@ use crate::{
 /// The query root for the `PPP` product.
 #[derive(MergedObject, Default)]
 pub struct Query(
-    MetaQuery,    // API data (version, data release, product, etc.)
-    SearchQuery,  // Search bar functionality
-    FacetQuery,   // Facet search for AOTF
-    DiseaseQuery, // Diseases
-    StudyQuery,   // Studies
-    DrugQuery,    // Drugs
-    VariantQuery, // Variants
-    TargetQuery,  // Targets
+    MetaQuery,        // API data (version, data release, product, etc.)
+    SearchQuery,      // Search bar functionality
+    FacetQuery,       // Facet search for AOTF
+    CredibleSetQuery, // Credible sets
+    DiseaseQuery,     // Diseases
+    StudyQuery,       // Studies
+    DrugQuery,        // Drugs
+    VariantQuery,     // Variants
+    TargetQuery,      // Targets
 );
 
 pub struct Ppp;
@@ -71,6 +73,7 @@ impl Product for Ppp {
             .data(loader::<ClinicalIndicationFromDiseaseLoader>(ch))
             .data(loader::<ClinicalIndicationFromDrugLoader>(ch))
             .data(loader::<ClinicalReportLoader>(ch))
+            .data(loader::<CredibleSetLoader>(ch))
             .data(loader::<DiseaseLoader>(ch))
             .data(loader::<DiseasePhenotypeLoader>(ch))
             .data(loader::<DrugLoader>(ch))
