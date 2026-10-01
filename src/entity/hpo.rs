@@ -16,7 +16,7 @@ use crate::{
         cache::{CachedLoader, entity_cache},
         load_ordered,
         search::Searchable,
-        sort::SortKey,
+        sort::{Nulls, SortDirection, SortKey, Term},
     },
 };
 
@@ -51,10 +51,11 @@ pub enum HpoSortField {
 }
 
 impl SortKey<Hpo> for HpoSortField {
-    fn compare(&self, a: &Hpo, b: &Hpo) -> Ordering {
+    fn compare(&self, a: &Hpo, b: &Hpo, direction: SortDirection) -> Ordering {
+        let primary = Term::new(direction, Nulls::Last);
         match self {
-            Self::Id => a.id.cmp(&b.id),
-            Self::Name => a.name.cmp(&b.name),
+            Self::Id => primary.cmp(&a.id, &b.id),
+            Self::Name => primary.cmp(&a.name, &b.name),
         }
     }
 }

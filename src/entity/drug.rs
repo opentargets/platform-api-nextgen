@@ -23,7 +23,7 @@ use crate::{
         load_ordered,
         paginate::{Page, Paged, PagedWithStats},
         search::Searchable,
-        sort::SortKey,
+        sort::{Nulls, SortDirection, SortKey, Term},
     },
 };
 
@@ -102,12 +102,15 @@ pub enum DrugSortField {
 }
 
 impl SortKey<Drug> for DrugSortField {
-    fn compare(&self, a: &Drug, b: &Drug) -> Ordering {
+    fn compare(&self, a: &Drug, b: &Drug, direction: SortDirection) -> Ordering {
+        let primary = Term::new(direction, Nulls::Last);
         match self {
-            Self::Id => a.id.cmp(&b.id),
-            Self::Name => a.name.cmp(&b.name),
-            Self::DrugType => a.drug_type.cmp(&b.drug_type),
-            Self::MaximumClinicalStage => a.maximum_clinical_stage.cmp(&b.maximum_clinical_stage),
+            Self::Id => primary.cmp(&a.id, &b.id),
+            Self::Name => primary.cmp(&a.name, &b.name),
+            Self::DrugType => primary.cmp(&a.drug_type, &b.drug_type),
+            Self::MaximumClinicalStage => {
+                primary.cmp(&a.maximum_clinical_stage, &b.maximum_clinical_stage)
+            }
         }
     }
 }

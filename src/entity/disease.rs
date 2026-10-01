@@ -32,7 +32,7 @@ use crate::{
         load_ordered,
         paginate::{Page, Paged, PagedWithStats},
         search::Searchable,
-        sort::{Sort, SortKey},
+        sort::{Nulls, Sort, SortDirection, SortKey, Term},
     },
 };
 
@@ -140,11 +140,12 @@ pub enum DiseaseSortField {
 }
 
 impl SortKey<Disease> for DiseaseSortField {
-    fn compare(&self, a: &Disease, b: &Disease) -> Ordering {
+    fn compare(&self, a: &Disease, b: &Disease, direction: SortDirection) -> Ordering {
+        let primary = Term::new(direction, Nulls::Last);
         match self {
-            Self::Id => a.id.cmp(&b.id),
-            Self::Name => a.name.cmp(&b.name),
-            Self::IsTherapeuticArea => a.is_therapeutic_area.cmp(&b.is_therapeutic_area),
+            Self::Id => primary.cmp(&a.id, &b.id),
+            Self::Name => primary.cmp(&a.name, &b.name),
+            Self::IsTherapeuticArea => primary.cmp(&a.is_therapeutic_area, &b.is_therapeutic_area),
         }
     }
 }
@@ -246,7 +247,7 @@ impl DiseaseQuery {
         ctx: &Context<'_>,
         #[graphql(desc = "List of EFO IDs of diseases to fetch.")] efo_ids: Vec<String>,
         #[graphql(desc = "Search term to filter by.")] search: Option<String>,
-        #[graphql(desc = "Sort field and direction.")] sort: Option<Sort<DiseaseSortField>>,
+        #[graphql(desc = "Sort field and direction.")] sort: Vec<Sort<DiseaseSortField>>,
         #[graphql(default, desc = "Pagination for the Diseases.")] page: Page,
     ) -> async_graphql::Result<Paged<Disease>> {
         let items = load_diseases(ctx, &efo_ids).await?;

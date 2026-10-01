@@ -25,7 +25,7 @@ use crate::{
         load_ordered,
         paginate::{Page, PagedWithStats},
         search::Searchable,
-        sort::{Sort, SortKey, nulls_last},
+        sort::{Nulls, Sort, SortDirection, SortKey, Term},
         stats::{
             ComputeStats, HasStats,
             distribution::{StatsBucket, distribution},
@@ -180,11 +180,13 @@ impl Entity for Study {
 }
 
 impl Study {
+    fn get_year(&self) -> Option<&str> { self.publication_date.as_deref().and_then(|d| d.get(..4)) }
+
     fn build_publication_author_date(&self) -> Option<String> {
-        match (&self.publication_first_author, &self.publication_date) {
-            (Some(author), Some(date)) => Some(format!("{author} et al. ({date})")),
+        match (&self.publication_first_author, &self.get_year()) {
+            (Some(author), Some(year)) => Some(format!("{author} et al. ({year})")),
             (Some(author), None) => Some(format!("{} et al.", author.clone())),
-            (None, Some(date)) => Some(format!("({date})")),
+            (None, Some(year)) => Some(format!("({year})")),
             (None, None) => None,
         }
     }
@@ -193,33 +195,31 @@ impl Study {
 /// Contains the fields available for sorting studies.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
 pub enum StudySortField {
-    StudyId,
+    StudyType,
     TraitFromSource,
     NSamples,
-    Cohorts,
+    NCases,
+    NControls,
     PublicationAuthorDate,
 }
 
 impl SortKey<Study> for StudySortField {
-    fn compare(&self, a: &Study, b: &Study) -> Ordering {
+    fn compare(&self, a: &Study, b: &Study, direction: SortDirection) -> Ordering {
+        let primary = Term::new(direction, Nulls::Last);
         match self {
-            Self::StudyId => a.study_id.cmp(&b.study_id),
-            Self::TraitFromSource => a.trait_from_source.cmp(&b.trait_from_source),
-            Self::NSamples => nulls_last(&a.n_samples, &b.n_samples),
-            Self::Cohorts => a.cohorts.len().cmp(&b.cohorts.len()),
+            Self::StudyType => primary.cmp(&a.study_type, &b.study_type),
+            Self::TraitFromSource => primary.cmp(&a.trait_from_source, &b.trait_from_source),
+            Self::NSamples => primary.cmp_opt(&a.n_samples, &b.n_samples),
+            Self::NCases => primary.cmp_opt(&a.n_cases, &b.n_cases),
+            Self::NControls => primary.cmp_opt(&a.n_controls, &b.n_controls),
             // When comparing publication author-date, sort by date first, then by author.
             // Also keeping nulls last.
-            Self::PublicationAuthorDate => {
-                fn key(s: &Study) -> (bool, &Option<String>, bool, &Option<String>) {
-                    (
-                        s.publication_date.is_none(),
-                        &s.publication_date,
-                        s.publication_first_author.is_none(),
-                        &s.publication_first_author,
-                    )
-                }
-                key(a).cmp(&key(b))
-            }
+            Self::PublicationAuthorDate => primary
+                .cmp_opt(&a.publication_date, &b.publication_date)
+                .then_with(|| {
+                    Term::new(SortDirection::Ascending, Nulls::Last)
+                        .cmp_opt(&a.publication_first_author, &b.publication_first_author)
+                }),
         }
     }
 }
@@ -394,7 +394,7 @@ impl StudyQuery {
         enable_indirect: bool,
         #[graphql(desc = "Search term to filter by.")] search: Option<String>,
         #[graphql(desc = "Filter criteria to apply.")] filter: Option<StudyFilter>,
-        #[graphql(desc = "Sort field and direction.")] sort: Option<Sort<StudySortField>>,
+        #[graphql(desc = "Sort field and direction.")] sort: Vec<Sort<StudySortField>>,
         #[graphql(default, desc = "Pagination for the Studies.")] page: Page,
     ) -> async_graphql::Result<PagedWithStats<Study>> {
         if study_ids.is_none() && disease_ids.is_none() {
@@ -411,7 +411,7 @@ impl StudyQuery {
             .query()
             .filter(filter.as_ref())
             .search(search.as_deref())
-            .sort(sort.as_ref())
+            .sort(&sort)
             .paginate_with_stats(page))
     }
 

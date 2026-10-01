@@ -16,7 +16,7 @@ use crate::{
         cache::{CachedLoader, entity_cache},
         load_ordered,
         search::Searchable,
-        sort::SortKey,
+        sort::{Nulls, SortDirection, SortKey, Term},
     },
 };
 
@@ -47,10 +47,16 @@ pub enum SequenceOntologyTermSortField {
 }
 
 impl SortKey<SequenceOntologyTerm> for SequenceOntologyTermSortField {
-    fn compare(&self, a: &SequenceOntologyTerm, b: &SequenceOntologyTerm) -> Ordering {
+    fn compare(
+        &self,
+        a: &SequenceOntologyTerm,
+        b: &SequenceOntologyTerm,
+        direction: SortDirection,
+    ) -> Ordering {
+        let primary = Term::new(direction, Nulls::Last);
         match self {
-            Self::Id => a.id.cmp(&b.id),
-            Self::Label => a.label.cmp(&b.label),
+            Self::Id => primary.cmp(&a.id, &b.id),
+            Self::Label => primary.cmp(&a.label, &b.label),
         }
     }
 }

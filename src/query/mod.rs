@@ -9,7 +9,7 @@ use crate::query::{
     filter::Filter,
     paginate::{MAX_PAGE_SIZE, Page, Paged, PagedWithStats},
     search::Searchable,
-    sort::{Sort, SortDirection, SortKey, sort_items},
+    sort::{Sort, SortKey, sort_items},
     stats::ComputeStats,
 };
 
@@ -65,17 +65,13 @@ impl<T: OutputType> Query<T> {
     }
 
     #[must_use]
-    pub fn sort<K>(mut self, sort: Option<&Sort<K>>) -> Self
+    pub fn sort<K>(mut self, sorts: &[Sort<K>]) -> Self
     where
         T: Entity,
         K: SortKey<T> + InputType,
     {
         let _s = tracing::debug_span!("sort", n = self.0.len()).entered();
-        sort_items(
-            &mut self.0,
-            sort.map(|s| &s.key),
-            sort.map_or(SortDirection::default(), |s| s.direction),
-        );
+        sort_items(&mut self.0, sorts);
         self
     }
 

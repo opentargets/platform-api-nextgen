@@ -28,7 +28,7 @@ use crate::{
         cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged},
-        sort::{Sort, SortKey, nulls_last},
+        sort::{Nulls, Sort, SortDirection, SortKey, Term},
     },
 };
 
@@ -270,13 +270,19 @@ impl TranscriptConsequenceSortField {
 }
 
 impl SortKey<TranscriptConsequence> for TranscriptConsequenceSortField {
-    fn compare(&self, a: &TranscriptConsequence, b: &TranscriptConsequence) -> Ordering {
+    fn compare(
+        &self,
+        a: &TranscriptConsequence,
+        b: &TranscriptConsequence,
+        direction: SortDirection,
+    ) -> Ordering {
+        let primary = Term::new(direction, Nulls::Last);
         match self {
-            Self::TargetApprovedSymbol => nulls_last(&a.approved_symbol(), &b.approved_symbol()),
+            Self::TargetApprovedSymbol => primary.cmp(&a.approved_symbol(), &b.approved_symbol()),
             Self::DistanceFromFootprint => {
-                a.distance_from_footprint.cmp(&b.distance_from_footprint)
+                primary.cmp(&a.distance_from_footprint, &b.distance_from_footprint)
             }
-            Self::DistanceFromTss => a.distance_from_tss.cmp(&b.distance_from_tss),
+            Self::DistanceFromTss => primary.cmp(&a.distance_from_tss, &b.distance_from_tss),
         }
     }
 }
@@ -381,16 +387,16 @@ impl Variant {
     async fn transcript_consequences(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Sort field and direction.")] sort: Sort<
-            TranscriptConsequenceSortField,
+        #[graphql(default, desc = "Sort field and direction.")] sort: Vec<
+            Sort<TranscriptConsequenceSortField>,
         >,
     ) -> async_graphql::Result<Vec<TranscriptConsequence>> {
-        // If the sort is by `target.approved_symbol`, we need to fetch the targets.
+        // If any of the sort keys is by `target.approved_symbol`, we need to fetch the targets.
         let mut rows = self.transcript_consequences.clone();
-        if sort.key.needs_target() {
+        if sort.iter().any(|s| s.key.needs_target()) {
             TranscriptConsequence::fetch_targets(ctx, &mut rows).await?;
         }
-        Ok(rows.query().sort(Some(&sort)).into_vec())
+        Ok(rows.query().sort(&sort).into_vec())
     }
 
     /// The sequence ontology term of the most severe consequence of the variant based on Ensembl
