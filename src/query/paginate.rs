@@ -9,6 +9,7 @@ use crate::{
         baseline_expression::BaselineExpression,
         biosample::Biosample,
         clinical_indication::ClinicalIndication,
+        credible_set::CredibleSet,
         disease::Disease,
         disease_hpo::DiseasePhenotype,
         drug::Drug,
@@ -61,6 +62,7 @@ impl Default for Page {
 #[graphql(concrete(name = "BaselineExpressionPage", params(BaselineExpression)))]
 #[graphql(concrete(name = "BiosamplePage", params(Biosample)))]
 #[graphql(concrete(name = "ClinicalIndicationPage", params(ClinicalIndication)))]
+#[graphql(concrete(name = "CredibleSetPage", params(CredibleSet)))]
 #[graphql(concrete(name = "DepMapEssentialityPage", params(DepMapEssentiality)))]
 #[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
 #[graphql(concrete(name = "DiseasePage", params(Disease)))]
