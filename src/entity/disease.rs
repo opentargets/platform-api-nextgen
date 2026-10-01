@@ -26,7 +26,7 @@ use crate::{
         disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
         evidence::{Evidence, EvidenceKey, load_evidences},
         publication::{Publication, PublicationArguments, load_publications},
-        similar_entities::{SimilarEntityArguments, Similarity, load_similar_entities},
+        similar_entity::{SimilarEntityArguments, Similarity, load_similar_entities},
         target::Target,
     },
     query::{

@@ -21,7 +21,7 @@ use crate::{
         pharmacogenomics::Pharmacogenomics,
         protein_coding_coordinates::ProteinCodingCoordinates,
         publication::Publication,
-        similar_entities::Similarity,
+        similar_entity::Similarity,
         study::Study,
         target::Target,
         target_essentiality::DepMapEssentiality,

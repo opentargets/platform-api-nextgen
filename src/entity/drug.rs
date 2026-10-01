@@ -16,7 +16,7 @@ use crate::{
         drug_warning::{DrugWarning, load_drug_warnings},
         pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_drug},
         publication::{Publication, PublicationArguments, load_publications},
-        similar_entities::{SimilarEntityArguments, Similarity, load_similar_entities},
+        similar_entity::{SimilarEntityArguments, Similarity, load_similar_entities},
     },
     query::{
         Entity, QueryExt,

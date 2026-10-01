@@ -27,7 +27,7 @@ use crate::{
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
         pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_target},
         publication::{Publication, PublicationArguments, load_publications},
-        similar_entities::{SimilarEntityArguments, Similarity, load_similar_entities},
+        similar_entity::{SimilarEntityArguments, Similarity, load_similar_entities},
         target_essentiality::{DepMapEssentiality, load_target_essentiality_by_target},
         target_prioritisation::{TargetPrioritisations, load_target_prioritisations},
     },

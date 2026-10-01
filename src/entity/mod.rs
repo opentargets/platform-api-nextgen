@@ -24,7 +24,7 @@ pub mod publication;
 pub mod search;
 pub mod search_facet;
 pub mod sequence_ontology;
-pub mod similar_entities;
+pub mod similar_entity;
 pub mod study;
 pub mod target;
 pub mod target_essentiality;

@@ -33,7 +33,7 @@ use crate::{
         search::SearchQuery,
         search_facet::FacetQuery,
         sequence_ontology::SequenceOntologyTermLoader,
-        similar_entities::SimilarEntityLoader,
+        similar_entity::SimilarEntityLoader,
         study::{StudyLoader, StudyQuery},
         target::{TargetLoader, TargetQuery},
         target_essentiality::TargetEssentialityLoader,
