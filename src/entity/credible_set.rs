@@ -13,7 +13,7 @@ use tokio::io::Chain;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{l2g_predictions, study, variant},
+    entity::{l2g_predictions, locus, study, variant},
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -212,5 +212,14 @@ impl CredibleSet {
     ) -> async_graphql::Result<Paged<l2g_predictions::L2GPrediction>> {
         let l2g = l2g_predictions::load_l2g_predictions(ctx, self.study_locus_id.clone()).await?;
         Ok(l2g.unwrap_or_default().query().paginate(page))
+    }
+    /// Locus information for all variants in the credible set
+    async fn locus(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the locus information.")] page: Page,
+    ) -> async_graphql::Result<Paged<locus::Locus>> {
+        let locus = locus::load_locus(ctx, self.study_locus_id.clone()).await?;
+        Ok(locus.unwrap_or_default().query().paginate(page))
     }
 }

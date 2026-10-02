@@ -18,6 +18,7 @@ use crate::{
         hpo::Hpo,
         interaction::Interaction,
         l2g_predictions::L2GPrediction,
+        locus::Locus,
         mouse_phenotype::MousePhenotype,
         pharmacogenomics::Pharmacogenomics,
         protein_coding_coordinates::ProteinCodingCoordinates,
@@ -73,6 +74,7 @@ impl Default for Page {
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
 #[graphql(concrete(name = "InteractionPage", params(Interaction)))]
 #[graphql(concrete(name = "L2GPredictionPage", params(L2GPrediction)))]
+#[graphql(concrete(name = "LocusPage", params(Locus)))]
 #[graphql(concrete(name = "MousePhenotypePage", params(MousePhenotype)))]
 #[graphql(concrete(name = "PharmacogenomicsPage", params(Pharmacogenomics)))]
 #[graphql(concrete(name = "ProteinCodingCoordinatesPage", params(ProteinCodingCoordinates)))]
