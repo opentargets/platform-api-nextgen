@@ -8,7 +8,7 @@
         "rust-analyzer": {
             "initialization_options": {
                 "cargo": {
-                  "features": ["product-ppp"]
+                  "features": ["product-platform"]
                 },
                 "check": {
                     "command": "clippy",

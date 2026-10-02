@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     entity::{
+        adverse_event::AdverseEvent,
         association::{DiseaseAssociation, TargetAssociation},
         association_timeseries_ppp::AssociationTimeseries,
         baseline_expression::BaselineExpression,
@@ -56,6 +57,7 @@ impl Default for Page {
 
 /// The result of a paginated query, containing the total number of items and the items.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
+#[graphql(concrete(name = "AdverseEventPage", params(AdverseEvent)))]
 #[graphql(concrete(name = "AssociationTimeseriesPage", params(AssociationTimeseries)))]
 #[graphql(concrete(name = "BaselineExpressionPage", params(BaselineExpression)))]
 #[graphql(concrete(name = "BiosamplePage", params(Biosample)))]
