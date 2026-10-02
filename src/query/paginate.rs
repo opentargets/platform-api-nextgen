@@ -18,6 +18,7 @@ use crate::{
         evidence::Evidence,
         hpo::Hpo,
         interaction::Interaction,
+        l2g_predictions::L2GPrediction,
         mouse_phenotype::MousePhenotype,
         otar_project_ppp::OtarProject,
         pharmacogenomics::Pharmacogenomics,
@@ -73,6 +74,7 @@ impl Default for Page {
 #[graphql(concrete(name = "EvidencePage", params(Evidence)))]
 #[graphql(concrete(name = "HpoPage", params(Hpo)))]
 #[graphql(concrete(name = "InteractionPage", params(Interaction)))]
+#[graphql(concrete(name = "L2GPredictionPage", params(L2GPrediction)))]
 #[graphql(concrete(name = "MousePhenotypePage", params(MousePhenotype)))]
 #[graphql(concrete(name = "ProjectPage", params(OtarProject)))]
 #[graphql(concrete(name = "PharmacogenomicsPage", params(Pharmacogenomics)))]

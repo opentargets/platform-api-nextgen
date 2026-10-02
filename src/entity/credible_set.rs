@@ -13,13 +13,13 @@ use tokio::io::Chain;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{study, variant},
+    entity::{l2g_predictions, study, variant},
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged},
-        sort::{Sort, SortKey, nulls_last},
+        sort::{Sort, SortKey},
     },
 };
 
@@ -203,5 +203,14 @@ impl CredibleSet {
     /// GWAS or molQTL study in which the credible set was identified.
     async fn study(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<study::Study>> {
         study::load_study(ctx, self.study_id.clone()).await
+    }
+    /// Predictions from Locus2gene gene assignment model.
+    async fn l2g_predictions(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the Locus2gene predictions.")] page: Page,
+    ) -> async_graphql::Result<Paged<l2g_predictions::L2GPrediction>> {
+        let l2g = l2g_predictions::load_l2g_predictions(ctx, self.study_locus_id.clone()).await?;
+        Ok(l2g.unwrap_or_default().query().paginate(page))
     }
 }

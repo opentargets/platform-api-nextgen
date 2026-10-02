@@ -17,6 +17,7 @@ pub mod evidence;
 pub mod gene_ontology;
 pub mod hpo;
 pub mod interaction;
+pub mod l2g_predictions;
 pub mod meta;
 pub mod mouse_phenotype;
 pub mod otar_project_ppp;
