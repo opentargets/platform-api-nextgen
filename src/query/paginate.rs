@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     entity::{
+        adverse_event::AdverseEvent,
         association::{DiseaseAssociation, TargetAssociation},
         association_timeseries_ppp::AssociationTimeseries,
         baseline_expression::BaselineExpression,
@@ -96,8 +97,9 @@ impl<T: OutputType> Default for Paged<T> {
 /// The result of a paginated query, containing the total number of items, the items, and statistics
 /// about the query.
 #[derive(Debug, Clone, SimpleObject)]
-#[graphql(concrete(name = "StudyPage", params(Study)))]
+#[graphql(concrete(name = "AdverseEventPage", params(AdverseEvent)))]
 #[graphql(concrete(name = "PublicationPage", params(Publication)))]
+#[graphql(concrete(name = "StudyPage", params(Study)))]
 pub struct PagedWithStats<T: OutputType + HasStats> {
     pub count: u64,
     pub rows: Vec<T>,

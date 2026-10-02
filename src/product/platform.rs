@@ -5,6 +5,7 @@ use async_graphql::{MergedObject, Request};
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
+        adverse_event::AdverseEventLoader,
         baseline_expression::BaselineExpressionLoader,
         biosample::BiosampleLoader,
         clinical_indication::{
@@ -61,7 +62,8 @@ impl Product for Platform {
     type Query = Query;
 
     fn prepare_request(req: Request, ch: &ClickHouse) -> Request {
-        req.data(loader::<BaselineExpressionLoader>(ch))
+        req.data(loader::<AdverseEventLoader>(ch))
+            .data(loader::<BaselineExpressionLoader>(ch))
             .data(loader::<BiosampleLoader>(ch))
             .data(loader::<ClinicalIndicationFromDiseaseLoader>(ch))
             .data(loader::<ClinicalIndicationFromDrugLoader>(ch))

@@ -1,5 +1,6 @@
 //! Entity layer of the application, including models, retrievers and resolvers.
 
+pub mod adverse_event;
 pub mod association;
 pub mod association_timeseries_ppp;
 pub mod baseline_expression;
