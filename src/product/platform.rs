@@ -21,6 +21,7 @@ use crate::{
         gene_ontology::GeneOntologyLoader,
         hpo::HpoLoader,
         interaction::InteractionLoader,
+        l2g_predictions::L2GPredictionsLoader,
         meta::MetaQuery,
         mouse_phenotype::MousePhenotypeLoader,
         pharmacogenomics::{
@@ -78,6 +79,7 @@ impl Product for Platform {
             .data(loader::<GeneOntologyLoader>(ch))
             .data(loader::<HpoLoader>(ch))
             .data(loader::<InteractionLoader>(ch))
+            .data(loader::<L2GPredictionsLoader>(ch))
             .data(loader::<MousePhenotypeLoader>(ch))
             .data(loader::<PharmacogenomicsByDrugLoader>(ch))
             .data(loader::<PharmacogenomicsByTargetLoader>(ch))
