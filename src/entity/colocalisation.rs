@@ -71,6 +71,7 @@ pub struct ColocalisationRow {
 #[derive(Debug, InputObject)]
 pub struct ColocalisationFilter {
     /// Keep colocalisations whose study type is one of these.
+    #[graphql(default_with = "ColocalisationFilter::default_study_types()")]
     pub study_types: Option<Vec<study::StudyType>>,
 }
 
@@ -79,6 +80,18 @@ impl Filter<Colocalisation> for ColocalisationFilter {
         self.study_types
             .as_ref()
             .is_none_or(|t| t.contains(&item.right_study_type))
+    }
+}
+
+impl ColocalisationFilter {
+    fn default_study_types() -> Option<Vec<study::StudyType>> { Some(vec![study::StudyType::Gwas]) }
+}
+
+impl Default for ColocalisationFilter {
+    fn default() -> Self {
+        Self {
+            study_types: Self::default_study_types(),
+        }
     }
 }
 
