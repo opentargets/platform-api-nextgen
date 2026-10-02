@@ -13,7 +13,7 @@ use tokio::io::Chain;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{l2g_predictions, locus, study, variant},
+    entity::{colocalisation, l2g_predictions, locus, study, variant},
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -221,5 +221,16 @@ impl CredibleSet {
     ) -> async_graphql::Result<Paged<locus::Locus>> {
         let locus = locus::load_locus(ctx, self.study_locus_id.clone()).await?;
         Ok(locus.unwrap_or_default().query().paginate(page))
+    }
+    /// GWAS-GWAS and GWAS-molQTL credible set colocalisation results. Dataset includes colocalising
+    /// pairs as well as the method and statistics used to estimate the colocalisation.
+    async fn colocalisation(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the colocalisation results.")] page: Page,
+    ) -> async_graphql::Result<Paged<colocalisation::Colocalisation>> {
+        let colocalisation =
+            colocalisation::load_colocalisation(ctx, self.study_locus_id.clone()).await?;
+        Ok(colocalisation.unwrap_or_default().query().paginate(page))
     }
 }
