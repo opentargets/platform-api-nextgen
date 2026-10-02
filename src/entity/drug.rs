@@ -12,6 +12,7 @@ use serde::Deserialize;
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
+        adverse_event::{AdverseEvent, AdverseEventStats, load_adverse_events},
         clinical_indication::{ClinicalIndication, load_clinical_indications_from_drug},
         drug_warning::{DrugWarning, load_drug_warnings},
         pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_drug},
@@ -323,5 +324,24 @@ impl Drug {
         };
         let entities = load_similar_entities(ctx, args).await?;
         Ok(entities)
+    }
+
+    /// Significant adverse events estimated from pharmacovigilance reports deposited in FAERS.
+    async fn adverse_events(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the adverse events.")] page: Page,
+    ) -> async_graphql::Result<Option<PagedWithStats<AdverseEvent>>> {
+        Ok(load_adverse_events(ctx, self.id.clone()).await?.map(|ev| {
+            let paged = ev.adverse_events.query().paginate(page);
+            PagedWithStats {
+                count: paged.count,
+                rows: paged.rows,
+                stats: AdverseEventStats {
+                    critical_value: ev.critical_value,
+                    id: ev.chembl_id,
+                },
+            }
+        }))
     }
 }

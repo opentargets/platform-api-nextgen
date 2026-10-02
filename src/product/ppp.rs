@@ -5,6 +5,7 @@ use async_graphql::{MergedObject, Request};
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
+        adverse_event::AdverseEventLoader,
         association_timeseries_ppp::AssociationTimeseriesLoader,
         baseline_expression::BaselineExpressionLoader,
         biosample::BiosampleLoader,
@@ -63,7 +64,8 @@ impl Product for Ppp {
     type Query = Query;
 
     fn prepare_request(req: Request, ch: &ClickHouse) -> Request {
-        req.data(loader::<AssociationTimeseriesLoader>(ch))
+        req.data(loader::<AdverseEventLoader>(ch))
+            .data(loader::<AssociationTimeseriesLoader>(ch))
             .data(loader::<BaselineExpressionLoader>(ch))
             .data(loader::<BiosampleLoader>(ch))
             .data(loader::<ClinicalIndicationFromDiseaseLoader>(ch))
