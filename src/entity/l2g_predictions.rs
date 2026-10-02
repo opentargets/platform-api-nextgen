@@ -13,6 +13,7 @@ use tokio::io::Chain;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::target,
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -43,6 +44,7 @@ pub struct L2GFeature {
 #[allow(clippy::struct_field_names)]
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
+#[graphql(complex)]
 pub struct L2GPrediction {
     /// Study-locus identifier for the credible set.
     study_locus_id: String,
@@ -99,4 +101,12 @@ pub async fn load_l2g_predictions(
     ctx.data_unchecked::<DataLoader<L2GPredictionsLoader>>()
         .load_one(id.clone())
         .await
+}
+
+#[ComplexObject]
+impl L2GPrediction {
+    /// Target entity of the L2G predicted gene.
+    pub async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<target::Target>> {
+        target::load_target(ctx, self.gene_id.clone()).await
+    }
 }

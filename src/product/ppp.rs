@@ -24,6 +24,7 @@ use crate::{
         hpo::HpoLoader,
         interaction::InteractionLoader,
         l2g_predictions::L2GPredictionsLoader,
+        locus::LocusLoader,
         meta::MetaQuery,
         mouse_phenotype::MousePhenotypeLoader,
         otar_project_ppp::OtarProjectsLoader,
@@ -85,6 +86,7 @@ impl Product for Ppp {
             .data(loader::<HpoLoader>(ch))
             .data(loader::<InteractionLoader>(ch))
             .data(loader::<L2GPredictionsLoader>(ch))
+            .data(loader::<LocusLoader>(ch))
             .data(loader::<MousePhenotypeLoader>(ch))
             .data(loader::<OtarProjectsLoader>(ch))
             .data(loader::<PharmacogenomicsByDrugLoader>(ch))
