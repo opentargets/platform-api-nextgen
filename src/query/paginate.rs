@@ -57,7 +57,6 @@ impl Default for Page {
 
 /// The result of a paginated query, containing the total number of items and the items.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
-#[graphql(concrete(name = "AdverseEventPage", params(AdverseEvent)))]
 #[graphql(concrete(name = "AssociationTimeseriesPage", params(AssociationTimeseries)))]
 #[graphql(concrete(name = "BaselineExpressionPage", params(BaselineExpression)))]
 #[graphql(concrete(name = "BiosamplePage", params(Biosample)))]
@@ -100,6 +99,7 @@ impl<T: OutputType> Default for Paged<T> {
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(concrete(name = "StudyPage", params(Study)))]
 #[graphql(concrete(name = "PublicationPage", params(Publication)))]
+#[graphql(concrete(name = "AdverseEventPage", params(AdverseEvent)))]
 pub struct PagedWithStats<T: OutputType + HasStats> {
     pub count: u64,
     pub rows: Vec<T>,

@@ -39,7 +39,7 @@ impl Publication {
     async fn publication_date(&self) -> String { format!("{:04}-{:02}-01", self.year, self.month) }
 }
 
-/// Statistics for a set of studies.
+/// Statistics for a set of publications.
 #[derive(Clone, SimpleObject)]
 pub struct PublicationStats {
     /// Earliest publication date for the target without considering the time range.
