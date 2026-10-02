@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    ComplexObject, Context, Enum, Object, SimpleObject, context,
+    ComplexObject, Context, InputObject, Object, SimpleObject, context,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -17,6 +17,7 @@ use crate::{
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
+        filter::{Filter, IntFilter, StringFilter},
         load_ordered,
         paginate::{Page, Paged},
         sort::{Sort, SortKey},
@@ -62,6 +63,23 @@ pub struct Colocalisation {
 pub struct ColocalisationRow {
     study_locus_id: String,
     colocalisation: Vec<Colocalisation>,
+}
+
+// ---- filters ---
+
+/// Filter for colocalisations.
+#[derive(Debug, InputObject)]
+pub struct ColocalisationFilter {
+    /// Keep colocalisations whose study type is one of these.
+    pub study_types: Option<Vec<study::StudyType>>,
+}
+
+impl Filter<Colocalisation> for ColocalisationFilter {
+    fn matches(&self, item: &Colocalisation) -> bool {
+        self.study_types
+            .as_ref()
+            .is_none_or(|t| t.contains(&item.right_study_type))
+    }
 }
 
 // ---- loaders ----

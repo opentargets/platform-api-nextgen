@@ -227,10 +227,17 @@ impl CredibleSet {
     async fn colocalisation(
         &self,
         ctx: &Context<'_>,
+        #[graphql(desc = "Filter criteria to apply.")] filter: Option<
+            colocalisation::ColocalisationFilter,
+        >,
         #[graphql(default, desc = "Pagination for the colocalisation results.")] page: Page,
     ) -> async_graphql::Result<Paged<colocalisation::Colocalisation>> {
         let colocalisation =
             colocalisation::load_colocalisation(ctx, self.study_locus_id.clone()).await?;
-        Ok(colocalisation.unwrap_or_default().query().paginate(page))
+        Ok(colocalisation
+            .unwrap_or_default()
+            .query()
+            .filter(filter.as_ref())
+            .paginate(page))
     }
 }
