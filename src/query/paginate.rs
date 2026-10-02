@@ -9,6 +9,7 @@ use crate::{
         baseline_expression::BaselineExpression,
         biosample::Biosample,
         clinical_indication::ClinicalIndication,
+        colocalisation::Colocalisation,
         credible_set::CredibleSet,
         disease::Disease,
         disease_hpo::DiseasePhenotype,
@@ -64,6 +65,7 @@ impl Default for Page {
 #[graphql(concrete(name = "BaselineExpressionPage", params(BaselineExpression)))]
 #[graphql(concrete(name = "BiosamplePage", params(Biosample)))]
 #[graphql(concrete(name = "ClinicalIndicationPage", params(ClinicalIndication)))]
+#[graphql(concrete(name = "ColocalisationPage", params(Colocalisation)))]
 #[graphql(concrete(name = "CredibleSetPage", params(CredibleSet)))]
 #[graphql(concrete(name = "DepMapEssentialityPage", params(DepMapEssentiality)))]
 #[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
@@ -78,8 +80,8 @@ impl Default for Page {
 #[graphql(concrete(name = "L2GPredictionPage", params(L2GPrediction)))]
 #[graphql(concrete(name = "LocusPage", params(Locus)))]
 #[graphql(concrete(name = "MousePhenotypePage", params(MousePhenotype)))]
-#[graphql(concrete(name = "ProjectPage", params(OtarProject)))]
 #[graphql(concrete(name = "PharmacogenomicsPage", params(Pharmacogenomics)))]
+#[graphql(concrete(name = "ProjectPage", params(OtarProject)))]
 #[graphql(concrete(name = "ProteinCodingCoordinatesPage", params(ProteinCodingCoordinates)))]
 #[graphql(concrete(name = "PublicationPage", params(Publication)))]
 #[graphql(concrete(name = "SimilarEntityPage", params(Similarity)))]
