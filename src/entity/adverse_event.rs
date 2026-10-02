@@ -19,19 +19,31 @@ pub struct AdverseEventRow {
     pub critical_value: f64,
 }
 
+/// Significant adverse events associated with drugs sharing the same pharmacological target. This
+/// dataset is based on the FDA's Adverse Event Reporting System (FAERS) reporting post-marketing
+/// surveillance data and it's filtered to include only reports submitted by health professionals.
+/// The significance of a given target-ADR is estimated using a Likelihood Ratio Test (LRT) using
+/// all reports associated with the drugs with the same target.
 #[derive(Debug, Clone, Deserialize, SimpleObject, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct AdverseEvent {
+    /// Number of reports mentioning drug and adverse event.
     count: u32,
+    /// Critical value used to determine statistical significance of the association.
+    #[graphql(skip)]
     critval: f64,
+    /// Meddra term on adverse event.
     name: String,
+    /// Log-likelihood ratio.
     log_l_r: f64,
+    /// 8 digit unique meddra identification number.
     meddra_code: String,
 }
 
 /// Statistics for a set of adverse events.
 #[derive(Clone, SimpleObject)]
 pub struct AdverseEventStats {
+    /// LLR critical value to define significance
     pub critical_value: f64,
     pub id: String,
 }

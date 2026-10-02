@@ -326,6 +326,7 @@ impl Drug {
         Ok(entities)
     }
 
+    /// Significant adverse events estimated from pharmacovigilance reports deposited in FAERS.
     async fn adverse_events(
         &self,
         ctx: &Context<'_>,
