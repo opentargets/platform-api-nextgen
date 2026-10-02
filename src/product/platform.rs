@@ -11,6 +11,7 @@ use crate::{
             ClinicalIndicationFromDiseaseLoader, ClinicalIndicationFromDrugLoader,
         },
         clinical_report::ClinicalReportLoader,
+        colocalisation::ColocalisationLoader,
         credible_set::{CredibleSetLoader, CredibleSetQuery},
         disease::{DiseaseLoader, DiseaseQuery},
         disease_hpo::DiseasePhenotypeLoader,
@@ -71,6 +72,7 @@ impl Product for Platform {
             .data(loader::<ClinicalIndicationFromDrugLoader>(ch))
             .data(loader::<ClinicalReportLoader>(ch))
             .data(loader::<CredibleSetLoader>(ch))
+            .data(loader::<ColocalisationLoader>(ch))
             .data(loader::<DiseaseLoader>(ch))
             .data(loader::<DiseasePhenotypeLoader>(ch))
             .data(loader::<DrugLoader>(ch))
