@@ -21,6 +21,7 @@ use crate::{
             load_association_timeseries,
         },
         baseline_expression::{BaselineExpression, load_baseline_expression_by_target},
+        credible_set,
         disease::Disease,
         evidence::{Evidence, EvidenceKey, load_evidences},
         interaction::{Interaction, InteractionSourceDatabase, load_interaction_by_target_a},
@@ -469,6 +470,8 @@ pub struct Target {
     protein_ids: Vec<IdAndSource>,
     /// Known target safety effects and target safety risk information.
     safety_liabilities: Vec<SafetyLiability>,
+    #[graphql(skip)]
+    study_locus_ids: Vec<String>,
     /// List of subcellular locations where the target protein is found.
     subcellular_locations: Vec<LocationAndSource>,
     /// List of synonyms for the target gene.
@@ -868,5 +871,19 @@ impl Target {
         };
         let entities = load_similar_entities(ctx, args).await?;
         Ok(entities)
+    }
+
+    /// 95% credible sets for GWAS and molQTL studies. Credible sets include all variants in the
+    /// credible set as well as the fine-mapping method and statistics used to estimate the credible
+    /// set.
+    async fn credible_sets(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for credible sets.")] page: Page,
+    ) -> async_graphql::Result<Paged<credible_set::CredibleSet>> {
+        Ok(credible_set::load_credible_sets(ctx, &self.study_locus_ids)
+            .await?
+            .query()
+            .paginate(page))
     }
 }

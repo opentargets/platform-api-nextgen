@@ -116,7 +116,7 @@ pub async fn load_locus(
 
 #[ComplexObject]
 impl Locus {
-    /// Variant in the credible set/
+    /// Variant in the credible set.
     pub async fn variant(
         &self,
         ctx: &Context<'_>,
