@@ -217,10 +217,15 @@ impl CredibleSet {
     async fn locus(
         &self,
         ctx: &Context<'_>,
+        #[graphql(desc = "Filter criteria to apply.")] filter: Option<locus::LocusFilter>,
         #[graphql(default, desc = "Pagination for the locus information.")] page: Page,
     ) -> async_graphql::Result<Paged<locus::Locus>> {
         let locus = locus::load_locus(ctx, self.study_locus_id.clone()).await?;
-        Ok(locus.unwrap_or_default().query().paginate(page))
+        Ok(locus
+            .unwrap_or_default()
+            .query()
+            .filter(filter.as_ref())
+            .paginate(page))
     }
     /// GWAS-GWAS and GWAS-molQTL credible set colocalisation results. Dataset includes colocalising
     /// pairs as well as the method and statistics used to estimate the colocalisation.
