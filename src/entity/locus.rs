@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    ComplexObject, Context, Enum, Object, SimpleObject,
+    ComplexObject, Context, InputObject, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -17,6 +17,7 @@ use crate::{
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
+        filter::Filter,
         load_ordered,
         paginate::{Page, Paged},
         sort::{Sort, SortKey},
@@ -58,6 +59,23 @@ pub struct Locus {
 pub struct LocusRow {
     study_locus_id: String,
     locus: Vec<Locus>,
+}
+
+// ---- filters ---
+
+/// Filter for locus.
+#[derive(Debug, InputObject)]
+pub struct LocusFilter {
+    /// Keep loci whose variant ID is one of these.
+    pub variant_ids: Option<Vec<String>>,
+}
+
+impl Filter<Locus> for LocusFilter {
+    fn matches(&self, item: &Locus) -> bool {
+        self.variant_ids
+            .as_ref()
+            .is_none_or(|t| t.contains(&item.variant_id))
+    }
 }
 
 // ---- loaders ----
