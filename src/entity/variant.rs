@@ -13,7 +13,7 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
-        enhancer_to_gene,
+        credible_set, enhancer_to_gene,
         pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_variant},
         protein_coding_coordinates::{
             ProteinCodingCoordinateVariantLoader, ProteinCodingCoordinates,
@@ -246,6 +246,8 @@ pub struct Variant {
     /// VEP [bioregistry:so].
     #[graphql(skip)]
     most_severe_consequence_id: String,
+    #[graphql(skip)]
+    study_locus_ids: Vec<String>,
 }
 
 // ---- query utilities ----
@@ -383,6 +385,24 @@ impl VariantQuery {
 
 #[ComplexObject]
 impl Variant {
+    /// 95% credible sets for GWAS and molQTL studies that contain this variant. Credible sets
+    /// include all variants in the credible set (locus) as well as the fine-mapping method and
+    /// derived statistics.
+    async fn credible_sets(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(desc = "Filter criteria to apply.")] filter: Option<
+            credible_set::CredibleSetFilter,
+        >,
+        #[graphql(default, desc = "Pagination for credible sets.")] page: Page,
+    ) -> async_graphql::Result<Paged<credible_set::CredibleSet>> {
+        Ok(credible_set::load_credible_sets(ctx, &self.study_locus_ids)
+            .await?
+            .query()
+            .filter(filter.as_ref())
+            .paginate(page))
+    }
+
     /// Predicted consequences on transcript context.
     async fn transcript_consequences(
         &self,

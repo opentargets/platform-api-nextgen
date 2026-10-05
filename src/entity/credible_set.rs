@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
-    ComplexObject, Context, Enum, Object, SimpleObject,
+    ComplexObject, Context, InputObject, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -17,6 +17,7 @@ use crate::{
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
+        filter::Filter,
         load_ordered,
         paginate::{Page, Paged},
         sort::{Sort, SortKey},
@@ -99,6 +100,23 @@ pub struct CredibleSet {
     is_trans_qtl: Option<bool>,
 }
 
+// ---- filters ---
+
+/// Filter for credible sets.
+#[derive(Debug, InputObject)]
+pub struct CredibleSetFilter {
+    /// Keep credible sets whose study type is one of these.
+    pub study_types: Option<Vec<study::StudyType>>,
+}
+
+impl Filter<CredibleSet> for CredibleSetFilter {
+    fn matches(&self, item: &CredibleSet) -> bool {
+        self.study_types
+            .as_ref()
+            .is_none_or(|t| t.contains(&item.study_type))
+    }
+}
+
 // --- loaders ---
 
 pub type CredibleSetCache = Cache<String, Option<CredibleSet>>;
@@ -178,10 +196,8 @@ impl CredibleSetQuery {
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "List of study locus IDs to fetch.")] study_locus_ids: Vec<String>,
-        #[graphql(default, desc = "Pagination for the credible sets.")] page: Page,
-    ) -> async_graphql::Result<Paged<CredibleSet>> {
-        let items = load_credible_sets(ctx, &study_locus_ids).await?;
-        Ok(items.query().paginate(page))
+    ) -> async_graphql::Result<Vec<CredibleSet>> {
+        load_credible_sets(ctx, &study_locus_ids).await
     }
 
     /// Retrieve a credible set by its identifier.

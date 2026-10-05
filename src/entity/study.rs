@@ -17,13 +17,16 @@ use serde_repr::Deserialize_repr;
 use crate::{
     config::DEFAULT_CLICKHOUSE_FETCH_CHUNK,
     datasource::clickhouse::ClickHouse,
-    entity::disease::{Disease, DiseaseLoader, load_diseases},
+    entity::{
+        credible_set,
+        disease::{Disease, DiseaseLoader, load_diseases},
+    },
     query::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         filter::{Filter, IntFilter, StringFilter},
         load_ordered,
-        paginate::{Page, PagedWithStats},
+        paginate::{Page, Paged, PagedWithStats},
         search::Searchable,
         sort::{Nulls, Sort, SortDirection, SortKey, Term},
         stats::{
@@ -171,6 +174,9 @@ pub struct Study {
     /// Disease associated with a studied trait.
     #[graphql(skip)]
     disease_ids: Vec<String>,
+    /// Study locus IDs for the study.
+    #[graphql(skip)]
+    study_locus_ids: Vec<String>,
 }
 
 // ---- query utilities ----
@@ -445,5 +451,19 @@ impl Study {
     /// Publication in the narrative-in-text author-date style.
     async fn publication_author_date(&self) -> Option<String> {
         self.build_publication_author_date()
+    }
+
+    /// 95% credible sets for GWAS and molQTL studies. Credible sets include all variants in the
+    /// credible set as well as the fine-mapping method and statistics used to estimate the credible
+    /// set.
+    async fn credible_sets(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for credible sets.")] page: Page,
+    ) -> async_graphql::Result<Paged<credible_set::CredibleSet>> {
+        Ok(credible_set::load_credible_sets(ctx, &self.study_locus_ids)
+            .await?
+            .query()
+            .paginate(page))
     }
 }
