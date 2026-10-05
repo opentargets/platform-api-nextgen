@@ -25,6 +25,7 @@ use crate::{
         interaction::InteractionLoader,
         l2g_predictions::L2GPredictionsLoader,
         locus::LocusLoader,
+        mechanisms_of_action::MechanismsOfActionLoader,
         meta::MetaQuery,
         mouse_phenotype::MousePhenotypeLoader,
         pharmacogenomics::{
@@ -87,6 +88,7 @@ impl Product for Platform {
             .data(loader::<InteractionLoader>(ch))
             .data(loader::<L2GPredictionsLoader>(ch))
             .data(loader::<LocusLoader>(ch))
+            .data(loader::<MechanismsOfActionLoader>(ch))
             .data(loader::<MousePhenotypeLoader>(ch))
             .data(loader::<PharmacogenomicsByDrugLoader>(ch))
             .data(loader::<PharmacogenomicsByTargetLoader>(ch))

@@ -15,6 +15,7 @@ use crate::{
         adverse_event::{AdverseEvent, load_adverse_events},
         clinical_indication::{ClinicalIndication, load_clinical_indications_from_drug},
         drug_warning::{DrugWarning, load_drug_warnings},
+        mechanisms_of_action::{MechanismsOfAction, load_mechanisms_of_action},
         pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_drug},
         publication::{Publication, PublicationArguments, load_publications},
         similar_entity::{SimilarEntityArguments, Similarity, load_similar_entities},
@@ -246,6 +247,15 @@ impl Drug {
     ) -> async_graphql::Result<Paged<ClinicalIndication>> {
         let items = load_clinical_indications_from_drug(ctx, self.id.clone()).await?;
         Ok(items.query().paginate(page))
+    }
+
+    /// Mechanisms of action to produce intended pharmacological effects. Curated from scientific
+    /// literature and post-marketing package inserts.
+    async fn mechanisms_of_action(
+        &self,
+        ctx: &Context<'_>,
+    ) -> async_graphql::Result<Option<MechanismsOfAction>> {
+        load_mechanisms_of_action(ctx, self.id.clone()).await
     }
 
     /// Return the list of publications that mention the main entity, alone or in combination with
