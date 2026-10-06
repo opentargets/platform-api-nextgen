@@ -12,7 +12,7 @@ use crate::{
         clinical_indication::{
             ClinicalIndicationFromDiseaseLoader, ClinicalIndicationFromDrugLoader,
         },
-        clinical_report::ClinicalReportLoader,
+        clinical_report::{ClinicalReportLoader, ClinicalReportQuery},
         colocalisation::ColocalisationLoader,
         credible_set::{CredibleSetLoader, CredibleSetQuery},
         disease::{DiseaseLoader, DiseaseQuery},
@@ -51,15 +51,16 @@ use crate::{
 /// The query root for the `PPP` product.
 #[derive(MergedObject, Default)]
 pub struct Query(
-    MetaQuery,        // API data (version, data release, product, etc.)
-    SearchQuery,      // Search bar functionality
-    FacetQuery,       // Facet search for AOTF
-    CredibleSetQuery, // Credible sets
-    DiseaseQuery,     // Diseases
-    StudyQuery,       // Studies
-    DrugQuery,        // Drugs
-    VariantQuery,     // Variants
-    TargetQuery,      // Targets
+    MetaQuery,           // API data (version, data release, product, etc.)
+    SearchQuery,         // Search bar functionality
+    FacetQuery,          // Facet search for AOTF
+    ClinicalReportQuery, // Clinical reports
+    CredibleSetQuery,    // Credible sets
+    DiseaseQuery,        // Diseases
+    StudyQuery,          // Studies
+    DrugQuery,           // Drugs
+    VariantQuery,        // Variants
+    TargetQuery,         // Targets
 );
 
 pub struct Ppp;
