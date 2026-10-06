@@ -196,8 +196,10 @@ impl CredibleSetQuery {
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "List of study locus IDs to fetch.")] study_locus_ids: Vec<String>,
-    ) -> async_graphql::Result<Vec<CredibleSet>> {
-        load_credible_sets(ctx, &study_locus_ids).await
+        #[graphql(default, desc = "Pagination for the credible sets.")] page: Page,
+    ) -> async_graphql::Result<Paged<CredibleSet>> {
+        let results = load_credible_sets(ctx, &study_locus_ids).await?;
+        Ok(results.query().paginate(page))
     }
 
     /// Retrieve a credible set by its identifier.
@@ -229,7 +231,7 @@ impl CredibleSet {
         let l2g = l2g_predictions::load_l2g_predictions(ctx, self.study_locus_id.clone()).await?;
         Ok(l2g.unwrap_or_default().query().paginate(page))
     }
-    /// Locus information for all variants in the credible set
+    /// Locus information for all variants in the credible set.
     async fn locus(
         &self,
         ctx: &Context<'_>,

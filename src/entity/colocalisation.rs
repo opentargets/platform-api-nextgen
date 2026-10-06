@@ -35,7 +35,7 @@ use crate::{
 pub struct Colocalisation {
     /// Credible set (study-locus) on the left side of the colocalisation pair.
     study_locus_id: String,
-    /// The other credible set (study-locus) in the colocalisation pair
+    /// The other credible set (study-locus) in the colocalisation pair.
     other_study_locus_id: String,
     /// Type of the right-side study (e.g., gwas, eqtl, pqtl).
     right_study_type: study::StudyType,
