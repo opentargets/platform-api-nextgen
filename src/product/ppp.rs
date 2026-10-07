@@ -36,6 +36,7 @@ use crate::{
         },
         protein_coding_coordinates::ProteinCodingCoordinateVariantLoader,
         publication::PublicationLoader,
+        region::{RegionQuery, TargetsByRegionLoader},
         search::SearchQuery,
         search_facet::FacetQuery,
         sequence_ontology::SequenceOntologyTermLoader,
@@ -52,16 +53,17 @@ use crate::{
 /// The query root for the `PPP` product.
 #[derive(MergedObject, Default)]
 pub struct Query(
-    MetaQuery,           // API data (version, data release, product, etc.)
-    SearchQuery,         // Search bar functionality
-    FacetQuery,          // Facet search for AOTF
     ClinicalReportQuery, // Clinical reports
     CredibleSetQuery,    // Credible sets
     DiseaseQuery,        // Diseases
-    StudyQuery,          // Studies
     DrugQuery,           // Drugs
-    VariantQuery,        // Variants
+    FacetQuery,          // Facet search for AOTF
+    MetaQuery,           // API data (version, data release, product, etc.)
+    RegionQuery,         // Region
+    SearchQuery,         // Search bar functionality
+    StudyQuery,          // Studies
     TargetQuery,         // Targets
+    VariantQuery,        // Variants
 );
 
 pub struct Ppp;
@@ -99,6 +101,7 @@ impl Product for Ppp {
             .data(loader::<PharmacogenomicsByVariantLoader>(ch))
             .data(loader::<ProteinCodingCoordinateVariantLoader>(ch))
             .data(loader::<PublicationLoader>(ch))
+            .data(loader::<TargetsByRegionLoader>(ch))
             .data(loader::<SequenceOntologyTermLoader>(ch))
             .data(loader::<SimilarEntityLoader>(ch))
             .data(loader::<StudyLoader>(ch))
