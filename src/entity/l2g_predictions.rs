@@ -1,26 +1,16 @@
-use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
+use std::collections::HashMap;
 
 use async_graphql::{
-    ComplexObject, Context, Enum, Object, SimpleObject,
+    ComplexObject, Context, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
 use derive_more::From;
-use moka::{future::Cache, ops::compute::Op};
 use serde::Deserialize;
-use serde_repr::{Deserialize_repr, Serialize_repr};
-use tokio::io::Chain;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::target,
-    query::{
-        Entity, QueryExt,
-        cache::{CachedLoader, entity_cache},
-        load_ordered,
-        paginate::{Page, Paged},
-        sort::{Sort, SortKey},
-    },
+    entity::target::{Target, load_target},
 };
 
 // --- models ---
@@ -33,7 +23,7 @@ pub struct L2GFeature {
     name: String,
     /// Value of the feature.
     value: f64,
-    /// SHAP (SHapley Additive exPlanations) value indicating the feature's contribution to the
+    /// SHAP (Shapley Additive exPlanations) value indicating the feature's contribution to the
     /// prediction.
     shap_value: f64,
 }
@@ -94,6 +84,12 @@ impl Loader<String> for L2GPredictionsLoader {
     }
 }
 
+/// Loads L2G predictions for a given study locus ID.
+///
+/// # Returns
+/// A `Vec` of `L2GPrediction` entities.
+/// # Errors
+/// Returns an error if the predictions cannot be loaded.
 pub async fn load_l2g_predictions(
     ctx: &Context<'_>,
     id: String,
@@ -106,7 +102,7 @@ pub async fn load_l2g_predictions(
 #[ComplexObject]
 impl L2GPrediction {
     /// Target entity of the L2G predicted gene.
-    pub async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<target::Target>> {
-        target::load_target(ctx, self.gene_id.clone()).await
+    async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
+        load_target(ctx, self.gene_id.clone()).await
     }
 }

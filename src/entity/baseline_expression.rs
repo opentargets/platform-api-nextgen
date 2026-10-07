@@ -172,6 +172,7 @@ impl BaselineExpression {
             None => Ok(None),
         }
     }
+
     /// Tissue biosample parent reported by study.
     async fn tissue_biosample_parent(
         &self,
@@ -182,6 +183,7 @@ impl BaselineExpression {
             None => Ok(None),
         }
     }
+
     /// Cell type biosample reported by study.
     async fn celltype_biosample(
         &self,
@@ -192,6 +194,7 @@ impl BaselineExpression {
             None => Ok(None),
         }
     }
+
     /// Cell type biosample parent reported by study.
     async fn celltype_biosample_parent(
         &self,

@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
+use std::{collections::HashMap, sync::LazyLock};
 
 use async_graphql::{
     ComplexObject, Context, InputObject, Object, SimpleObject,
@@ -6,21 +6,18 @@ use async_graphql::{
 };
 use clickhouse::Row;
 use derive_more::From;
-use moka::{future::Cache, ops::compute::Op};
+use moka::future::Cache;
 use serde::Deserialize;
-use serde_repr::{Deserialize_repr, Serialize_repr};
-use tokio::io::Chain;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{colocalisation, l2g_predictions, locus, study, variant},
     query::{
-        Entity, QueryExt,
+        QueryExt,
         cache::{CachedLoader, entity_cache},
         filter::Filter,
         load_ordered,
         paginate::{Page, Paged},
-        sort::{Sort, SortKey},
     },
 };
 
@@ -43,13 +40,13 @@ pub struct LDSet {
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 pub struct CredibleSet {
-    /// Identifier of the credible set (StudyLocus).
+    /// Identifier of the credible set (`StudyLocus`).
     study_locus_id: String,
     #[graphql(skip)]
     variant_id: String,
     /// Chromosome which the credible set is located.
     chromosome: variant::Chromosome,
-    /// Position of the lead variant for the credible set (GRCh38).
+    /// Position of the lead variant for the credible set (`GRCh38`).
     position: u32,
     /// Start and end positions of the region used for fine-mapping.
     region: Option<String>,

@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
+use std::collections::HashMap;
 
 use async_graphql::{
     ComplexObject, Context, InputObject, SimpleObject,
@@ -6,22 +6,12 @@ use async_graphql::{
 };
 use clickhouse::Row;
 use derive_more::From;
-use moka::{future::Cache, ops::compute::Op};
 use serde::Deserialize;
-use serde_repr::{Deserialize_repr, Serialize_repr};
-use tokio::io::Chain;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::variant,
-    query::{
-        Entity, QueryExt,
-        cache::{CachedLoader, entity_cache},
-        filter::Filter,
-        load_ordered,
-        paginate::{Page, Paged},
-        sort::{Sort, SortKey},
-    },
+    entity::variant::{Variant, load_variant},
+    query::filter::Filter,
 };
 
 // --- models ---
@@ -105,6 +95,12 @@ impl Loader<String> for LocusLoader {
     }
 }
 
+/// Load a single locus by its ID.
+///
+/// # Returns
+/// Returns `None` if the locus is not found.
+/// # Errors
+/// Returns an error if the locus could not be loaded.
 pub async fn load_locus(
     ctx: &Context<'_>,
     id: String,
@@ -117,10 +113,7 @@ pub async fn load_locus(
 #[ComplexObject]
 impl Locus {
     /// Variant in the credible set.
-    pub async fn variant(
-        &self,
-        ctx: &Context<'_>,
-    ) -> async_graphql::Result<Option<variant::Variant>> {
-        variant::load_variant(ctx, self.variant_id.clone()).await
+    async fn variant(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Variant>> {
+        load_variant(ctx, self.variant_id.clone()).await
     }
 }

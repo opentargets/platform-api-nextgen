@@ -176,6 +176,7 @@ pub struct Study {
     disease_ids: Vec<String>,
     /// Study locus IDs for the study.
     #[graphql(skip)]
+    #[allow(clippy::struct_field_names)]
     study_locus_ids: Vec<String>,
 }
 
@@ -373,6 +374,12 @@ async fn load_studies(
     load_ordered(study_loader, &study_ids_from_diseases).await
 }
 
+/// Load a single study by its ID.
+///
+/// # Returns
+/// Returns `None` if the study is not found.
+/// # Errors
+/// Returns an error if the study could not be loaded.
 pub async fn load_study(
     ctx: &Context<'_>,
     study_id: String,

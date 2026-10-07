@@ -1,27 +1,20 @@
-use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
+use std::collections::HashMap;
 
 use async_graphql::{
-    ComplexObject, Context, InputObject, Object, SimpleObject, context,
+    ComplexObject, Context, InputObject, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
 use derive_more::From;
-use moka::{future::Cache, ops::compute::Op};
 use serde::Deserialize;
-use serde_repr::{Deserialize_repr, Serialize_repr};
-use tokio::io::Chain;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{credible_set, study, variant},
-    query::{
-        Entity, QueryExt,
-        cache::{CachedLoader, entity_cache},
-        filter::{Filter, IntFilter, StringFilter},
-        load_ordered,
-        paginate::{Page, Paged},
-        sort::{Sort, SortKey},
+    entity::{
+        credible_set::{CredibleSet, load_credible_set},
+        study, variant,
     },
+    query::filter::Filter,
 };
 
 // --- models ---
@@ -72,19 +65,17 @@ pub struct ColocalisationRow {
 pub struct ColocalisationFilter {
     /// Keep colocalisations whose study type is one of these.
     #[graphql(default_with = "ColocalisationFilter::default_study_types()")]
-    pub study_types: Option<Vec<study::StudyType>>,
+    pub study_types: Vec<study::StudyType>,
 }
 
 impl Filter<Colocalisation> for ColocalisationFilter {
     fn matches(&self, item: &Colocalisation) -> bool {
-        self.study_types
-            .as_ref()
-            .is_none_or(|t| t.contains(&item.right_study_type))
+        self.study_types.is_empty() || self.study_types.iter().any(|t| t == &item.right_study_type)
     }
 }
 
 impl ColocalisationFilter {
-    fn default_study_types() -> Option<Vec<study::StudyType>> { Some(vec![study::StudyType::Gwas]) }
+    fn default_study_types() -> Vec<study::StudyType> { vec![study::StudyType::Gwas] }
 }
 
 impl Default for ColocalisationFilter {
@@ -122,6 +113,12 @@ impl Loader<String> for ColocalisationLoader {
     }
 }
 
+/// Loads a colocalisation by its study locus ID.
+///
+/// # Returns
+/// Returns `None` if no colocalisation is found for the given ID.
+/// # Errors
+/// Returns an error if the colocalisation cannot be loaded.
 pub async fn load_colocalisation(
     ctx: &Context<'_>,
     id: String,
@@ -134,10 +131,10 @@ pub async fn load_colocalisation(
 #[ComplexObject]
 impl Colocalisation {
     /// The other credible set (study-locus) in the colocalisation pair.
-    pub async fn other_study_locus(
+    async fn other_study_locus(
         &self,
         ctx: &Context<'_>,
-    ) -> async_graphql::Result<Option<credible_set::CredibleSet>> {
-        credible_set::load_credible_set(ctx, self.other_study_locus_id.clone()).await
+    ) -> async_graphql::Result<Option<CredibleSet>> {
+        load_credible_set(ctx, self.other_study_locus_id.clone()).await
     }
 }
