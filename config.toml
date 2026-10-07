@@ -1,6 +1,8 @@
 data_release = "26.09"
-product = "platform"
 log_level = "trace"
+bind_address = "0.0.0.0:8080"
+# cert_file = ""
+# key_file = ""
 
 clickhouse_url = "http://localhost:8123"
 clickhouse_max_execution_time = "30s"
@@ -9,7 +11,7 @@ opensearch_timeout = "10s"
 max_depth = 20
 max_complexity = 1000
 
-[plugins.ai-api]
-base_url = "http://localhost:8081"
-[plugins.gsea]
-base_url = "http://localhost:8082"
+# [plugins.ai-api]
+# base_url = "http://localhost:8081"
+# [plugins.gsea]
+# base_url = "http://localhost:8082"

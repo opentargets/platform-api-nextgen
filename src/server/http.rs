@@ -1,5 +1,7 @@
 //! HTTP server: router assembly and startup.
 
+use std::net::SocketAddr;
+
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
     Router,
@@ -8,8 +10,8 @@ use axum::{
     response::{Html, IntoResponse},
     routing::{any, get},
 };
+use axum_server::tls_rustls::RustlsConfig;
 use reqwest::{Method, header};
-use tokio::net::TcpListener;
 use tower_http::{
     compression::CompressionLayer,
     cors::{Any, CorsLayer},
@@ -58,13 +60,27 @@ pub fn router(state: AppState) -> Router {
 /// Panics if the server fails to bind to the specified address or if there is a server error during
 /// execution.
 pub async fn serve(state: AppState) {
-    let addr = &state.config.bind_address;
-    let listener = TcpListener::bind(addr)
-        .await
-        .unwrap_or_else(|e| panic!("failed to bind {addr}: {e}"));
+    let cfg = &state.config;
+    let addr: SocketAddr = cfg.bind_address.parse().expect("invalid bind address");
 
-    tracing::info!("listening on {addr}");
-    axum::serve(listener, router(state))
-        .await
-        .expect("server error");
+    match (&cfg.cert_file, &cfg.key_file) {
+        (Some(cert), Some(key)) => {
+            let tls = RustlsConfig::from_pem_file(cert, key)
+                .await
+                .unwrap_or_else(|e| panic!("failed to load tls cert or key: {e}"));
+            tracing::info!("listening on https://{addr}");
+            axum_server::bind_rustls(addr, tls)
+                .serve(router(state).into_make_service())
+                .await
+                .expect("server error");
+        }
+        (None, None) => {
+            tracing::info!("listening on http://{addr}");
+            axum_server::bind(addr)
+                .serve(router(state).into_make_service())
+                .await
+                .expect("server error");
+        }
+        _ => panic!("cert_file and key_file must both be set or both unset"),
+    }
 }

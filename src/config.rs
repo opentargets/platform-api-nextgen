@@ -50,6 +50,10 @@ pub struct Config {
     /// The address to bind the HTTP server to. Defaults to `0.0.0.0:8080`.
     #[serde(default = "default_bind_address")]
     pub bind_address: String,
+    /// The certificate file to use for HTTPS.
+    pub cert_file: Option<PathBuf>,
+    /// The private key file to use for HTTPS.
+    pub key_file: Option<PathBuf>,
 
     /// Database settings.
     /// The URL of the ClickHouse database.
