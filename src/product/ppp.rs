@@ -13,6 +13,7 @@ use crate::{
             ClinicalIndicationFromDiseaseLoader, ClinicalIndicationFromDrugLoader,
         },
         clinical_report::{ClinicalReportLoader, ClinicalReportQuery},
+        clinical_target::ClinicalTargetLoader,
         colocalisation::ColocalisationLoader,
         credible_set::{CredibleSetLoader, CredibleSetQuery},
         disease::{DiseaseLoader, DiseaseQuery},
@@ -82,6 +83,7 @@ impl Product for Ppp {
             .data(loader::<ClinicalIndicationFromDiseaseLoader>(ch))
             .data(loader::<ClinicalIndicationFromDrugLoader>(ch))
             .data(loader::<ClinicalReportLoader>(ch))
+            .data(loader::<ClinicalTargetLoader>(ch))
             .data(loader::<CredibleSetLoader>(ch))
             .data(loader::<ColocalisationLoader>(ch))
             .data(loader::<DiseaseLoader>(ch))

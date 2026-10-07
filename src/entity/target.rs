@@ -21,6 +21,7 @@ use crate::{
             load_association_timeseries,
         },
         baseline_expression::{BaselineExpression, load_baseline_expression_by_target},
+        clinical_target::{ClinicalTarget, load_clinical_targets_from_target},
         credible_set,
         disease::Disease,
         evidence::{Evidence, EvidenceKey, load_evidences},
@@ -697,6 +698,16 @@ impl Target {
         )
         .await?;
         Ok(all.query().paginate(page))
+    }
+
+    /// Target-drug associations derived from clinical reports for this target.
+    async fn drug_and_clinical_candidates(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the drug and clinical candidates.")] page: Page,
+    ) -> async_graphql::Result<Paged<ClinicalTarget>> {
+        let items = load_clinical_targets_from_target(ctx, self.id.clone()).await?;
+        Ok(items.query().paginate(page))
     }
 
     /// Baseline expression
