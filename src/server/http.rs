@@ -29,14 +29,18 @@ async fn graphql(State(state): State<AppState>, req: GraphQLRequest) -> GraphQLR
 }
 
 /// Returns the HTTP router for the API.
-pub fn router(state: AppState) -> Router {
+pub fn router(state: AppState) -> (Router, Router) {
     let release = format!("/{}", state.config.data_release_main());
     let api: Router<AppState> = Router::new().route(
         "/graphql",
         get(graphiql).post(graphql).layer(from_fn(post_cache)),
     );
 
-    Router::new()
+    let (prom_layer, metric_handle) = axum_prometheus::PrometheusMetricLayer::pair();
+    let metrics_router =
+        Router::new().route("/metrics", get(|| async move { metric_handle.render() }));
+
+    let api_router = Router::new()
         .route("/favicon.ico", get(favicon))
         .route("/plugin/{*path}", any(handle))
         .nest(&release, api.clone()) // e.g. `/2606` for data release `26.06.1`
@@ -49,7 +53,9 @@ pub fn router(state: AppState) -> Router {
                 .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
                 .allow_headers(Any),
         )
-        .with_state(state)
+        .layer(prom_layer)
+        .with_state(state);
+    (api_router, metrics_router)
 }
 
 /// Starts the HTTP server and listens for incoming requests.
@@ -63,8 +69,18 @@ pub async fn serve(state: AppState) {
         .await
         .unwrap_or_else(|e| panic!("failed to bind {addr}: {e}"));
 
-    tracing::info!("listening on {addr}");
-    axum::serve(listener, router(state))
+    let metrics_addr = &state.config.metrics_bind_address;
+    let metrics_listener = TcpListener::bind(metrics_addr)
         .await
-        .expect("server error");
+        .unwrap_or_else(|e| panic!("failed to bind metrics {metrics_addr}: {e}"));
+
+    tracing::info!("API listening on {addr}");
+    tracing::info!("Metrics listening on {addr}");
+
+    let (api_router, metrics_router) = router(state);
+
+    tokio::try_join!(
+        axum::serve(listener, api_router),
+        axum::serve(metrics_listener, metrics_router),
+    );
 }

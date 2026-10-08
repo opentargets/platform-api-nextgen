@@ -12,6 +12,7 @@ product-ppp = []
 async-graphql = { version = "7.2.1", features = ["chrono", "dataloader", "tracing"] }
 async-graphql-axum = "7.2.1"
 axum = "0.8.9"
+axum-prometheus = "0.10.1"
 chrono = { version = "0.4.45", features = ["serde"] }
 clap = { version = "4.6.6", features = ["derive"] }
 clickhouse = { version = "0.15.1", features = ["chrono"] }
