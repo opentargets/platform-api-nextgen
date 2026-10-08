@@ -25,6 +25,7 @@ use crate::{
         interaction::InteractionLoader,
         l2g_predictions::L2GPredictionsLoader,
         locus::LocusLoader,
+        mapping::MappingQuery,
         mechanisms_of_action::MechanismsOfActionLoader,
         meta::MetaQuery,
         mouse_phenotype::MousePhenotypeLoader,
@@ -53,6 +54,7 @@ pub struct Query(
     MetaQuery,           // API data (version, data release, product, etc.)
     SearchQuery,         // Search bar functionality
     FacetQuery,          // Facet search for AOTF
+    MappingQuery,        // Map terms to entity IDs
     ClinicalReportQuery, // Clinical reports
     CredibleSetQuery,    // Credible sets
     DiseaseQuery,        // Diseases

@@ -1,7 +1,9 @@
 use std::collections::HashSet;
 
-use async_graphql::{ComplexObject, Context, Object, SimpleObject, Union, dataloader::DataLoader};
-use serde::Deserialize;
+use async_graphql::{
+    ComplexObject, Context, Enum, Object, SimpleObject, Union, dataloader::DataLoader,
+};
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use tracing::instrument;
 
@@ -9,12 +11,15 @@ use crate::{
     datasource::opensearch::OpenSearch,
     entity::{
         disease::{Disease, DiseaseLoader},
+        drug::{Drug, DrugLoader},
         study::{Study, StudyLoader},
+        target::{Target, TargetLoader},
+        variant::{Variant, VariantLoader},
     },
     query::paginate::Page,
 };
 
-const SEARCH_INDICES: &[&str] = &[
+pub(super) const SEARCH_INDICES: &[&str] = &[
     "search_disease",
     "search_target",
     "search_drug",
@@ -29,7 +34,7 @@ const SEARCH_INDICES: &[&str] = &[
 struct SearchDoc {
     id: String,
     name: String,
-    entity: String,
+    entity: EntityType,
     #[serde(default)]
     category: Vec<String>,
     description: Option<String>,
@@ -46,15 +51,43 @@ struct SearchDoc {
 fn default_multiplier() -> f64 { 1.0 }
 
 /// Union of core Platform entities (target, disease, drug, variant, study).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Enum)]
+#[serde(rename_all = "lowercase")]
+#[graphql(rename_items = "lowercase")]
+pub enum EntityType {
+    Disease,
+    Drug,
+    Study,
+    Target,
+    Variant,
+}
+
+impl EntityType {
+    /// Name of the search index holding this entity type.
+    const fn index(self) -> &'static str {
+        match self {
+            Self::Disease => "search_disease",
+            Self::Drug => "search_drug",
+            Self::Study => "search_study",
+            Self::Target => "search_target",
+            Self::Variant => "search_variant",
+        }
+    }
+}
+
 #[derive(Union)]
+#[allow(clippy::large_enum_variant)]
 pub enum EntityObject {
     Disease(Disease),
+    Drug(Drug),
     Study(Study),
+    Target(Target),
+    Variant(Variant),
 }
 
 /// Full-text search hit describing a single entity and its relevance to the
 /// query.
-#[derive(Debug, SimpleObject)]
+#[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex)]
 pub struct SearchResult {
     /// Entity identifier (e.g., Ensembl, EFO, ChEMBL, variant or study ID).
@@ -62,7 +95,7 @@ pub struct SearchResult {
     /// Primary display name for the entity.
     name: String,
     /// Entity type (target, disease, drug, variant, study).
-    entity: String,
+    entity: EntityType,
     /// List of categories the hit belongs to.
     category: Vec<String>,
     /// Short description or summary of the entity.
@@ -74,7 +107,7 @@ pub struct SearchResult {
     /// List of n-grams derived from the name used for fuzzy matching.
     ngrams: Vec<String>,
     /// Highlighted text snippets showing where the query matched.
-    highlights: Vec<String>,
+    pub(super) highlights: Vec<String>,
     /// Score boosting multiplier applied to the hit during ranking.
     multiplier: f64,
     /// Relevance score returned from the search engine for this hit.
@@ -114,9 +147,9 @@ pub struct SearchResultAggs {
 #[derive(Debug, SimpleObject)]
 pub struct SearchResults {
     /// Total number of results for the current query and entity filter.
-    total: u64,
+    pub(super) total: u64,
     /// Combined list of search hits across requested entities.
-    hits: Vec<SearchResult>,
+    pub(super) hits: Vec<SearchResult>,
     /// Facet aggregations by entity and category for the current query.
     aggregations: Option<SearchResultAggs>,
 }
@@ -214,22 +247,26 @@ fn build_search_strategy(query: &str) -> Vec<Value> {
     should
 }
 
-/// Builds the request that gets the search hits.
-fn build_hits_body(query: &str, entities: Option<&[String]>, page: Page) -> Value {
-    let filter = entities.map_or_else(|| json!([]), |e| json!([{ "terms": { "entity.raw": e } }]));
+/// Selects the indices to search for the requested entity types.
+///
+/// Each entity type lives in its own index, so narrowing by entity is done by choosing indices
+/// rather than filtering documents. No entities (or an empty list) means all search indices.
+pub(super) fn search_indices(entities: Option<&[EntityType]>) -> Vec<&'static str> {
+    match entities {
+        Some(e) if !e.is_empty() => e.iter().map(|e| e.index()).collect(),
+        _ => SEARCH_INDICES.to_vec(),
+    }
+}
 
+/// Builds the request that gets the search hits.
+fn build_hits_body(query: &str, page: Page) -> Value {
     json!({
         "from": page.index * page.size,
         "size": page.size,
         "track_total_hits": true,         // compute the exact total, not a capped estimate
         "query": {
-            "bool": {                     // combine scoring and filtering
-                "must": {                 // scoring part (contributes to relevance)
-                    "bool": {
-                        "should": build_search_strategy(query)
-                    }
-                },
-                "filter": filter          // non-scoring narrowing by entity type
+            "bool": {
+                "should": build_search_strategy(query)
             }
         },
         "highlight": {
@@ -256,7 +293,7 @@ fn build_hits_body(query: &str, entities: Option<&[String]>, page: Page) -> Valu
     })
 }
 
-fn parse_hits(json: &Value) -> SearchResults {
+pub(super) fn parse_hits(json: &Value) -> SearchResults {
     let total = json["hits"]["total"]["value"].as_u64().unwrap_or(0);
     let hits = json["hits"]["hits"]
         .as_array()
@@ -302,6 +339,31 @@ fn parse_hits(json: &Value) -> SearchResults {
     }
 }
 
+/// Builds the aggregations by entity type and category, plus the distinct id count.
+pub(super) fn entity_aggs() -> Value {
+    json!({
+        "entities": {
+            "terms": {
+                "field": "entity.raw",
+                "size": 1000
+            },
+            "aggs": {
+                "categories": {
+                    "terms": {
+                        "field": "category.raw",
+                        "size": 1000
+                    }
+                }
+            }
+        },
+        "total": {
+            "cardinality": {
+                "field": "id.raw"
+            }
+        }
+    })
+}
+
 /// Builds the request that gets the search aggregations.
 fn build_aggs_body(query: &str) -> Value {
     json!({
@@ -311,31 +373,11 @@ fn build_aggs_body(query: &str) -> Value {
                 "should": build_search_strategy(query)
             }
         },
-        "aggs": {
-            "entities": {
-                "terms": {
-                    "field": "entity.raw",
-                    "size": 1000
-                },
-                "aggs": {
-                    "categories": {
-                        "terms": {
-                            "field": "category.raw",
-                            "size": 1000
-                        }
-                    }
-                }
-            },
-            "total": {
-                "cardinality": {
-                    "field": "id.raw"
-                }
-            }
-        }
+        "aggs": entity_aggs()
     })
 }
 
-fn parse_aggs(json: &Value) -> Option<SearchResultAggs> {
+pub(super) fn parse_aggs(json: &Value) -> Option<SearchResultAggs> {
     let aggs = json.get("aggregations")?;
     let entities = aggs["entities"]["buckets"]
         .as_array()
@@ -383,7 +425,7 @@ impl SearchQuery {
         ctx: &Context<'_>,
         #[graphql(desc = "Search query string.")] query_string: String,
         #[graphql(desc = "List of entity names to search for (target, disease, drug, etc.).")]
-        entity_names: Option<Vec<String>>,
+        entity_names: Option<Vec<EntityType>>,
         #[graphql(default, desc = "Pagination for the search results.")] page: Page,
     ) -> Result<SearchResults, async_graphql::Error> {
         if query_string.is_empty() {
@@ -395,11 +437,12 @@ impl SearchQuery {
         }
 
         let os = ctx.data::<OpenSearch>()?;
-        let hits_body = build_hits_body(&query_string, entity_names.as_deref(), page);
+        let hits_indices = search_indices(entity_names.as_deref());
+        let hits_body = build_hits_body(&query_string, page);
         let aggs_body = build_aggs_body(&query_string);
 
         let (hits_json, aggs_json) = tokio::try_join!(
-            os.search(SEARCH_INDICES, hits_body),
+            os.search(&hits_indices, hits_body),
             os.search(SEARCH_INDICES, aggs_body),
         )
         .map_err(|e| async_graphql::Error::new(e.to_string()))?;
@@ -417,22 +460,42 @@ impl SearchResult {
         &self,
         ctx: &Context<'_>,
     ) -> Result<Option<EntityObject>, async_graphql::Error> {
-        match self.entity.as_str() {
-            "disease" => {
+        match self.entity {
+            EntityType::Disease => {
                 let loader = ctx.data::<DataLoader<DiseaseLoader>>()?;
                 Ok(loader
                     .load_one(self.id.clone())
                     .await?
                     .map(EntityObject::Disease))
             }
-            "study" => {
+            EntityType::Drug => {
+                let loader = ctx.data::<DataLoader<DrugLoader>>()?;
+                Ok(loader
+                    .load_one(self.id.clone())
+                    .await?
+                    .map(EntityObject::Drug))
+            }
+            EntityType::Study => {
                 let loader = ctx.data::<DataLoader<StudyLoader>>()?;
                 Ok(loader
                     .load_one(self.id.clone())
                     .await?
                     .map(EntityObject::Study))
             }
-            _ => Ok(None),
+            EntityType::Target => {
+                let loader = ctx.data::<DataLoader<TargetLoader>>()?;
+                Ok(loader
+                    .load_one(self.id.clone())
+                    .await?
+                    .map(EntityObject::Target))
+            }
+            EntityType::Variant => {
+                let loader = ctx.data::<DataLoader<VariantLoader>>()?;
+                Ok(loader
+                    .load_one(self.id.clone())
+                    .await?
+                    .map(EntityObject::Variant))
+            }
         }
     }
 }
