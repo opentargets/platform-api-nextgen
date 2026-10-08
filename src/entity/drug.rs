@@ -264,7 +264,10 @@ impl Drug {
         &self,
         ctx: &Context<'_>,
         #[graphql(
-            desc = "List of IDs (EFO disease IDs, Ensembl gene IDs, or ChEMBL molecule IDs)."
+            desc = "Optional list of IDs (EFO disease IDs, Ensembl gene IDs, or ChEMBL molecule IDs) that the
+                    literature must mention along with the main entity. The resulting list of publications will
+                    be narrowed down to those papers mentioning the main entity and **ALL** IDs included in this
+                    list."
         )]
         additional_ids: Option<Vec<String>>,
         #[graphql(desc = "Year at the lower end of the filter.")] start_year: Option<u32>,
