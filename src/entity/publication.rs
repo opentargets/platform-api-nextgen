@@ -88,8 +88,8 @@ pub struct PublicationLoader {
 const QUERY: &str = "
 WITH
     (year, month) BETWEEN (?, ?) AND (?, ?) AS in_range
-SELECT
-    CAST(? AS UInt64) AS key,
+SELECT                                                          -- SECOND: Builds one row per LiteratureKey
+    CAST(? AS UInt64) AS key,                                   -- Index of the LiteratureKey, to match results back to each request
     countIf(in_range) AS count,
     min(year) AS earliestPubYear,
     arraySlice(                                                 -- 3.  Slice the array using 3a
@@ -100,8 +100,18 @@ SELECT
         ),
         ?, ?                                                    -- 3a. offset (index*size+1), size
     ) AS rows
-FROM literature_entity_lut
-WHERE keywordId IN ?                                            -- Filter by passed ids
+FROM (
+    SELECT                                                      -- FIRST: Builds the intersection of publications mentioning id + additional ids
+        pmid,                                                   -- One row per publication
+        any(pmcid) AS pmcid,
+        any(year) AS year,
+        any(month) AS month,
+        sum(relevance) AS relevance                             -- Sums relevance of all the publications mentioning additional ids
+    FROM literature_entity_lut
+    WHERE keywordId IN ?                                        -- Any row whose keyword is one of the ids
+    GROUP BY pmid
+    HAVING uniqExact(keywordId) = ?                             -- Intersection: only pmids matched by EVERY id
+)
 ";
 
 impl Loader<LiteratureKey> for PublicationLoader {
@@ -127,6 +137,7 @@ impl Loader<LiteratureKey> for PublicationLoader {
                     .bind(k.page.index * k.page.size + 1)
                     .bind(k.page.size)
                     .bind(&k.ids)
+                    .bind(k.ids.len() as u64)
             });
 
         // Run query.
@@ -161,12 +172,17 @@ pub async fn load_publications(
     ctx: &Context<'_>,
     args: PublicationArguments,
 ) -> async_graphql::Result<Option<PagedWithStats<Publication>>> {
+    let mut ids = args.ids;
+    ids.sort_unstable();
+    ids.dedup();
+
     let key = LiteratureKey {
-        ids: args.ids,
+        ids,
         start: (args.start_year.unwrap_or(0), args.start_month.unwrap_or(1)),
         end: (args.end_year.unwrap_or(9999), args.end_month.unwrap_or(12)),
         page: args.page,
     };
+
     ctx.data_unchecked::<DataLoader<PublicationLoader>>()
         .load_one(key)
         .await
