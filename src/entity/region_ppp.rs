@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use async_graphql::{
-    ComplexObject, Context, CustomValidator, InputObject, InputValueError, Object, SimpleObject,
+    ComplexObject, Context, InputObject, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -21,56 +21,31 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 pub struct Region {
-    /// Chromosome
+    /// Chromosome the region is contained in.
     chromosome: Chromosome,
-    /// Start position
+    /// Start position.
     start: u32,
-    /// End position
+    /// End position.
     end: u32,
 }
+
+const MAX_REGION_SPAN: u32 = 5_000_000;
 
 impl Region {
-    #[must_use]
-    pub fn new(chromosome: Chromosome, start: u32, end: u32) -> Self {
-        Self {
-            chromosome,
-            start,
-            end,
-        }
-    }
-}
-
-/// Region with chromosome, start and end positions.
-#[derive(Debug, Clone, Deserialize, SimpleObject, InputObject)]
-#[serde(rename_all = "camelCase")]
-pub struct RegionInput {
-    /// Chromosome
-    chromosome: Chromosome,
-    /// Start position
-    start: u32,
-    /// End position
-    end: u32,
-}
-
-struct MaxRange {
-    max: u32,
-}
-
-impl MaxRange {
-    fn new(max: u32) -> Self { Self { max } }
-}
-
-impl CustomValidator<RegionInput> for MaxRange {
-    fn check(&self, value: &RegionInput) -> Result<(), InputValueError<RegionInput>> {
-        match value.end.checked_sub(value.start) {
-            Some(diff) if diff <= self.max => Ok(()),
-            Some(diff) => Err(InputValueError::custom(format!(
-                "end - start must be less than {}, got {}",
-                self.max, diff
+    #[allow(clippy::missing_errors_doc)]
+    pub fn try_new(chromosome: Chromosome, start: u32, end: u32) -> async_graphql::Result<Self> {
+        match end.checked_sub(start) {
+            Some(span) if span <= MAX_REGION_SPAN => Ok(Self {
+                chromosome,
+                start,
+                end,
+            }),
+            Some(span) => Err(async_graphql::Error::new(format!(
+                "end - start must not exceed {MAX_REGION_SPAN}, got {span}"
             ))),
-            None => Err(InputValueError::custom(
-                "start ({}) must not be greater than end ({})",
-            )),
+            None => Err(async_graphql::Error::new(format!(
+                "start ({start}) must not be greater than end ({end})"
+            ))),
         }
     }
 }
@@ -193,7 +168,7 @@ impl Region {
     async fn targets(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Pagination for the Targets.")] page: Page,
+        #[graphql(default, desc = "Pagination for the targets.")] page: Page,
     ) -> async_graphql::Result<Paged<Target>> {
         let key = Key::new(self.chromosome, self.start, self.end, page.index, page.size);
         load_targets_by_region(ctx, key).await
@@ -209,14 +184,10 @@ impl RegionQuery {
     #[allow(clippy::unused_async)]
     async fn region(
         &self,
-        #[graphql(desc = "Region parameters.", validator(custom = "MaxRange::new(5000000)"))]
-        region_input: RegionInput,
+        #[graphql(desc = "Chromosome the region is contained in.")] chromosome: Chromosome,
+        #[graphql(desc = "Start position.")] start: u32,
+        #[graphql(desc = "End position.")] end: u32,
     ) -> async_graphql::Result<Region> {
-        let region = Region::new(
-            region_input.chromosome,
-            region_input.start,
-            region_input.end,
-        );
-        Ok(region)
+        Region::try_new(chromosome, start, end)
     }
 }

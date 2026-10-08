@@ -36,7 +36,7 @@ use crate::{
         },
         protein_coding_coordinates::ProteinCodingCoordinateVariantLoader,
         publication::PublicationLoader,
-        region::{RegionQuery, TargetsByRegionLoader},
+        region_ppp::{RegionQuery, TargetsByRegionLoader},
         search::SearchQuery,
         search_facet::FacetQuery,
         sequence_ontology::SequenceOntologyTermLoader,
