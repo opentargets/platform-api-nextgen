@@ -20,6 +20,7 @@ pub mod hpo;
 pub mod interaction;
 pub mod l2g_predictions;
 pub mod locus;
+pub mod mapping;
 pub mod mechanisms_of_action;
 pub mod meta;
 pub mod mouse_phenotype;
