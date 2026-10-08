@@ -1,4 +1,5 @@
 use async_graphql::SimpleObject;
+use clickhouse::Row;
 use serde::Deserialize;
 
 use crate::entity::clinical_report::ClinicalDiseaseListItem;
@@ -7,7 +8,7 @@ use crate::entity::clinical_report::ClinicalDiseaseListItem;
 
 /// Target-drug associations derived from clinical reports, capturing the maximum clinical stage and
 /// associated diseases for each target-drug pair.
-#[derive(Debug, Clone, Deserialize, SimpleObject)]
+#[derive(Debug, Clone, Deserialize, SimpleObject, Row)]
 #[serde(rename_all = "camelCase")]
 pub struct ClinicalTarget {
     id: String,
