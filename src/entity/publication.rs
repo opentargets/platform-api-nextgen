@@ -18,6 +18,15 @@ use crate::{
 
 // ---- models ----
 
+/// Relevance of a publication to one of the queried ids.
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
+pub struct KeywordRelevance {
+    /// Queried id.
+    id: String,
+    /// Relevance of the publication to this id.
+    relevance: f64,
+}
+
 /// Referenced publication information.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
@@ -31,6 +40,8 @@ pub struct Publication {
     year: u16,
     #[graphql(skip)]
     month: u8,
+    /// Relevance to each queried id.
+    relevances: Vec<KeywordRelevance>,
 }
 
 #[ComplexObject]
@@ -92,11 +103,11 @@ SELECT                                                          -- SECOND: Build
     CAST(? AS UInt64) AS key,                                   -- Index of the LiteratureKey, to match results back to each request
     countIf(in_range) AS count,
     min(year) AS earliestPubYear,
-    arraySlice(                                                 -- 3.  Slice the array using 3a
-        arrayReverseSort(                                       -- 2.  Sort reverse using 1c
-            (row, sort_key) -> sort_key,                        -- 1c. Lambda for sorting (returns 1a)
-            groupArrayIf((pmid, pmcid, year, month), in_range), -- 1b. Return tuple
-            groupArrayIf((relevance, year, month), in_range)    -- 1a. Sort tuple: relevance, year, month
+    arraySlice(                                                                  -- 3.  Slice the array using 3a
+        arrayReverseSort(                                                        -- 2.  Sort reverse using 1c
+            (row, sort_key) -> sort_key,                                         -- 1c. Lambda for sorting (returns 1a)
+            groupArrayIf((pmid, pmcid, year, month, relevances), in_range),      -- 1b. Return tuple
+            groupArrayIf((min_relevance, sum_relevance, year, month), in_range)  -- 1a. Sort tuple: min_relevance, sum_relevance, year, month
         ),
         ?, ?                                                    -- 3a. offset (index*size+1), size
     ) AS rows
@@ -106,7 +117,9 @@ FROM (
         any(pmcid) AS pmcid,
         any(year) AS year,
         any(month) AS month,
-        sum(relevance) AS relevance                             -- Sums relevance of all the publications mentioning additional ids
+        min(relevance) AS min_relevance,                        -- Weakest match across the ids
+        sum(relevance) AS sum_relevance,                        -- Total match, breaks ties
+        groupArray((keywordId, relevance)) AS relevances        -- Per-id relevance
     FROM literature_entity_lut
     WHERE keywordId IN ?                                        -- Any row whose keyword is one of the ids
     GROUP BY pmid
