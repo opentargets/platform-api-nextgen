@@ -27,6 +27,7 @@ pub mod otar_project_ppp;
 pub mod pharmacogenomics;
 pub mod protein_coding_coordinates;
 pub mod publication;
+pub mod region_ppp;
 pub mod search;
 pub mod search_facet;
 pub mod sequence_ontology;
