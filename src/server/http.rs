@@ -11,6 +11,7 @@ use axum::{
     routing::{any, get},
 };
 use axum_server::tls_rustls::RustlsConfig;
+use axum_prometheus::PrometheusMetricLayerBuilder;
 use reqwest::{Method, header};
 use tower_http::{
     compression::CompressionLayer,
@@ -18,7 +19,6 @@ use tower_http::{
 };
 
 use crate::{AppState, plugin::handler_rest::handle, server::cache::post_cache};
-
 // Some static assets served directly by the HTTP server.
 const GRAPHIQL: &str = include_str!("assets/graphiql.html");
 const FAVICON: &[u8] = include_bytes!("assets/favicon.png");
@@ -31,14 +31,21 @@ async fn graphql(State(state): State<AppState>, req: GraphQLRequest) -> GraphQLR
 }
 
 /// Returns the HTTP router for the API.
-pub fn router(state: AppState) -> Router {
+pub fn router(state: AppState) -> (Router, Router) {
     let release = format!("/{}", state.config.data_release_main());
     let api: Router<AppState> = Router::new().route(
         "/graphql",
         get(graphiql).post(graphql).layer(from_fn(post_cache)),
     );
 
-    Router::new()
+    let (_, metric_handle) = axum_prometheus::PrometheusMetricLayer::pair();
+    let prom_layer = PrometheusMetricLayerBuilder::new()
+        .with_prefix("platform_api")
+        .build();
+    let metrics_router =
+        Router::new().route("/metrics", get(|| async move { metric_handle.render() }));
+
+    let api_router = Router::new()
         .route("/favicon.ico", get(favicon))
         .route("/plugin/{*path}", any(handle))
         .nest(&release, api.clone()) // e.g. `/2606` for data release `26.06.1`
@@ -51,7 +58,9 @@ pub fn router(state: AppState) -> Router {
                 .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
                 .allow_headers(Any),
         )
-        .with_state(state)
+        .layer(prom_layer)
+        .with_state(state);
+    (api_router, metrics_router)
 }
 
 /// Starts the HTTP server and listens for incoming requests.
@@ -63,23 +72,34 @@ pub async fn serve(state: AppState) {
     let cfg = &state.config;
     let addr: SocketAddr = cfg.bind_address.parse().expect("invalid bind address");
 
+    let metrics_addr: SocketAddr = cfg.metrics_bind_address.parse().expect("invalid metrics bind address");
+
     match (&cfg.cert_file, &cfg.key_file) {
         (Some(cert), Some(key)) => {
             let tls = RustlsConfig::from_pem_file(cert, key)
                 .await
                 .unwrap_or_else(|e| panic!("failed to load tls cert or key: {e}"));
             tracing::info!("listening on https://{addr}");
-            axum_server::bind_rustls(addr, tls)
-                .serve(router(state).into_make_service())
-                .await
-                .expect("server error");
+            tracing::info!("Metrics listening on {metrics_addr}");
+
+            let (api_router, metrics_router) = router(state);
+
+            let _ = tokio::try_join!(
+                axum_server::bind_rustls(addr, tls.clone()).serve(api_router.into_make_service()),
+                axum_server::bind_rustls(metrics_addr, tls).serve(metrics_router.into_make_service()),
+            );
         }
         (None, None) => {
             tracing::info!("listening on http://{addr}");
-            axum_server::bind(addr)
-                .serve(router(state).into_make_service())
-                .await
-                .expect("server error");
+            tracing::info!("Metrics listening on {metrics_addr}");
+
+            let (api_router, metrics_router) = router(state);
+
+            
+            let _ = tokio::try_join!(
+                axum_server::bind(addr).serve(api_router.into_make_service()),
+                axum_server::bind(metrics_addr).serve(metrics_router.into_make_service()),
+            );
         }
         _ => panic!("cert_file and key_file must both be set or both unset"),
     }

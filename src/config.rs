@@ -54,7 +54,9 @@ pub struct Config {
     pub cert_file: Option<PathBuf>,
     /// The private key file to use for HTTPS.
     pub key_file: Option<PathBuf>,
-
+    /// The address to bind the HTTP server to. Defaults to `0.0.0.0:9000`.
+    #[serde(default = "default_metrics_bind_address")]
+    pub metrics_bind_address: String,
     /// Database settings.
     /// The URL of the ClickHouse database.
     pub clickhouse_url: String,
@@ -122,6 +124,7 @@ impl Config {
 
 fn default_log_level() -> String { "info".to_string() }
 fn default_bind_address() -> String { "0.0.0.0:8080".to_string() }
+fn default_metrics_bind_address() -> String { "0.0.0.0:9000".to_string() }
 fn default_opensearch_timeout() -> Duration { Duration::from_secs(10) }
 fn default_max_depth() -> usize { 15 }
 fn default_max_complexity() -> usize { 1000 }
