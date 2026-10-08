@@ -6,7 +6,7 @@ use serde::{
     de::{DeserializeOwned, IntoDeserializer},
 };
 
-use crate::config::Config;
+use crate::{config::Config, server::metric_utils};
 
 /// A ClickHouse client wrapper.
 #[derive(Clone)]
@@ -42,7 +42,10 @@ impl ClickHouse {
 
     /// Start a query. `?fields` expands to the row's columns, `?` binds a value,
     /// `sql::Identifier` binds table names from config.
-    pub fn query(&self, sql: &str) -> clickhouse::query::Query { self.0.query(sql) }
+    pub fn query(&self, sql: &str) -> clickhouse::query::Query {
+        metric_utils::clickhouse_queries();
+        self.0.query(sql)
+    }
 
     /// Readiness probe.
     ///
