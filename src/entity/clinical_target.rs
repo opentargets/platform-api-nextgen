@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use async_graphql::{SimpleObject, dataloader::Loader};
+use async_graphql::{
+    Context, SimpleObject,
+    dataloader::{DataLoader, Loader},
+};
 use clickhouse::Row;
 use derive_more::From;
 use serde::Deserialize;
@@ -60,4 +63,21 @@ fn group_by(
         acc.entry(key(&row).clone()).or_default().push(row);
         acc
     })
+}
+
+/// Loads the clinical target recorded for a single target by its target id.
+///
+/// # Returns
+/// The target's clinical target, or None if the target has none.
+/// # Errors
+/// Returns an error if the clinical target could not be loaded.
+pub async fn load_clinical_targets_from_target(
+    ctx: &Context<'_>,
+    ensembl_id: String,
+) -> async_graphql::Result<Vec<ClinicalTarget>> {
+    Ok(ctx
+        .data_unchecked::<DataLoader<ClinicalTargetLoader>>()
+        .load_one(ensembl_id)
+        .await?
+        .unwrap_or_default())
 }
