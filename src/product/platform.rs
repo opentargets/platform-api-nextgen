@@ -21,6 +21,7 @@ use crate::{
         drug_warning::DrugWarningLoader,
         enhancer_to_gene::EnhancerToGeneLoader,
         evidence::EvidenceLoader,
+        evidence_source::EvidenceSourceQuery,
         gene_ontology::GeneOntologyLoader,
         hpo::HpoLoader,
         interaction::InteractionLoader,
@@ -59,6 +60,7 @@ pub struct Query(
     ClinicalReportQuery, // Clinical reports
     CredibleSetQuery,    // Credible sets
     DiseaseQuery,        // Diseases
+    EvidenceSourceQuery, // Evidence source
     StudyQuery,          // Studies
     DrugQuery,           // Drugs
     VariantQuery,        // Variants

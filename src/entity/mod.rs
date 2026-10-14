@@ -16,6 +16,7 @@ pub mod drug;
 pub mod drug_warning;
 pub mod enhancer_to_gene;
 pub mod evidence;
+pub mod evidence_source;
 pub mod gene_ontology;
 pub mod hpo;
 pub mod interaction;
