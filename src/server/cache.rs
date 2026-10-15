@@ -15,7 +15,7 @@ use axum::{
 use moka::future::Cache;
 use serde_json::Value;
 
-use crate::config::CACHE_REQUEST_SIZE;
+use crate::{config::CACHE_REQUEST_SIZE, server::metric_utils};
 
 fn human(bytes: u64) -> String {
     const UNITS: [&str; 5] = ["B", "KiB", "MiB", "GiB", "TiB"];
@@ -80,11 +80,13 @@ pub async fn post_cache(req: Request, next: Next) -> Response {
             "cache hit: key={key} status={status} size={}",
             human(body.len() as u64)
         );
+        metric_utils::cache_hit();
         return build(status, body);
     }
 
     // on cache miss: rebuild request, run handler
     tracing::debug!("cache miss: key={key}");
+    metric_utils::cache_miss();
     let req = Request::from_parts(parts, Body::from(bytes));
     let resp = next.run(req).await;
     let status = resp.status().as_u16();

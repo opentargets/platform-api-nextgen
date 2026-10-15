@@ -8,6 +8,7 @@ use axum::{
     response::{Html, IntoResponse},
     routing::{any, get},
 };
+use axum_prometheus::PrometheusMetricLayerBuilder;
 use reqwest::{Method, header};
 use tokio::net::TcpListener;
 use tower_http::{
@@ -16,7 +17,6 @@ use tower_http::{
 };
 
 use crate::{AppState, plugin::handler_rest::handle, server::cache::post_cache};
-
 // Some static assets served directly by the HTTP server.
 const GRAPHIQL: &str = include_str!("assets/graphiql.html");
 const FAVICON: &[u8] = include_bytes!("assets/favicon.png");
@@ -36,7 +36,10 @@ pub fn router(state: AppState) -> (Router, Router) {
         get(graphiql).post(graphql).layer(from_fn(post_cache)),
     );
 
-    let (prom_layer, metric_handle) = axum_prometheus::PrometheusMetricLayer::pair();
+    let (_, metric_handle) = axum_prometheus::PrometheusMetricLayer::pair();
+    let prom_layer = PrometheusMetricLayerBuilder::new()
+        .with_prefix("platform_api")
+        .build();
     let metrics_router =
         Router::new().route("/metrics", get(|| async move { metric_handle.render() }));
 
@@ -79,7 +82,7 @@ pub async fn serve(state: AppState) {
 
     let (api_router, metrics_router) = router(state);
 
-    tokio::try_join!(
+    let _ = tokio::try_join!(
         axum::serve(listener, api_router),
         axum::serve(metrics_listener, metrics_router),
     );
