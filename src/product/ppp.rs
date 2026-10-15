@@ -22,6 +22,7 @@ use crate::{
         drug_warning::DrugWarningLoader,
         enhancer_to_gene::EnhancerToGeneLoader,
         evidence::EvidenceLoader,
+        evidence_source::EvidenceSourceQuery,
         gene_ontology::GeneOntologyLoader,
         hpo::HpoLoader,
         interaction::InteractionLoader,
@@ -59,6 +60,7 @@ pub struct Query(
     CredibleSetQuery,    // Credible sets
     DiseaseQuery,        // Diseases
     DrugQuery,           // Drugs
+    EvidenceSourceQuery, // Evidence source
     FacetQuery,          // Facet search for AOTF
     MappingQuery,        // Map terms to entity IDs
     MetaQuery,           // API data (version, data release, product, etc.)
