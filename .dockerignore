@@ -1,0 +1,13 @@
+target/
+.git/
+.gitignore
+.claude/
+.zed/
+.graphqlrc
+.DS_Store
+**/.DS_Store
+benchmarks/
+README.md
+config.toml
+Dockerfile
+.dockerignore
