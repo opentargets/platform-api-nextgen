@@ -11,7 +11,7 @@ use serde::Deserialize;
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{target::Target, variant::Chromosome},
-    query::paginate::{Page, Paged},
+    query::paginate::{Page, Paged, page_complexity},
 };
 
 // --- models ---
@@ -165,6 +165,7 @@ pub async fn load_targets_by_region(
 
 #[ComplexObject]
 impl Region {
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn targets(
         &self,
         ctx: &Context<'_>,

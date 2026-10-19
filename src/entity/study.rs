@@ -26,7 +26,7 @@ use crate::{
         cache::{CachedLoader, entity_cache},
         filter::{Filter, IntFilter, StringFilter},
         load_ordered,
-        paginate::{Page, Paged, PagedWithStats},
+        paginate::{Page, Paged, PagedWithStats, page_complexity},
         search::Searchable,
         sort::{Nulls, Sort, SortDirection, SortKey, Term},
         stats::{
@@ -396,6 +396,7 @@ pub struct StudyQuery;
 
 #[Object]
 impl StudyQuery {
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn studies(
         &self,
         ctx: &Context<'_>,
@@ -463,6 +464,7 @@ impl Study {
     /// 95% credible sets for GWAS and molQTL studies. Credible sets include all variants in the
     /// credible set as well as the fine-mapping method and statistics used to estimate the credible
     /// set.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn credible_sets(
         &self,
         ctx: &Context<'_>,

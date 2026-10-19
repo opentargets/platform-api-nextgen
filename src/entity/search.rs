@@ -16,7 +16,7 @@ use crate::{
         target::{Target, TargetLoader},
         variant::{Variant, VariantLoader},
     },
-    query::paginate::Page,
+    query::paginate::{Page, page_complexity},
 };
 
 pub(super) const SEARCH_INDICES: &[&str] = &[
@@ -421,6 +421,7 @@ impl SearchQuery {
     #[instrument(skip(self, ctx))]
     /// Full-text, multi-entity search across all types of entities (targets, diseases, drugs,
     /// variants or studies).
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn search(
         &self,
         ctx: &Context<'_>,

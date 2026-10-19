@@ -17,7 +17,7 @@ use crate::{
         cache::{CachedLoader, entity_cache},
         filter::Filter,
         load_ordered,
-        paginate::{Page, Paged},
+        paginate::{Page, Paged, page_complexity},
     },
 };
 
@@ -189,6 +189,7 @@ pub struct CredibleSetQuery;
 #[Object]
 impl CredibleSetQuery {
     /// Retrieve a list of credible sets by their identifier.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn credible_sets(
         &self,
         ctx: &Context<'_>,
@@ -220,6 +221,7 @@ impl CredibleSet {
         study::load_study(ctx, self.study_id.clone()).await
     }
     /// Predictions from Locus2gene gene assignment model.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn l2g_predictions(
         &self,
         ctx: &Context<'_>,
@@ -229,6 +231,7 @@ impl CredibleSet {
         Ok(l2g.unwrap_or_default().query().paginate(page))
     }
     /// Locus information for all variants in the credible set.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn locus(
         &self,
         ctx: &Context<'_>,
@@ -244,6 +247,7 @@ impl CredibleSet {
     }
     /// GWAS-GWAS and GWAS-molQTL credible set colocalisation results. Dataset includes colocalising
     /// pairs as well as the method and statistics used to estimate the colocalisation.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn colocalisation(
         &self,
         ctx: &Context<'_>,

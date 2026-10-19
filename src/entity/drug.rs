@@ -24,7 +24,7 @@ use crate::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
-        paginate::{Page, Paged, PagedWithStats},
+        paginate::{Page, Paged, PagedWithStats, page_complexity},
         search::Searchable,
         sort::{Nulls, SortDirection, SortKey, Term},
     },
@@ -190,6 +190,7 @@ pub struct DrugQuery;
 #[Object]
 impl DrugQuery {
     /// Retrieve multiple drugs or clinical candidates by identifiers.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn drugs(
         &self,
         ctx: &Context<'_>,
@@ -230,6 +231,7 @@ impl Drug {
     }
 
     /// Warnings present on drug as identified by ChEMBL.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn drug_warnings(
         &self,
         ctx: &Context<'_>,
@@ -240,6 +242,7 @@ impl Drug {
     }
 
     /// Clinical indications for this drug as reported by clinical trial records.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn indications(
         &self,
         ctx: &Context<'_>,
@@ -260,6 +263,7 @@ impl Drug {
 
     /// Return the list of publications that mention the main entity, alone or in combination with
     /// other entities.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn literature_ocurrences(
         &self,
         ctx: &Context<'_>,
@@ -305,6 +309,7 @@ impl Drug {
     /// Pharmacogenomics data linking genetic variants to responses to this drug. Data is integrated
     /// from sources including ClinPGx and describes how genetic variants influence individual
     /// responses to this drug.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn pharmacogenomics(
         &self,
         ctx: &Context<'_>,
@@ -315,6 +320,7 @@ impl Drug {
     }
 
     /// Semantically similar drugs based on a PubMed word embedding model.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn similar_entities(
         &self,
         ctx: &Context<'_>,
@@ -340,6 +346,7 @@ impl Drug {
     }
 
     /// Significant adverse events estimated from pharmacovigilance reports deposited in FAERS.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn adverse_events(
         &self,
         ctx: &Context<'_>,

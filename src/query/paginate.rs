@@ -34,6 +34,7 @@ use crate::{
         variant::Variant,
     },
     query::stats::HasStats,
+    view::gwas_credible_sets_by_variant::GwasCredibleSetsByVariant,
 };
 
 pub const MAX_PAGE_SIZE: u32 = 100_000;
@@ -58,6 +59,13 @@ impl Default for Page {
             size: DEFAULT_PAGE_SIZE,
         }
     }
+}
+/// GraphQL complexity of a paged field: each row costs `child_complexity`.
+#[must_use]
+pub fn page_complexity(page: Page, child_complexity: usize) -> usize {
+    usize::try_from(page.size)
+        .unwrap_or(usize::MAX)
+        .saturating_mul(child_complexity)
 }
 
 /// The result of a paginated query, containing the total number of items and the items.
@@ -90,6 +98,7 @@ impl Default for Page {
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
 #[graphql(concrete(name = "VariantPage", params(Variant)))]
+#[graphql(concrete(name = "GwasCredibleSetByVariantPage", params(GwasCredibleSetsByVariant)))]
 pub struct Paged<T: OutputType> {
     pub count: u64,
     pub rows: Vec<T>,

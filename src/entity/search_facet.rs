@@ -3,7 +3,10 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use tracing::instrument;
 
-use crate::{datasource::opensearch::OpenSearch, query::paginate::Page};
+use crate::{
+    datasource::opensearch::OpenSearch,
+    query::paginate::{Page, page_complexity},
+};
 
 const FACET_INDICES: &[&str] = &["facet_search_disease", "facet_search_target"];
 
@@ -192,6 +195,7 @@ pub struct FacetQuery;
 impl FacetQuery {
     /// Search sets of targets or diseases used to facet associations.
     #[instrument(skip(self, ctx))]
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn facets(
         &self,
         ctx: &Context<'_>,

@@ -37,7 +37,7 @@ use crate::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
-        paginate::{Page, Paged, PagedWithStats},
+        paginate::{Page, Paged, PagedWithStats, page_complexity},
     },
 };
 
@@ -578,6 +578,7 @@ pub struct TargetQuery;
 #[Object]
 impl TargetQuery {
     /// Retrieve multiple targets by target identifiers.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn targets(
         &self,
         ctx: &Context<'_>,
@@ -606,6 +607,7 @@ impl Target {
     /// evidence filters. Returns associations with aggregated scores and evidence counts supporting
     /// the target-disease relationship.
     #[allow(clippy::unused_async)]
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn associated_diseases(
         &self,
         ctx: &Context<'_>,
@@ -665,6 +667,7 @@ impl Target {
     /// Mouse phenotype information linking this human target to observed phenotypes in mouse
     /// models. Provides data on phenotypes observed when the target gene is modified in mouse
     /// models.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn mouse_phenotypes(
         &self,
         ctx: &Context<'_>,
@@ -677,6 +680,7 @@ impl Target {
     /// Target-disease evidence from all data sources supporting associations between this target
     /// and diseases or phenotypes. Evidence entries are reported and scored according to confidence
     /// in the association.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn evidences(
         &self,
         ctx: &Context<'_>,
@@ -701,6 +705,7 @@ impl Target {
     }
 
     /// Target-drug associations derived from clinical reports for this target.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn drug_and_clinical_candidates(
         &self,
         ctx: &Context<'_>,
@@ -711,6 +716,7 @@ impl Target {
     }
 
     /// Baseline expression
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn baseline_expression(
         &self,
         ctx: &Context<'_>,
@@ -734,6 +740,7 @@ impl Target {
     /// Gene essentiality is assessed based on dependencies exhibited when knocking out genes in
     /// cancer cellular models using CRISPR screenings from the Cancer Dependency Map (DepMap)
     /// Project. Gene effects below -1 can be considered dependencies.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn dep_map_essentiality(
         &self,
         ctx: &Context<'_>,
@@ -762,6 +769,7 @@ impl Target {
     /// databases capturing: physical interactions (e.g. IntAct), directional interactions (e.g.
     /// Signor), pathway relationships (e.g. Reactome) or functional interactions (e.g.
     /// STRINGdb).
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn interactions(
         &self,
         ctx: &Context<'_>,
@@ -779,6 +787,7 @@ impl Target {
     }
 
     /// Association time series.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn association_time_series(
         &self,
         ctx: &Context<'_>,
@@ -808,6 +817,7 @@ impl Target {
 
     /// Return the list of publications that mention the main entity, alone or in combination with
     /// other entities.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn literature_ocurrences(
         &self,
         ctx: &Context<'_>,
@@ -853,6 +863,7 @@ impl Target {
     /// Pharmacogenomics data linking genetic variants affecting this target to drug responses. Data
     /// is integrated from sources including ClinPGx and describes how genetic variants influence
     /// individual drug responses when targeting this gene product.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn pharmacogenomics(
         &self,
         ctx: &Context<'_>,
@@ -863,6 +874,7 @@ impl Target {
     }
 
     /// Return similar labels using a model Word2CVec trained with PubMed.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn similar_entities(
         &self,
         ctx: &Context<'_>,
@@ -890,6 +902,7 @@ impl Target {
     /// 95% credible sets for GWAS and molQTL studies. Credible sets include all variants in the
     /// credible set as well as the fine-mapping method and statistics used to estimate the credible
     /// set.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn credible_sets(
         &self,
         ctx: &Context<'_>,
