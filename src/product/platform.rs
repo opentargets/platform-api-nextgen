@@ -49,6 +49,9 @@ use crate::{
         variant::{VariantLoader, VariantQuery},
     },
     product::{Flavor, Product, loader},
+    view::gwas_credible_sets_by_variant::{
+        GwasCredibleSetByVariantLoader, GwasCredibleSetByVariantQuery,
+    },
 };
 
 /// The query root for the `Platform` product.
@@ -67,6 +70,7 @@ pub struct Query(
     DrugQuery,                // Drugs
     VariantQuery,             // Variants
     TargetQuery,              // Targets
+    GwasCredibleSetByVariantQuery,
 );
 
 pub struct Platform;
@@ -110,5 +114,6 @@ impl Product for Platform {
             .data(loader::<TargetEssentialityLoader>(ch))
             .data(loader::<TargetPrioritisationsLoader>(ch))
             .data(loader::<VariantLoader>(ch))
+            .data(loader::<GwasCredibleSetByVariantLoader>(ch))
     }
 }
