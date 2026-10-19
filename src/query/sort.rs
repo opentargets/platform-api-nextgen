@@ -1,6 +1,6 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::HashSet, hash::Hash};
 
-use async_graphql::{Enum, InputObject, InputType};
+use async_graphql::{CustomValidator, Enum, InputObject, InputType, InputValueError};
 
 use crate::{
     entity::{
@@ -8,10 +8,11 @@ use crate::{
         variant::TranscriptConsequenceSortField,
     },
     query::Entity,
+    view::gwas_credible_sets_by_variant::SortField as GwasCredibleSetsByVariantSortField,
 };
 
 /// Sort direction: ascending or descending.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Default)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Default, Hash)]
 pub enum SortDirection {
     /// Ascending order.
     #[default]
@@ -19,19 +20,57 @@ pub enum SortDirection {
     /// Descending order.
     Descending,
 }
+impl SortDirection {
+    pub fn as_sql(self) -> &'static str {
+        match self {
+            SortDirection::Ascending => "ASC",
+            SortDirection::Descending => "DESC",
+        }
+    }
+}
 
 /// Sort types. Contain the sort field and direction.
-#[derive(Debug, Clone, Copy, InputObject, Default)]
+#[derive(Debug, Clone, Copy, InputObject, Default, Eq, PartialEq, Hash)]
 #[graphql(concrete(name = "DiseaseSort", params(DiseaseSortField)))]
 #[graphql(concrete(name = "HpoSort", params(HpoSortField)))]
 #[graphql(concrete(name = "StudySort", params(StudySortField)))]
 #[graphql(concrete(name = "TranscriptConsequenceSort", params(TranscriptConsequenceSortField)))]
+#[graphql(concrete(
+    name = "GwasCredibleSetsByVariantSort",
+    params(GwasCredibleSetsByVariantSortField)
+))]
 pub struct Sort<K: InputType> {
     /// The field to sort by.
     pub key: K,
     /// The direction to sort in.
     #[graphql(default)]
     pub direction: SortDirection,
+}
+
+/// GraphQL argument validator: rejects a sort list that uses the same field
+/// more than once, even with different directions.
+///
+/// ```ignore
+/// #[graphql(validator(custom = "UniqueSortKeys"))] sort: Vec<Sort<MySortField>>,
+/// ```
+pub struct UniqueSortKeys;
+
+impl<K> CustomValidator<Vec<Sort<K>>> for UniqueSortKeys
+where
+    K: InputType + Copy + Eq + Hash,
+    // `Sort<K>` is only a GraphQL type for the `concrete(...)` keys listed above.
+    Vec<Sort<K>>: InputType,
+{
+    fn check(&self, sorts: &Vec<Sort<K>>) -> Result<(), InputValueError<Vec<Sort<K>>>> {
+        let mut seen = HashSet::new();
+        match sorts.iter().find(|s| !seen.insert(s.key)) {
+            Some(dup) => Err(InputValueError::custom(format!(
+                "sort field {} can only be used once",
+                dup.key.to_value()
+            ))),
+            None => Ok(()),
+        }
+    }
 }
 
 /// Contains the compare function for sorting values on each of the sort fields.

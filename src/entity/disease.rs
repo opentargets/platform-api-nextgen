@@ -33,7 +33,7 @@ use crate::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
-        paginate::{Page, Paged, PagedWithStats},
+        paginate::{Page, Paged, PagedWithStats, page_complexity},
         search::Searchable,
         sort::{Nulls, Sort, SortDirection, SortKey, Term},
     },
@@ -245,6 +245,7 @@ pub struct DiseaseQuery;
 #[Object]
 impl DiseaseQuery {
     /// Fetch diseases by EFO ID.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn diseases(
         &self,
         ctx: &Context<'_>,
@@ -275,6 +276,7 @@ impl DiseaseQuery {
 #[ComplexObject]
 impl Disease {
     /// Clinical indications for this disease as reported by clinical trial records.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn drug_and_clinical_candidates(
         &self,
         ctx: &Context<'_>,
@@ -296,6 +298,7 @@ impl Disease {
 
     /// Clinical signs and symptoms observed in diseases or phenotypes. Signs and symptoms are
     /// integrated from multiple sources including EFO, MONDO and HPO.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn phenotypes(
         &self,
         ctx: &Context<'_>,
@@ -312,6 +315,7 @@ impl Disease {
     /// Disease-target associations computed on the fly with configurable datasource weights and
     /// filters.
     #[allow(clippy::unused_async)]
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn associated_targets(
         &self,
         ctx: &Context<'_>,
@@ -360,6 +364,7 @@ impl Disease {
         .await
     }
 
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn evidences(
         &self,
         ctx: &Context<'_>,
@@ -384,6 +389,7 @@ impl Disease {
     }
 
     /// Association time series.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn association_time_series(
         &self,
         ctx: &Context<'_>,
@@ -413,6 +419,7 @@ impl Disease {
 
     /// Return the list of publications that mention the main entity, alone or in combination with
     /// other entities.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn literature_ocurrences(
         &self,
         ctx: &Context<'_>,
@@ -456,6 +463,7 @@ impl Disease {
     }
 
     /// Semantically similar diseases based on a PubMed word embedding model.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn similar_entities(
         &self,
         ctx: &Context<'_>,
@@ -483,6 +491,7 @@ impl Disease {
     /// Open Targets (OTAR) projects linked to this disease. Data only available in Partner Platform
     /// Preview (PPP).
     #[cfg(feature = "product-ppp")]
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn otar_projects(
         &self,
         ctx: &Context<'_>,

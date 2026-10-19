@@ -18,6 +18,7 @@ pub mod filter;
 pub mod paginate;
 pub mod search;
 pub mod sort;
+pub mod sql;
 pub mod stats;
 
 /// A row with a primary key, used as a stable sort tiebreaker.

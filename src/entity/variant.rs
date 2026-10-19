@@ -27,7 +27,7 @@ use crate::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
-        paginate::{Page, Paged},
+        paginate::{Page, Paged, page_complexity},
         sort::{Nulls, Sort, SortDirection, SortKey, Term},
     },
 };
@@ -362,6 +362,7 @@ pub struct VariantQuery;
 impl VariantQuery {
     /// Retrieve a list of variants by their identifier in the format of CHROM_POS_REF_ALT for SNPs
     /// and short indels (e.g. 19_44908684_T_C).
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn variants(
         &self,
         ctx: &Context<'_>,
@@ -388,6 +389,7 @@ impl Variant {
     /// 95% credible sets for GWAS and molQTL studies that contain this variant. Credible sets
     /// include all variants in the credible set (locus) as well as the fine-mapping method and
     /// derived statistics.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn credible_sets(
         &self,
         ctx: &Context<'_>,
@@ -434,6 +436,7 @@ impl Variant {
     /// Protein coding coordinates linking this variant to its amino acid-level consequences in
     /// protein products. Describes variant consequences at the protein level including amino acid
     /// changes and their positions.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn protein_coding_coordinates(
         &self,
         ctx: &Context<'_>,
@@ -446,6 +449,7 @@ impl Variant {
             .unwrap_or_default();
         Ok(items.query().paginate(page))
     }
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn enhancer_to_gene(
         &self,
         ctx: &Context<'_>,
@@ -464,6 +468,7 @@ impl Variant {
     ///Pharmacogenomics data linking this genetic variant to drug responses. Data is integrated
     /// from sources including ClinPGx and describes how genetic variants influence individual drug
     /// responses.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn pharmacogenomics(
         &self,
         ctx: &Context<'_>,
