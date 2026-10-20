@@ -20,6 +20,7 @@ pub mod evidence_source;
 pub mod gene_ontology;
 pub mod hpo;
 pub mod interaction;
+pub mod interaction_resource;
 pub mod l2g_predictions;
 pub mod locus;
 pub mod mapping;

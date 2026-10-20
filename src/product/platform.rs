@@ -25,6 +25,7 @@ use crate::{
         gene_ontology::GeneOntologyLoader,
         hpo::HpoLoader,
         interaction::InteractionLoader,
+        interaction_resource::InteractionResourceQuery,
         l2g_predictions::L2GPredictionsLoader,
         locus::LocusLoader,
         mapping::MappingQuery,
@@ -53,18 +54,19 @@ use crate::{
 /// The query root for the `Platform` product.
 #[derive(MergedObject, Default)]
 pub struct Query(
-    MetaQuery,           // API data (version, data release, product, etc.)
-    SearchQuery,         // Search bar functionality
-    FacetQuery,          // Facet search for AOTF
-    MappingQuery,        // Map terms to entity IDs
-    ClinicalReportQuery, // Clinical reports
-    CredibleSetQuery,    // Credible sets
-    DiseaseQuery,        // Diseases
-    EvidenceSourceQuery, // Evidence source
-    StudyQuery,          // Studies
-    DrugQuery,           // Drugs
-    VariantQuery,        // Variants
-    TargetQuery,         // Targets
+    MetaQuery,                // API data (version, data release, product, etc.)
+    SearchQuery,              // Search bar functionality
+    FacetQuery,               // Facet search for AOTF
+    MappingQuery,             // Map terms to entity IDs
+    ClinicalReportQuery,      // Clinical reports
+    CredibleSetQuery,         // Credible sets
+    DiseaseQuery,             // Diseases
+    EvidenceSourceQuery,      // Evidence source
+    InteractionResourceQuery, // Interaction resources
+    StudyQuery,               // Studies
+    DrugQuery,                // Drugs
+    VariantQuery,             // Variants
+    TargetQuery,              // Targets
 );
 
 pub struct Platform;
