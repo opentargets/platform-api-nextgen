@@ -26,6 +26,7 @@ use crate::{
         gene_ontology::GeneOntologyLoader,
         hpo::HpoLoader,
         interaction::InteractionLoader,
+        interaction_resource::InteractionResourceQuery,
         l2g_predictions::L2GPredictionsLoader,
         locus::LocusLoader,
         mapping::MappingQuery,
@@ -56,19 +57,20 @@ use crate::{
 /// The query root for the `PPP` product.
 #[derive(MergedObject, Default)]
 pub struct Query(
-    ClinicalReportQuery, // Clinical reports
-    CredibleSetQuery,    // Credible sets
-    DiseaseQuery,        // Diseases
-    DrugQuery,           // Drugs
-    EvidenceSourceQuery, // Evidence source
-    FacetQuery,          // Facet search for AOTF
-    MappingQuery,        // Map terms to entity IDs
-    MetaQuery,           // API data (version, data release, product, etc.)
-    RegionQuery,         // Region
-    SearchQuery,         // Search bar functionality
-    StudyQuery,          // Studies
-    TargetQuery,         // Targets
-    VariantQuery,        // Variants
+    ClinicalReportQuery,      // Clinical reports
+    CredibleSetQuery,         // Credible sets
+    DiseaseQuery,             // Diseases
+    DrugQuery,                // Drugs
+    EvidenceSourceQuery,      // Evidence source
+    FacetQuery,               // Facet search for AOTF
+    InteractionResourceQuery, // Interaction resources
+    MappingQuery,             // Map terms to entity IDs
+    MetaQuery,                // API data (version, data release, product, etc.)
+    RegionQuery,              // Region
+    SearchQuery,              // Search bar functionality
+    StudyQuery,               // Studies
+    TargetQuery,              // Targets
+    VariantQuery,             // Variants
 );
 
 pub struct Ppp;
