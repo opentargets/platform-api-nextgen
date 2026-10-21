@@ -9,7 +9,7 @@ use opensearch::{
 };
 use serde_json::Value;
 
-use crate::config::Config;
+use crate::{config::Config, server::metric_utils};
 
 /// An OpenSearch client wrapper.
 #[derive(Clone)]
@@ -77,6 +77,7 @@ impl OpenSearch {
             .send()
             .await?
             .error_for_status_code()?;
+        metric_utils::opensearch_queries();
         resp.json().await
     }
 }

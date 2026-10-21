@@ -58,6 +58,9 @@ pub async fn post_cache(req: Request, next: Next) -> Response {
         return next.run(req).await;
     }
 
+    // increment the counter metrics for graphql post requests
+    metric_utils::graphql_request();
+
     // process the request body and build the cache key
     let (parts, body) = req.into_parts();
     let Ok(bytes) = axum::body::to_bytes(body, usize::MAX).await else {
