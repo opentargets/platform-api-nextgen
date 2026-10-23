@@ -70,7 +70,7 @@ pub struct Query(
     DrugQuery,                // Drugs
     VariantQuery,             // Variants
     TargetQuery,              // Targets
-    GwasCredibleSetByVariantQuery,
+    GwasCredibleSetsByVariantQuery,
 );
 
 pub struct Platform;

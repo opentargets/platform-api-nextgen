@@ -22,7 +22,6 @@ const MAX_PAGE_SIZE: u32 = 2000;
 
 // ---- models ----
 
-#[allow(clippy::struct_field_names)]
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct GwasCredibleSetsByVariant {
@@ -123,6 +122,11 @@ columns!(CredibleSetCol {
     PValueMantissa => "pValueMantissa"  : F64,
     PValueExponent => "pValueExponent"  : I64,
     TopL2gScore    => "topL2GScore"     : F64,
+    LeadVariant    => "leadVariant"     : Str,
+    LeadChromosome => "leadChromosome"  : I64,
+    LeadPosition   => "leadPosition"    : I64,
+    LeadReferenceAllele     => "leadReferenceAllele"    : Str,
+    LeadAlternateAllele     => "leadAlternateAllele"    : Str
 });
 
 // sort
@@ -132,7 +136,7 @@ columns!(CredibleSetCol {
 pub enum GwasCredibleSetsByVariantSortField {
     TopL2gScore,
     PValue,
-    // VariantId,
+    LeadVariant,
 }
 impl GwasCredibleSetsByVariantSortField {
     fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
@@ -149,6 +153,24 @@ impl GwasCredibleSetsByVariantSortField {
                 },
                 OrderBy {
                     col: CredibleSetCol::PValueMantissa,
+                    dir: direction,
+                },
+            ],
+            GwasCredibleSetsByVariantSortField::LeadVariant => vec![
+                OrderBy {
+                    col: CredibleSetCol::LeadChromosome,
+                    dir: direction,
+                },
+                OrderBy {
+                    col: CredibleSetCol::LeadPosition,
+                    dir: direction,
+                },
+                OrderBy {
+                    col: CredibleSetCol::LeadReferenceAllele,
+                    dir: direction,
+                },
+                OrderBy {
+                    col: CredibleSetCol::LeadAlternateAllele,
                     dir: direction,
                 },
             ],
