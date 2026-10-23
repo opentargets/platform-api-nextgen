@@ -50,7 +50,7 @@ use crate::{
     },
     product::{Flavor, Product, loader},
     view::gwas_credible_sets_by_variant::{
-        GwasCredibleSetByVariantLoader, GwasCredibleSetByVariantQuery,
+        GwasCredibleSetsByVariantLoader, GwasCredibleSetsByVariantQuery,
     },
 };
 
@@ -114,6 +114,6 @@ impl Product for Platform {
             .data(loader::<TargetEssentialityLoader>(ch))
             .data(loader::<TargetPrioritisationsLoader>(ch))
             .data(loader::<VariantLoader>(ch))
-            .data(loader::<GwasCredibleSetByVariantLoader>(ch))
+            .data(loader::<GwasCredibleSetsByVariantLoader>(ch))
     }
 }

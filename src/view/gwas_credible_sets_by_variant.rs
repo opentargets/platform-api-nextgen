@@ -1,33 +1,31 @@
-use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
+use std::collections::HashMap;
 
 use async_graphql::{
-    ComplexObject, Context, Enum, Object, SimpleObject,
+    Context, Enum, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
 use derive_more::From;
-use moka::future::Cache;
 use serde::Deserialize;
-use serde_repr::{Deserialize_repr, Serialize_repr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::variant::Chromosome,
     query::{
-        Entity, QueryExt,
-        cache::{CachedLoader, entity_cache},
-        load_ordered,
         paginate::{Page, Paged},
-        sort::{Nulls, Sort, SortDirection, SortKey, Term},
+        sort::{Sort, SortDirection},
+        sql::{Column, Filter, Op, OrderBy, PageSpec, Table, Value, ValueKind, build, columns},
     },
 };
+
+const MAX_PAGE_SIZE: u32 = 2000;
 
 // ---- models ----
 
 #[allow(clippy::struct_field_names)]
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-pub struct GwasCredibleSetByVariant {
+pub struct GwasCredibleSetsByVariant {
     variant_id: String,
     study_locus_id: String,
     posterior_probability: f64,
@@ -52,113 +50,159 @@ pub struct GwasCredibleSetByVariant {
     top_l2_g_approved_symbol: String,
     top_l2_g_score: f64,
 }
+impl Table for GwasCredibleSetsByVariant {
+    type Col = CredibleSetCol;
+    const NAME: &'static str = "gwas_credible_sets_by_variant";
+    const TIE_BREAKER: &'static str = "studyLocusId";
+}
 
-#[derive(Debug, Clone, Deserialize, SimpleObject, Eq, PartialEq, Hash)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct QueryParams {
     variant_id: String,
+    sort: Vec<Sort<GwasCredibleSetsByVariantSortField>>,
     index: u32,
     size: u32,
 }
-
 impl QueryParams {
     #[must_use]
-    pub fn new(variant_id: String, index: u32, size: u32) -> Self {
+    pub fn new(
+        variant_id: String,
+        sort: Vec<Sort<GwasCredibleSetsByVariantSortField>>,
+        index: u32,
+        size: u32,
+    ) -> Self {
         Self {
             variant_id,
+            sort,
             index,
             size,
         }
+    }
+    #[allow(clippy::missing_errors_doc)]
+    pub fn validate(&self) -> Result<(), async_graphql::Error> {
+        if self.size == 0 || self.size > MAX_PAGE_SIZE {
+            return Err(async_graphql::Error::new(format!(
+                "size must be 1..={MAX_PAGE_SIZE}"
+            )));
+        }
+        Ok(())
+    }
+    fn to_spec(&self) -> Result<PageSpec<GwasCredibleSetsByVariant>, async_graphql::Error> {
+        self.validate()?;
+        Ok(PageSpec {
+            filters: vec![
+                Filter::new(
+                    CredibleSetCol::VariantId,
+                    Op::Eq,
+                    Value::Str(self.variant_id.clone()),
+                )
+                .map_err(async_graphql::Error::new)?,
+            ],
+            order_by: self
+                .sort
+                .iter()
+                .flat_map(|s| s.key.as_order_by(s.direction))
+                .collect(),
+            offset: u64::from(self.index) * u64::from(self.size),
+            limit: u64::from(self.size),
+        })
     }
 }
 
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-pub struct GwasCredibleSetByVariantRow {
+pub struct GwasCredibleSetsByVariantRow {
     key: usize,
-    gwas_credible_sets: Paged<GwasCredibleSetByVariant>,
+    gwas_credible_sets: Paged<GwasCredibleSetsByVariant>,
 }
+
+// Columns for the query
+
+columns!(CredibleSetCol {
+    VariantId      => "variantId"       : Str,
+    PValueMantissa => "pValueMantissa"  : F64,
+    PValueExponent => "pValueExponent"  : I64,
+    TopL2gScore    => "topL2GScore"     : F64,
+});
+
+// sort
+
+/// Fields available for sorting.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Hash)]
+pub enum GwasCredibleSetsByVariantSortField {
+    TopL2gScore,
+    PValue,
+    // VariantId,
+}
+impl GwasCredibleSetsByVariantSortField {
+    fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
+    fn as_order_by(self, direction: SortDirection) -> Vec<OrderBy<CredibleSetCol>> {
+        match self {
+            GwasCredibleSetsByVariantSortField::TopL2gScore => vec![OrderBy {
+                col: CredibleSetCol::TopL2gScore,
+                dir: direction,
+            }],
+            GwasCredibleSetsByVariantSortField::PValue => vec![
+                OrderBy {
+                    col: CredibleSetCol::PValueExponent,
+                    dir: direction,
+                },
+                OrderBy {
+                    col: CredibleSetCol::PValueMantissa,
+                    dir: direction,
+                },
+            ],
+        }
+    }
+}
+
+const DEFAULT_SORT: [Sort<GwasCredibleSetsByVariantSortField>; 1] = [Sort {
+    key: GwasCredibleSetsByVariantSortField::TopL2gScore,
+    direction: SortDirection::Descending,
+}];
 
 // ---- loaders ----
 
 #[derive(From)]
-pub struct GwasCredibleSetByVariantLoader {
+pub struct GwasCredibleSetsByVariantLoader {
     ch: ClickHouse,
 }
 
-impl GwasCredibleSetByVariantLoader {
+impl GwasCredibleSetsByVariantLoader {
     #[must_use]
     pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
-impl Loader<QueryParams> for GwasCredibleSetByVariantLoader {
-    type Value = Paged<GwasCredibleSetByVariant>;
+impl Loader<QueryParams> for GwasCredibleSetsByVariantLoader {
+    type Value = Paged<GwasCredibleSetsByVariant>;
     type Error = async_graphql::Error;
 
     async fn load(
         &self,
         keys: &[QueryParams],
     ) -> Result<HashMap<QueryParams, Self::Value>, Self::Error> {
-        let base_query = "
-            WITH
-            ? AS q_variant_id,
-            ? AS q_offset,
-            ? AS q_limit,
-            CAST(? AS UInt64) AS query_id,
-            filtered AS
-            (
-                SELECT *
-                FROM gwas_credible_sets_by_variant
-                WHERE variantId = q_variant_id
-            ),
-            (
-                SELECT count()
-                FROM filtered
-            ) as count,
-            paged AS
-            (
-                SELECT *
-                FROM filtered
-                ORDER BY topL2GScore DESC
-                LIMIT q_limit OFFSET q_offset
-            )
-            SELECT
-                query_id,
-                tuple(
-                        CAST(count AS UInt64),
-                        groupArray(tuple(*)) as rows
-                    )
-            FROM paged
-            GROUP BY query_id
-            ";
-        let queries: Vec<String> = keys.iter().map(|_| base_query.to_string()).collect();
-        let full_query = keys.iter().enumerate().fold(
-            self.ch.query(&queries.join(" UNION ALL ")),
-            |acc: clickhouse::query::Query, (i, key)| {
-                acc.bind(key.variant_id.clone())
-                    .bind(key.index * key.size)
-                    .bind(key.size)
-                    .bind(i as u64)
-            },
-        );
-        let result = full_query
-            .fetch_all::<GwasCredibleSetByVariantRow>()
+        let rendered = keys
+            .iter()
+            .map(|k| k.to_spec().map(|spec| spec.render()))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let rows = build(self.ch.client(), &rendered)
+            .fetch_all::<GwasCredibleSetsByVariantRow>()
             .await?;
-        let results_with_keys = result
+
+        Ok(rows
             .iter()
             .map(|res| (keys[res.key].clone(), res.gwas_credible_sets.clone()))
-            .collect();
-
-        Ok(results_with_keys)
+            .collect())
     }
 }
 
 pub async fn load_gwas_credible_sets_by_variant(
     ctx: &async_graphql::Context<'_>,
     key: QueryParams,
-) -> async_graphql::Result<Paged<GwasCredibleSetByVariant>> {
+) -> async_graphql::Result<Paged<GwasCredibleSetsByVariant>> {
     Ok(ctx
-        .data_unchecked::<DataLoader<GwasCredibleSetByVariantLoader>>()
+        .data_unchecked::<DataLoader<GwasCredibleSetsByVariantLoader>>()
         .load_one(key)
         .await?
         .unwrap_or_default())
@@ -166,17 +210,22 @@ pub async fn load_gwas_credible_sets_by_variant(
 
 // ---- resolvers ----
 #[derive(Default)]
-pub struct GwasCredibleSetByVariantQuery;
+pub struct GwasCredibleSetsByVariantQuery;
 
 #[Object]
-impl GwasCredibleSetByVariantQuery {
+impl GwasCredibleSetsByVariantQuery {
     async fn gwas_credible_sets_by_variant(
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "variant ID to fetch credible sets for.")] variant_id: String,
+        #[graphql(
+            default_with = "GwasCredibleSetsByVariantSortField::default_sort()",
+            desc = "List of sort statements."
+        )]
+        sort: Vec<Sort<GwasCredibleSetsByVariantSortField>>,
         #[graphql(default, desc = "Pagination for the credible sets.")] page: Page,
-    ) -> async_graphql::Result<Paged<GwasCredibleSetByVariant>> {
-        let query_params = QueryParams::new(variant_id, page.index, page.size);
+    ) -> async_graphql::Result<Paged<GwasCredibleSetsByVariant>> {
+        let query_params = QueryParams::new(variant_id, sort, page.index, page.size);
         load_gwas_credible_sets_by_variant(ctx, query_params).await
     }
 }

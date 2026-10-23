@@ -8,10 +8,11 @@ use crate::{
         variant::TranscriptConsequenceSortField,
     },
     query::Entity,
+    view::gwas_credible_sets_by_variant::GwasCredibleSetsByVariantSortField,
 };
 
 /// Sort direction: ascending or descending.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Default)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Default, Hash)]
 pub enum SortDirection {
     /// Ascending order.
     #[default]
@@ -19,13 +20,25 @@ pub enum SortDirection {
     /// Descending order.
     Descending,
 }
+impl SortDirection {
+    pub fn as_sql(self) -> &'static str {
+        match self {
+            SortDirection::Ascending => "ASC",
+            SortDirection::Descending => "DESC",
+        }   
+    }
+}
 
 /// Sort types. Contain the sort field and direction.
-#[derive(Debug, Clone, Copy, InputObject, Default)]
+#[derive(Debug, Clone, Copy, InputObject, Default, Eq, PartialEq, Hash)]
 #[graphql(concrete(name = "DiseaseSort", params(DiseaseSortField)))]
 #[graphql(concrete(name = "HpoSort", params(HpoSortField)))]
 #[graphql(concrete(name = "StudySort", params(StudySortField)))]
 #[graphql(concrete(name = "TranscriptConsequenceSort", params(TranscriptConsequenceSortField)))]
+#[graphql(concrete(
+    name = "GwasCredibleSetsByVariantSort",
+    params(GwasCredibleSetsByVariantSortField)
+))]
 pub struct Sort<K: InputType> {
     /// The field to sort by.
     pub key: K,
