@@ -13,7 +13,7 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::variant::Chromosome,
     query::{
-        paginate::{Page, Paged},
+        paginate::{Page, Paged, page_complexity},
         sort::{Sort, SortDirection, UniqueSortKeys},
         sql::{
             Column, Filter, Op, OrderBy, PageSpec, Table, Value, ValueKind, build, column_subset,
@@ -292,6 +292,7 @@ pub struct GwasCredibleSetsByVariantQuery;
 
 #[Object]
 impl GwasCredibleSetsByVariantQuery {
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn gwas_credible_sets_by_variant(
         &self,
         ctx: &Context<'_>,

@@ -60,6 +60,13 @@ impl Default for Page {
         }
     }
 }
+/// GraphQL complexity of a paged field: each row costs `child_complexity`.
+#[must_use]
+pub fn page_complexity(page: Page, child_complexity: usize) -> usize {
+    usize::try_from(page.size)
+        .unwrap_or(usize::MAX)
+        .saturating_mul(child_complexity)
+}
 
 /// The result of a paginated query, containing the total number of items and the items.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
