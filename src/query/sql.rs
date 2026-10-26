@@ -20,6 +20,26 @@ pub enum ValueKind {
     U64,
     I64,
     F64,
+    StrArray,
+    StrArrayArray,
+}
+
+/// Separator placed between fields when building the search text, so a match
+/// can't span two fields. It's the ASCII "unit separator", which won't appear in data.
+const SEARCH_SEP: &str = r"'\x1F'";
+
+/// SQL expression turning a text column into a single string, or `None` if
+/// the column isn't text.
+fn as_text_sql<C: Column>(col: C) -> Option<String> {
+    let name = col.as_sql();
+    match col.kind() {
+        ValueKind::Str => Some(name.to_string()),
+        ValueKind::StrArray => Some(format!("arrayStringConcat({name}, {SEARCH_SEP})")),
+        ValueKind::StrArrayArray => Some(format!(
+            "arrayStringConcat(arrayFlatten({name}), {SEARCH_SEP})"
+        )),
+        ValueKind::U64 | ValueKind::I64 | ValueKind::F64 => None,
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -62,13 +82,15 @@ impl Op {
     }
 }
 
-pub struct Filter<C: Column> {
-    col: C,
-    op: Op,
-    value: Value,
+pub enum Filter<C: Column> {
+    /// `col op ?`
+    Compare { col: C, op: Op, value: Value },
+    /// Case-insensitive substring match of `term` against any of `cols`.
+    Search { cols: Vec<C>, term: Value },
 }
 
 impl<C: Column> Filter<C> {
+    /// A comparison filter. Errors if the value's type doesn't match the column.
     #[allow(clippy::missing_errors_doc)]
     pub fn new(col: C, op: Op, value: Value) -> Result<Self, String> {
         if col.kind() != value.kind() {
@@ -79,13 +101,60 @@ impl<C: Column> Filter<C> {
                 value.kind()
             ));
         }
-        Ok(Self { col, op, value })
+        Ok(Self::Compare { col, op, value })
+    }
+
+    /// A text search filter. Errors if `cols` is empty or any column isn't text.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn search(cols: Vec<C>, term: String) -> Result<Self, String> {
+        if cols.is_empty() {
+            return Err("search needs at least one column".to_string());
+        }
+        if let Some(col) = cols.iter().find(|c| as_text_sql(**c).is_none()) {
+            return Err(format!("column {} is not searchable", col.as_sql()));
+        }
+        Ok(Self::Search {
+            cols,
+            term: Value::Str(term),
+        })
+    }
+
+    /// The SQL condition, with one `?` placeholder for [`Self::value`].
+    fn to_sql(&self) -> String {
+        match self {
+            Self::Compare { col, op, .. } => format!("{} {} ?", col.as_sql(), op.as_sql()),
+            Self::Search { cols, .. } => {
+                let fields = cols
+                    .iter()
+                    .filter_map(|c| as_text_sql(*c))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!(
+                    "positionCaseInsensitiveUTF8(concatWithSeparator({SEARCH_SEP}, {fields}), ?) > 0"
+                )
+            }
+        }
+    }
+
+    /// The value bound to this filter's `?`.
+    fn value(&self) -> &Value {
+        match self {
+            Self::Compare { value, .. } | Self::Search { term: value, .. } => value,
+        }
     }
 }
 
 pub struct OrderBy<C: Column> {
     pub col: C,
     pub dir: SortDirection,
+}
+
+impl<C: Column> OrderBy<C> {
+    /// One `ORDER BY` term per column, all in the same direction, in order.
+    #[must_use]
+    pub fn each(cols: &[C], dir: SortDirection) -> Vec<Self> {
+        cols.iter().map(|&col| Self { col, dir }).collect()
+    }
 }
 
 pub struct PageSpec<T: Table> {
@@ -111,6 +180,35 @@ macro_rules! columns {
 }
 pub(crate) use columns;
 
+/// Declares an enum whose variants are a subset of a [`columns!`] enum, with the
+/// same names, and generates `as_col()` mapping each variant to its column.
+///
+/// Attributes (docs, derives, `#[graphql(...)]`) are passed through, so this works
+/// for GraphQL enums that expose a choice of columns to clients.
+///
+/// ```ignore
+/// column_subset! {
+///     #[derive(Clone, Copy, Enum)]
+///     pub enum SearchField => CredibleSetCol { StudyId, DiseaseNames }
+/// }
+/// ```
+macro_rules! column_subset {
+    (
+        $(#[$meta:meta])*
+        $vis:vis enum $name:ident => $col:ident { $($variant:ident),* $(,)? }
+    ) => {
+        $(#[$meta])*
+        $vis enum $name { $($variant),* }
+        impl $name {
+            /// The column this variant refers to.
+            const fn as_col(self) -> $col {
+                match self { $(Self::$variant => $col::$variant),* }
+            }
+        }
+    };
+}
+pub(crate) use column_subset;
+
 const TEMPLATE: &str = include_str!("query.sql");
 
 /// Table-independent, ready for batching.
@@ -129,7 +227,7 @@ impl<T: Table> PageSpec<T> {
         } else {
             self.filters
                 .iter()
-                .map(|f| format!("{} {} ?", f.col.as_sql(), f.op.as_sql()))
+                .map(Filter::to_sql)
                 .collect::<Vec<_>>()
                 .join(" AND ")
         };
@@ -151,7 +249,7 @@ impl<T: Table> PageSpec<T> {
             sql,
             offset: self.offset,
             limit: self.limit,
-            where_binds: self.filters.iter().map(|f| f.value.clone()).collect(),
+            where_binds: self.filters.iter().map(|f| f.value().clone()).collect(),
         }
     }
 }
