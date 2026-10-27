@@ -71,7 +71,7 @@ pub struct Config {
     /// The maximum depth of the GraphQL schema. Defaults to 15.
     #[serde(default = "default_max_depth")]
     pub max_depth: usize,
-    /// The maximum complexity of the GraphQL schema. Defaults to 50000.
+    /// The maximum complexity of the GraphQL schema. Defaults to 100000.
     #[serde(default = "default_max_complexity")]
     pub max_complexity: usize,
 
@@ -127,7 +127,7 @@ fn default_bind_address() -> String { "0.0.0.0:8080".to_string() }
 fn default_metrics_bind_address() -> String { "0.0.0.0:9000".to_string() }
 fn default_opensearch_timeout() -> Duration { Duration::from_secs(10) }
 fn default_max_depth() -> usize { 15 }
-fn default_max_complexity() -> usize { 50_000 }
+fn default_max_complexity() -> usize { 100_000 }
 
 fn is_num(s: &str) -> bool { s.chars().all(|c| c.is_ascii_digit()) }
 fn is_year(yy: &str) -> bool { is_num(yy) && yy.len() == 2 }
