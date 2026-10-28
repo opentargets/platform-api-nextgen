@@ -10,97 +10,14 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+-*'
 
 jobs:
-  push-to-ghcr:
-    name: Build docker image and push to GHCR and GAR (${{ matrix.product }})
-    runs-on: ubuntu-22.04
-
-    # Every tag builds every product, each to its own image name.
-    # Products are deployed independently; they share version numbers.
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - product: platform
-            image-suffix: ''       # platform-api-nextgen
-          - product: ppp
-            image-suffix: '-ppp'   # platform-api-nextgen-ppp
-
+  build:
+    name: Build dev images
     permissions:
       packages: write
       contents: read
       attestations: write
       id-token: write
-
-    env:
-      TAG: ${{ github.ref_name }}
-      REPO: ${{ github.event.repository.name }}
-      IMAGE: ${{ github.event.repository.name }}${{ matrix.image-suffix }}
-
-    steps:
-      - id: prepare
-        name: Prepare the action and log details
-        shell: bash
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: |
-          TAG=$(echo $TAG | sed 's/^v//')
-          echo "TAG=$TAG" >> $GITHUB_ENV
-          echo "The tag for this build is $TAG"
-          echo "The repo name is: $REPO"
-          echo "Github context:\n$GITHUB_CONTEXT"
-
-      - id: checkout
-        name: Check out repo
-        uses: actions/checkout@v4
-
-      - id: auth-ghcr
-        name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - id: auth-google
-        name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          token_format: access_token
-          project_id: 'open-targets-eu-dev'
-          workload_identity_provider: projects/426265110888/locations/global/workloadIdentityPools/github-actions/providers/opentargets
-          service_account: github-actions@open-targets-eu-dev.iam.gserviceaccount.com
-          access_token_lifetime: 1000s
-
-      - id: auth-gar
-        name: Login to Google Artifact Registry
-        uses: docker/login-action@v3
-        with:
-          registry: europe-west1-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth-google.outputs.access_token }}
-
-      - id: setup-buildx
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - id: push
-        name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          build-args: PRODUCT=${{ matrix.product }}
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE }}:${{ env.TAG }}
-            europe-west1-docker.pkg.dev/open-targets-eu-dev/${{ env.REPO }}/${{ env.IMAGE }}:${{ env.TAG }}
-          # Separate cache per product so the two builds don't overwrite each other's cache.
-          cache-from: type=gha,scope=${{ matrix.product }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.product }}
-
-      - id: generate-attestations
-        name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v3
-        with:
-          subject-name: europe-west1-docker.pkg.dev/open-targets-eu-dev/${{ env.REPO }}/${{ env.IMAGE }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
+    uses: ./.github/workflows/build-images.yaml
+    with:
+      tag: ${{ github.ref_name }}
+      latest: false

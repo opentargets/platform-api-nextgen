@@ -1,0 +1,22 @@
+name: build-release
+
+# Runs when a GitHub release is published (including pre-releases).
+# Note: the `release` event has no `branches` filter; the release's tag decides what is built.
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build:
+    name: Build release images
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+    uses: ./.github/workflows/build-images.yaml
+    with:
+      tag: ${{ github.event.release.tag_name }}
+      # Only full releases move `latest`; pre-releases get the version tag only.
+      latest: ${{ !github.event.release.prerelease }}

@@ -1,0 +1,124 @@
+name: build-images
+
+# Reusable workflow: builds every product's Docker image, pushes it to GHCR and GAR,
+# and attests it. Called by build-dev.yaml (dev tags) and build-release.yaml (releases).
+#
+# The caller's job must grant: packages: write, contents: read, attestations: write, id-token: write.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Git tag being built, e.g. v1.2.0 or v1.2.0-dev.3 (a leading "v" is stripped)'
+        required: true
+        type: string
+      latest:
+        description: 'Also tag the images as `latest`'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    name: Build and push (${{ matrix.product }})
+    runs-on: ubuntu-22.04
+
+    # Every build includes every product, each to its own image name.
+    # Products are deployed independently; they share version numbers.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - product: platform
+            image-suffix: ''       # platform-api-nextgen
+          - product: ppp
+            image-suffix: '-ppp'   # platform-api-nextgen-ppp
+
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+
+    env:
+      TAG: ${{ inputs.tag }}
+      LATEST: ${{ inputs.latest }}
+      REPO: ${{ github.event.repository.name }}
+      IMAGE: ${{ github.event.repository.name }}${{ matrix.image-suffix }}
+
+    steps:
+      - id: prepare
+        name: Work out image tags
+        shell: bash
+        run: |
+          VERSION="${TAG#v}"
+          GHCR="ghcr.io/${{ github.repository_owner }}/${IMAGE}"
+          GAR="europe-west1-docker.pkg.dev/open-targets-eu-dev/${REPO}/${IMAGE}"
+
+          {
+            echo "tags<<EOF"
+            echo "${GHCR}:${VERSION}"
+            echo "${GAR}:${VERSION}"
+            if [ "$LATEST" = "true" ]; then
+              echo "${GHCR}:latest"
+              echo "${GAR}:latest"
+            fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Tag ${TAG}, product ${{ matrix.product }}, image ${IMAGE}, version ${VERSION}, latest ${LATEST}"
+
+      - id: checkout
+        name: Check out repo
+        uses: actions/checkout@v4
+
+      - id: auth-ghcr
+        name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: auth-google
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token
+          project_id: 'open-targets-eu-dev'
+          workload_identity_provider: projects/426265110888/locations/global/workloadIdentityPools/github-actions/providers/opentargets
+          service_account: github-actions@open-targets-eu-dev.iam.gserviceaccount.com
+          access_token_lifetime: 1000s
+
+      - id: auth-gar
+        name: Login to Google Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: europe-west1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth-google.outputs.access_token }}
+
+      # Buildx pushes identical bytes to both registries, so the digest below
+      # is valid for GAR as well as GHCR (needed by the attestation step).
+      - id: setup-buildx
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - id: push
+        name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: PRODUCT=${{ matrix.product }}
+          tags: ${{ steps.prepare.outputs.tags }}
+          # Separate cache per product so the two builds don't overwrite each other's cache.
+          cache-from: type=gha,scope=${{ matrix.product }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.product }}
+
+      - id: generate-attestations
+        name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: europe-west1-docker.pkg.dev/open-targets-eu-dev/${{ env.REPO }}/${{ env.IMAGE }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true

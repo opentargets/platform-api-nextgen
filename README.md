@@ -37,7 +37,12 @@ Docker (`PRODUCT` defaults to `platform`):
 
 ## Releases
 
-Every `vX.Y.Z-*` tag builds both products, each to its own image:
+Images are built by [`build-images.yaml`](.github/workflows/build-images.yaml), which is called by:
+
+- `build-dev.yaml`, on pushing a `vX.Y.Z-*` tag. Pushes `<version>`.
+- `build-release.yaml`, on publishing a GitHub release. Pushes `<version>`, plus `latest` unless it's a pre-release.
+
+Every build includes both products, each to its own image:
 
 | Product  | Image                      |
 |----------|----------------------------|
