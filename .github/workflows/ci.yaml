@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  schedule:
+    # Weekly, so new RustSec advisories are caught even when the code doesn't change.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same branch/PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # Pinned so new releases can't break CI unexpectedly. Bump deliberately.
+  # Nightly is required: rustfmt.toml uses nightly-only options.
+  RUST_NIGHTLY: nightly-2026-09-21
+  # Matches the rust image in the Dockerfile.
+  RUST_STABLE: '1.94'
+
+jobs:
+  fmt:
+    name: rustfmt
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install nightly rustfmt
+        run: rustup toolchain install "$RUST_NIGHTLY" --profile minimal --component rustfmt
+      - name: Check formatting
+        run: cargo "+$RUST_NIGHTLY" fmt --all --check
+
+  clippy:
+    name: clippy (${{ matrix.product }})
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        product: [platform, ppp]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable clippy
+        run: |
+          rustup toolchain install "$RUST_STABLE" --profile minimal --component clippy
+          rustup default "$RUST_STABLE"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.product }}
+      - name: Run clippy
+        run: cargo clippy --locked --all-targets --features product-${{ matrix.product }} -- -D warnings
+
+  deny:
+    name: cargo-deny
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check

@@ -21,6 +21,7 @@ pub enum SortDirection {
     Descending,
 }
 impl SortDirection {
+    #[must_use]
     pub fn as_sql(self) -> &'static str {
         match self {
             SortDirection::Ascending => "ASC",

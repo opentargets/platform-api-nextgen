@@ -1,9 +1,6 @@
 # syntax=docker/dockerfile:1
-FROM rust:1.94-slim-bookworm AS chef
-RUN apt-get update \
- && apt-get install -y --no-install-recommends pkg-config libssl-dev \
- && rm -rf /var/lib/apt/lists/* \
- && cargo install cargo-chef --locked
+FROM rust:1.94-slim-trixie AS chef
+RUN cargo install cargo-chef --locked
 WORKDIR /src
 
 FROM chef AS planner
@@ -21,7 +18,7 @@ COPY . .
 RUN cargo build --release --locked --features product-${PRODUCT} \
  && cp target/release/platform-api /platform-api
 
-FROM gcr.io/distroless/cc-debian12:nonroot
+FROM gcr.io/distroless/cc-debian13:nonroot
 COPY --from=build /platform-api /platform-api
 EXPOSE 8080
 USER nonroot:nonroot

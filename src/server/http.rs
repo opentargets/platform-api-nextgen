@@ -10,8 +10,8 @@ use axum::{
     response::{Html, IntoResponse},
     routing::{any, get},
 };
-use axum_server::tls_rustls::RustlsConfig;
 use axum_prometheus::PrometheusMetricLayerBuilder;
+use axum_server::tls_rustls::RustlsConfig;
 use reqwest::{Method, header};
 use tower_http::{
     compression::CompressionLayer,
@@ -72,7 +72,10 @@ pub async fn serve(state: AppState) {
     let cfg = &state.config;
     let addr: SocketAddr = cfg.bind_address.parse().expect("invalid bind address");
 
-    let metrics_addr: SocketAddr = cfg.metrics_bind_address.parse().expect("invalid metrics bind address");
+    let metrics_addr: SocketAddr = cfg
+        .metrics_bind_address
+        .parse()
+        .expect("invalid metrics bind address");
 
     match (&cfg.cert_file, &cfg.key_file) {
         (Some(cert), Some(key)) => {
@@ -86,7 +89,8 @@ pub async fn serve(state: AppState) {
 
             let _ = tokio::try_join!(
                 axum_server::bind_rustls(addr, tls.clone()).serve(api_router.into_make_service()),
-                axum_server::bind_rustls(metrics_addr, tls).serve(metrics_router.into_make_service()),
+                axum_server::bind_rustls(metrics_addr, tls)
+                    .serve(metrics_router.into_make_service()),
             );
         }
         (None, None) => {
@@ -95,7 +99,6 @@ pub async fn serve(state: AppState) {
 
             let (api_router, metrics_router) = router(state);
 
-            
             let _ = tokio::try_join!(
                 axum_server::bind(addr).serve(api_router.into_make_service()),
                 axum_server::bind(metrics_addr).serve(metrics_router.into_make_service()),
