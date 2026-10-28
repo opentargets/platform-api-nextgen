@@ -1,0 +1,58 @@
+# cargo-deny configuration: https://embarkstudios.github.io/cargo-deny/
+# Run locally with: cargo deny check
+
+[graph]
+# Only check dependencies for the platforms we build and develop on.
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "aarch64-apple-darwin",
+]
+all-features = true
+
+[advisories]
+# Fail on any crate with a RustSec vulnerability, or one that is unmaintained/yanked.
+unmaintained = "all"
+yanked = "deny"
+ignore = [
+    # Only add entries here with a reason. Revisit them when deps are updated.
+    { id = "RUSTSEC-2024-0436", reason = "paste is unmaintained (not vulnerable); compile-time only, via clickhouse -> polonius-the-crab. No replacement available upstream yet." },
+]
+
+[licenses]
+confidence-threshold = 0.9
+allow = [
+    "0BSD",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "CC0-1.0",
+    "ISC",
+    "MIT",
+    "MIT-0",
+    # Weak, file-level copyleft. Pulled in by async-graphql's email validator.
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
+]
+
+[licenses.private]
+# Skip our own crate (publish = false in Cargo.toml).
+ignore = true
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+deny = [
+    # Keep OpenSSL out: we use rustls. See CVE-2026-75803.
+    { crate = "openssl-sys", reason = "use rustls instead of OpenSSL" },
+    { crate = "native-tls", reason = "use rustls instead of OpenSSL" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
