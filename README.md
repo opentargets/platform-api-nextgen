@@ -21,6 +21,27 @@ TBD
 
 ## Build
 
+Exactly one product feature must be enabled:
+
 ```bash
-    cargo build --release
+    cargo build --release --features product-platform
+    cargo build --release --features product-ppp
 ```
+
+Docker (`PRODUCT` defaults to `platform`):
+
+```bash
+    docker build -t platform-api .
+    docker build --build-arg PRODUCT=ppp -t platform-api-ppp .
+```
+
+## Releases
+
+Every `vX.Y.Z-*` tag builds both products, each to its own image:
+
+| Product  | Image                      |
+|----------|----------------------------|
+| platform | `platform-api-nextgen`     |
+| ppp      | `platform-api-nextgen-ppp` |
+
+Both images share the tag's version. Each product is deployed independently.

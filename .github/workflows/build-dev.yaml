@@ -11,8 +11,19 @@ on:
 
 jobs:
   push-to-ghcr:
-    name: Build docker image and push to GHCR and GAR
+    name: Build docker image and push to GHCR and GAR (${{ matrix.product }})
     runs-on: ubuntu-22.04
+
+    # Every tag builds every product, each to its own image name.
+    # Products are deployed independently; they share version numbers.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - product: platform
+            image-suffix: ''       # platform-api-nextgen
+          - product: ppp
+            image-suffix: '-ppp'   # platform-api-nextgen-ppp
 
     permissions:
       packages: write
@@ -23,6 +34,7 @@ jobs:
     env:
       TAG: ${{ github.ref_name }}
       REPO: ${{ github.event.repository.name }}
+      IMAGE: ${{ github.event.repository.name }}${{ matrix.image-suffix }}
 
     steps:
       - id: prepare
@@ -77,16 +89,18 @@ jobs:
         with:
           context: .
           push: true
+          build-args: PRODUCT=${{ matrix.product }}
           tags: |
-            ghcr.io/${{ github.repository }}:${{ env.TAG }}
-            europe-west1-docker.pkg.dev/open-targets-eu-dev/${{ env.REPO }}/${{ env.REPO }}:${{ env.TAG }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE }}:${{ env.TAG }}
+            europe-west1-docker.pkg.dev/open-targets-eu-dev/${{ env.REPO }}/${{ env.IMAGE }}:${{ env.TAG }}
+          # Separate cache per product so the two builds don't overwrite each other's cache.
+          cache-from: type=gha,scope=${{ matrix.product }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.product }}
 
       - id: generate-attestations
         name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
         with:
-          subject-name: europe-west1-docker.pkg.dev/open-targets-eu-dev/${{ env.REPO }}/${{ env.REPO }}
+          subject-name: europe-west1-docker.pkg.dev/open-targets-eu-dev/${{ env.REPO }}/${{ env.IMAGE }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
