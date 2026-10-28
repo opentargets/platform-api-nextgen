@@ -27,7 +27,10 @@ use crate::{
         evidence::{Evidence, EvidenceKey, load_evidences},
         interaction::{Interaction, InteractionSourceDatabase, load_interaction_by_target_a},
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
-        pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_target},
+        pharmacogenomics::{
+            Pharmacogenomics, Search as PharmacogenomicsSearch,
+            SortField as PharmacogenomicsSortField, load_pharmacogenomics,
+        },
         publication::{Publication, PublicationArguments, load_publications},
         similar_entity::{SimilarEntityArguments, Similarity, load_similar_entities},
         target_essentiality::{DepMapEssentiality, load_target_essentiality_by_target},
@@ -38,6 +41,7 @@ use crate::{
         cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged, PagedWithStats, page_complexity},
+        sort::{Sort, UniqueSortKeys},
     },
 };
 
@@ -473,6 +477,8 @@ pub struct Target {
     safety_liabilities: Vec<SafetyLiability>,
     #[graphql(skip)]
     study_locus_ids: Vec<String>,
+    #[graphql(skip)]
+    pharmacogenomics_ids: Vec<u64>,
     /// List of subcellular locations where the target protein is found.
     subcellular_locations: Vec<LocationAndSource>,
     /// List of synonyms for the target gene.
@@ -867,10 +873,18 @@ impl Target {
     async fn pharmacogenomics(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Pagination for the associations time series.")] page: Page,
+        #[graphql(
+            default_with = "PharmacogenomicsSortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<PharmacogenomicsSortField>>,
+        #[graphql(desc = "Case-insensitive text search across the records' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<PharmacogenomicsSearch>,
+        #[graphql(default, desc = "Pagination for the pharmacogenomics.")] page: Page,
     ) -> async_graphql::Result<Paged<Pharmacogenomics>> {
-        let pharmacogenomics = load_pharmacogenomics_by_target(ctx, self.id.clone()).await?;
-        Ok(pharmacogenomics.unwrap_or_default().query().paginate(page))
+        load_pharmacogenomics(ctx, &self.pharmacogenomics_ids, sort, search, page).await
     }
 
     /// Return similar labels using a model Word2CVec trained with PubMed.

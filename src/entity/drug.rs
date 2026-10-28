@@ -16,7 +16,10 @@ use crate::{
         clinical_indication::{ClinicalIndication, load_clinical_indications_from_drug},
         drug_warning::{DrugWarning, load_drug_warnings},
         mechanisms_of_action::{MechanismsOfAction, load_mechanisms_of_action},
-        pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_drug},
+        pharmacogenomics::{
+            Pharmacogenomics, Search as PharmacogenomicsSearch,
+            SortField as PharmacogenomicsSortField, load_pharmacogenomics,
+        },
         publication::{Publication, PublicationArguments, load_publications},
         similar_entity::{SimilarEntityArguments, Similarity, load_similar_entities},
     },
@@ -26,7 +29,7 @@ use crate::{
         load_ordered,
         paginate::{Page, Paged, PagedWithStats, page_complexity},
         search::Searchable,
-        sort::{Nulls, SortDirection, SortKey, Term},
+        sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
     },
 };
 
@@ -87,6 +90,8 @@ pub struct Drug {
     /// Mol Block is a chemical structure file format that serves as a connection table,
     /// representing molecules through a list of atoms, bonds, and spatial coordinates.
     molblock: Option<String>,
+    #[graphql(skip)]
+    pharmacogenomics_ids: Vec<u64>,
 }
 
 // ---- query utilities ----
@@ -313,10 +318,18 @@ impl Drug {
     async fn pharmacogenomics(
         &self,
         ctx: &Context<'_>,
+        #[graphql(
+            default_with = "PharmacogenomicsSortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<PharmacogenomicsSortField>>,
+        #[graphql(desc = "Case-insensitive text search across the records' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<PharmacogenomicsSearch>,
         #[graphql(default, desc = "Pagination for the pharmacogenomics.")] page: Page,
     ) -> async_graphql::Result<Paged<Pharmacogenomics>> {
-        let pharmacogenomics = load_pharmacogenomics_by_drug(ctx, self.id.clone()).await?;
-        Ok(pharmacogenomics.unwrap_or_default().query().paginate(page))
+        load_pharmacogenomics(ctx, &self.pharmacogenomics_ids, sort, search, page).await
     }
 
     /// Semantically similar drugs based on a PubMed word embedding model.

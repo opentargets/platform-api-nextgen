@@ -4,7 +4,8 @@ use async_graphql::{CustomValidator, Enum, InputObject, InputType, InputValueErr
 
 use crate::{
     entity::{
-        disease::DiseaseSortField, hpo::HpoSortField, study::StudySortField,
+        disease::DiseaseSortField, hpo::HpoSortField,
+        pharmacogenomics::SortField as PharmacogenomicsSortField, study::StudySortField,
         variant::TranscriptConsequenceSortField,
     },
     query::Entity,
@@ -40,6 +41,7 @@ impl SortDirection {
     name = "GwasCredibleSetsByVariantSort",
     params(GwasCredibleSetsByVariantSortField)
 ))]
+#[graphql(concrete(name = "PharmacogenomicsSort", params(PharmacogenomicsSortField)))]
 pub struct Sort<K: InputType> {
     /// The field to sort by.
     pub key: K,
