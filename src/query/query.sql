@@ -4,8 +4,9 @@ WITH
     CAST(? AS UInt64) AS query_id,
     filtered AS
     (
-        SELECT *
+        SELECT {{select}}
         FROM {{table}}
+        {{joins}}
         WHERE {{where}}
     ),
     (SELECT count() FROM filtered) AS total,

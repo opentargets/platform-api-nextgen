@@ -16,7 +16,10 @@ use crate::{
         association::Datasource,
         credible_set, enhancer_to_gene,
         evidence::{Evidence, EvidenceVariantKey, load_evidences_by_variant},
-        pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_variant},
+        pharmacogenomics::{
+            Pharmacogenomics, Search as PharmacogenomicsSearch,
+            SortField as PharmacogenomicsSortField, load_pharmacogenomics,
+        },
         protein_coding_coordinates::{
             ProteinCodingCoordinateVariantLoader, ProteinCodingCoordinates,
         },
@@ -30,7 +33,7 @@ use crate::{
         cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged, page_complexity},
-        sort::{Nulls, Sort, SortDirection, SortKey, Term},
+        sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
     },
 };
 
@@ -250,6 +253,8 @@ pub struct Variant {
     most_severe_consequence_id: String,
     #[graphql(skip)]
     study_locus_ids: Vec<String>,
+    #[graphql(skip)]
+    pharmacogenomics_ids: Vec<u64>,
 }
 
 // ---- query utilities ----
@@ -474,11 +479,18 @@ impl Variant {
     async fn pharmacogenomics(
         &self,
         ctx: &Context<'_>,
-        #[graphql(default, desc = "Pagination for the associations time series.")] page: Page,
+        #[graphql(
+            default_with = "PharmacogenomicsSortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<PharmacogenomicsSortField>>,
+        #[graphql(desc = "Case-insensitive text search across the records' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<PharmacogenomicsSearch>,
+        #[graphql(default, desc = "Pagination for the pharmacogenomics.")] page: Page,
     ) -> async_graphql::Result<Paged<Pharmacogenomics>> {
-        let pharmacogenomics =
-            load_pharmacogenomics_by_variant(ctx, self.variant_id.clone()).await?;
-        Ok(pharmacogenomics.unwrap_or_default().query().paginate(page))
+        load_pharmacogenomics(ctx, &self.pharmacogenomics_ids, sort, search, page).await
     }
 
     /// Target-disease evidence from all data sources where this variant supports the association.

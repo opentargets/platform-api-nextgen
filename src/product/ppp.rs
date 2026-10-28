@@ -34,10 +34,7 @@ use crate::{
         meta::MetaQuery,
         mouse_phenotype::MousePhenotypeLoader,
         otar_project_ppp::OtarProjectsLoader,
-        pharmacogenomics::{
-            PharmacogenomicsByDrugLoader, PharmacogenomicsByTargetLoader,
-            PharmacogenomicsByVariantLoader,
-        },
+        pharmacogenomics::PharmacogenomicsLoader,
         protein_coding_coordinates::ProteinCodingCoordinateVariantLoader,
         publication::PublicationLoader,
         region_ppp::{RegionQuery, TargetsByRegionLoader},
@@ -109,9 +106,7 @@ impl Product for Ppp {
             .data(loader::<MechanismsOfActionLoader>(ch))
             .data(loader::<MousePhenotypeLoader>(ch))
             .data(loader::<OtarProjectsLoader>(ch))
-            .data(loader::<PharmacogenomicsByDrugLoader>(ch))
-            .data(loader::<PharmacogenomicsByTargetLoader>(ch))
-            .data(loader::<PharmacogenomicsByVariantLoader>(ch))
+            .data(loader::<PharmacogenomicsLoader>(ch))
             .data(loader::<ProteinCodingCoordinateVariantLoader>(ch))
             .data(loader::<PublicationLoader>(ch))
             .data(loader::<TargetsByRegionLoader>(ch))

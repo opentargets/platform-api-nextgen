@@ -9,9 +9,15 @@ pub trait Column: Copy + Send + Sync + 'static {
 
 pub trait Table: Send + Sync + 'static {
     type Col: Column;
+    /// Table to read, optionally with an alias for [`Self::JOINS`] (`"my_table AS t"`).
     const NAME: &'static str;
     /// Unique column used as the final ORDER BY key so OFFSET paging is stable.
     const TIE_BREAKER: &'static str;
+    /// Columns to select. Filters, sorts and the row struct use these output names,
+    /// and the row struct must match their order. Defaults to every column.
+    const SELECT: &'static str = "*";
+    /// `JOIN` clauses placed after `FROM`. Defaults to none.
+    const JOINS: &'static str = "";
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -22,6 +28,7 @@ pub enum ValueKind {
     F64,
     StrArray,
     StrArrayArray,
+    U64Array,
 }
 
 /// Separator placed between fields when building the search text, so a match
@@ -33,12 +40,14 @@ const SEARCH_SEP: &str = r"'\x1F'";
 fn as_text_sql<C: Column>(col: C) -> Option<String> {
     let name = col.as_sql();
     match col.kind() {
-        ValueKind::Str => Some(name.to_string()),
+        // `ifNull` because one NULL makes the whole concatenation NULL, which would
+        // drop the row from every search. It's a no-op on non-Nullable columns.
+        ValueKind::Str => Some(format!("ifNull({name}, '')")),
         ValueKind::StrArray => Some(format!("arrayStringConcat({name}, {SEARCH_SEP})")),
         ValueKind::StrArrayArray => Some(format!(
             "arrayStringConcat(arrayFlatten({name}), {SEARCH_SEP})"
         )),
-        ValueKind::U64 | ValueKind::I64 | ValueKind::F64 => None,
+        ValueKind::U64 | ValueKind::I64 | ValueKind::F64 | ValueKind::U64Array => None,
     }
 }
 
@@ -48,6 +57,7 @@ pub enum Value {
     U64(u64),
     I64(i64),
     F64(f64),
+    U64Array(Vec<u64>),
 }
 impl Value {
     fn kind(&self) -> ValueKind {
@@ -56,6 +66,7 @@ impl Value {
             Value::U64(_) => ValueKind::U64,
             Value::I64(_) => ValueKind::I64,
             Value::F64(_) => ValueKind::F64,
+            Value::U64Array(_) => ValueKind::U64Array,
         }
     }
 }
@@ -87,6 +98,8 @@ pub enum Filter<C: Column> {
     Compare { col: C, op: Op, value: Value },
     /// Case-insensitive substring match of `term` against any of `cols`.
     Search { cols: Vec<C>, term: Value },
+    /// `col IN ?`: the column equals one of `values`.
+    In { col: C, values: Value },
 }
 
 impl<C: Column> Filter<C> {
@@ -119,10 +132,27 @@ impl<C: Column> Filter<C> {
         })
     }
 
+    /// An `IN` filter over a `U64` column. Errors if `col` isn't `U64`.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn in_u64(col: C, values: Vec<u64>) -> Result<Self, String> {
+        if col.kind() != ValueKind::U64 {
+            return Err(format!(
+                "column {} expects U64, got {:?}",
+                col.as_sql(),
+                col.kind()
+            ));
+        }
+        Ok(Self::In {
+            col,
+            values: Value::U64Array(values),
+        })
+    }
+
     /// The SQL condition, with one `?` placeholder for [`Self::value`].
     fn to_sql(&self) -> String {
         match self {
             Self::Compare { col, op, .. } => format!("{} {} ?", col.as_sql(), op.as_sql()),
+            Self::In { col, .. } => format!("{} IN ?", col.as_sql()),
             Self::Search { cols, .. } => {
                 let fields = cols
                     .iter()
@@ -139,7 +169,9 @@ impl<C: Column> Filter<C> {
     /// The value bound to this filter's `?`.
     fn value(&self) -> &Value {
         match self {
-            Self::Compare { value, .. } | Self::Search { term: value, .. } => value,
+            Self::Compare { value, .. }
+            | Self::Search { term: value, .. }
+            | Self::In { values: value, .. } => value,
         }
     }
 }
@@ -240,7 +272,9 @@ impl<T: Table> PageSpec<T> {
         order.push(format!("{} ASC", T::TIE_BREAKER));
 
         let sql = TEMPLATE
+            .replace("{{select}}", T::SELECT)
             .replace("{{table}}", T::NAME)
+            .replace("{{joins}}", T::JOINS)
             .replace("{{where}}", &where_sql)
             .replace("{{order_by}}", &order.join(", "));
         debug_assert!(!sql.contains("{{"), "unfilled template slot");
@@ -260,6 +294,7 @@ fn bind_value(q: Query, v: &Value) -> Query {
         Value::U64(n) => q.bind(*n),
         Value::I64(n) => q.bind(*n),
         Value::F64(n) => q.bind(*n),
+        Value::U64Array(ns) => q.bind(ns.as_slice()),
     }
 }
 
@@ -274,4 +309,118 @@ pub fn build(ch: &clickhouse::Client, items: &[Rendered]) -> Query {
         let q = q.bind(r.offset).bind(r.limit).bind(i as u64);
         r.where_binds.iter().fold(q, bind_value)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // A fake table used only by the tests.
+    columns!(TestCol {
+        Id    => "id"    : Str,
+        Score => "score" : F64,
+        Count => "count" : U64,
+        Tags  => "tags"  : StrArray,
+    });
+
+    struct TestTable;
+    impl Table for TestTable {
+        type Col = TestCol;
+        const NAME: &'static str = "test_table";
+        const TIE_BREAKER: &'static str = "id";
+    }
+
+    fn spec(filters: Vec<Filter<TestCol>>, order_by: Vec<OrderBy<TestCol>>) -> PageSpec<TestTable> {
+        PageSpec {
+            filters,
+            order_by,
+            offset: 0,
+            limit: 10,
+        }
+    }
+
+    #[test]
+    fn no_filters_renders_where_1() {
+        let r = spec(vec![], vec![]).render();
+        assert!(r.sql.contains("WHERE 1"), "sql was:\n{}", r.sql);
+        assert!(r.where_binds.is_empty());
+    }
+
+    #[test]
+    fn defaults_select_everything_without_joins() {
+        let r = spec(vec![], vec![]).render();
+        assert!(
+            r.sql.contains("SELECT *\n        FROM test_table\n"),
+            "sql was:\n{}",
+            r.sql
+        );
+    }
+
+    #[test]
+    fn select_and_joins_fill_their_slots() {
+        struct Joined;
+        impl Table for Joined {
+            type Col = TestCol;
+            const NAME: &'static str = "test_table AS t";
+            const TIE_BREAKER: &'static str = "id";
+            const SELECT: &'static str = "t.id AS id, o.name AS name";
+            const JOINS: &'static str = "LEFT JOIN other AS o ON t.id = o.id";
+        }
+        let r = PageSpec::<Joined> {
+            filters: vec![],
+            order_by: vec![],
+            offset: 0,
+            limit: 10,
+        }
+        .render();
+        assert!(
+            r.sql.contains("SELECT t.id AS id, o.name AS name"),
+            "sql was:\n{}",
+            r.sql
+        );
+        assert!(
+            r.sql
+                .contains("FROM test_table AS t\n        LEFT JOIN other AS o ON t.id = o.id"),
+            "sql was:\n{}",
+            r.sql
+        );
+    }
+
+    #[test]
+    fn compare_rejects_value_of_wrong_type() {
+        let result = Filter::new(TestCol::Score, Op::Eq, Value::Str("high".to_string()));
+
+        let Err(msg) = result else {
+            panic!("expected an error for a Str value on an F64 column");
+        };
+        assert_eq!(msg, "column score expects F64, got Str");
+    }
+
+    #[test]
+    fn compare_accepts_value_of_right_type() {
+        let result = Filter::new(TestCol::Score, Op::Gt, Value::F64(1.0));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn search_wraps_text_columns_in_if_null() {
+        let f = Filter::search(vec![TestCol::Id, TestCol::Tags], "x".to_string()).unwrap();
+        let sql = f.to_sql();
+        assert!(sql.contains("ifNull(id, '')"), "sql was:\n{sql}");
+        assert!(sql.contains("arrayStringConcat(tags,"), "sql was:\n{sql}");
+    }
+
+    #[test]
+    fn in_u64_renders_in() {
+        let f = Filter::in_u64(TestCol::Count, vec![1, 2]).unwrap();
+        assert_eq!(f.to_sql(), "count IN ?");
+    }
+
+    #[test]
+    fn in_u64_rejects_non_u64_column() {
+        let Err(msg) = Filter::in_u64(TestCol::Id, vec![1]) else {
+            panic!("expected an error for a Str column");
+        };
+        assert_eq!(msg, "column id expects U64, got Str");
+    }
 }
