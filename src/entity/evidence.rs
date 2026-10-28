@@ -504,6 +504,83 @@ pub async fn load_evidences(
         .map(Option::unwrap_or_default)
 }
 
+/// The key for loading the evidences of a single variant.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct EvidenceVariantKey {
+    pub variant_id: String,
+    pub datasource_ids: Vec<Datasource>,
+}
+
+#[derive(From)]
+pub struct EvidenceVariantLoader {
+    ch: ClickHouse,
+}
+
+impl Loader<EvidenceVariantKey> for EvidenceVariantLoader {
+    type Value = Vec<Evidence>;
+    type Error = async_graphql::Error;
+
+    async fn load(
+        &self,
+        keys: &[EvidenceVariantKey],
+    ) -> Result<HashMap<EvidenceVariantKey, Vec<Evidence>>, async_graphql::Error> {
+        let mut out = HashMap::with_capacity(keys.len());
+        for key in keys {
+            let ds_clause = if key.datasource_ids.is_empty() {
+                ""
+            } else {
+                " AND datasourceId IN ?"
+            };
+
+            // step 1: get the evidence ids for this variant from the join table
+            let ref_sql = format!(
+                "SELECT id FROM evidence_by_variant \
+                WHERE variantId = ?{ds_clause}"
+            );
+            let mut rq = self.ch.query(&ref_sql).bind(&key.variant_id);
+            if !key.datasource_ids.is_empty() {
+                rq = rq.bind(&key.datasource_ids);
+            }
+            tracing::trace!("query is {}", ref_sql);
+            let ids: Vec<String> = rq.fetch_all::<String>().await?;
+            tracing::trace!("ids: {:?}", ids);
+
+            if ids.is_empty() {
+                out.insert(key.clone(), Vec::new());
+                continue;
+            }
+
+            // step 2: select those ids in the evidence table
+            let rows = self
+                .ch
+                .query("SELECT ?fields FROM evidence WHERE id IN ? ORDER BY score DESC, id ASC")
+                .bind(&ids)
+                .fetch_all::<Evidence>()
+                .await?;
+            out.insert(key.clone(), rows);
+        }
+        Ok(out)
+    }
+}
+
+/// Loads evidences by a variant.
+///
+/// this function uses a [`DataLoader`] to fetch evidences from the cache or database.
+///
+/// # Returns
+/// A `Vec` of [`Evidence`] objects.
+/// # Errors
+/// Returns an [`async_graphql::Error`] if the database query fails.
+pub async fn load_evidences_by_variant(
+    ctx: &Context<'_>,
+    key: EvidenceVariantKey,
+) -> async_graphql::Result<Vec<Evidence>> {
+    ctx.data_unchecked::<DataLoader<EvidenceVariantLoader>>()
+        .load_one(key)
+        .await
+        .map(Option::unwrap_or_default)
+}
+
 #[ComplexObject]
 impl Evidence {
     /// Disease for which the target is associated in this evidence.

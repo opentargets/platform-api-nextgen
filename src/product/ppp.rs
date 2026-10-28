@@ -21,7 +21,7 @@ use crate::{
         drug::{DrugLoader, DrugQuery},
         drug_warning::DrugWarningLoader,
         enhancer_to_gene::EnhancerToGeneLoader,
-        evidence::EvidenceLoader,
+        evidence::{EvidenceLoader, EvidenceVariantLoader},
         evidence_source::EvidenceSourceQuery,
         gene_ontology::GeneOntologyLoader,
         hpo::HpoLoader,
@@ -96,6 +96,7 @@ impl Product for Ppp {
             .data(loader::<DrugWarningLoader>(ch))
             .data(loader::<EnhancerToGeneLoader>(ch))
             .data(loader::<EvidenceLoader>(ch))
+            .data(loader::<EvidenceVariantLoader>(ch))
             .data(loader::<GeneOntologyLoader>(ch))
             .data(loader::<HpoLoader>(ch))
             .data(loader::<InteractionLoader>(ch))

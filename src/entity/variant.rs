@@ -13,7 +13,9 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
+        association::Datasource,
         credible_set, enhancer_to_gene,
+        evidence::{Evidence, EvidenceVariantKey, load_evidences_by_variant},
         pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_variant},
         protein_coding_coordinates::{
             ProteinCodingCoordinateVariantLoader, ProteinCodingCoordinates,
@@ -477,5 +479,29 @@ impl Variant {
         let pharmacogenomics =
             load_pharmacogenomics_by_variant(ctx, self.variant_id.clone()).await?;
         Ok(pharmacogenomics.unwrap_or_default().query().paginate(page))
+    }
+
+    /// Target-disease evidence from all data sources where this variant supports the association.
+    /// Evidence entries report associations between targets (genes or proteins) and diseases or
+    /// phenotypes, scored according to confidence in the association.
+    async fn evidences(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default,
+            desc = "A list of datasources to narrow down the selection of evidences."
+        )]
+        datasource_ids: Vec<Datasource>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> async_graphql::Result<Paged<Evidence>> {
+        let all = load_evidences_by_variant(
+            ctx,
+            EvidenceVariantKey {
+                variant_id: self.variant_id.clone(),
+                datasource_ids,
+            },
+        )
+        .await?;
+        Ok(all.query().paginate(page))
     }
 }
