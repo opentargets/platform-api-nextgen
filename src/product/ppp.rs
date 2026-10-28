@@ -52,6 +52,9 @@ use crate::{
         variant::{VariantLoader, VariantQuery},
     },
     product::{Flavor, Product, loader},
+    view::gwas_credible_sets_by_variant::{
+        GwasCredibleSetsByVariantLoader, GwasCredibleSetsByVariantQuery,
+    },
 };
 
 /// The query root for the `PPP` product.
@@ -71,6 +74,7 @@ pub struct Query(
     StudyQuery,               // Studies
     TargetQuery,              // Targets
     VariantQuery,             // Variants
+    GwasCredibleSetsByVariantQuery,
 );
 
 pub struct Ppp;
@@ -118,5 +122,6 @@ impl Product for Ppp {
             .data(loader::<TargetEssentialityLoader>(ch))
             .data(loader::<TargetPrioritisationsLoader>(ch))
             .data(loader::<VariantLoader>(ch))
+            .data(loader::<GwasCredibleSetsByVariantLoader>(ch))
     }
 }
