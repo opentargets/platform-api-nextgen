@@ -9,15 +9,12 @@ pub trait Column: Copy + Send + Sync + 'static {
 
 pub trait Table: Send + Sync + 'static {
     type Col: Column;
-    /// Table to read, optionally with an alias for [`Self::JOINS`] (`"my_table AS t"`).
+    /// Table to read e.g. `my_table`, or a subquery in parentheses that describes the rows
+    /// (for joins or computed columns), usually `include_str!`'d from a `.sql` file
+    /// e.g. `(SELECT ... FROM ... JOIN ...)`.
     const NAME: &'static str;
     /// Unique column used as the final ORDER BY key so OFFSET paging is stable.
     const TIE_BREAKER: &'static str;
-    /// Columns to select. Filters, sorts and the row struct use these output names,
-    /// and the row struct must match their order. Defaults to every column.
-    const SELECT: &'static str = "*";
-    /// `JOIN` clauses placed after `FROM`. Defaults to none.
-    const JOINS: &'static str = "";
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -272,9 +269,7 @@ impl<T: Table> PageSpec<T> {
         order.push(format!("{} ASC", T::TIE_BREAKER));
 
         let sql = TEMPLATE
-            .replace("{{select}}", T::SELECT)
             .replace("{{table}}", T::NAME)
-            .replace("{{joins}}", T::JOINS)
             .replace("{{where}}", &where_sql)
             .replace("{{order_by}}", &order.join(", "));
         debug_assert!(!sql.contains("{{"), "unfilled template slot");
@@ -347,7 +342,7 @@ mod tests {
     }
 
     #[test]
-    fn defaults_select_everything_without_joins() {
+    fn plain_table_selects_everything() {
         let r = spec(vec![], vec![]).render();
         assert!(
             r.sql.contains("SELECT *\n        FROM test_table\n"),
@@ -357,16 +352,14 @@ mod tests {
     }
 
     #[test]
-    fn select_and_joins_fill_their_slots() {
-        struct Joined;
-        impl Table for Joined {
+    fn subquery_source_fills_table_slot() {
+        struct Sub;
+        impl Table for Sub {
             type Col = TestCol;
-            const NAME: &'static str = "test_table AS t";
+            const NAME: &'static str = "(SELECT 1 AS id)";
             const TIE_BREAKER: &'static str = "id";
-            const SELECT: &'static str = "t.id AS id, o.name AS name";
-            const JOINS: &'static str = "LEFT JOIN other AS o ON t.id = o.id";
         }
-        let r = PageSpec::<Joined> {
+        let r = PageSpec::<Sub> {
             filters: vec![],
             order_by: vec![],
             offset: 0,
@@ -374,13 +367,7 @@ mod tests {
         }
         .render();
         assert!(
-            r.sql.contains("SELECT t.id AS id, o.name AS name"),
-            "sql was:\n{}",
-            r.sql
-        );
-        assert!(
-            r.sql
-                .contains("FROM test_table AS t\n        LEFT JOIN other AS o ON t.id = o.id"),
+            r.sql.contains("SELECT *\n        FROM (SELECT 1 AS id)\n"),
             "sql was:\n{}",
             r.sql
         );
