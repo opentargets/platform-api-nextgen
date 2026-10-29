@@ -1,9 +1,11 @@
 //! `meta` entity: Metadata for the API and its underlying data sources.
 
-use async_graphql::{Context, Object, SimpleObject};
+use async_graphql::{ComplexObject, Context, Object, SimpleObject};
+use serde_json::{Value, json};
 
 use crate::{
     config::Config,
+    datasource::opensearch::OpenSearch,
     product::{CurrentProduct, Flavor, Product},
 };
 
@@ -23,6 +25,7 @@ pub struct Version {
 
 /// Metadata for the API and its underlying data sources.
 #[derive(Debug, Clone, SimpleObject)]
+#[graphql(complex)]
 pub struct Meta {
     /// Name of the API.
     name: String,
@@ -34,8 +37,6 @@ pub struct Meta {
     data_version: Version,
     /// Data release namespace.
     data_namespace: String,
-    /// Platform datasets described following MLCroissant metadata format.
-    downloads: Option<String>,
 }
 
 // ---- retrievers ----
@@ -47,6 +48,26 @@ fn split_version(v: &str) -> (String, String, String) {
         parts.next().unwrap_or_default(),
         parts.next().unwrap_or_default(),
     )
+}
+
+fn get_downloads_query() -> Value {
+    json!({
+      "query": { "ids": { "values": ["croissant"] } },
+      "size": 3000,
+      "_source": true,
+      "track_total_hits": true
+    })
+}
+
+#[ComplexObject]
+impl Meta {
+    /// Platform datasets described following MLCroissant metadata format.
+    async fn downloads(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<String>> {
+        let os = ctx.data::<OpenSearch>()?;
+        let index_name = ["downloads"];
+        let res = os.search(&index_name, get_downloads_query()).await?;
+        Ok(None)
+    }
 }
 
 impl Meta {
@@ -73,7 +94,6 @@ impl Meta {
                 month: data_month,
                 revision: data_revision,
             },
-            downloads: None,
         }
     }
 }
