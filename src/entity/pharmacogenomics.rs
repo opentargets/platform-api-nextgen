@@ -1,10 +1,3 @@
-//! Pharmacogenomics records for a target, variant or drug.
-//!
-//! Each parent entity holds `pharmacogenomicsIds`, the keys of its rows in the
-//! `pharmacogenomics` table. Sort, search and paging run in `ClickHouse` over
-//! those rows, with the target symbol and consequence label joined in on the fly
-//! (see the [`Table`] impl) so they can be sorted and searched too.
-
 use std::collections::HashMap;
 
 use async_graphql::{
@@ -68,8 +61,6 @@ pub struct VariantAnnotation {
 
 /// Pharmacogenomics data linking genetic variants to drug responses. Data is integrated from
 /// sources including ClinPGx.
-///
-/// Field order must match `Table::SELECT` below: rows are read positionally.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
@@ -169,44 +160,8 @@ impl DrugWithIdentifiers {
 
 impl Table for Pharmacogenomics {
     type Col = PgxCol;
-    const NAME: &'static str = "pharmacogenomics AS p";
+    const NAME: &'static str = include_str!("pharmacogenomics.sql");
     const TIE_BREAKER: &'static str = "rowId";
-    // Every column, plus the target symbol and consequence label so they can be
-    // sorted and searched. Order must match the struct. `nullIf` turns unmatched
-    // joins ('') into NULL so they sort last.
-    const SELECT: &'static str = r"
-        p.rowId AS rowId,
-        p.datasourceId AS datasourceId,
-        p.datatypeId AS datatypeId,
-        p.drugs AS drugs,
-        p.evidenceLevel AS evidenceLevel,
-        p.genotype AS genotype,
-        p.genotypeAnnotationText AS genotypeAnnotationText,
-        p.genotypeId AS genotypeId,
-        p.haplotypeFromSourceId AS haplotypeFromSourceId,
-        p.haplotypeId AS haplotypeId,
-        p.literature AS literature,
-        p.pgxCategory AS pgxCategory,
-        p.phenotypeFromSourceId AS phenotypeFromSourceId,
-        p.phenotypeText AS phenotypeText,
-        p.variantAnnotation AS variantAnnotation,
-        p.studyId AS studyId,
-        p.targetFromSourceId AS targetFromSourceId,
-        p.variantFunctionalConsequenceId AS variantFunctionalConsequenceId,
-        p.variantRsId AS variantRsId,
-        p.variantId AS variantId,
-        p.isDirectTarget AS isDirectTarget,
-        if(p.targetFromSourceId IS NULL, NULL, nullIf(t.approvedSymbol, ''))
-            AS targetApprovedSymbol,
-        if(p.variantFunctionalConsequenceId IS NULL, NULL, nullIf(toString(so.label), ''))
-            AS variantFunctionalConsequenceLabel,
-        arrayMap(d -> toString(d.drugId), p.drugs) AS drugIds,
-        arrayMap(d -> toString(d.drugFromSource), p.drugs) AS drugFromSources";
-    const JOINS: &'static str = r"
-        LEFT JOIN targets AS t ON ifNull(p.targetFromSourceId, '') = t.id
-        LEFT JOIN sequence_ontology AS so
-            ON toLowCardinality(replaceOne(ifNull(p.variantFunctionalConsequenceId, ''), '_', ':'))
-                = so.id";
 }
 
 columns!(PgxCol {
@@ -266,16 +221,6 @@ impl QueryParams {
 pub enum SortField {
     /// Evidence level, strongest (1A) first when ascending.
     EvidenceLevel,
-    PgxCategory,
-    /// Target approved symbol.
-    Target,
-    /// Drug names from the source.
-    Drug,
-    /// Variant rsID.
-    VariantRsId,
-    GenotypeId,
-    /// Variant functional consequence label.
-    VariantConsequence,
 }
 
 const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
@@ -292,12 +237,6 @@ impl SortField {
         use PgxCol as C;
         let col = match self {
             Self::EvidenceLevel => C::EvidenceLevel,
-            Self::PgxCategory => C::PgxCategory,
-            Self::Target => C::TargetApprovedSymbol,
-            Self::Drug => C::DrugFromSources,
-            Self::VariantRsId => C::VariantRsId,
-            Self::GenotypeId => C::GenotypeId,
-            Self::VariantConsequence => C::VariantFunctionalConsequenceLabel,
         };
         OrderBy::each(&[col], dir)
     }

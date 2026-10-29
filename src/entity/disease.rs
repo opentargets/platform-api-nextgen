@@ -70,7 +70,7 @@ pub struct Disease {
     // Ontology
     /// Boolean column indicating if a disease is root of the ontology tree, a therapeutic area.
     is_therapeutic_area: bool,
-    /// List of major therapeutic areas the disease belongs to.
+    #[graphql(skip)]
     therapeutic_areas: Vec<String>,
     #[graphql(skip)]
     parents: Vec<String>,
@@ -500,5 +500,9 @@ impl Disease {
         load_otar_projects(ctx, self.id.clone())
             .await
             .map(|pr| pr.query().paginate(page))
+    }
+    /// List of major therapeutic areas the disease belongs to.
+    async fn therapeutic_areas(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Disease>> {
+        load_diseases(ctx, &self.therapeutic_areas).await
     }
 }

@@ -65,3 +65,60 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
+
+  # Scans the Docker image's OS packages for CVEs. cargo-deny covers the Rust
+  # dependencies. Runs on the weekly schedule too, since base-image CVEs appear
+  # without any code change.
+  trivy:
+    name: trivy (image)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write # upload results to the Security tab
+    env:
+      IMAGE: platform-api:ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      # Both products use the same base image, so scanning one covers both.
+      # Shares the build cache with build-images.yaml.
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ${{ env.IMAGE }}
+          build-args: PRODUCT=platform
+          cache-from: type=gha,scope=platform
+          cache-to: type=gha,mode=max,scope=platform
+
+      # Report everything HIGH/CRITICAL, including CVEs with no fix yet.
+      - name: Scan image (report)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          limit-severities-for-sarif: true
+
+      # Fork PRs get a read-only token, so they can't upload.
+      - name: Upload results to Security tab
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: github/codeql-action/upload-sarif@v4.39.1
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-image
+
+      # Fail only on CVEs that have a fix, since those are the ones we can act on
+      # (usually by rebuilding on a newer base image). Accepted findings go in .trivyignore.
+      - name: Scan image (gate)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          skip-setup-trivy: true
