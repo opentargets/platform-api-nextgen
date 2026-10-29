@@ -59,6 +59,16 @@ fn get_downloads_query() -> Value {
     })
 }
 
+fn parse_downloads(response: &Value) -> Option<String> {
+    response
+        .get("hits")
+        .and_then(|hits| hits.get("hits"))
+        .and_then(Value::as_array)
+        .and_then(|hits| hits.first())
+        .and_then(|hit| hit.get("_source"))
+        .and_then(|s| serde_json::to_string(&s).ok())
+}
+
 #[ComplexObject]
 impl Meta {
     /// Platform datasets described following MLCroissant metadata format.
@@ -66,7 +76,8 @@ impl Meta {
         let os = ctx.data::<OpenSearch>()?;
         let index_name = ["downloads"];
         let res = os.search(&index_name, get_downloads_query()).await?;
-        Ok(None)
+        let source = parse_downloads(&res);
+        Ok(source)
     }
 }
 
