@@ -145,7 +145,7 @@ impl PhenotypeEvidence {
         load_hpos(ctx, &fix_ids(&self.onset)).await
     }
 
-    ///HPO Entity
+    /// HPO Entity
     async fn frequency_h_p_o(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Hpo>> {
         match &self.frequency {
             Some(id) => load_hpo(ctx, id.clone()).await,
