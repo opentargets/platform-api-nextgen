@@ -178,6 +178,15 @@ pub struct Study {
     #[graphql(skip)]
     #[allow(clippy::struct_field_names)]
     study_locus_ids: Vec<String>,
+    /// In molQTL studies, the gene under study for changes in expression, abundance, etc.
+    #[graphql(skip)]
+    gene_id: Option<String>,
+    /// Tissue or cell type in which the molQTL has been detected.
+    #[graphql(skip)]
+    biosample_from_source_id: Option<String>,
+    /// Any background trait(s) shared by all individuals in the study.
+    #[graphql(skip)]
+    background_trait_from_source_mapped_ids: Vec<String>,
 }
 
 // ---- query utilities ----
