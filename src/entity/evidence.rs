@@ -12,6 +12,7 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         association::Datasource,
+        credible_set::{CredibleSet, load_credible_set},
         disease::{Disease, load_disease},
         drug::{Drug, load_drug},
         gene_ontology::{GeneOntology, load_gene_ontology_one},
@@ -408,6 +409,8 @@ pub struct Evidence {
     // DEPRECATED - This is always empty in the data.
     #[graphql(deprecation = "empty")]
     warning_message: Option<String>,
+    #[graphql(skip)]
+    study_locus_id: Option<String>,
 }
 
 // ---- query utilities ----
@@ -586,6 +589,14 @@ impl Evidence {
     /// Disease for which the target is associated in this evidence.
     async fn disease(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Disease>> {
         load_disease(ctx, self.disease_id.clone()).await
+    }
+
+    /// Credible set (`StudyLocus`) supporting this evidence
+    async fn credible_set(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<CredibleSet>> {
+        match &self.study_locus_id {
+            Some(id) => load_credible_set(ctx, id.clone()).await,
+            None => Ok(None),
+        }
     }
 
     /// Target for which the disease is associated in this evidence.
