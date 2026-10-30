@@ -18,6 +18,7 @@ use crate::{
     config::DEFAULT_CLICKHOUSE_FETCH_CHUNK,
     datasource::clickhouse::ClickHouse,
     entity::{
+        biosample::{Biosample, load_biosample_by_id},
         credible_set,
         disease::{Disease, DiseaseLoader, load_diseases},
         target::{Target, load_target},
@@ -492,5 +493,18 @@ impl Study {
             Some(id) => Ok(load_target(ctx, id.clone()).await?),
             None => Ok(None),
         }
+    }
+
+    /// Tissue or cell type in which the molQTL has been detected.
+    async fn biosample(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Biosample>> {
+        match self.biosample_from_source_id.as_ref() {
+            Some(id) => Ok(load_biosample_by_id(ctx, id.clone()).await?),
+            None => Ok(None),
+        }
+    }
+
+    /// Any background trait(s) shared by all individuals in the study.
+    async fn background_traits(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Disease>> {
+        load_diseases(ctx, &self.background_trait_from_source_mapped_ids).await
     }
 }
