@@ -133,6 +133,7 @@ pub enum Provider {
 
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
+#[graphql(complex)]
 pub struct ClinicalReportDrugListItem {
     /// Drug name as reported in the source.
     drug_from_source: String,
