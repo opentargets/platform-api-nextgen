@@ -12,7 +12,7 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         disease::{Disease, DiseaseLoader},
-        hpo::{Hpo, HpoLoader, load_hpos},
+        hpo::{Hpo, HpoLoader, load_hpo, load_hpos},
     },
     query::Entity,
 };
@@ -143,5 +143,14 @@ impl PhenotypeEvidence {
     /// Age or stage of disease onset for the phenotype.
     async fn onset(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Hpo>> {
         load_hpos(ctx, &fix_ids(&self.onset)).await
+    }
+
+    /// HPO Entity
+    #[graphql(name = "frequencyHPO")]
+    async fn frequency_hpo(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Hpo>> {
+        match &self.frequency {
+            Some(id) => load_hpo(ctx, id.clone()).await,
+            None => Ok(None),
+        }
     }
 }
