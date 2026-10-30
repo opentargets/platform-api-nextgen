@@ -117,3 +117,15 @@ impl Loader<String> for HpoLoader {
 pub async fn load_hpos(ctx: &Context<'_>, ids: &[String]) -> async_graphql::Result<Vec<Hpo>> {
     load_ordered(ctx.data_unchecked::<DataLoader<HpoLoader>>(), ids).await
 }
+
+/// Loads HPO by it's ID from the cache or database.
+///
+/// # Returns
+/// An `Hpo` object corresponding to the given ID.
+/// # Errors
+/// Returns an error if the HPO could not be loaded.
+pub async fn load_hpo(ctx: &Context<'_>, id: String) -> async_graphql::Result<Option<Hpo>> {
+    ctx.data_unchecked::<DataLoader<HpoLoader>>()
+        .load_one(id)
+        .await
+}
