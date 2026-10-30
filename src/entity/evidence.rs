@@ -18,6 +18,7 @@ use crate::{
         gene_ontology::{GeneOntology, load_gene_ontology_one},
         sequence_ontology::{SequenceOntologyTerm, load_sequence_ontology_one},
         target::{Target, load_target},
+        variant::{Variant, load_variant},
     },
     query::Entity,
 };
@@ -406,6 +407,8 @@ pub struct Evidence {
     variant_functional_consequence_id: Option<String>,
     /// Variant reference SNP cluster ID (Rsid).
     variant_rs_id: Option<String>,
+    #[graphql(skip)]
+    variant_id: Option<String>,
     // DEPRECATED - This is always empty in the data.
     #[graphql(deprecation = "empty")]
     warning_message: Option<String>,
@@ -595,6 +598,14 @@ impl Evidence {
     async fn credible_set(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<CredibleSet>> {
         match &self.study_locus_id {
             Some(id) => load_credible_set(ctx, id.clone()).await,
+            None => Ok(None),
+        }
+    }
+
+    /// Variant supporting the relationship between the target and the disease.
+    async fn variant(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Variant>> {
+        match &self.variant_id {
+            Some(id) => load_variant(ctx, id.clone()).await,
             None => Ok(None),
         }
     }
