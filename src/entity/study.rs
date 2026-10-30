@@ -20,6 +20,7 @@ use crate::{
     entity::{
         credible_set,
         disease::{Disease, DiseaseLoader, load_diseases},
+        target::{Target, load_target},
     },
     query::{
         Entity, QueryExt,
@@ -483,5 +484,13 @@ impl Study {
             .await?
             .query()
             .paginate(page))
+    }
+
+    /// In molQTL studies, the gene under study for changes in expression, abundance, etc.
+    async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
+        match self.gene_id.as_ref() {
+            Some(id) => Ok(load_target(ctx, id.clone()).await?),
+            None => Ok(None),
+        }
     }
 }
