@@ -152,7 +152,7 @@ impl Pharmacogenomics {
 
 #[ComplexObject]
 impl DrugWithIdentifiers {
-    ///Drug or clinical candidate entity
+    ///Drug or clinical candidate entity.
     async fn drug(&self, ctx: &Context<'_>) -> Result<Option<Drug>> {
         load_drug(ctx, self.drug_id.clone()).await
     }
