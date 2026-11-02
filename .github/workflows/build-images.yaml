@@ -115,6 +115,19 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.product }}
           cache-to: type=gha,mode=max,scope=${{ matrix.product }}
 
+      # Scan the image we just pushed, by digest, using the registry login above.
+      # Same gate as ci.yaml: fail on fixable HIGH/CRITICAL CVEs (.trivyignore applies).
+      # The image is already pushed at this point, but a failure stops it being attested.
+      - id: scan
+        name: Scan image for CVEs
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
       - id: generate-attestations
         name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
