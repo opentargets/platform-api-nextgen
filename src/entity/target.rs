@@ -25,6 +25,7 @@ use crate::{
         credible_set,
         disease::Disease,
         evidence::{Evidence, EvidenceKey, load_evidences},
+        gene_ontology::{GeneOntology, load_gene_ontology_one},
         interaction::{Interaction, InteractionSourceDatabase, load_interaction_by_target_a},
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
         pharmacogenomics::{Pharmacogenomics, load_pharmacogenomics_by_target},
@@ -196,6 +197,7 @@ impl GenomicLocation {
 /// Gene Ontology (GO) annotations related to the target.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
+#[graphql(complex)]
 pub struct GeneOntologyAnnotation {
     #[graphql(visible = false)]
     /// Gene ontology term identifier [bioregistry:go].
@@ -598,6 +600,14 @@ impl TargetQuery {
         ctx.data_unchecked::<DataLoader<TargetLoader>>()
             .load_one(ensembl_id)
             .await
+    }
+}
+
+#[ComplexObject]
+impl GeneOntologyAnnotation {
+    /// Gene ontology term
+    async fn term(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<GeneOntology>> {
+        load_gene_ontology_one(ctx, self.id.clone()).await
     }
 }
 
