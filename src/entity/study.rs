@@ -18,8 +18,10 @@ use crate::{
     config::DEFAULT_CLICKHOUSE_FETCH_CHUNK,
     datasource::clickhouse::ClickHouse,
     entity::{
+        biosample::{Biosample, load_biosample_by_id},
         credible_set,
         disease::{Disease, DiseaseLoader, load_diseases},
+        target::{Target, load_target},
     },
     query::{
         Entity, QueryExt,
@@ -178,6 +180,15 @@ pub struct Study {
     #[graphql(skip)]
     #[allow(clippy::struct_field_names)]
     study_locus_ids: Vec<String>,
+    /// In molQTL studies, the gene under study for changes in expression, abundance, etc.
+    #[graphql(skip)]
+    gene_id: Option<String>,
+    /// Tissue or cell type in which the molQTL has been detected.
+    #[graphql(skip)]
+    biosample_from_source_id: Option<String>,
+    /// Any background trait(s) shared by all individuals in the study.
+    #[graphql(skip)]
+    background_trait_from_source_mapped_ids: Vec<String>,
 }
 
 // ---- query utilities ----
@@ -474,5 +485,26 @@ impl Study {
             .await?
             .query()
             .paginate(page))
+    }
+
+    /// In molQTL studies, the gene under study for changes in expression, abundance, etc.
+    async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
+        match self.gene_id.as_ref() {
+            Some(id) => Ok(load_target(ctx, id.clone()).await?),
+            None => Ok(None),
+        }
+    }
+
+    /// Tissue or cell type in which the molQTL has been detected.
+    async fn biosample(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Biosample>> {
+        match self.biosample_from_source_id.as_ref() {
+            Some(id) => Ok(load_biosample_by_id(ctx, id.clone()).await?),
+            None => Ok(None),
+        }
+    }
+
+    /// Any background trait(s) shared by all individuals in the study.
+    async fn background_traits(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Disease>> {
+        load_diseases(ctx, &self.background_trait_from_source_mapped_ids).await
     }
 }
