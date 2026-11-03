@@ -31,7 +31,7 @@ jobs:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install nightly rustfmt
         run: rustup toolchain install "$RUST_NIGHTLY" --profile minimal --component rustfmt
       - name: Check formatting
@@ -46,7 +46,7 @@ jobs:
       matrix:
         product: [platform, ppp]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install stable clippy
         run: |
           rustup toolchain install "$RUST_STABLE" --profile minimal --component clippy
@@ -61,7 +61,7 @@ jobs:
     name: cargo-deny
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
@@ -76,7 +76,7 @@ jobs:
       contents: read
       security-events: write # upload results to the Security tab
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Scan the runtime base image (the last FROM in the Dockerfile) instead of
       # building ours. Our image is that base plus the Rust binary, which adds no
