@@ -296,6 +296,11 @@ impl Disease {
         load_diseases(ctx, &self.children).await
     }
 
+    /// All ancestor diseases up to the top-level therapeutic area.
+    async fn resolved_ancestors(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Disease>> {
+        load_diseases(ctx, &self.ancestors).await
+    }
+
     /// Clinical signs and symptoms observed in diseases or phenotypes. Signs and symptoms are
     /// integrated from multiple sources including EFO, MONDO and HPO.
     #[graphql(complexity = "page_complexity(page, child_complexity)")]
