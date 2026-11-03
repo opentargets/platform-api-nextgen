@@ -88,7 +88,7 @@ impl MappingQuery {
         ctx: &Context<'_>,
         #[graphql(desc = "List of query terms to map.")] query_terms: Vec<String>,
         #[graphql(desc = "List of entity names to search for (target, disease, drug, etc.).")]
-        entity_names: Option<Vec<String>>,
+        entity_names: Option<Vec<EntityType>>,
     ) -> Result<MappingResults, async_graphql::Error> {
         if query_terms.len() > MAX_MAPPING_TERMS {
             return Err(async_graphql::Error::new(format!(
@@ -105,19 +105,7 @@ impl MappingQuery {
         }
 
         let os = ctx.data::<OpenSearch>()?;
-        // The uploader declares [String!], not [EntityType!]. Like Scala, select only
-        // recognized names, ignoring unknown names and duplicate selections.
-        let entities: Vec<EntityType> = entity_names
-            .unwrap_or_default()
-            .into_iter()
-            .filter_map(|name| serde_json::from_value(Value::String(name)).ok())
-            .fold(Vec::new(), |mut entities, entity| {
-                if !entities.contains(&entity) {
-                    entities.push(entity);
-                }
-                entities
-            });
-        let mapping_indices = search_indices(Some(&entities));
+        let mapping_indices = search_indices(entity_names.as_deref());
         let hits_body = build_hits_body(&terms);
         let aggs_body = build_aggs_body(&terms);
 
