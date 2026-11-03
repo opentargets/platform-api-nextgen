@@ -69,11 +69,11 @@ jobs:
 
       - id: checkout
         name: Check out repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - id: auth-ghcr
         name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -81,7 +81,7 @@ jobs:
 
       - id: auth-google
         name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           token_format: access_token
           project_id: 'open-targets-eu-dev'
@@ -91,7 +91,7 @@ jobs:
 
       - id: auth-gar
         name: Login to Google Artifact Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: europe-west1-docker.pkg.dev
           username: oauth2accesstoken
@@ -101,11 +101,11 @@ jobs:
       # is valid for GAR as well as GHCR (needed by the attestation step).
       - id: setup-buildx
         name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - id: push
         name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -130,7 +130,7 @@ jobs:
 
       - id: generate-attestations
         name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: europe-west1-docker.pkg.dev/open-targets-eu-dev/${{ env.REPO }}/${{ env.IMAGE }}
           subject-digest: ${{ steps.push.outputs.digest }}
