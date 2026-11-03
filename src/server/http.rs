@@ -24,6 +24,7 @@ const GRAPHIQL: &str = include_str!("assets/graphiql.html");
 const FAVICON: &[u8] = include_bytes!("assets/favicon.png");
 async fn graphiql() -> Html<&'static str> { Html(GRAPHIQL) }
 async fn favicon() -> impl IntoResponse { ([(header::CONTENT_TYPE, "image/png")], FAVICON) }
+async fn health() -> &'static str { "OK" }
 
 // The GraphQL part of the API.
 async fn graphql(State(state): State<AppState>, req: GraphQLRequest) -> GraphQLResponse {
@@ -59,6 +60,7 @@ pub fn router(state: AppState) -> (Router, Router) {
                 .allow_headers(Any),
         )
         .layer(prom_layer)
+        .route("/health", get(health))
         .with_state(state);
     (api_router, metrics_router)
 }
