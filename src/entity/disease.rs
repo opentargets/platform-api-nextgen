@@ -16,7 +16,7 @@ use crate::{
     entity::{
         association::{
             AssociationArguments, AssociationSort, Datasource, DatasourcePolicyOverride,
-            EntityWithAssociations, TargetAssociation, load_associations,
+            EntityWithAssociations, INDIRECT_WEIGHT_DEFAULT, TargetAssociation, load_associations,
         },
         association_timeseries_ppp::{
             AggregationType, AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
@@ -336,6 +336,14 @@ impl Disease {
         facet_filters: Vec<String>,
 
         #[graphql(
+            default_with = "INDIRECT_WEIGHT_DEFAULT",
+            validator(minimum = 0.0, maximum = 1.0),
+            desc = "Weight applied to indirect evidence (from descendant diseases), between 0 and \
+                    1. Default is 0.5."
+        )]
+        indirect_weight: f64,
+
+        #[graphql(
             default,
             desc = "Optional list of datasource policy overrides with changes to the defaults."
         )]
@@ -358,6 +366,7 @@ impl Disease {
                 b_filter,
                 facet_filters,
                 include_measurements: None, // Used in target to include measurement diseases
+                indirect_weight,
                 datasource_policy_overrides,
                 sort,
                 page,

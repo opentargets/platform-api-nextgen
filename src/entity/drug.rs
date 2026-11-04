@@ -342,7 +342,7 @@ impl Drug {
         entity_names: Option<Vec<String>>,
         #[graphql(
             desc = "Threshold similarity between 0 and 1",
-            validator(minimum = 0, maximum = 1)
+            validator(minimum = 0.0, maximum = 1.0)
         )]
         threshold: Option<f64>,
         #[graphql(default, desc = "Pagination for Similar Entities.")] page: Page,
