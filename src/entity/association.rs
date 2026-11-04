@@ -26,8 +26,7 @@ use crate::{
 /// was not precise enough. This makes the scores differ in their 5th decimal.
 // const MAX_HS: f64 = 1.644_924_066_898_242_3;
 const MAX_HS: f64 = PI * PI / 6.0;
-/// The weight of indirect associations.
-const INDIRECT_WEIGHT: f64 = 0.5;
+pub const INDIRECT_WEIGHT_DEFAULT: f64 = 0.5;
 
 // ---- helpers ----
 
@@ -287,6 +286,9 @@ pub struct AssociationArguments {
     pub facet_filters: Vec<String>,
     /// Whether to include diseases from the _measurement_ family in `B` set. Default is `false`.
     pub include_measurements: Option<bool>,
+    /// Multiplier applied to indirect evidence scores, in `[0, 1]`. Default is
+    /// `INDIRECT_WEIGHT_DEFAULT`.
+    pub indirect_weight: f64,
     /// List of datasource policy overrides.
     pub datasource_policy_overrides: Vec<DatasourcePolicyOverride>,
     /// Ordering for the associations.
@@ -444,6 +446,7 @@ pub struct AotfSql {
     b_filter: Option<String>,
     policies: DatasourcePolicies,
     include_measurements: Option<bool>,
+    indirect_weight: f64,
     sort: AssociationSort,
     page: Page,
 }
@@ -514,7 +517,7 @@ impl AotfSql {
         format!(
             include_str!("association.sql"),
             max_hs = MAX_HS,
-            indirect_w = INDIRECT_WEIGHT,
+            indirect_w = self.indirect_weight,
             a_id = self.anchor,
             table = self.table,
             datasources = self.policies.render_datasources(),
@@ -536,7 +539,7 @@ impl AotfSql {
         format!(
             include_str!("association_ppp.sql"),
             max_hs = MAX_HS,
-            indirect_w = INDIRECT_WEIGHT,
+            indirect_w = self.indirect_weight,
             novelty = "noveltyDirect",
             a_id = self.anchor,
             table = self.table,
@@ -620,6 +623,7 @@ where
         b_filter: args.b_filter.clone(),
         policies: DatasourcePolicies::from_overrides(&args.datasource_policy_overrides),
         include_measurements: args.include_measurements,
+        indirect_weight: args.indirect_weight,
         sort: args.sort.clone(),
         page: args.page,
     };
