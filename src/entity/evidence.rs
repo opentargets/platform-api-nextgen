@@ -482,7 +482,7 @@ impl Loader<EvidenceKey> for EvidenceLoader {
             // step 2: select those ids in the evidence table
             let rows = self
                 .ch
-                .query("SELECT ?fields FROM evidence WHERE id IN ?")
+                .query("SELECT ?fields FROM evidence WHERE id IN ? ORDER BY score DESC, id ASC")
                 .bind(&ids)
                 .fetch_all::<Evidence>()
                 .await?;
