@@ -24,7 +24,6 @@ pub enum ValueKind {
     I64,
     F64,
     StrArray,
-    StrArrayArray,
     U64Array,
 }
 
@@ -41,9 +40,6 @@ fn as_text_sql<C: Column>(col: C) -> Option<String> {
         // drop the row from every search. It's a no-op on non-Nullable columns.
         ValueKind::Str => Some(format!("ifNull({name}, '')")),
         ValueKind::StrArray => Some(format!("arrayStringConcat({name}, {SEARCH_SEP})")),
-        ValueKind::StrArrayArray => Some(format!(
-            "arrayStringConcat(arrayFlatten({name}), {SEARCH_SEP})"
-        )),
         ValueKind::U64 | ValueKind::I64 | ValueKind::F64 | ValueKind::U64Array => None,
     }
 }
