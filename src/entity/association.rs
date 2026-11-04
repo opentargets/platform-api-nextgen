@@ -422,6 +422,10 @@ impl AssociationRow {
 pub trait EntityWithAssociations {
     /// The name of the association table.
     const TABLE: &'static str;
+    /// The ClickHouse table holding the B entities, used by `BFilter`.
+    const B_TABLE: &'static str;
+    /// Lowercased SQL expression over `B_TABLE` that `BFilter` terms are matched against.
+    const B_SEARCH: &'static str;
     /// The type of the B id for this entity's associations.
     type B: OutputType + 'static;
     /// Generate the ID set to use this entity as A in an association query.
@@ -432,6 +436,8 @@ pub trait EntityWithAssociations {
 /// Contains the strings and other data needed to build an associations sql query.
 pub struct AotfSql {
     table: &'static str,
+    b_table: &'static str,
+    b_search: &'static str,
     anchor: String,
     a_ids: Vec<String>,
     b_ids: Vec<String>,
@@ -462,11 +468,12 @@ impl AotfSql {
             let terms: Vec<String> = filter
                 .split_whitespace()
                 .map(str::to_lowercase)
-                .map(|t| format!("lower(name) LIKE '%{}%'", esc(&t)))
+                .map(|t| format!("{} LIKE '%{}%'", self.b_search, esc(&t)))
                 .collect();
             if !terms.is_empty() {
                 conj.push(format!(
-                    "b_indirect IN (SELECT id FROM disease WHERE {})",
+                    "b_indirect IN (SELECT id FROM {} WHERE {})",
+                    self.b_table,
                     terms.join(" AND ")
                 ));
             }
@@ -605,6 +612,8 @@ where
 
     let sql = AotfSql {
         table: A::TABLE,
+        b_table: A::B_TABLE,
+        b_search: A::B_SEARCH,
         anchor: anchor.to_string(),
         a_ids,
         b_ids,

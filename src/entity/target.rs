@@ -506,6 +506,8 @@ pub struct Target {
 
 impl EntityWithAssociations for Target {
     const TABLE: &'static str = "associations_otf_target";
+    const B_TABLE: &'static str = "disease";
+    const B_SEARCH: &'static str = "lower(concat(id, ' ', name))";
     type B = Disease;
     async fn a_ids(_: &ClickHouse, _: &str) -> async_graphql::Result<Vec<String>> { Ok(Vec::new()) }
 }
