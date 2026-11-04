@@ -1,4 +1,4 @@
-use async_graphql::{Context, Object, SimpleObject};
+use async_graphql::{Context, Enum, Object, SimpleObject};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tracing::instrument;
@@ -8,19 +8,31 @@ use crate::{
     query::paginate::{Page, page_complexity},
 };
 
-const FACET_INDICES: &[&str] = &["facet_search_disease", "facet_search_target"];
+/// Kind of entity that has a facet search index.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
+#[graphql(rename_items = "lowercase")]
+pub enum FacetEntity {
+    Disease,
+    Target,
+}
 
-/// Returns the facet search indices for the given entity names.
-fn facet_indices(entity_names: Option<&[String]>) -> Vec<&'static str> {
-    match entity_names {
-        // to be able to return &str, we take those that end with entity_names
-        // that way we can return strs created at compile-time
-        Some(names) => FACET_INDICES
-            .iter()
-            .copied()
-            .filter(|index| names.iter().any(|name| index.ends_with(name.as_str())))
-            .collect(),
-        None => FACET_INDICES.to_vec(),
+impl FacetEntity {
+    const ALL: [Self; 2] = [Self::Disease, Self::Target];
+    const fn index(self) -> &'static str {
+        match self {
+            Self::Disease => "facet_search_disease",
+            Self::Target => "facet_search_target",
+        }
+    }
+}
+
+/// Selects the facet indices to search for the requested entity types.
+///
+/// No entities (or an empty list) means all facet indices.
+fn facet_indices(entities: Option<&[FacetEntity]>) -> Vec<&'static str> {
+    match entities {
+        Some(e) if !e.is_empty() => e.iter().map(|e| e.index()).collect(),
+        _ => FacetEntity::ALL.iter().map(|e| e.index()).collect(),
     }
 }
 
@@ -32,8 +44,8 @@ fn facet_indices(entity_names: Option<&[String]>) -> Vec<&'static str> {
 struct FacetDoc {
     label: String,
     category: String,
-    datasource_id: String,
-    entity_ids: Vec<String>,
+    datasource_id: Option<String>,
+    entity_ids: Option<Vec<String>>,
 }
 
 /// Facet search hit for a single category item.
@@ -46,7 +58,7 @@ struct SearchFacetResult {
     /// Facet category this item belongs to (e.g., target, disease).
     category: String,
     /// Identifier of the datasource contributing this facet.
-    datasource_id: String,
+    datasource_id: Option<String>,
     /// Optional list of underlying entity identifiers represented by this facet.
     entity_ids: Vec<String>,
     /// Highlighted text snippets showing why this facet matched the query.
@@ -152,13 +164,19 @@ fn parse_hits(json: &Value) -> (Vec<SearchFacetResult>, u64) {
         .into_iter()
         .flatten()
         .filter_map(|h| {
-            let doc: FacetDoc = serde_json::from_value(h["_source"].clone()).ok()?;
+            let doc: FacetDoc = match serde_json::from_value(h["_source"].clone()) {
+                Ok(d) => d,
+                Err(e) => {
+                    tracing::warn!(id = ?h["_id"], error = %e, "skipping unparseable facet doc");
+                    return None;
+                }
+            };
             Some(SearchFacetResult {
                 id: h["_id"].as_str()?.to_owned(), // OpenSearch's own _id, outside of _source
                 label: doc.label,
                 category: doc.category,
                 datasource_id: doc.datasource_id,
-                entity_ids: doc.entity_ids,
+                entity_ids: doc.entity_ids.unwrap_or_default(),
                 highlights: h["highlight"]
                     .as_object()
                     .into_iter()
@@ -200,8 +218,8 @@ impl FacetQuery {
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "Search query string.")] query_string: String,
-        #[graphql(desc = "List of entity names to search for (target, disease, drug, etc.).")]
-        entity_names: Option<Vec<String>>,
+        #[graphql(desc = "List of entity names to search for (target, disease).")]
+        entity_names: Option<Vec<FacetEntity>>,
         #[graphql(desc = "Category filter.")] category: Option<String>,
         #[graphql(default, desc = "Pagination for the facet search results.")] page: Page,
     ) -> Result<SearchFacetsResults, async_graphql::Error> {
