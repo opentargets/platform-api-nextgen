@@ -24,6 +24,15 @@ use crate::{
 
 // ---- model ----
 
+/// A disease (or therapeutic area) linked to a credible set.
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
+#[graphql(name = "GwasCredibleSetsByVariantDisease")]
+pub struct DiseaseRef {
+    id: String,
+    name: String,
+}
+
+/// Field order must match the column list in `gwas_credible_sets_by_variant.sql`.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct GwasCredibleSetsByVariant {
@@ -43,10 +52,8 @@ pub struct GwasCredibleSetsByVariant {
     lead_alternate_allele: String,
     study_id: String,
     trait_from_source: String,
-    disease_ids: Vec<String>,
-    disease_names: Vec<String>,
-    disease_therapeutic_area_ids: Vec<Vec<String>>,
-    disease_therapeutic_area_names: Vec<Vec<String>>,
+    diseases: Vec<DiseaseRef>,
+    disease_therapeutic_areas: Vec<DiseaseRef>,
     top_l2_g_gene_id: String,
     top_l2_g_approved_symbol: String,
     top_l2_g_score: f64,
@@ -54,7 +61,7 @@ pub struct GwasCredibleSetsByVariant {
 
 impl Table for GwasCredibleSetsByVariant {
     type Col = CredibleSetCol;
-    const NAME: &'static str = "gwas_credible_sets_by_variant";
+    const NAME: &'static str = include_str!("gwas_credible_sets_by_variant.sql");
     const TIE_BREAKER: &'static str = "studyLocusId";
 }
 
@@ -72,10 +79,11 @@ columns!(CredibleSetCol {
     LeadAlternateAllele         => "leadAlternateAllele"         : Str,
     StudyId                     => "studyId"                     : Str,
     TraitFromSource             => "traitFromSource"             : Str,
-    DiseaseIds                  => "diseaseIds"                  : StrArray,
-    DiseaseNames                => "diseaseNames"                : StrArray,
-    DiseaseTherapeuticAreaIds   => "diseaseTherapeuticAreaIds"   : StrArrayArray,
-    DiseaseTherapeuticAreaNames => "diseaseTherapeuticAreaNames" : StrArrayArray,
+    // Pull one field out of each (id, name) tuple, giving a plain string array to search.
+    DiseaseIds                  => "arrayMap(d -> d.id, diseases)"                  : StrArray,
+    DiseaseNames                => "arrayMap(d -> d.name, diseases)"                : StrArray,
+    DiseaseTherapeuticAreaIds   => "arrayMap(d -> d.id, diseaseTherapeuticAreas)"   : StrArray,
+    DiseaseTherapeuticAreaNames => "arrayMap(d -> d.name, diseaseTherapeuticAreas)" : StrArray,
     TopL2gGeneId                => "topL2GGeneId"                : Str,
     TopL2gApprovedSymbol        => "topL2GApprovedSymbol"        : Str,
     TopL2gScore                 => "topL2GScore"                 : F64,
