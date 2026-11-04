@@ -117,6 +117,8 @@ impl Disease {
 
 impl EntityWithAssociations for Disease {
     const TABLE: &'static str = "associations_otf_disease";
+    const B_TABLE: &'static str = "targets";
+    const B_SEARCH: &'static str = "lower(concat(id, ' ', approvedSymbol, ' ', approvedName))";
     type B = Target;
     async fn a_ids(ch: &ClickHouse, anchor: &str) -> async_graphql::Result<Vec<String>> {
         Ok(ch
