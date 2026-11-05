@@ -258,7 +258,7 @@ macro_rules! column_subset {
 }
 pub(crate) use column_subset;
 
-const TEMPLATE: &str = include_str!("query.sql");
+const TEMPLATE: &str = include_str!("../sql/base_query.sql");
 
 /// Table-independent, ready for batching.
 pub struct Rendered {
