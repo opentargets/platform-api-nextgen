@@ -160,7 +160,7 @@ impl DrugWithIdentifiers {
 
 impl Table for Pharmacogenomics {
     type Col = PgxCol;
-    const NAME: &'static str = include_str!("pharmacogenomics.sql");
+    const NAME: &'static str = include_str!("../sql/pharmacogenomics.sql");
     const TIE_BREAKER: &'static str = "rowId";
 }
 

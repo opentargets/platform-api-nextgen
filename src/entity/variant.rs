@@ -460,16 +460,27 @@ impl Variant {
     async fn enhancer_to_gene(
         &self,
         ctx: &Context<'_>,
+        #[graphql(
+            default_with = "enhancer_to_gene::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<enhancer_to_gene::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the gene symbol, tissue/cell, \
+                          interval type and study. Searches all of them unless `fields` is \
+                          given.")]
+        search: Option<enhancer_to_gene::Search>,
         #[graphql(default, desc = "Pagination for the enhancer-to-gene relationships.")] page: Page,
     ) -> async_graphql::Result<Paged<enhancer_to_gene::EnhancerToGene>> {
-        let e2g_key = enhancer_to_gene::Key::new(
+        enhancer_to_gene::load_enhancer_to_genes(
+            ctx,
             self.chromosome,
             self.position,
-            self.position,
-            page.index,
-            page.size,
-        );
-        enhancer_to_gene::load_enhancer_to_genes(ctx, e2g_key).await
+            sort,
+            search,
+            page,
+        )
+        .await
     }
 
     ///Pharmacogenomics data linking this genetic variant to drug responses. Data is integrated

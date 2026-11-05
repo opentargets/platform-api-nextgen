@@ -1,21 +1,28 @@
-use std::{
-    collections::HashMap,
-    hash::{Hash, Hasher},
-};
+use std::collections::HashMap;
 
 use async_graphql::{
-    ComplexObject, Context, SimpleObject,
+    ComplexObject, Context, Enum, Error, InputObject, Result, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
 use derive_more::From;
 use serde::Deserialize;
+use strum::{EnumIter, IntoEnumIterator};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{biosample, enhancer_to_gene, target, variant::Chromosome},
-    query::paginate::Paged,
+    entity::{biosample, target, variant::Chromosome},
+    query::{
+        paginate::{Page, Paged},
+        sort::{Sort, SortDirection},
+        sql::{
+            Column, Filter, Op, OrderBy, PageSpec, Table, Value, ValueKind, build, column_subset,
+            columns,
+        },
+    },
 };
+
+// ---- models ----
 
 ///Score from a specific datasource.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
@@ -29,7 +36,9 @@ pub struct ResourceScore {
 
 ///Regulatory enhancer/promoter regions to gene (target) predictions for
 ///a specific tissue/cell type based on the integration of experimental sources.
-#[derive(Debug, Clone, Deserialize, SimpleObject)]
+///
+/// Field order must match the column list in `enhancer_to_gene.sql`.
+#[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 pub struct EnhancerToGene {
@@ -64,51 +73,191 @@ pub struct EnhancerToGene {
     study_id: String,
     /// Quality control flags for this interval.
     quality_controls: Vec<String>,
+    // Joined in for sort and search only. The GraphQL `target` and `biosample`
+    // fields serve this data.
+    #[graphql(skip)]
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    target_approved_symbol: Option<String>,
+    #[graphql(skip)]
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    biosample_display_name: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, SimpleObject, Eq, PartialEq, Hash)]
-#[serde(rename_all = "camelCase")]
-pub struct Key {
+#[ComplexObject]
+impl EnhancerToGene {
+    ///Cell type or tissue where the regulatory region to gene prediction was identified.
+    async fn biosample(&self, ctx: &Context<'_>) -> Result<Option<biosample::Biosample>> {
+        biosample::load_biosample_by_id(ctx, self.biosample_id.clone()).await
+    }
+    /// Predicted gene (target).
+    async fn target(&self, ctx: &Context<'_>) -> Result<Option<target::Target>> {
+        target::load_target(ctx, self.gene_id.clone()).await
+    }
+}
+
+impl Table for EnhancerToGene {
+    type Col = E2gCol;
+    const NAME: &'static str = include_str!("../sql/enhancer_to_gene.sql");
+    // No single id column, but this combination is unique.
+    const TIE_BREAKER: &'static str =
+        "tuple(start, `end`, geneId, biosampleId, studyId, intervalType)";
+}
+
+columns!(E2gCol {
+    // `chromosome` is an Enum8, compared by its number (e.g. 23 for X).
+    Chromosome           => "chromosome"           : I64,
+    Start                => "start"                : I64,
+    // Backticks because `end` is an SQL keyword.
+    End                  => "`end`"                : I64,
+    TargetApprovedSymbol => "targetApprovedSymbol" : Str,
+    BiosampleName        => "biosampleDisplayName" : Str,
+    IntervalType         => "intervalType"         : Str,
+    StudyId              => "studyId"              : Str,
+    DistanceToTss        => "distanceToTss"        : I64,
+    // Both ends are inclusive.
+    IntervalSize         => "`end` - start + 1"    : I64,
+    Score                => "score"                : F64,
+});
+
+// ---- query params ----
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct QueryParams {
     chromosome: Chromosome,
-    start: u32,
-    end: u32,
+    position: u32,
+    sort: Vec<Sort<SortField>>,
+    search: Option<Search>,
     index: u32,
     size: u32,
 }
 
-impl Key {
-    #[must_use]
-    pub fn new(chromosome: Chromosome, start: u32, end: u32, index: u32, size: u32) -> Self {
-        Self {
-            chromosome,
-            start,
-            end,
-            index,
-            size,
-        }
-    }
-
-    #[must_use]
-    pub fn compute_hash(&self) -> u64 {
-        let mut h = std::collections::hash_map::DefaultHasher::new();
-        self.chromosome.hash(&mut h);
-        self.start.hash(&mut h);
-        self.end.hash(&mut h);
-        self.index.hash(&mut h);
-        self.size.hash(&mut h);
-        h.finish()
+impl QueryParams {
+    fn to_spec(&self) -> Result<PageSpec<EnhancerToGene>> {
+        use E2gCol as C;
+        let pos = i64::from(self.position);
+        // Regions that contain the position. Uses the table's (chromosome, start, end) key.
+        let mut filters = vec![
+            Filter::new(C::Chromosome, Op::Eq, Value::I64(self.chromosome as i64)),
+            Filter::new(C::Start, Op::Le, Value::I64(pos)),
+            Filter::new(C::End, Op::Ge, Value::I64(pos)),
+        ]
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(Error::new)?;
+        filters.extend(self.search.as_ref().map(Search::to_filter).transpose()?);
+        Ok(PageSpec {
+            filters,
+            order_by: self
+                .sort
+                .iter()
+                .flat_map(|s| s.key.as_order_by(s.direction))
+                .collect(),
+            offset: u64::from(self.index) * u64::from(self.size),
+            limit: u64::from(self.size),
+        })
     }
 }
 
-#[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
-#[serde(rename_all = "camelCase")]
-pub struct EnhancerToGeneRow {
-    key: usize,
-    enhancer_to_genes: Paged<EnhancerToGene>,
+// ---- sort ----
+
+/// Fields available for sorting enhancer-to-gene predictions.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Hash)]
+#[graphql(name = "EnhancerToGeneSortField")]
+pub enum SortField {
+    /// Type of regulatory region, alphabetically.
+    IntervalType,
+    /// Distance from the regulatory region to the transcription start site.
+    DistanceToTss,
+    /// Length of the regulatory region in base pairs.
+    IntervalSize,
+    /// Combined prediction score.
+    Score,
+}
+
+const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
+    key: SortField::Score,
+    direction: SortDirection::Descending,
+}];
+
+impl SortField {
+    /// Highest score first.
+    #[must_use]
+    pub fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
+
+    fn as_order_by(self, dir: SortDirection) -> Vec<OrderBy<E2gCol>> {
+        use E2gCol as C;
+        let col = match self {
+            Self::IntervalType => C::IntervalType,
+            Self::DistanceToTss => C::DistanceToTss,
+            Self::IntervalSize => C::IntervalSize,
+            Self::Score => C::Score,
+        };
+        OrderBy::each(&[col], dir)
+    }
+}
+
+// ---- search ----
+
+column_subset! {
+    /// Text fields that `search` can match against.
+    #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Enum, EnumIter)]
+    #[graphql(name = "EnhancerToGeneSearchField")]
+    pub enum SearchField => E2gCol {
+        TargetApprovedSymbol,
+        BiosampleName,
+        IntervalType,
+        StudyId,
+    }
+}
+
+impl SearchField {
+    /// Every searchable field; the default when the client doesn't pick any.
+    fn all() -> Vec<Self> { Self::iter().collect() }
+}
+
+/// Case-insensitive text search over enhancer-to-gene predictions.
+#[derive(Debug, Clone, Eq, PartialEq, Hash, InputObject)]
+#[graphql(name = "EnhancerToGeneSearch")]
+pub struct Search {
+    /// Text to look for. Matches if any of `fields` contains it.
+    #[graphql(validator(chars_max_length = 200))]
+    text: String,
+    /// Fields to search in. Defaults to all of them.
+    #[graphql(default_with = "SearchField::all()", validator(min_items = 1))]
+    fields: Vec<SearchField>,
+}
+
+impl Search {
+    /// Trims the text and sorts/dedupes the fields, so equivalent searches share
+    /// a `DataLoader` key. A blank search becomes `None`, the same as no search.
+    fn normalise(mut self) -> Option<Self> {
+        self.text = self.text.trim().to_owned();
+        if self.text.is_empty() {
+            return None;
+        }
+        self.fields.sort_unstable();
+        self.fields.dedup();
+        Some(self)
+    }
+
+    fn to_filter(&self) -> Result<Filter<E2gCol>> {
+        let cols = self.fields.iter().map(|f| f.as_col()).collect();
+        Filter::search(cols, self.text.clone()).map_err(Error::new)
+    }
 }
 
 // ---- loaders ----
 
+/// One row of the batched query: the page of results for `keys[key]`.
+#[derive(Debug, Clone, Row, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct BatchRow {
+    key: usize,
+    enhancer_to_genes: Paged<EnhancerToGene>,
+}
+
+/// Loads pages of enhancer-to-gene predictions, batching every lookup in one
+/// request into a single query.
 #[derive(From)]
 pub struct EnhancerToGeneLoader {
     ch: ClickHouse,
@@ -119,97 +268,51 @@ impl EnhancerToGeneLoader {
     pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
-impl Loader<Key> for EnhancerToGeneLoader {
+impl Loader<QueryParams> for EnhancerToGeneLoader {
     type Value = Paged<EnhancerToGene>;
-    type Error = async_graphql::Error;
+    type Error = Error;
 
-    async fn load(&self, keys: &[Key]) -> Result<HashMap<Key, Self::Value>, Self::Error> {
-        let base_query = "
-            WITH
-                ? AS q_chromosome,
-                ? AS q_start,
-                ? AS q_end,
-                ? AS q_offset,
-                ? AS q_limit,
-                CAST(? AS UInt64) AS query_id,
-                filtered AS
-                (
-                    SELECT *
-                    FROM enhancer_to_gene
-                    WHERE chromosome = q_chromosome
-                      AND start <= q_start
-                      AND end >= q_end
-                ),
-                (
-                    SELECT count()
-                    FROM filtered
-                ) as count,
-                paged AS
-                (
-                    SELECT *
-                    FROM filtered
-                    ORDER BY start, end
-                    LIMIT q_limit OFFSET q_offset
-                )
-            SELECT
-                query_id,
-                tuple(
-                        CAST(count AS UInt64),
-                        groupArray(tuple(*)) as rows
-                    )
-            FROM paged
-            GROUP BY query_id
-            ";
-        let queries: Vec<String> = keys.iter().map(|_| base_query.to_string()).collect();
-        let full_query = keys.iter().enumerate().fold(
-            self.ch.query(&queries.join(" UNION ALL ")),
-            |acc: clickhouse::query::Query, (i, key)| {
-                acc.bind(key.chromosome)
-                    .bind(key.start)
-                    .bind(key.end)
-                    .bind(key.index * key.size)
-                    .bind(key.size)
-                    .bind(i as u64)
-            },
-        );
-        let result = full_query.fetch_all::<EnhancerToGeneRow>().await?;
-        let results_with_keys = result
+    async fn load(&self, keys: &[QueryParams]) -> Result<HashMap<QueryParams, Self::Value>> {
+        let rendered = keys
             .iter()
-            .map(|res| (keys[res.key].clone(), res.enhancer_to_genes.clone()))
-            .collect();
+            .map(|k| k.to_spec().map(|spec| spec.render()))
+            .collect::<Result<Vec<_>>>()?;
 
-        Ok(results_with_keys)
+        let rows = build(self.ch.client(), &rendered)
+            .fetch_all::<BatchRow>()
+            .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| (keys[row.key].clone(), row.enhancer_to_genes))
+            .collect())
     }
 }
 
-/// Loads enhancer-to-gene associations for a given key.
+/// Loads one page of the enhancer-to-gene predictions whose region contains
+/// `position` on `chromosome`.
 ///
-/// # Returns
-/// Returns a [`Paged`] result containing the enhancer-to-gene associations.
 /// # Errors
-/// Returns an error if the data cannot be loaded.
+/// If the `ClickHouse` query fails.
 pub async fn load_enhancer_to_genes(
-    ctx: &async_graphql::Context<'_>,
-    key: enhancer_to_gene::Key,
-) -> async_graphql::Result<Paged<EnhancerToGene>> {
+    ctx: &Context<'_>,
+    chromosome: Chromosome,
+    position: u32,
+    sort: Vec<Sort<SortField>>,
+    search: Option<Search>,
+    page: Page,
+) -> Result<Paged<EnhancerToGene>> {
+    let key = QueryParams {
+        chromosome,
+        position,
+        sort,
+        search: search.and_then(Search::normalise),
+        index: page.index,
+        size: page.size,
+    };
     Ok(ctx
         .data_unchecked::<DataLoader<EnhancerToGeneLoader>>()
         .load_one(key)
         .await?
         .unwrap_or_default())
-}
-
-#[ComplexObject]
-impl EnhancerToGene {
-    ///Cell type or tissue where the regulatory region to gene prediction was identified.
-    async fn biosample(
-        &self,
-        ctx: &async_graphql::Context<'_>,
-    ) -> async_graphql::Result<Option<biosample::Biosample>> {
-        biosample::load_biosample_by_id(ctx, self.biosample_id.clone()).await
-    }
-    /// Predicted gene (target).
-    async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<target::Target>> {
-        target::load_target(ctx, self.gene_id.clone()).await
-    }
 }

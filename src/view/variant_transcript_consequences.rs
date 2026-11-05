@@ -98,7 +98,7 @@ impl VariantTranscriptConsequence {
 
 impl Table for VariantTranscriptConsequence {
     type Col = VariantTranscriptConsequenceCol;
-    const NAME: &'static str = include_str!("variant_transcript_consequences.sql");
+    const NAME: &'static str = include_str!("../sql/variant_transcript_consequences.sql");
     // Unique within a variant, and every query is for one variant.
     const TIE_BREAKER: &'static str = "transcriptIndex";
 }
