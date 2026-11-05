@@ -9,7 +9,7 @@ use crate::{
         variant::TranscriptConsequenceSortField,
     },
     query::Entity,
-    view::gwas_credible_sets_by_variant::SortField as GwasCredibleSetsByVariantSortField,
+    view::credible_sets_by_variant::SortField as CredibleSetsByVariantSortField,
 };
 
 /// Sort direction: ascending or descending.
@@ -37,10 +37,7 @@ impl SortDirection {
 #[graphql(concrete(name = "HpoSort", params(HpoSortField)))]
 #[graphql(concrete(name = "StudySort", params(StudySortField)))]
 #[graphql(concrete(name = "TranscriptConsequenceSort", params(TranscriptConsequenceSortField)))]
-#[graphql(concrete(
-    name = "GwasCredibleSetsByVariantSort",
-    params(GwasCredibleSetsByVariantSortField)
-))]
+#[graphql(concrete(name = "CredibleSetsByVariantSort", params(CredibleSetsByVariantSortField)))]
 #[graphql(concrete(name = "PharmacogenomicsSort", params(PharmacogenomicsSortField)))]
 pub struct Sort<K: InputType> {
     /// The field to sort by.

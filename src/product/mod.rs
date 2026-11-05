@@ -4,6 +4,7 @@ use async_graphql::{
     EmptyMutation, EmptySubscription, Enum, ObjectType, Request, Response, Schema,
     dataloader::DataLoader,
 };
+use axum::body::Bytes;
 use serde::{Deserialize, Serialize};
 use strum::Display;
 
@@ -61,6 +62,8 @@ pub type ApiSchema = Schema<<CurrentProduct as Product>::Query, EmptyMutation, E
 pub struct Api {
     /// The API schema for the current product.
     schema: ApiSchema,
+    /// The schema as SDL text, built once at startup. `Bytes` so clones share one buffer.
+    sdl: Bytes,
     /// The ClickHouse client for this API.
     ch: ClickHouse,
 }
@@ -80,8 +83,13 @@ impl Api {
         .data(os.clone())
         .data(Meta::new(config))
         .finish();
-        Self { schema, ch }
+        let sdl = Bytes::from(schema.sdl());
+        Self { schema, sdl, ch }
     }
+
+    /// The API schema as SDL text.
+    #[must_use]
+    pub fn sdl(&self) -> Bytes { self.sdl.clone() }
 
     /// Executes the given request against the API schema.
     pub async fn execute(&self, req: Request) -> Response {
