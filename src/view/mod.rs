@@ -1,1 +1,2 @@
-pub mod credible_sets_by_variant;
+pub mod variant_credible_sets;
+pub mod variant_transcript_consequences;

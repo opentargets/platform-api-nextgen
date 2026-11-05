@@ -26,7 +26,7 @@ use crate::{
 
 /// A disease (or therapeutic area) linked to a credible set.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
-#[graphql(name = "CredibleSetsByVariantDisease")]
+#[graphql(name = "VariantCredibleSetDisease")]
 pub struct DiseaseRef {
     id: String,
     name: String,
@@ -36,7 +36,7 @@ pub struct DiseaseRef {
 /// `variant_credible_sets` table. Update this struct if that table's columns change.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-pub struct CredibleSetsByVariant {
+pub struct VariantCredibleSet {
     study_type: StudyType,
     variant_id: String,
     study_locus_id: String,
@@ -61,13 +61,13 @@ pub struct CredibleSetsByVariant {
     top_l2_g_score: f64,
 }
 
-impl Table for CredibleSetsByVariant {
-    type Col = CredibleSetCol;
+impl Table for VariantCredibleSet {
+    type Col = VariantCredibleSetCol;
     const NAME: &'static str = "variant_credible_sets";
     const TIE_BREAKER: &'static str = "studyLocusId";
 }
 
-columns!(CredibleSetCol {
+columns!(VariantCredibleSetCol {
     VariantId                   => "variantId"                   : Str,
     StudyLocusId                => "studyLocusId"                : Str,
     PValueMantissa              => "pValueMantissa"              : F64,
@@ -128,7 +128,7 @@ impl QueryParams {
         }
     }
 
-    fn to_spec(&self) -> Result<PageSpec<CredibleSetsByVariant>> {
+    fn to_spec(&self) -> Result<PageSpec<VariantCredibleSet>> {
         let study_types = self
             .study_types
             .iter()
@@ -136,9 +136,9 @@ impl QueryParams {
             .collect();
         // Filters on the table's sort-key prefix (studyType, variantId).
         let mut filters = vec![
-            Filter::in_str(CredibleSetCol::StudyType, study_types).map_err(Error::new)?,
+            Filter::in_str(VariantCredibleSetCol::StudyType, study_types).map_err(Error::new)?,
             Filter::new(
-                CredibleSetCol::VariantId,
+                VariantCredibleSetCol::VariantId,
                 Op::Eq,
                 Value::Str(self.variant_id.clone()),
             )
@@ -162,7 +162,7 @@ impl QueryParams {
 
 /// Fields available for sorting.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Hash)]
-#[graphql(name = "CredibleSetsByVariantSortField")]
+#[graphql(name = "VariantCredibleSetsSortField")]
 pub enum SortField {
     // Default naming would give `TOP_L_2G_SCORE`.
     #[graphql(name = "TOP_L2G_SCORE")]
@@ -179,8 +179,8 @@ const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
 impl SortField {
     fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
 
-    fn as_order_by(self, dir: SortDirection) -> Vec<OrderBy<CredibleSetCol>> {
-        use CredibleSetCol as C;
+    fn as_order_by(self, dir: SortDirection) -> Vec<OrderBy<VariantCredibleSetCol>> {
+        use VariantCredibleSetCol as C;
         match self {
             Self::TopL2gScore => OrderBy::each(&[C::TopL2gScore], dir),
             Self::PValue => OrderBy::each(&[C::PValueExponent, C::PValueMantissa], dir),
@@ -205,8 +205,8 @@ column_subset! {
     /// Leaves out `variantId` (the same on every row) and the alleles (single letters
     /// that would match almost every search).
     #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Enum, EnumIter)]
-    #[graphql(name = "CredibleSetsByVariantSearchField")]
-    pub enum SearchField => CredibleSetCol {
+    #[graphql(name = "VariantCredibleSetsSearchField")]
+    pub enum SearchField => VariantCredibleSetCol {
         StudyLocusId,
         StudyId,
         LeadVariantId,
@@ -232,7 +232,7 @@ impl SearchField {
 
 /// Case-insensitive text search over the credible sets.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, InputObject)]
-#[graphql(name = "CredibleSetsByVariantSearch")]
+#[graphql(name = "VariantCredibleSetsSearch")]
 pub struct Search {
     /// Text to look for. Matches if any of `fields` contains it.
     #[graphql(validator(chars_max_length = 200))]
@@ -255,7 +255,7 @@ impl Search {
         Some(self)
     }
 
-    fn to_filter(&self) -> Result<Filter<CredibleSetCol>> {
+    fn to_filter(&self) -> Result<Filter<VariantCredibleSetCol>> {
         let cols = self.fields.iter().map(|f| f.as_col()).collect();
         Filter::search(cols, self.text.clone()).map_err(Error::new)
     }
@@ -268,21 +268,21 @@ impl Search {
 #[serde(rename_all = "camelCase")]
 struct BatchRow {
     key: usize,
-    credible_sets: Paged<CredibleSetsByVariant>,
+    credible_sets: Paged<VariantCredibleSet>,
 }
 
 #[derive(From)]
-pub struct CredibleSetsByVariantLoader {
+pub struct VariantCredibleSetsLoader {
     ch: ClickHouse,
 }
 
-impl CredibleSetsByVariantLoader {
+impl VariantCredibleSetsLoader {
     #[must_use]
     pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
-impl Loader<QueryParams> for CredibleSetsByVariantLoader {
-    type Value = Paged<CredibleSetsByVariant>;
+impl Loader<QueryParams> for VariantCredibleSetsLoader {
+    type Value = Paged<VariantCredibleSet>;
     type Error = Error;
 
     async fn load(&self, keys: &[QueryParams]) -> Result<HashMap<QueryParams, Self::Value>> {
@@ -304,12 +304,12 @@ impl Loader<QueryParams> for CredibleSetsByVariantLoader {
 
 /// # Errors
 /// If the `ClickHouse` query fails.
-pub async fn load_credible_sets_by_variant(
+pub async fn load_variant_credible_sets(
     ctx: &Context<'_>,
     key: QueryParams,
-) -> Result<Paged<CredibleSetsByVariant>> {
+) -> Result<Paged<VariantCredibleSet>> {
     Ok(ctx
-        .data_unchecked::<DataLoader<CredibleSetsByVariantLoader>>()
+        .data_unchecked::<DataLoader<VariantCredibleSetsLoader>>()
         .load_one(key)
         .await?
         .unwrap_or_default())
@@ -318,12 +318,12 @@ pub async fn load_credible_sets_by_variant(
 // ---- resolver ----
 
 #[derive(Default)]
-pub struct CredibleSetsByVariantQuery;
+pub struct VariantCredibleSetsQuery;
 
 #[Object]
-impl CredibleSetsByVariantQuery {
+impl VariantCredibleSetsQuery {
     #[graphql(complexity = "page_complexity(page, child_complexity)")]
-    async fn credible_sets_by_variant(
+    async fn variant_credible_sets(
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "variant ID to fetch credible sets for.")] variant_id: String,
@@ -342,9 +342,9 @@ impl CredibleSetsByVariantQuery {
                           fields. Searches all fields unless `fields` is given.")]
         search: Option<Search>,
         #[graphql(default, desc = "Pagination for the credible sets.")] page: Page,
-    ) -> Result<Paged<CredibleSetsByVariant>> {
+    ) -> Result<Paged<VariantCredibleSet>> {
         let query_params =
             QueryParams::new(variant_id, study_types, sort, search, page.index, page.size);
-        load_credible_sets_by_variant(ctx, query_params).await
+        load_variant_credible_sets(ctx, query_params).await
     }
 }
