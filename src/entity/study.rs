@@ -13,6 +13,7 @@ use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
+use strum::IntoStaticStr;
 
 use crate::{
     config::DEFAULT_CLICKHOUSE_FETCH_CHUNK,
@@ -42,9 +43,13 @@ use crate::{
 // ---- models ----
 
 /// Field specifying if study contains phenotype/disease or molecular genetic associations.
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr)]
+#[derive(
+    Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr, IntoStaticStr,
+)]
 #[repr(i8)]
 #[graphql(rename_items = "lowercase")]
+// `IntoStaticStr` gives the `ClickHouse` enum name, e.g. `"gwas"`, for SQL filters.
+#[strum(serialize_all = "lowercase")]
 pub enum StudyType {
     /// Bulk tissue transcript uptake quantitative trait locus (tuQTL) study.
     Tuqtl = 1,

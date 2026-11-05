@@ -34,7 +34,7 @@ use crate::{
         variant::Variant,
     },
     query::stats::HasStats,
-    view::gwas_credible_sets_by_variant::GwasCredibleSetsByVariant,
+    view::credible_sets_by_variant::CredibleSetsByVariant,
 };
 
 pub const MAX_PAGE_SIZE: u32 = 100_000;
@@ -98,7 +98,7 @@ pub fn page_complexity(page: Page, child_complexity: usize) -> usize {
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
 #[graphql(concrete(name = "VariantPage", params(Variant)))]
-#[graphql(concrete(name = "GwasCredibleSetByVariantPage", params(GwasCredibleSetsByVariant)))]
+#[graphql(concrete(name = "CredibleSetByVariantPage", params(CredibleSetsByVariant)))]
 pub struct Paged<T: OutputType> {
     pub count: u64,
     pub rows: Vec<T>,

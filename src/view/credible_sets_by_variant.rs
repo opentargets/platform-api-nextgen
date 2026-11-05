@@ -11,7 +11,7 @@ use strum::{EnumIter, IntoEnumIterator};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::variant::Chromosome,
+    entity::{study::StudyType, variant::Chromosome},
     query::{
         paginate::{Page, Paged, page_complexity},
         sort::{Sort, SortDirection, UniqueSortKeys},
@@ -26,16 +26,18 @@ use crate::{
 
 /// A disease (or therapeutic area) linked to a credible set.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
-#[graphql(name = "GwasCredibleSetsByVariantDisease")]
+#[graphql(name = "CredibleSetsByVariantDisease")]
 pub struct DiseaseRef {
     id: String,
     name: String,
 }
 
-/// Field order must match the column list in `gwas_credible_sets_by_variant.sql`.
+/// Rows are decoded by position, so field order must match the column order of the
+/// `variant_credible_sets` table. Update this struct if that table's columns change.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-pub struct GwasCredibleSetsByVariant {
+pub struct CredibleSetsByVariant {
+    study_type: StudyType,
     variant_id: String,
     study_locus_id: String,
     posterior_probability: f64,
@@ -59,9 +61,9 @@ pub struct GwasCredibleSetsByVariant {
     top_l2_g_score: f64,
 }
 
-impl Table for GwasCredibleSetsByVariant {
+impl Table for CredibleSetsByVariant {
     type Col = CredibleSetCol;
-    const NAME: &'static str = include_str!("gwas_credible_sets_by_variant.sql");
+    const NAME: &'static str = "variant_credible_sets";
     const TIE_BREAKER: &'static str = "studyLocusId";
 }
 
@@ -78,6 +80,8 @@ columns!(CredibleSetCol {
     LeadReferenceAllele         => "leadReferenceAllele"         : Str,
     LeadAlternateAllele         => "leadAlternateAllele"         : Str,
     StudyId                     => "studyId"                     : Str,
+    // Enum8 in ClickHouse, compared against its names, e.g. 'gwas'.
+    StudyType                   => "studyType"                   : Str,
     TraitFromSource             => "traitFromSource"             : Str,
     // Pull one field out of each (id, name) tuple, giving a plain string array to search.
     DiseaseIds                  => "arrayMap(d -> d.id, diseases)"                  : StrArray,
@@ -94,6 +98,7 @@ columns!(CredibleSetCol {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct QueryParams {
     variant_id: String,
+    study_types: Vec<StudyType>,
     sort: Vec<Sort<SortField>>,
     search: Option<Search>,
     index: u32,
@@ -104,13 +109,18 @@ impl QueryParams {
     #[must_use]
     pub fn new(
         variant_id: String,
+        mut study_types: Vec<StudyType>,
         sort: Vec<Sort<SortField>>,
         search: Option<Search>,
         index: u32,
         size: u32,
     ) -> Self {
+        // Sorted and deduped so equivalent requests share a `DataLoader` key.
+        study_types.sort_unstable();
+        study_types.dedup();
         Self {
             variant_id,
+            study_types,
             sort,
             search: search.and_then(Search::normalise),
             index,
@@ -118,8 +128,15 @@ impl QueryParams {
         }
     }
 
-    fn to_spec(&self) -> Result<PageSpec<GwasCredibleSetsByVariant>> {
+    fn to_spec(&self) -> Result<PageSpec<CredibleSetsByVariant>> {
+        let study_types = self
+            .study_types
+            .iter()
+            .map(|&t| <&str>::from(t).to_owned())
+            .collect();
+        // Filters on the table's sort-key prefix (studyType, variantId).
         let mut filters = vec![
+            Filter::in_str(CredibleSetCol::StudyType, study_types).map_err(Error::new)?,
             Filter::new(
                 CredibleSetCol::VariantId,
                 Op::Eq,
@@ -145,8 +162,10 @@ impl QueryParams {
 
 /// Fields available for sorting.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Hash)]
-#[graphql(name = "GwasCredibleSetsByVariantSortField")]
+#[graphql(name = "CredibleSetsByVariantSortField")]
 pub enum SortField {
+    // Default naming would give `TOP_L_2G_SCORE`.
+    #[graphql(name = "TOP_L2G_SCORE")]
     TopL2gScore,
     PValue,
     LeadVariant,
@@ -186,7 +205,7 @@ column_subset! {
     /// Leaves out `variantId` (the same on every row) and the alleles (single letters
     /// that would match almost every search).
     #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Enum, EnumIter)]
-    #[graphql(name = "GwasCredibleSetsByVariantSearchField")]
+    #[graphql(name = "CredibleSetsByVariantSearchField")]
     pub enum SearchField => CredibleSetCol {
         StudyLocusId,
         StudyId,
@@ -194,7 +213,10 @@ column_subset! {
         FinemappingMethod,
         Confidence,
         TraitFromSource,
+        // Default naming would give `TOP_L_2G_...`.
+        #[graphql(name = "TOP_L2G_GENE_ID")]
         TopL2gGeneId,
+        #[graphql(name = "TOP_L2G_APPROVED_SYMBOL")]
         TopL2gApprovedSymbol,
         DiseaseIds,
         DiseaseNames,
@@ -210,7 +232,7 @@ impl SearchField {
 
 /// Case-insensitive text search over the credible sets.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, InputObject)]
-#[graphql(name = "GwasCredibleSetsByVariantSearch")]
+#[graphql(name = "CredibleSetsByVariantSearch")]
 pub struct Search {
     /// Text to look for. Matches if any of `fields` contains it.
     #[graphql(validator(chars_max_length = 200))]
@@ -246,21 +268,21 @@ impl Search {
 #[serde(rename_all = "camelCase")]
 struct BatchRow {
     key: usize,
-    gwas_credible_sets: Paged<GwasCredibleSetsByVariant>,
+    credible_sets: Paged<CredibleSetsByVariant>,
 }
 
 #[derive(From)]
-pub struct GwasCredibleSetsByVariantLoader {
+pub struct CredibleSetsByVariantLoader {
     ch: ClickHouse,
 }
 
-impl GwasCredibleSetsByVariantLoader {
+impl CredibleSetsByVariantLoader {
     #[must_use]
     pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
-impl Loader<QueryParams> for GwasCredibleSetsByVariantLoader {
-    type Value = Paged<GwasCredibleSetsByVariant>;
+impl Loader<QueryParams> for CredibleSetsByVariantLoader {
+    type Value = Paged<CredibleSetsByVariant>;
     type Error = Error;
 
     async fn load(&self, keys: &[QueryParams]) -> Result<HashMap<QueryParams, Self::Value>> {
@@ -275,19 +297,19 @@ impl Loader<QueryParams> for GwasCredibleSetsByVariantLoader {
 
         Ok(rows
             .into_iter()
-            .map(|row| (keys[row.key].clone(), row.gwas_credible_sets))
+            .map(|row| (keys[row.key].clone(), row.credible_sets))
             .collect())
     }
 }
 
 /// # Errors
 /// If the `ClickHouse` query fails.
-pub async fn load_gwas_credible_sets_by_variant(
+pub async fn load_credible_sets_by_variant(
     ctx: &Context<'_>,
     key: QueryParams,
-) -> Result<Paged<GwasCredibleSetsByVariant>> {
+) -> Result<Paged<CredibleSetsByVariant>> {
     Ok(ctx
-        .data_unchecked::<DataLoader<GwasCredibleSetsByVariantLoader>>()
+        .data_unchecked::<DataLoader<CredibleSetsByVariantLoader>>()
         .load_one(key)
         .await?
         .unwrap_or_default())
@@ -296,15 +318,20 @@ pub async fn load_gwas_credible_sets_by_variant(
 // ---- resolver ----
 
 #[derive(Default)]
-pub struct GwasCredibleSetsByVariantQuery;
+pub struct CredibleSetsByVariantQuery;
 
 #[Object]
-impl GwasCredibleSetsByVariantQuery {
+impl CredibleSetsByVariantQuery {
     #[graphql(complexity = "page_complexity(page, child_complexity)")]
-    async fn gwas_credible_sets_by_variant(
+    async fn credible_sets_by_variant(
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "variant ID to fetch credible sets for.")] variant_id: String,
+        #[graphql(
+            validator(min_items = 1),
+            desc = "Study types to include, e.g. `[gwas]` or the QTL types."
+        )]
+        study_types: Vec<StudyType>,
         #[graphql(
             default_with = "SortField::default_sort()",
             validator(custom = "UniqueSortKeys"),
@@ -315,8 +342,9 @@ impl GwasCredibleSetsByVariantQuery {
                           fields. Searches all fields unless `fields` is given.")]
         search: Option<Search>,
         #[graphql(default, desc = "Pagination for the credible sets.")] page: Page,
-    ) -> Result<Paged<GwasCredibleSetsByVariant>> {
-        let query_params = QueryParams::new(variant_id, sort, search, page.index, page.size);
-        load_gwas_credible_sets_by_variant(ctx, query_params).await
+    ) -> Result<Paged<CredibleSetsByVariant>> {
+        let query_params =
+            QueryParams::new(variant_id, study_types, sort, search, page.index, page.size);
+        load_credible_sets_by_variant(ctx, query_params).await
     }
 }

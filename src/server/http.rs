@@ -26,6 +26,14 @@ async fn graphiql() -> Html<&'static str> { Html(GRAPHIQL) }
 async fn favicon() -> impl IntoResponse { ([(header::CONTENT_TYPE, "image/png")], FAVICON) }
 async fn health() -> &'static str { "OK" }
 
+/// The full GraphQL schema as SDL text.
+async fn schema(State(state): State<AppState>) -> impl IntoResponse {
+    (
+        [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+        state.api.sdl(),
+    )
+}
+
 // The GraphQL part of the API.
 async fn graphql(State(state): State<AppState>, req: GraphQLRequest) -> GraphQLResponse {
     state.api.execute(req.into_inner()).await.into()
@@ -34,10 +42,12 @@ async fn graphql(State(state): State<AppState>, req: GraphQLRequest) -> GraphQLR
 /// Returns the HTTP router for the API.
 pub fn router(state: AppState) -> (Router, Router) {
     let release = format!("/{}", state.config.data_release_main());
-    let api: Router<AppState> = Router::new().route(
-        "/graphql",
-        get(graphiql).post(graphql).layer(from_fn(post_cache)),
-    );
+    let api: Router<AppState> = Router::new()
+        .route(
+            "/graphql",
+            get(graphiql).post(graphql).layer(from_fn(post_cache)),
+        )
+        .route("/graphql/schema", get(schema));
 
     let (_, metric_handle) = axum_prometheus::PrometheusMetricLayer::pair();
     let prom_layer = PrometheusMetricLayerBuilder::new()

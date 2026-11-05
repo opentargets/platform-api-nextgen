@@ -1,1 +1,1 @@
-pub mod gwas_credible_sets_by_variant;
+pub mod credible_sets_by_variant;

@@ -50,6 +50,7 @@ pub enum Value {
     U64(u64),
     I64(i64),
     F64(f64),
+    StrArray(Vec<String>),
     U64Array(Vec<u64>),
 }
 impl Value {
@@ -59,6 +60,7 @@ impl Value {
             Value::U64(_) => ValueKind::U64,
             Value::I64(_) => ValueKind::I64,
             Value::F64(_) => ValueKind::F64,
+            Value::StrArray(_) => ValueKind::StrArray,
             Value::U64Array(_) => ValueKind::U64Array,
         }
     }
@@ -141,6 +143,22 @@ impl<C: Column> Filter<C> {
         })
     }
 
+    /// An `IN` filter over a `Str` column. Errors if `col` isn't `Str`.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn in_str(col: C, values: Vec<String>) -> Result<Self, String> {
+        if col.kind() != ValueKind::Str {
+            return Err(format!(
+                "column {} expects Str, got {:?}",
+                col.as_sql(),
+                col.kind()
+            ));
+        }
+        Ok(Self::In {
+            col,
+            values: Value::StrArray(values),
+        })
+    }
+
     /// The SQL condition, with one `?` placeholder for [`Self::value`].
     fn to_sql(&self) -> String {
         match self {
@@ -208,22 +226,28 @@ pub(crate) use columns;
 /// Declares an enum whose variants are a subset of a [`columns!`] enum, with the
 /// same names, and generates `as_col()` mapping each variant to its column.
 ///
-/// Attributes (docs, derives, `#[graphql(...)]`) are passed through, so this works
-/// for GraphQL enums that expose a choice of columns to clients.
+/// Attributes (docs, derives, `#[graphql(...)]`) on the enum and on each variant are
+/// passed through, so this works for GraphQL enums that expose a choice of columns to clients.
 ///
 /// ```ignore
 /// column_subset! {
 ///     #[derive(Clone, Copy, Enum)]
-///     pub enum SearchField => CredibleSetCol { StudyId, DiseaseNames }
+///     pub enum SearchField => CredibleSetCol {
+///         StudyId,
+///         #[graphql(name = "DISEASE_NAMES")]
+///         DiseaseNames,
+///     }
 /// }
 /// ```
 macro_rules! column_subset {
     (
         $(#[$meta:meta])*
-        $vis:vis enum $name:ident => $col:ident { $($variant:ident),* $(,)? }
+        $vis:vis enum $name:ident => $col:ident {
+            $( $(#[$vmeta:meta])* $variant:ident ),* $(,)?
+        }
     ) => {
         $(#[$meta])*
-        $vis enum $name { $($variant),* }
+        $vis enum $name { $( $(#[$vmeta])* $variant ),* }
         impl $name {
             /// The column this variant refers to.
             const fn as_col(self) -> $col {
@@ -285,6 +309,7 @@ fn bind_value(q: Query, v: &Value) -> Query {
         Value::U64(n) => q.bind(*n),
         Value::I64(n) => q.bind(*n),
         Value::F64(n) => q.bind(*n),
+        Value::StrArray(ss) => q.bind(ss.as_slice()),
         Value::U64Array(ns) => q.bind(ns.as_slice()),
     }
 }
@@ -405,5 +430,19 @@ mod tests {
             panic!("expected an error for a Str column");
         };
         assert_eq!(msg, "column id expects U64, got Str");
+    }
+
+    #[test]
+    fn in_str_renders_in() {
+        let f = Filter::in_str(TestCol::Id, vec!["a".to_string(), "b".to_string()]).unwrap();
+        assert_eq!(f.to_sql(), "id IN ?");
+    }
+
+    #[test]
+    fn in_str_rejects_non_str_column() {
+        let Err(msg) = Filter::in_str(TestCol::Count, vec!["a".to_string()]) else {
+            panic!("expected an error for a U64 column");
+        };
+        assert_eq!(msg, "column count expects Str, got U64");
     }
 }
