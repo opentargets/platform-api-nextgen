@@ -49,7 +49,12 @@ use crate::{
         variant::{VariantLoader, VariantQuery},
     },
     product::{Flavor, Product, loader},
-    view::credible_sets_by_variant::{CredibleSetsByVariantLoader, CredibleSetsByVariantQuery},
+    view::{
+        variant_credible_sets::{VariantCredibleSetsLoader, VariantCredibleSetsQuery},
+        variant_transcript_consequences::{
+            VariantTranscriptConsequencesLoader, VariantTranscriptConsequencesQuery,
+        },
+    },
 };
 
 /// The query root for the `PPP` product.
@@ -69,7 +74,8 @@ pub struct Query(
     StudyQuery,               // Studies
     TargetQuery,              // Targets
     VariantQuery,             // Variants
-    CredibleSetsByVariantQuery,
+    VariantCredibleSetsQuery,
+    VariantTranscriptConsequencesQuery,
 );
 
 pub struct Ppp;
@@ -115,6 +121,7 @@ impl Product for Ppp {
             .data(loader::<TargetEssentialityLoader>(ch))
             .data(loader::<TargetPrioritisationsLoader>(ch))
             .data(loader::<VariantLoader>(ch))
-            .data(loader::<CredibleSetsByVariantLoader>(ch))
+            .data(loader::<VariantCredibleSetsLoader>(ch))
+            .data(loader::<VariantTranscriptConsequencesLoader>(ch))
     }
 }

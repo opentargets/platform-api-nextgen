@@ -232,7 +232,7 @@ pub(crate) use columns;
 /// ```ignore
 /// column_subset! {
 ///     #[derive(Clone, Copy, Enum)]
-///     pub enum SearchField => CredibleSetCol {
+///     pub enum SearchField => VariantCredibleSetCol {
 ///         StudyId,
 ///         #[graphql(name = "DISEASE_NAMES")]
 ///         DiseaseNames,
