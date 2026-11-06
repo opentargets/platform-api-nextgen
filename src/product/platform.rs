@@ -47,6 +47,7 @@ use crate::{
     },
     product::{Flavor, Product, loader},
     view::{
+        study_credible_sets::{StudyCredibleSetsLoader, StudyCredibleSetsQuery},
         variant_credible_sets::{VariantCredibleSetsLoader, VariantCredibleSetsQuery},
         variant_transcript_consequences::{
             VariantTranscriptConsequencesLoader, VariantTranscriptConsequencesQuery,
@@ -70,6 +71,7 @@ pub struct Query(
     DrugQuery,                // Drugs
     VariantQuery,             // Variants
     TargetQuery,              // Targets
+    StudyCredibleSetsQuery,
     VariantCredibleSetsQuery,
     VariantTranscriptConsequencesQuery,
 );
@@ -114,6 +116,7 @@ impl Product for Platform {
             .data(loader::<TargetEssentialityLoader>(ch))
             .data(loader::<TargetPrioritisationsLoader>(ch))
             .data(loader::<VariantLoader>(ch))
+            .data(loader::<StudyCredibleSetsLoader>(ch))
             .data(loader::<VariantCredibleSetsLoader>(ch))
             .data(loader::<VariantTranscriptConsequencesLoader>(ch))
     }
