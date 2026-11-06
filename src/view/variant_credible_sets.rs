@@ -56,9 +56,9 @@ pub struct VariantCredibleSet {
     trait_from_source: String,
     diseases: Vec<DiseaseRef>,
     disease_therapeutic_areas: Vec<DiseaseRef>,
-    top_l2_g_gene_id: String,
-    top_l2_g_approved_symbol: String,
-    top_l2_g_score: f64,
+    top_l2_g_gene_id: Option<String>,
+    top_l2_g_approved_symbol: Option<String>,
+    top_l2_g_score: Option<f64>,
 }
 
 impl Table for VariantCredibleSet {
