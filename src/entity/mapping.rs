@@ -12,6 +12,8 @@ use crate::{
 
 /// Maximum number of hits fetched for a mapping request.
 const MAX_MAPPING_HITS: u32 = 10_000;
+/// Uploader limit, applied before removing empty terms.
+const MAX_MAPPING_TERMS: usize = 3000;
 
 // ---- models ----
 
@@ -88,6 +90,11 @@ impl MappingQuery {
         #[graphql(desc = "List of entity names to search for (target, disease, drug, etc.).")]
         entity_names: Option<Vec<EntityType>>,
     ) -> Result<MappingResults, async_graphql::Error> {
+        if query_terms.len() > MAX_MAPPING_TERMS {
+            return Err(async_graphql::Error::new(format!(
+                "Invalid request. Number of requested terms must not exceed {MAX_MAPPING_TERMS}"
+            )));
+        }
         let terms: Vec<String> = query_terms.into_iter().filter(|t| !t.is_empty()).collect();
         if terms.is_empty() {
             return Ok(MappingResults {
