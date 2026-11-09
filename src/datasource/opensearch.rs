@@ -77,7 +77,7 @@ impl OpenSearch {
             .send()
             .await?
             .error_for_status_code()?;
-        metric_utils::opensearch_queries();
+        metric_utils::db_queries("opensearch".to_string());
         resp.json().await
     }
 }

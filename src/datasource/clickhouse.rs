@@ -43,7 +43,7 @@ impl ClickHouse {
     /// Start a query. `?fields` expands to the row's columns, `?` binds a value,
     /// `sql::Identifier` binds table names from config.
     pub fn query(&self, sql: &str) -> clickhouse::query::Query {
-        metric_utils::clickhouse_queries();
+        metric_utils::db_queries("clickhouse".to_string());
         self.0.query(sql)
     }
 
