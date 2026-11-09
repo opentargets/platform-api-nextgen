@@ -36,13 +36,54 @@ fn human(bytes: u64) -> String {
 fn parse(body: &[u8]) -> Option<Value> { serde_json::from_slice(body).ok() }
 
 /// Removes comments and whitespace from a GraphQL query by parsing it.
-fn normalize_query(mut v: Value) -> Value {
+fn normalize_query(v: &mut Value) {
     if let Some(Value::String(q)) = v.get("query")
         && let Ok(doc) = graphql_parser::query::parse_query::<String>(q)
     {
         v["query"] = Value::String(doc.to_string());
     }
-    v
+}
+
+/// Returns the name of the single named operation in the GraphQL document, if any.
+///
+/// Documents with more than one named operation are ambiguous, so no name is returned.
+fn document_operation_name(query: &str) -> Option<String> {
+    use std::borrow::Borrow;
+
+    use graphql_parser::query::{Definition, OperationDefinition};
+
+    let doc = graphql_parser::query::parse_query::<String>(query).ok()?;
+    let mut names = doc.definitions.iter().filter_map(|def| match def {
+        Definition::Operation(OperationDefinition::Query(op)) => op.name.as_ref(),
+        Definition::Operation(
+            OperationDefinition::Mutation(_)
+            | OperationDefinition::Subscription(_)
+            | OperationDefinition::SelectionSet(_),
+        )
+        | Definition::Fragment(_) => None,
+    });
+
+    let name = names.next()?;
+    if names.next().is_some() {
+        return None;
+    }
+    Some(Borrow::<str>::borrow(name).to_string())
+}
+
+/// Extracts the GraphQL operation name from the request body.
+///
+/// The `operationName` field takes precedence. When it is missing, the name of the
+/// single named operation in the query document is used instead.
+fn query_name(v: &Value) -> String {
+    if let Some(Value::String(name)) = v.get("operationName")
+        && !name.is_empty()
+    {
+        return name.clone();
+    }
+    match v.get("query") {
+        Some(Value::String(query)) => document_operation_name(query).unwrap_or_default(),
+        _ => String::new(),
+    }
 }
 
 static CACHE: LazyLock<Cache<u64, (u16, Bytes)>> = LazyLock::new(|| {
@@ -58,18 +99,18 @@ pub async fn post_cache(req: Request, next: Next) -> Response {
         return next.run(req).await;
     }
 
-    // increment the counter metrics for graphql post requests
-    metric_utils::graphql_request();
-
     // process the request body and build the cache key
     let (parts, body) = req.into_parts();
     let Ok(bytes) = axum::body::to_bytes(body, usize::MAX).await else {
         return StatusCode::BAD_REQUEST.into_response();
     };
+    let mut parsed = parse(&bytes);
+    let query_name = parsed.as_ref().map(query_name).unwrap_or_default();
     let key = {
-        let normalized = parse(&bytes)
-            .map(normalize_query)
-            .map(|v| v.to_string().into_bytes());
+        let normalized = parsed.as_mut().map(|v| {
+            normalize_query(v);
+            v.to_string().into_bytes()
+        });
 
         let to_hash = normalized.as_deref().unwrap_or(bytes.as_ref());
         let mut h = std::collections::hash_map::DefaultHasher::new();
@@ -77,19 +118,22 @@ pub async fn post_cache(req: Request, next: Next) -> Response {
         h.finish()
     };
 
+    // increment the counter metrics for graphql post requests
+    metric_utils::graphql_request(&query_name);
+
     // on cache hit: return cached response
     if let Some((status, body)) = CACHE.get(&key).await {
         tracing::debug!(
             "cache hit: key={key} status={status} size={}",
             human(body.len() as u64)
         );
-        metric_utils::cache_hit();
+        metric_utils::cache_hit(&query_name);
         return build(status, body);
     }
 
     // on cache miss: rebuild request, run handler
     tracing::debug!("cache miss: key={key}");
-    metric_utils::cache_miss();
+    metric_utils::cache_miss(&query_name);
     let req = Request::from_parts(parts, Body::from(bytes));
     let resp = next.run(req).await;
     let status = resp.status().as_u16();
@@ -109,7 +153,7 @@ pub async fn post_cache(req: Request, next: Next) -> Response {
     {
         let size = out.len();
         CACHE.insert(key, (status, out.clone())).await;
-        metric_utils::cache_registration();
+        metric_utils::cache_registration(&query_name);
         CACHE.run_pending_tasks().await;
         tracing::debug!(
             "cache store: key={key} size={} used={}/{}",
