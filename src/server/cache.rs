@@ -109,6 +109,7 @@ pub async fn post_cache(req: Request, next: Next) -> Response {
     {
         let size = out.len();
         CACHE.insert(key, (status, out.clone())).await;
+        metric_utils::cache_registration();
         CACHE.run_pending_tasks().await;
         tracing::debug!(
             "cache store: key={key} size={} used={}/{}",

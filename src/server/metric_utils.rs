@@ -5,14 +5,21 @@ const API_PREFIX: &str = "platform_api_";
 pub fn cache_miss() {
     metrics::counter!(
         description: "Number of requests not served from cache.",
-        format!("{API_PREFIX}graphql_cache_miss")
+        format!("{API_PREFIX}cache_missed_total")
     )
     .increment(1);
 }
 pub fn cache_hit() {
     metrics::counter!(
         description: "Number of requests served from cache.",
-        format!("{API_PREFIX}graphql_cache_hit")
+        format!("{API_PREFIX}cache_hit_total")
+    )
+    .increment(1);
+}
+pub fn cache_registration() {
+    metrics::counter!(
+        description: "Number of requests registered in the cache.",
+        format!("{API_PREFIX}cache_registration_total")
     )
     .increment(1);
 }
