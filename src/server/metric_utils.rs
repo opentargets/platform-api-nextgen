@@ -16,17 +16,11 @@ pub fn cache_hit() {
     )
     .increment(1);
 }
-pub fn clickhouse_queries() {
+pub fn db_queries(database: String) {
     metrics::counter!(
-        description: "Number of queries to Clickhouse database.",
-        format!("{API_PREFIX}ch_query_total")
-    )
-    .increment(1);
-}
-pub fn opensearch_queries() {
-    metrics::counter!(
-        description: "Number of queries to Opensearch database.",
-        format!("{API_PREFIX}os_query_total")
+        description: "Number of queries to databases.",
+        format!("{API_PREFIX}db_query_total"),
+        "database" => database
     )
     .increment(1);
 }
