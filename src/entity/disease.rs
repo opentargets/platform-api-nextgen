@@ -15,8 +15,8 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         association::{
-            AssociationArguments, AssociationSort, Datasource, DatasourcePolicyOverride,
-            EntityWithAssociations, INDIRECT_WEIGHT_DEFAULT, TargetAssociation, load_associations,
+            AssociationArguments, AssociationSort, DISEASE_INDIRECT_WEIGHT_DEFAULT, Datasource,
+            DatasourcePolicyOverride, EntityWithAssociations, TargetAssociation, load_associations,
         },
         association_timeseries_ppp::{
             AggregationType, AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
@@ -341,10 +341,10 @@ impl Disease {
         facet_filters: Vec<String>,
 
         #[graphql(
-            default_with = "INDIRECT_WEIGHT_DEFAULT",
+            default_with = "DISEASE_INDIRECT_WEIGHT_DEFAULT",
             validator(minimum = 0.0, maximum = 1.0),
             desc = "Weight applied to indirect evidence (from descendant diseases), between 0 and \
-                    1. Default is 0.5."
+                    1. Default is 1."
         )]
         indirect_weight: f64,
 

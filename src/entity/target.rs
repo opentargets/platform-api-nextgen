@@ -14,7 +14,8 @@ use crate::{
     entity::{
         association::{
             AssociationArguments, AssociationSort, Datasource, DatasourcePolicyOverride,
-            DiseaseAssociation, EntityWithAssociations, INDIRECT_WEIGHT_DEFAULT, load_associations,
+            DiseaseAssociation, EntityWithAssociations, TARGET_INDIRECT_WEIGHT_DEFAULT,
+            load_associations,
         },
         association_timeseries_ppp::{
             AggregationType, AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
@@ -651,10 +652,10 @@ impl Target {
         include_measurements: bool,
 
         #[graphql(
-            default_with = "INDIRECT_WEIGHT_DEFAULT",
+            default_with = "TARGET_INDIRECT_WEIGHT_DEFAULT",
             validator(minimum = 0.0, maximum = 1.0),
             desc = "Weight applied to indirect evidence (from descendant diseases), between 0 and \
-                    1. Default is 0.5."
+                    1. Default is 0."
         )]
         indirect_weight: f64,
 
