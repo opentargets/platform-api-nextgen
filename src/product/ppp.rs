@@ -51,6 +51,7 @@ use crate::{
     product::{Flavor, Product, loader},
     view::{
         study_credible_sets::{StudyCredibleSetsLoader, StudyCredibleSetsQuery},
+        target_credible_sets::{TargetCredibleSetsLoader, TargetCredibleSetsQuery},
         variant_credible_sets::{VariantCredibleSetsLoader, VariantCredibleSetsQuery},
         variant_transcript_consequences::{
             VariantTranscriptConsequencesLoader, VariantTranscriptConsequencesQuery,
@@ -76,6 +77,7 @@ pub struct Query(
     TargetQuery,              // Targets
     VariantQuery,             // Variants
     StudyCredibleSetsQuery,
+    TargetCredibleSetsQuery,
     VariantCredibleSetsQuery,
     VariantTranscriptConsequencesQuery,
 );
@@ -124,6 +126,7 @@ impl Product for Ppp {
             .data(loader::<TargetPrioritisationsLoader>(ch))
             .data(loader::<VariantLoader>(ch))
             .data(loader::<StudyCredibleSetsLoader>(ch))
+            .data(loader::<TargetCredibleSetsLoader>(ch))
             .data(loader::<VariantCredibleSetsLoader>(ch))
             .data(loader::<VariantTranscriptConsequencesLoader>(ch))
     }
