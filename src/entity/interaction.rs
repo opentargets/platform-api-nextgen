@@ -11,7 +11,10 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::target::{Target, TargetLoader},
+    entity::{
+        interaction_resource::InteractionResource,
+        target::{Target, TargetLoader},
+    },
 };
 
 // ---- models ----
@@ -79,6 +82,9 @@ pub struct InteractionEvidence {
     interaction_detection_method_short_name: String,
     /// Unique identifier for the interaction evidence entry at the source.
     interaction_identifier: Option<String>,
+    #[graphql(skip)]
+    /// Databases providing the interaction evidence.
+    interaction_resources: InteractionResource,
     /// Molecular Interactions (MI) identifier for the type of interaction [bioregistry:mi].
     interaction_type_mi_identifier: Option<String>,
     /// Short name of the interaction type.
