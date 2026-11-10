@@ -50,12 +50,10 @@ use crate::{
     },
     product::{Flavor, Product, loader},
     view::{
-        study_credible_sets::{StudyCredibleSetsLoader, StudyCredibleSetsQuery},
-        target_credible_sets::{TargetCredibleSetsLoader, TargetCredibleSetsQuery},
-        variant_credible_sets::{VariantCredibleSetsLoader, VariantCredibleSetsQuery},
-        variant_transcript_consequences::{
-            VariantTranscriptConsequencesLoader, VariantTranscriptConsequencesQuery,
-        },
+        study_credible_sets::StudyCredibleSetsLoader,
+        target_credible_sets::TargetCredibleSetsLoader,
+        variant_credible_sets::VariantCredibleSetsLoader,
+        variant_transcript_consequences::VariantTranscriptConsequencesLoader,
     },
 };
 
@@ -76,10 +74,6 @@ pub struct Query(
     StudyQuery,               // Studies
     TargetQuery,              // Targets
     VariantQuery,             // Variants
-    StudyCredibleSetsQuery,
-    TargetCredibleSetsQuery,
-    VariantCredibleSetsQuery,
-    VariantTranscriptConsequencesQuery,
 );
 
 pub struct Ppp;

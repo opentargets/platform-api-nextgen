@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use async_graphql::{
-    ComplexObject, Context, Enum, Error, InputObject, Object, Result, SimpleObject,
+    ComplexObject, Context, Enum, Error, InputObject, Result, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -16,8 +16,8 @@ use crate::{
         target::{Target, load_target},
     },
     query::{
-        paginate::{Page, Paged, page_complexity},
-        sort::{Sort, SortDirection, UniqueSortKeys},
+        paginate::Paged,
+        sort::{Sort, SortDirection},
         sql::{
             Column, Filter, Op, OrderBy, PageSpec, Table, Value, ValueKind, build, column_subset,
             columns,
@@ -185,7 +185,7 @@ const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
 }];
 
 impl SortField {
-    fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
+    pub(crate) fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
 
     fn as_order_by(self, dir: SortDirection) -> Vec<OrderBy<VariantTranscriptConsequenceCol>> {
         use VariantTranscriptConsequenceCol as C;
@@ -294,32 +294,4 @@ pub async fn load_variant_transcript_consequences(
         .load_one(key)
         .await?
         .unwrap_or_default())
-}
-
-// ---- resolver ----
-
-#[derive(Default)]
-pub struct VariantTranscriptConsequencesQuery;
-
-#[Object]
-impl VariantTranscriptConsequencesQuery {
-    #[graphql(complexity = "page_complexity(page, child_complexity)")]
-    async fn variant_transcript_consequences(
-        &self,
-        ctx: &Context<'_>,
-        #[graphql(desc = "Variant ID to fetch transcript consequences for.")] variant_id: String,
-        #[graphql(
-            default_with = "SortField::default_sort()",
-            validator(custom = "UniqueSortKeys"),
-            desc = "List of sort statements. Each field can be used at most once."
-        )]
-        sort: Vec<Sort<SortField>>,
-        #[graphql(desc = "Case-insensitive text search across the gene symbol, consequence \
-                          and impact. Searches all of them unless `fields` is given.")]
-        search: Option<Search>,
-        #[graphql(default, desc = "Pagination for the transcript consequences.")] page: Page,
-    ) -> Result<Paged<VariantTranscriptConsequence>> {
-        let query_params = QueryParams::new(variant_id, sort, search, page.index, page.size);
-        load_variant_transcript_consequences(ctx, query_params).await
-    }
 }
