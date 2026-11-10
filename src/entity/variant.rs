@@ -35,6 +35,7 @@ use crate::{
         paginate::{Page, Paged, page_complexity},
         sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
     },
+    view::{variant_credible_sets as vcs, variant_transcript_consequences as vtc},
 };
 
 // ---- models ----
@@ -412,6 +413,39 @@ impl Variant {
             .paginate(page))
     }
 
+    /// Flat, sortable and searchable summary of the credible sets containing this variant, for
+    /// tables. Use `credibleSets` for the full credible sets with locus, L2G, colocalisation, etc.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn credible_sets_view(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            validator(min_items = 1),
+            desc = "Study types to include, e.g. `[gwas]` or the QTL types."
+        )]
+        study_types: Vec<crate::entity::study::StudyType>,
+        #[graphql(
+            default_with = "vcs::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<vcs::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the credible sets' text \
+                          fields. Searches all fields unless `fields` is given.")]
+        search: Option<vcs::Search>,
+        #[graphql(default, desc = "Pagination for the credible sets.")] page: Page,
+    ) -> async_graphql::Result<Paged<vcs::VariantCredibleSet>> {
+        let query_params = vcs::QueryParams::new(
+            self.variant_id.clone(),
+            study_types,
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        vcs::load_variant_credible_sets(ctx, query_params).await
+    }
+
     /// Predicted consequences on transcript context.
     async fn transcript_consequences(
         &self,
@@ -426,6 +460,28 @@ impl Variant {
             TranscriptConsequence::fetch_targets(ctx, &mut rows).await?;
         }
         Ok(rows.query().sort(&sort).into_vec())
+    }
+
+    /// Paginated, sortable and searchable predicted consequences on transcript context, for
+    /// tables. Use `transcriptConsequences` for the full list as stored on the variant.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn transcript_consequences_view(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "vtc::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<vtc::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the gene symbol, consequence \
+                          and impact. Searches all of them unless `fields` is given.")]
+        search: Option<vtc::Search>,
+        #[graphql(default, desc = "Pagination for the transcript consequences.")] page: Page,
+    ) -> async_graphql::Result<Paged<vtc::VariantTranscriptConsequence>> {
+        let query_params =
+            vtc::QueryParams::new(self.variant_id.clone(), sort, search, page.index, page.size);
+        vtc::load_variant_transcript_consequences(ctx, query_params).await
     }
 
     /// The sequence ontology term of the most severe consequence of the variant based on Ensembl

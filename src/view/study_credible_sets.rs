@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use async_graphql::{
-    Context, Enum, Error, InputObject, Object, Result, SimpleObject,
+    Context, Enum, Error, InputObject, Result, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -13,8 +13,8 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::variant::Chromosome,
     query::{
-        paginate::{Page, Paged, page_complexity},
-        sort::{Sort, SortDirection, UniqueSortKeys},
+        paginate::Paged,
+        sort::{Sort, SortDirection},
         sql::{
             Column, Filter, Op, OrderBy, PageSpec, Table, Value, ValueKind, build, column_subset,
             columns,
@@ -156,7 +156,7 @@ const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
 }];
 
 impl SortField {
-    fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
+    pub(crate) fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
 
     fn as_order_by(self, dir: SortDirection) -> Vec<OrderBy<StudyCredibleSetCol>> {
         use StudyCredibleSetCol as C;
@@ -281,33 +281,4 @@ pub async fn load_study_credible_sets(
         .load_one(key)
         .await?
         .unwrap_or_default())
-}
-
-// ---- resolver ----
-
-#[derive(Default)]
-pub struct StudyCredibleSetsQuery;
-
-#[Object]
-impl StudyCredibleSetsQuery {
-    /// GWAS credible sets for a study.
-    #[graphql(complexity = "page_complexity(page, child_complexity)")]
-    async fn study_credible_sets(
-        &self,
-        ctx: &Context<'_>,
-        #[graphql(desc = "GWAS study ID to fetch credible sets for.")] study_id: String,
-        #[graphql(
-            default_with = "SortField::default_sort()",
-            validator(custom = "UniqueSortKeys"),
-            desc = "List of sort statements. Each field can be used at most once."
-        )]
-        sort: Vec<Sort<SortField>>,
-        #[graphql(desc = "Case-insensitive text search across the credible sets' text \
-                          fields. Searches all fields unless `fields` is given.")]
-        search: Option<Search>,
-        #[graphql(default, desc = "Pagination for the credible sets.")] page: Page,
-    ) -> Result<Paged<StudyCredibleSet>> {
-        let query_params = QueryParams::new(study_id, sort, search, page.index, page.size);
-        load_study_credible_sets(ctx, query_params).await
-    }
 }

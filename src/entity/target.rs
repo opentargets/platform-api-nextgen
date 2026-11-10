@@ -45,6 +45,7 @@ use crate::{
         paginate::{Page, Paged, PagedWithStats, page_complexity},
         sort::{Sort, UniqueSortKeys},
     },
+    view::target_credible_sets as tcs,
 };
 
 // ---- models ----
@@ -948,5 +949,39 @@ impl Target {
             .await?
             .query()
             .paginate(page))
+    }
+
+    /// Flat, sortable and searchable summary of the molQTL credible sets linked to this target,
+    /// for tables. Use `credibleSets` for the full credible sets with locus, L2G, colocalisation,
+    /// etc.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn credible_sets_view(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default,
+            desc = "Study types to include, e.g. `[eqtl, sqtl]`. Includes all when empty."
+        )]
+        study_types: Vec<crate::entity::study::StudyType>,
+        #[graphql(
+            default_with = "tcs::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<tcs::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the credible sets' text \
+                          fields. Searches all fields unless `fields` is given.")]
+        search: Option<tcs::Search>,
+        #[graphql(default, desc = "Pagination for the credible sets.")] page: Page,
+    ) -> async_graphql::Result<Paged<tcs::TargetCredibleSet>> {
+        let query_params = tcs::QueryParams::new(
+            self.id.clone(),
+            study_types,
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        tcs::load_target_credible_sets(ctx, query_params).await
     }
 }

@@ -31,13 +31,14 @@ use crate::{
         load_ordered,
         paginate::{Page, Paged, PagedWithStats, page_complexity},
         search::Searchable,
-        sort::{Nulls, Sort, SortDirection, SortKey, Term},
+        sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
         stats::{
             ComputeStats, HasStats,
             distribution::{StatsBucket, distribution},
             sumstats::{Sumstats, sumstats},
         },
     },
+    view::study_credible_sets as scs,
 };
 
 // ---- models ----
@@ -504,6 +505,28 @@ impl Study {
             .await?
             .query()
             .paginate(page))
+    }
+
+    /// Flat, sortable and searchable summary of this GWAS study's credible sets, for tables. Use
+    /// `credibleSets` for the full credible sets with locus, L2G, colocalisation, etc.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn credible_sets_view(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "scs::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<scs::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the credible sets' text \
+                          fields. Searches all fields unless `fields` is given.")]
+        search: Option<scs::Search>,
+        #[graphql(default, desc = "Pagination for the credible sets.")] page: Page,
+    ) -> async_graphql::Result<Paged<scs::StudyCredibleSet>> {
+        let query_params =
+            scs::QueryParams::new(self.study_id.clone(), sort, search, page.index, page.size);
+        scs::load_study_credible_sets(ctx, query_params).await
     }
 
     /// In molQTL studies, the gene under study for changes in expression, abundance, etc.

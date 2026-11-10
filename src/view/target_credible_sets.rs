@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use async_graphql::{
-    Context, Enum, Error, InputObject, Object, Result, SimpleObject,
+    Context, Enum, Error, InputObject, Result, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -13,8 +13,8 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{study::StudyType, variant::Chromosome},
     query::{
-        paginate::{Page, Paged, page_complexity},
-        sort::{Sort, SortDirection, UniqueSortKeys},
+        paginate::Paged,
+        sort::{Sort, SortDirection},
         sql::{
             Column, Filter, Op, OrderBy, PageSpec, Table, Value, ValueKind, build, column_subset,
             columns,
@@ -185,7 +185,7 @@ const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
 }];
 
 impl SortField {
-    fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
+    pub(crate) fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
 
     fn as_order_by(self, dir: SortDirection) -> Vec<OrderBy<TargetCredibleSetCol>> {
         use TargetCredibleSetCol as C;
@@ -314,40 +314,4 @@ pub async fn load_target_credible_sets(
         .load_one(key)
         .await?
         .unwrap_or_default())
-}
-
-// ---- resolver ----
-
-#[derive(Default)]
-pub struct TargetCredibleSetsQuery;
-
-#[Object]
-impl TargetCredibleSetsQuery {
-    /// molQTL credible sets linked to a target.
-    #[graphql(complexity = "page_complexity(page, child_complexity)")]
-    async fn target_credible_sets(
-        &self,
-        ctx: &Context<'_>,
-        #[graphql(desc = "Ensembl gene ID of the target to fetch credible sets for.")]
-        ensembl_id: String,
-        #[graphql(
-            default,
-            desc = "Study types to include, e.g. `[eqtl, sqtl]`. Includes all when empty."
-        )]
-        study_types: Vec<StudyType>,
-        #[graphql(
-            default_with = "SortField::default_sort()",
-            validator(custom = "UniqueSortKeys"),
-            desc = "List of sort statements. Each field can be used at most once."
-        )]
-        sort: Vec<Sort<SortField>>,
-        #[graphql(desc = "Case-insensitive text search across the credible sets' text \
-                          fields. Searches all fields unless `fields` is given.")]
-        search: Option<Search>,
-        #[graphql(default, desc = "Pagination for the credible sets.")] page: Page,
-    ) -> Result<Paged<TargetCredibleSet>> {
-        let query_params =
-            QueryParams::new(ensembl_id, study_types, sort, search, page.index, page.size);
-        load_target_credible_sets(ctx, query_params).await
-    }
 }
