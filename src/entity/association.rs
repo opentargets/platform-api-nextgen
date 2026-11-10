@@ -26,7 +26,12 @@ use crate::{
 /// was not precise enough. This makes the scores differ in their 5th decimal.
 // const MAX_HS: f64 = 1.644_924_066_898_242_3;
 const MAX_HS: f64 = PI * PI / 6.0;
-pub const INDIRECT_WEIGHT_DEFAULT: f64 = 0.5;
+/// Default indirect weight for a target's associated diseases. 0 matches the old API, which never
+/// rolled evidence up the disease ontology for a fixed target.
+pub const TARGET_INDIRECT_WEIGHT_DEFAULT: f64 = 0.0;
+/// Default indirect weight for a disease's associated targets. 1 matches the old API, which
+/// included descendant diseases' evidence at full weight for a fixed disease.
+pub const DISEASE_INDIRECT_WEIGHT_DEFAULT: f64 = 1.0;
 
 // ---- helpers ----
 
@@ -176,11 +181,16 @@ struct DatasourcePolicy {
     weight: f64,
     /// Whether the datasource is required for the association to be considered valid.
     required: bool,
+    /// Whether the datasource's evidence counts towards indirect associations (descendant or
+    /// ancestor diseases). If omitted, the datasource's default is used (`false` for
+    /// `expression_atlas`, `true` for all others).
+    #[graphql(default)]
+    propagate: Option<bool>,
 }
 
 impl Default for DatasourcePolicy {
     #[rustfmt::skip]
-    fn default() -> Self { Self { weight: 1.0, required: false } }
+    fn default() -> Self { Self { weight: 1.0, required: false, propagate: Some(true) } }
 }
 
 impl Datasource {
@@ -189,9 +199,12 @@ impl Datasource {
         let d = DatasourcePolicy::default();
         match self {
             Self::CancerBiomarkers => DatasourcePolicy { weight: 0.5, ..d },
-            Self::Europepmc | Self::ExpressionAtlas | Self::Impc => {
-                DatasourcePolicy { weight: 0.2, ..d }
-            }
+            Self::Europepmc | Self::Impc => DatasourcePolicy { weight: 0.2, ..d },
+            Self::ExpressionAtlas => DatasourcePolicy {
+                weight: 0.2,
+                propagate: Some(false),
+                ..d
+            },
             #[cfg(feature = "product-ppp")]
             Self::OtCrisprValidation | Self::OtCrispr | Self::Encore => {
                 DatasourcePolicy { weight: 0.5, ..d }
@@ -218,10 +231,14 @@ impl DatasourcePolicies {
     fn from_overrides(overrides: &[DatasourcePolicyOverride]) -> Self {
         Datasource::iter()
             .map(|ds| {
-                let p = overrides
-                    .iter()
-                    .find(|o| o.id == ds)
-                    .map_or_else(|| ds.default_policy(), |o| o.policy);
+                let default = ds.default_policy();
+                let p = overrides.iter().find(|o| o.id == ds).map_or(default, |o| {
+                    // An override without `propagate` keeps the datasource's default.
+                    DatasourcePolicy {
+                        propagate: o.policy.propagate.or(default.propagate),
+                        ..o.policy
+                    }
+                });
                 (ds, p)
             })
             .collect()
@@ -252,6 +269,16 @@ impl DatasourcePolicies {
         self.0
             .iter()
             .filter(|(_, p)| p.required)
+            .map(|(ds, _)| format!("'{}'", esc((*ds).into())))
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
+    /// Returns the datasources that don't propagate as a string of the form `ds1, ds2, ...`.
+    fn render_non_propagated(&self) -> String {
+        self.0
+            .iter()
+            .filter(|(_, p)| p.propagate == Some(false))
             .map(|(ds, _)| format!("'{}'", esc((*ds).into())))
             .collect::<Vec<_>>()
             .join(", ")
@@ -287,7 +314,7 @@ pub struct AssociationArguments {
     /// Whether to include diseases from the _measurement_ family in `B` set. Default is `false`.
     pub include_measurements: Option<bool>,
     /// Multiplier applied to indirect evidence scores, in `[0, 1]`. Default is
-    /// `INDIRECT_WEIGHT_DEFAULT`.
+    /// `TARGET_INDIRECT_WEIGHT_DEFAULT` or `DISEASE_INDIRECT_WEIGHT_DEFAULT`.
     pub indirect_weight: f64,
     /// List of datasource policy overrides.
     pub datasource_policy_overrides: Vec<DatasourcePolicyOverride>,
@@ -465,6 +492,24 @@ impl AotfSql {
 
         // `anchor` term: keep the row if its `A` is in our `a_set`.
         let mut conj = vec![format!("A IN ({a_set})")];
+
+        // Direct evidence only: rows where `A` is the anchor itself and `B` is not being rolled up
+        // into an ancestor.
+        let direct = format!("(A = '{}' AND b_indirect = l.B)", esc(&self.anchor));
+
+        // `indirect_weight` term: with a weight of 0, skip indirect rows entirely instead of
+        // scoring them 0, so they don't show up as zero-score associations.
+        if self.indirect_weight == 0.0 {
+            conj.push(direct.clone());
+        }
+
+        // `propagate` term: datasources that don't propagate only count their direct evidence.
+        let non_propagated = self.policies.render_non_propagated();
+        if !non_propagated.is_empty() {
+            conj.push(format!(
+                "(datasourceId NOT IN ({non_propagated}) OR {direct})"
+            ));
+        }
 
         // `b_filter` term: match the rolled-up bucket's name, not the raw row's.
         if let Some(filter) = &self.b_filter {
