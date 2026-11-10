@@ -6,7 +6,7 @@ use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
     Router,
     extract::State,
-    middleware::from_fn,
+    middleware::{Next, from_fn},
     response::{Html, IntoResponse},
     routing::{any, get},
 };
@@ -18,7 +18,11 @@ use tower_http::{
     cors::{Any, CorsLayer},
 };
 
-use crate::{AppState, plugin::handler_rest::handle, server::cache::post_cache};
+use crate::{
+    AppState,
+    plugin::handler_rest::handle,
+    server::{cache::post_cache, log_utils::client_ip},
+};
 // Some static assets served directly by the HTTP server.
 const GRAPHIQL: &str = include_str!("assets/graphiql.html");
 const FAVICON: &[u8] = include_bytes!("assets/favicon.png");
@@ -39,13 +43,23 @@ async fn graphql(State(state): State<AppState>, req: GraphQLRequest) -> GraphQLR
     state.api.execute(req.into_inner()).await.into()
 }
 
+/// Logs the client IP address of requests reaching the GraphQL endpoint.
+async fn log_client_ip(req: axum::extract::Request, next: Next) -> axum::response::Response {
+    let ip = client_ip(req.headers());
+    tracing::info!(client_ip = %ip, "request received from ip {}", ip);
+    next.run(req).await
+}
+
 /// Returns the HTTP router for the API.
 pub fn router(state: AppState) -> (Router, Router) {
     let release = format!("/{}", state.config.data_release_main());
     let api: Router<AppState> = Router::new()
         .route(
             "/graphql",
-            get(graphiql).post(graphql).layer(from_fn(post_cache)),
+            get(graphiql)
+                .post(graphql)
+                .layer(from_fn(post_cache))
+                .layer(from_fn(log_client_ip)),
         )
         .route("/graphql/schema", get(schema));
 
