@@ -83,6 +83,7 @@ pub struct InteractionEvidence {
     /// Unique identifier for the interaction evidence entry at the source.
     interaction_identifier: Option<String>,
     #[graphql(skip)]
+    #[allow(dead_code)]
     /// Databases providing the interaction evidence.
     interaction_resources: InteractionResource,
     /// Molecular Interactions (MI) identifier for the type of interaction [bioregistry:mi].
