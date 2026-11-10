@@ -84,7 +84,8 @@ impl MappingQuery {
     async fn map_ids(
         &self,
         ctx: &Context<'_>,
-        #[graphql(desc = "List of query terms to map.")] query_terms: Vec<String>,
+        #[graphql(desc = "List of query terms to map.", validator(max_items = 3000))]
+        query_terms: Vec<String>,
         #[graphql(desc = "List of entity names to search for (target, disease, drug, etc.).")]
         entity_names: Option<Vec<EntityType>>,
     ) -> Result<MappingResults, async_graphql::Error> {
