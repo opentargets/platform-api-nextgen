@@ -226,6 +226,16 @@ pub enum StudySortField {
     PublicationAuthorDate,
 }
 
+const DEFAULT_SORT: [Sort<StudySortField>; 1] = [Sort {
+    key: StudySortField::NSamples,
+    direction: SortDirection::Descending,
+}];
+
+impl StudySortField {
+    /// Largest sample size first.
+    fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
+}
+
 impl SortKey<Study> for StudySortField {
     fn compare(&self, a: &Study, b: &Study, direction: SortDirection) -> Ordering {
         let primary = Term::new(direction, Nulls::Last);
@@ -433,7 +443,11 @@ impl StudyQuery {
         enable_indirect: bool,
         #[graphql(desc = "Search term to filter by.")] search: Option<String>,
         #[graphql(desc = "Filter criteria to apply.")] filter: Option<StudyFilter>,
-        #[graphql(desc = "List of sort statements.")] sort: Vec<Sort<StudySortField>>,
+        #[graphql(
+            default_with = "StudySortField::default_sort()",
+            desc = "List of sort statements. Defaults to sample size, largest first."
+        )]
+        sort: Vec<Sort<StudySortField>>,
         #[graphql(default, desc = "Pagination for the Studies.")] page: Page,
     ) -> async_graphql::Result<PagedWithStats<Study>> {
         if study_ids.is_none() && disease_ids.is_none() {
