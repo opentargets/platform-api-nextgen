@@ -19,6 +19,18 @@ TBD
 >             "features": ["ppp"]
 > ```
 
+## Export the GraphQL schema
+
+Download the schema into `graphql.schema` from `https://api.platform.opentargets.org/api/v4/graphql/schema`:
+
+```bash
+curl --fail \
+  https://api.platform.opentargets.org/api/v4/graphql/schema \
+  --output graphql.schema
+```
+
+This saves the initial schema comparison baseline.
+
 ## Build
 
 Exactly one product feature must be enabled:
