@@ -21,15 +21,21 @@ TBD
 
 ## Export the GraphQL schema
 
-Download the schema into `graphql.schema` from `https://api.platform.opentargets.org/api/v4/graphql/schema`:
+Download the schema into `graphql.schema` from `https://api.platform.opentargets.xyz/latest/graphql/schema`:
 
 ```bash
 curl --fail \
-  https://api.platform.opentargets.org/api/v4/graphql/schema \
+  https://api.platform.opentargets.xyz/latest/graphql/schema \
   --output graphql.schema
 ```
 
 This saves the initial schema comparison baseline.
+
+Local Rust schema can be exported with:
+```bash
+cargo run --locked --example export-schema --features product-platform
+```
+
 
 ## Build
 
