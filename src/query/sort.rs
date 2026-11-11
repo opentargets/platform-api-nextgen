@@ -10,6 +10,7 @@ use crate::{
     },
     query::Entity,
     view::{
+        disease_studies::SortField as DiseaseStudiesSortField,
         study_credible_sets::SortField as StudyCredibleSetsSortField,
         target_credible_sets::SortField as TargetCredibleSetsSortField,
         variant_credible_sets::SortField as VariantCredibleSetsSortField,
@@ -43,6 +44,7 @@ impl SortDirection {
 #[graphql(concrete(name = "StudySort", params(StudySortField)))]
 #[graphql(concrete(name = "TranscriptConsequenceSort", params(TranscriptConsequenceSortField)))]
 #[graphql(concrete(name = "VariantCredibleSetsSort", params(VariantCredibleSetsSortField)))]
+#[graphql(concrete(name = "DiseaseStudiesSort", params(DiseaseStudiesSortField)))]
 #[graphql(concrete(name = "StudyCredibleSetsSort", params(StudyCredibleSetsSortField)))]
 #[graphql(concrete(name = "TargetCredibleSetsSort", params(TargetCredibleSetsSortField)))]
 #[graphql(concrete(name = "PharmacogenomicsSort", params(PharmacogenomicsSortField)))]
