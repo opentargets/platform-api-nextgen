@@ -90,7 +90,10 @@ then compares it with `graphql.schema` from `HEAD`. If that baseline does not ex
 it downloads the schema from the new API deployment above.
 
 When the generated snapshot changes, the hook updates `graphql.schema` and stops
-the commit so you can review and stage the file. Breaking changes also fail the
-check; dangerous and non-breaking changes are reported. During commits, pre-commit
+the commit so you can review and stage the file. All schema changes, including
+breaking changes, are advisory: double-check that they are intentional, then stage
+`graphql.schema` and retry the commit. The report is shown again, but breaking
+changes do not block the retry. Export, download, or comparison errors still fail
+the check. During commits, pre-commit
 temporarily hides unstaged tracked changes. The manual `--all-files` command checks
 the working tree instead. Stage any new Rust source files before committing.

@@ -18,13 +18,11 @@ fi
 cargo run --quiet --locked --example export-schema --features product-platform \
     > "$temporary_dir/new.graphql"
 
-diff_status=0
-graphql-inspector diff "$temporary_dir/old.graphql" "$temporary_dir/new.graphql" || diff_status=$?
+graphql-inspector diff "$temporary_dir/old.graphql" "$temporary_dir/new.graphql" \
+    --onComplete scripts/graphql-schema-feedback.cjs
 
 if ! cmp -s graphql.schema "$temporary_dir/new.graphql"; then
     cp "$temporary_dir/new.graphql" graphql.schema
     echo 'Updated graphql.schema. Review it, git add graphql.schema, and retry the commit.'
     exit 1
 fi
-
-exit "$diff_status"
