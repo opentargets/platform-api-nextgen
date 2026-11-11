@@ -15,7 +15,6 @@ use crate::{
         Entity,
         cache::{CachedLoader, entity_cache},
         load_ordered,
-        search::Searchable,
         sort::{Nulls, SortDirection, SortKey, Term},
     },
 };
@@ -57,17 +56,6 @@ impl SortKey<Hpo> for HpoSortField {
             Self::Id => primary.cmp(&a.id, &b.id),
             Self::Name => primary.cmp(&a.name, &b.name),
         }
-    }
-}
-
-impl Searchable for Hpo {
-    fn matches_search(&self, needle: &str) -> bool {
-        self.id.to_lowercase().contains(needle)
-            || self.name.to_lowercase().contains(needle)
-            || self
-                .description
-                .as_deref()
-                .is_some_and(|d| d.to_lowercase().contains(needle))
     }
 }
 

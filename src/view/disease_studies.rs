@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
 use async_graphql::{
-    Context, Enum, Error, InputObject, Result, SimpleObject,
+    Context, Enum, Error, Result, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
 use derive_more::From;
 use serde::Deserialize;
-use strum::{EnumIter, IntoEnumIterator};
+use strum::EnumIter;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
@@ -219,41 +219,8 @@ column_subset! {
     }
 }
 
-impl SearchField {
-    /// Every searchable field; the default when the client doesn't pick any.
-    fn all() -> Vec<Self> { Self::iter().collect() }
-}
-
-/// Case-insensitive text search over the studies.
-#[derive(Debug, Clone, Eq, PartialEq, Hash, InputObject)]
-#[graphql(name = "DiseaseStudiesSearch")]
-pub struct Search {
-    /// Text to look for. Matches if any of `fields` contains it.
-    #[graphql(validator(chars_max_length = 200))]
-    text: String,
-    /// Fields to search in. Defaults to all of them.
-    #[graphql(default_with = "SearchField::all()", validator(min_items = 1))]
-    fields: Vec<SearchField>,
-}
-
-impl Search {
-    /// Trims the text and sorts/dedupes the fields, so equivalent searches share
-    /// a `DataLoader` key. A blank search becomes `None`, the same as no search.
-    fn normalise(mut self) -> Option<Self> {
-        self.text = self.text.trim().to_owned();
-        if self.text.is_empty() {
-            return None;
-        }
-        self.fields.sort_unstable();
-        self.fields.dedup();
-        Some(self)
-    }
-
-    fn to_filter(&self) -> Result<Filter<DiseaseStudyCol>> {
-        let cols = self.fields.iter().map(|f| f.as_col()).collect();
-        Filter::search(cols, self.text.clone()).map_err(Error::new)
-    }
-}
+/// Case-insensitive text search over the `SearchField`s.
+pub type Search = crate::query::search::Search<SearchField>;
 
 // ---- loader ----
 

@@ -15,7 +15,6 @@ use crate::{
         Entity,
         cache::{CachedLoader, entity_cache},
         load_ordered,
-        search::Searchable,
         sort::{Nulls, SortDirection, SortKey, Term},
     },
 };
@@ -58,12 +57,6 @@ impl SortKey<SequenceOntologyTerm> for SequenceOntologyTermSortField {
             Self::Id => primary.cmp(&a.id, &b.id),
             Self::Label => primary.cmp(&a.label, &b.label),
         }
-    }
-}
-
-impl Searchable for SequenceOntologyTerm {
-    fn matches_search(&self, needle: &str) -> bool {
-        self.id.to_lowercase().contains(needle) || self.label.to_lowercase().contains(needle)
     }
 }
 

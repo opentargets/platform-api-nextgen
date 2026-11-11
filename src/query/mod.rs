@@ -4,11 +4,12 @@ use async_graphql::{
     InputType, OutputType,
     dataloader::{DataLoader, Loader},
 };
+use strum::IntoEnumIterator;
 
 use crate::query::{
     filter::Filter,
     paginate::{MAX_PAGE_SIZE, Page, Paged, PagedWithStats},
-    search::Searchable,
+    search::{Search, Searchable},
     sort::{Sort, SortKey, sort_items},
     stats::ComputeStats,
 };
@@ -53,14 +54,15 @@ impl<T: OutputType> Query<T> {
     }
 
     #[must_use]
-    pub fn search(mut self, needle: Option<&str>) -> Self
+    pub fn search(mut self, search: Option<Search<T::Field>>) -> Self
     where
         T: Searchable,
+        T::Field: InputType + IntoEnumIterator + Ord,
     {
         let _s = tracing::debug_span!("search", n = self.0.len()).entered();
-        if let Some(n) = needle {
-            let n = n.to_lowercase();
-            self.0.retain(|item| item.matches_search(&n));
+        if let Some(s) = search.and_then(Search::normalise) {
+            let needle = s.text.to_lowercase();
+            self.0.retain(|item| s.matches(item, &needle));
         }
         self
     }
