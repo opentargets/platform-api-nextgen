@@ -19,23 +19,6 @@ TBD
 >             "features": ["ppp"]
 > ```
 
-## Export the GraphQL schema
-
-Download the schema into `graphql.schema` from `https://api.platform.opentargets.xyz/latest/graphql/schema`:
-
-```bash
-curl --fail \
-  https://api.platform.opentargets.xyz/latest/graphql/schema \
-  --output graphql.schema
-```
-
-This saves the initial schema comparison baseline.
-
-Local Rust schema can be exported with:
-```bash
-cargo run --locked --example export-schema --features product-platform
-```
-
 
 ## Build
 
@@ -68,3 +51,46 @@ Every build includes both products, each to its own image:
 | ppp      | `platform-api-nextgen-ppp` |
 
 Both images share the tag's version. Each product is deployed independently.
+
+
+## Export the GraphQL schema
+
+Download the schema into `graphql.schema` from `https://api.platform.opentargets.xyz/latest/graphql/schema`:
+
+```bash
+curl --fail \
+  https://api.platform.opentargets.xyz/latest/graphql/schema \
+  --output graphql.schema
+```
+
+This saves the initial schema comparison baseline.
+
+Local Rust schema can be exported with:
+```bash
+cargo run --locked --example export-schema --features product-platform > graphql.schema
+```
+
+## Set up pre-commit
+
+Install pre-commit:
+```bash
+uv tool install pre-commit
+```
+
+Install the Git hook once per checkout, then check the current working tree:
+
+```bash
+pre-commit install
+pre-commit run graphql-schema --all-files
+```
+
+The hook installs a pinned GraphQL Inspector CLI in its own Node environment.
+It exports the Platform schema without starting the server or connecting to databases,
+then compares it with `graphql.schema` from `HEAD`. If that baseline does not exist,
+it downloads the schema from the new API deployment above.
+
+When the generated snapshot changes, the hook updates `graphql.schema` and stops
+the commit so you can review and stage the file. Breaking changes also fail the
+check; dangerous and non-breaking changes are reported. During commits, pre-commit
+temporarily hides unstaged tracked changes. The manual `--all-files` command checks
+the working tree instead. Stage any new Rust source files before committing.

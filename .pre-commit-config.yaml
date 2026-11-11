@@ -1,0 +1,13 @@
+repos:
+  - repo: local
+    hooks:
+      - id: graphql-schema
+        name: Generate and compare Platform GraphQL schema
+        language: node
+        additional_dependencies:
+          - '@graphql-inspector/cli@7.0.2'
+          - 'graphql@16.11.0'
+        entry: bash scripts/check-graphql-schema.sh
+        pass_filenames: false
+        always_run: true
+        verbose: true
