@@ -97,3 +97,22 @@ changes do not block the retry. Export, download, or comparison errors still fai
 the check. During commits, pre-commit
 temporarily hides unstaged tracked changes. The manual `--all-files` command checks
 the working tree instead. Stage any new Rust source files before committing.
+
+## GraphQL schema checks in CI
+
+CI regenerates the Platform schema and requires it to match the committed
+`graphql.schema`. Breaking changes remain advisory and are shown with dangerous
+and non-breaking changes in the job summary and the downloadable
+`graphql-schema-release-notes` Markdown artifact.
+
+For PRs into `master`, the comparison uses the PR event's master revision and the
+PR merge result, covering the combined change across all PR commits. On pushes to
+`master`, it uses master before the push, so the report still shows the changes
+after merging. Manual runs and PRs into other branches compare with fetched master.
+The exact baseline and compared commit IDs are recorded in the notes.
+
+These are release-note fragments relative to master, generated before that baseline
+moves; they are not tag-to-tag release history. They can be included in release
+notes, but CI does not publish or modify GitHub releases. CI requires the baseline
+to contain `graphql.schema` rather than substituting today's deployed schema for
+a historical revision.

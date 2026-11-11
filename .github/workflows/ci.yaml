@@ -26,6 +26,60 @@ env:
   RUST_STABLE: '1.99'
 
 jobs:
+  graphql-schema:
+    name: GraphQL schema and release notes
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install Rust
+        run: |
+          rustup toolchain install "$RUST_STABLE" --profile minimal
+          rustup default "$RUST_STABLE"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: platform
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install GraphQL Inspector
+        run: npm install --global @graphql-inspector/cli@7.0.2 graphql@16.11.0
+      - name: Select master baseline
+        id: baseline
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          if [[ "$EVENT_NAME" == pull_request && "$BASE_BRANCH" == master ]]; then
+            baseline="$BASE_SHA"
+          elif [[ "$EVENT_NAME" == push ]]; then
+            baseline="$BEFORE_SHA"
+          else
+            git fetch origin master
+            baseline=$(git rev-parse FETCH_HEAD)
+          fi
+          echo "sha=$baseline" >> "$GITHUB_OUTPUT"
+      - name: Check snapshot and generate schema release notes
+        env:
+          BASELINE: ${{ steps.baseline.outputs.sha }}
+        run: bash scripts/check-graphql-schema-ci.sh "$BASELINE" "$RUNNER_TEMP/graphql-schema-changes.md"
+      - name: Show schema release notes
+        if: ${{ !cancelled() }}
+        run: |
+          if [[ -f "$RUNNER_TEMP/graphql-schema-changes.md" ]]; then
+            cat "$RUNNER_TEMP/graphql-schema-changes.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: graphql-schema-release-notes
+          path: ${{ runner.temp }}/graphql-schema-changes.md
+          if-no-files-found: ignore
+
   fmt:
     name: rustfmt
     if: github.event_name != 'schedule'
