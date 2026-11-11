@@ -28,7 +28,6 @@ use crate::{
         cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged, PagedWithStats, page_complexity},
-        search::Searchable,
         sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
     },
 };
@@ -120,21 +119,6 @@ impl SortKey<Drug> for DrugSortField {
                 primary.cmp(&a.maximum_clinical_stage, &b.maximum_clinical_stage)
             }
         }
-    }
-}
-
-impl Searchable for Drug {
-    fn matches_search(&self, needle: &str) -> bool {
-        self.id.to_lowercase().contains(needle)
-            || self.name.to_lowercase().contains(needle)
-            || self
-                .description
-                .as_deref()
-                .is_some_and(|d| d.to_lowercase().contains(needle))
-            || self
-                .synonyms
-                .iter()
-                .any(|s| s.label.to_lowercase().contains(needle))
     }
 }
 

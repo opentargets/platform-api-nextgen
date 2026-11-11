@@ -13,7 +13,7 @@ use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
-use strum::IntoStaticStr;
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     config::DEFAULT_CLICKHOUSE_FETCH_CHUNK,
@@ -30,7 +30,7 @@ use crate::{
         filter::{Filter, IntFilter, StringFilter},
         load_ordered,
         paginate::{Page, Paged, PagedWithStats, page_complexity},
-        search::Searchable,
+        search::{Search, Searchable, contains},
         sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
         stats::{
             ComputeStats, HasStats,
@@ -258,11 +258,24 @@ impl SortKey<Study> for StudySortField {
     }
 }
 
+/// Text fields that `search` can match against.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Enum, EnumIter)]
+pub enum StudySearchField {
+    StudyId,
+    TraitFromSource,
+    ProjectId,
+}
+
 impl Searchable for Study {
-    fn matches_search(&self, needle: &str) -> bool {
-        self.study_id.to_lowercase().contains(needle)
-            || self.trait_from_source.to_lowercase().contains(needle)
-            || self.project_id.to_lowercase().contains(needle)
+    type Field = StudySearchField;
+
+    fn field_matches(&self, field: StudySearchField, needle: &str) -> bool {
+        use StudySearchField as F;
+        match field {
+            F::StudyId => contains(&self.study_id, needle),
+            F::TraitFromSource => contains(&self.trait_from_source, needle),
+            F::ProjectId => contains(&self.project_id, needle),
+        }
     }
 }
 
@@ -442,7 +455,9 @@ impl StudyQuery {
             desc = "Whether to add studies for ontology-descendant diseases in the result."
         )]
         enable_indirect: bool,
-        #[graphql(desc = "Search term to filter by.")] search: Option<String>,
+        #[graphql(desc = "Case-insensitive text search across the studies' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<Search<StudySearchField>>,
         #[graphql(desc = "Filter criteria to apply.")] filter: Option<StudyFilter>,
         #[graphql(
             default_with = "StudySortField::default_sort()",
@@ -464,7 +479,7 @@ impl StudyQuery {
         Ok(items
             .query()
             .filter(filter.as_ref())
-            .search(search.as_deref())
+            .search(search)
             .sort(&sort)
             .paginate_with_stats(page))
     }

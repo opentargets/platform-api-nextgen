@@ -8,6 +8,7 @@ use clickhouse::Row;
 use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
+use strum::EnumIter;
 
 #[cfg(feature = "product-ppp")]
 use crate::entity::otar_project_ppp::{OtarProject, load_otar_projects};
@@ -34,7 +35,7 @@ use crate::{
         cache::{CachedLoader, entity_cache},
         load_ordered,
         paginate::{Page, Paged, PagedWithStats, page_complexity},
-        search::Searchable,
+        search::{Search, Searchable, contains},
         sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
     },
     view::disease_studies as ds,
@@ -156,18 +157,34 @@ impl SortKey<Disease> for DiseaseSortField {
     }
 }
 
+/// Text fields that `search` can match against.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Enum, EnumIter)]
+pub enum DiseaseSearchField {
+    Id,
+    Name,
+    Description,
+    /// Any synonym, of any relation type.
+    Synonyms,
+}
+
 impl Searchable for Disease {
-    fn matches_search(&self, needle: &str) -> bool {
-        self.id.to_lowercase().contains(needle)
-            || self.name.to_lowercase().contains(needle)
-            || self
+    type Field = DiseaseSearchField;
+
+    fn field_matches(&self, field: DiseaseSearchField, needle: &str) -> bool {
+        use DiseaseSearchField as F;
+        match field {
+            F::Id => contains(&self.id, needle),
+            F::Name => contains(&self.name, needle),
+            F::Description => self
                 .description
                 .as_deref()
-                .is_some_and(|d| d.to_lowercase().contains(needle))
-            || self.synonyms.iter().flat_map(|s| &s.terms).any(|t| {
-                t.as_deref()
-                    .is_some_and(|f| f.to_lowercase().contains(needle))
-            })
+                .is_some_and(|d| contains(d, needle)),
+            F::Synonyms => self
+                .synonyms
+                .iter()
+                .flat_map(|s| &s.terms)
+                .any(|t| t.as_deref().is_some_and(|t| contains(t, needle))),
+        }
     }
 }
 
@@ -253,14 +270,16 @@ impl DiseaseQuery {
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "List of EFO IDs of diseases to fetch.")] efo_ids: Vec<String>,
-        #[graphql(desc = "Search term to filter by.")] search: Option<String>,
+        #[graphql(desc = "Case-insensitive text search across the diseases' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<Search<DiseaseSearchField>>,
         #[graphql(desc = "List of sort statements.")] sort: Vec<Sort<DiseaseSortField>>,
         #[graphql(default, desc = "Pagination for the diseases.")] page: Page,
     ) -> async_graphql::Result<Paged<Disease>> {
         let items = load_diseases(ctx, &efo_ids).await?;
         Ok(items
             .query()
-            .search(search.as_deref())
+            .search(search)
             .sort(sort.as_ref())
             .paginate(page))
     }

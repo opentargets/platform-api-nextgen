@@ -272,9 +272,9 @@ macro_rules! column_subset {
     ) => {
         $(#[$meta])*
         $vis enum $name { $( $(#[$vmeta])* $variant ),* }
-        impl $name {
-            /// The column this variant refers to.
-            const fn as_col(self) -> $col {
+        impl $crate::query::search::SearchColumn for $name {
+            type Col = $col;
+            fn as_col(self) -> $col {
                 match self { $(Self::$variant => $col::$variant),* }
             }
         }
