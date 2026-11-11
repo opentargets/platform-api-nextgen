@@ -54,12 +54,14 @@ pub struct DiseaseStudy {
     ld_population_structure: Vec<LdPopulationStructure>,
     /// Number of credible sets identified in the study.
     credible_sets_count: u64,
+    /// Identifiers of the diseases or phenotypes the study's trait is mapped to.
+    disease_ids: Vec<String>,
+    /// Names of the diseases in `disease_ids`, in the same order. Empty when a name is missing.
+    disease_names: Vec<String>,
 }
 
 impl Table for DiseaseStudy {
     type Col = DiseaseStudyCol;
-    // `studies` is a key-value table keyed by `studyId`, so it must only be read through a
-    // `studyId IN (...)` filter (see `QueryParams::to_spec`); anything else is a full scan.
     const NAME: &'static str = "(
         SELECT
             studyId,
@@ -72,7 +74,9 @@ impl Table for DiseaseStudy {
             cohorts,
             pubmedId,
             ldPopulationStructure,
-            length(studyLocusIds) AS credibleSetsCount
+            length(studyLocusIds) AS credibleSetsCount,
+            diseaseIds,
+            arrayMap(d -> dictGet('disease_names', 'name', d), diseaseIds) AS diseaseNames
         FROM studies
     )";
     const TIE_BREAKER: &'static str = "studyId";
@@ -89,6 +93,8 @@ columns!(DiseaseStudyCol {
     Cohorts                => "cohorts"                : StrArray,
     PubmedId               => "pubmedId"               : Str,
     CredibleSetsCount      => "credibleSetsCount"      : U64,
+    DiseaseIds             => "diseaseIds"             : StrArray,
+    DiseaseNames           => "diseaseNames"           : StrArray,
 });
 
 /// The disease's study ids, read from the `disease` row so `studies` is looked up by key.
@@ -208,6 +214,8 @@ column_subset! {
         PublicationJournal,
         Cohorts,
         PubmedId,
+        DiseaseIds,
+        DiseaseNames,
     }
 }
 
