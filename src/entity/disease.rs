@@ -35,8 +35,9 @@ use crate::{
         load_ordered,
         paginate::{Page, Paged, PagedWithStats, page_complexity},
         search::Searchable,
-        sort::{Nulls, Sort, SortDirection, SortKey, Term},
+        sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
     },
+    view::disease_studies as ds,
 };
 
 // ---- models ----
@@ -286,6 +287,39 @@ impl Disease {
     ) -> async_graphql::Result<Paged<ClinicalIndication>> {
         let items = load_clinical_indications_from_disease(ctx, self.id.clone()).await?;
         Ok(items.query().paginate(page))
+    }
+
+    /// Flat, sortable and searchable summary of the studies of this disease, for tables. Use
+    /// `studies(diseaseIds: ...)` for the full study entities and stats.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn studies_view(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default = false,
+            desc = "Whether to add studies for ontology-descendant diseases in the result."
+        )]
+        enable_indirect: bool,
+        #[graphql(
+            default_with = "ds::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<ds::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the studies' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<ds::Search>,
+        #[graphql(default, desc = "Pagination for the studies.")] page: Page,
+    ) -> async_graphql::Result<Paged<ds::DiseaseStudy>> {
+        let query_params = ds::QueryParams::new(
+            self.id.clone(),
+            enable_indirect,
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        ds::load_disease_studies(ctx, query_params).await
     }
 
     /// Direct parent terms in the disease ontology.

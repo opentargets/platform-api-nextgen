@@ -95,6 +95,14 @@ pub enum Filter<C: Column> {
     Search { cols: Vec<C>, term: Value },
     /// `col IN ?`: the column equals one of `values`.
     In { col: C, values: Value },
+    /// `col IN (subquery)`: the column equals one of the subquery's rows. The subquery has one
+    /// `?`, bound to `value`. Use it when the set of values is too big to send in the query,
+    /// or already lives in another table.
+    InSubquery {
+        col: C,
+        subquery: &'static str,
+        value: Value,
+    },
 }
 
 impl<C: Column> Filter<C> {
@@ -159,11 +167,26 @@ impl<C: Column> Filter<C> {
         })
     }
 
+    /// An `IN (subquery)` filter. `subquery` must contain exactly one `?`, which is bound to
+    /// `value`. Errors if it doesn't.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn in_subquery(col: C, subquery: &'static str, value: Value) -> Result<Self, String> {
+        if subquery.matches('?').count() != 1 {
+            return Err(format!("subquery must have exactly one `?`: {subquery}"));
+        }
+        Ok(Self::InSubquery {
+            col,
+            subquery,
+            value,
+        })
+    }
+
     /// The SQL condition, with one `?` placeholder for [`Self::value`].
     fn to_sql(&self) -> String {
         match self {
             Self::Compare { col, op, .. } => format!("{} {} ?", col.as_sql(), op.as_sql()),
             Self::In { col, .. } => format!("{} IN ?", col.as_sql()),
+            Self::InSubquery { col, subquery, .. } => format!("{} IN ({subquery})", col.as_sql()),
             Self::Search { cols, .. } => {
                 let fields = cols
                     .iter()
@@ -182,7 +205,8 @@ impl<C: Column> Filter<C> {
         match self {
             Self::Compare { value, .. }
             | Self::Search { term: value, .. }
-            | Self::In { values: value, .. } => value,
+            | Self::In { values: value, .. }
+            | Self::InSubquery { value, .. } => value,
         }
     }
 }
@@ -408,6 +432,28 @@ mod tests {
     fn compare_accepts_value_of_right_type() {
         let result = Filter::new(TestCol::Score, Op::Gt, Value::F64(1.0));
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn in_subquery_renders_subquery_and_binds_its_value() {
+        let f = Filter::in_subquery(
+            TestCol::Id,
+            "SELECT arrayJoin(ids) FROM other WHERE key = ?",
+            Value::Str("k".to_string()),
+        )
+        .unwrap();
+        assert_eq!(
+            f.to_sql(),
+            "id IN (SELECT arrayJoin(ids) FROM other WHERE key = ?)"
+        );
+        let r = spec(vec![f], vec![]).render();
+        assert!(matches!(r.where_binds.as_slice(), [Value::Str(k)] if k == "k"));
+    }
+
+    #[test]
+    fn in_subquery_rejects_wrong_number_of_placeholders() {
+        assert!(Filter::in_subquery(TestCol::Id, "SELECT 1", Value::U64(1)).is_err());
+        assert!(Filter::in_subquery(TestCol::Id, "SELECT ? + ?", Value::U64(1)).is_err());
     }
 
     #[test]
