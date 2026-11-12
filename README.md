@@ -113,6 +113,5 @@ The exact baseline and compared commit IDs are recorded in the notes.
 
 These are release-note fragments relative to master, generated before that baseline
 moves; they are not tag-to-tag release history. They can be included in release
-notes, but CI does not publish or modify GitHub releases. CI requires the baseline
-to contain `graphql.schema` rather than substituting today's deployed schema for
-a historical revision.
+notes, but CI does not publish or modify GitHub releases. If repository doesn't have
+`graphql.schema`, CI compares against `https://api.platform.opentargets.xyz/latest/graphql/schema`.  Download or schema parsing failures still fail CI.

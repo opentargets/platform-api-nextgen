@@ -14,7 +14,7 @@ module.exports = (changes) => {
     ['Non-breaking changes', changes.nonBreakingChanges],
   ];
   const lines = ['# GraphQL schema changes', '',
-    `Baseline commit: \`${process.env.SCHEMA_BASE_SHA}\``, '',
+    process.env.SCHEMA_BASE_DESCRIPTION, '',
     `Compared commit: \`${process.env.SCHEMA_HEAD_SHA}\``, ''];
   for (const [title, entries] of sections) {
     if (!entries.length) continue;

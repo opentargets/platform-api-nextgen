@@ -12,16 +12,22 @@ temporary_dir=$(mktemp -d)
 trap 'rm -rf "$temporary_dir"' EXIT
 export SCHEMA_NOTES_PATH="$temporary_dir/notes.md"
 
-if ! git show "$SCHEMA_BASE_SHA:graphql.schema" > "$temporary_dir/old.graphql"; then
-    echo 'The baseline commit needs a committed graphql.schema; no live deployment fallback is used in CI.' >&2
-    exit 1
+# Compare against graphql.schema in master if it exists, otherwise use the deployed schema as a baseline.
+export SCHEMA_BASE_DESCRIPTION="Baseline commit: \`$SCHEMA_BASE_SHA\`"
+if git cat-file -e "$SCHEMA_BASE_SHA:graphql.schema" 2>/dev/null; then
+    git show "$SCHEMA_BASE_SHA:graphql.schema" > "$temporary_dir/old.graphql"
+else
+    schema_url=https://api.platform.opentargets.xyz/latest/graphql/schema
+    echo "Baseline $SCHEMA_BASE_SHA has no graphql.schema; using the deployed schema for bootstrap."
+    curl --fail --location "$schema_url" --output "$temporary_dir/old.graphql"
+    SCHEMA_BASE_DESCRIPTION="Bootstrap baseline: [$schema_url]($schema_url), fetched $(date -u +%Y-%m-%dT%H:%M:%SZ). Commit \`$SCHEMA_BASE_SHA\` has no schema snapshot; this comparison is against the live deployment, not that commit."
 fi
 cargo run --quiet --locked --example export-schema --features product-platform \
     > "$temporary_dir/new.graphql"
 
 # Inspector does not invoke onComplete when there are no changes.
-printf '# GraphQL schema changes\n\nBaseline commit: `%s`\n\nCompared commit: `%s`\n\nNo schema changes.\n' \
-    "$SCHEMA_BASE_SHA" "$SCHEMA_HEAD_SHA" > "$SCHEMA_NOTES_PATH"
+printf '# GraphQL schema changes\n\n%s\n\nCompared commit: `%s`\n\nNo schema changes.\n' \
+    "$SCHEMA_BASE_DESCRIPTION" "$SCHEMA_HEAD_SHA" > "$SCHEMA_NOTES_PATH"
 graphql-inspector diff "$temporary_dir/old.graphql" "$temporary_dir/new.graphql" \
     --onComplete scripts/graphql-schema-notes.cjs
 mv "$SCHEMA_NOTES_PATH" "$notes_output"
