@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use async_graphql::{
-    Context, Enum, Error, Result, SimpleObject,
+    Context, Enum, Error, InputObject, Result, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -13,6 +13,7 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::study::LdPopulationStructure,
     query::{
+        filter::{SqlFilter, StringFilter},
         paginate::Paged,
         sort::{Sort, SortDirection},
         sql::{
@@ -103,12 +104,30 @@ const DIRECT_STUDY_IDS: &str = "SELECT arrayJoin(studyIds) FROM disease WHERE id
 const ALL_STUDY_IDS: &str =
     "SELECT arrayJoin(arrayConcat(studyIds, indirectStudyIds)) FROM disease WHERE id = ?";
 
+// ---- filter ----
+
+/// Filter for the disease's studies.
+#[derive(Debug, Clone, Eq, PartialEq, Hash, InputObject)]
+pub struct DiseaseStudiesFilter {
+    /// Keep studies whose ID matches this filter, e.g. `{ ne: "GCST..." }` to exclude one.
+    pub study_id: Option<StringFilter>,
+}
+
+impl SqlFilter<DiseaseStudyCol> for DiseaseStudiesFilter {
+    fn to_sql(&self) -> std::result::Result<Vec<Filter<DiseaseStudyCol>>, String> {
+        self.study_id
+            .as_ref()
+            .map_or(Ok(vec![]), |f| f.to_sql(DiseaseStudyCol::StudyId))
+    }
+}
+
 // ---- query params ----
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct QueryParams {
     disease_id: String,
     indirect: bool,
+    filter: Option<DiseaseStudiesFilter>,
     sort: Vec<Sort<SortField>>,
     search: Option<Search>,
     index: u32,
@@ -120,6 +139,7 @@ impl QueryParams {
     pub fn new(
         disease_id: String,
         indirect: bool,
+        filter: Option<DiseaseStudiesFilter>,
         sort: Vec<Sort<SortField>>,
         search: Option<Search>,
         index: u32,
@@ -128,6 +148,7 @@ impl QueryParams {
         Self {
             disease_id,
             indirect,
+            filter,
             sort,
             search: search.and_then(Search::normalise),
             index,
@@ -149,6 +170,9 @@ impl QueryParams {
             )
             .map_err(Error::new)?,
         ];
+        if let Some(filter) = &self.filter {
+            filters.extend(filter.to_sql().map_err(Error::new)?);
+        }
         filters.extend(self.search.as_ref().map(Search::to_filter).transpose()?);
         Ok(PageSpec {
             filters,

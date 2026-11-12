@@ -2,9 +2,18 @@
 
 use async_graphql::InputObject;
 
+use crate::query::sql::{self, Column, Op, Value};
+
 /// Per-entity filter: do we keep this row?
 pub trait Filter<T> {
     fn matches(&self, item: &T) -> bool;
+}
+
+/// In `ClickHouse`: the filter as SQL conditions on columns `C`, combined with `AND`.
+pub trait SqlFilter<C: Column> {
+    /// # Errors
+    /// If a condition doesn't fit its column's type.
+    fn to_sql(&self) -> Result<Vec<sql::Filter<C>>, String>;
 }
 
 /// Null-object filter.
@@ -16,7 +25,7 @@ impl<T> Filter<T> for NoFilter {
 }
 
 /// Filter for a string field.
-#[derive(Debug, InputObject)]
+#[derive(Debug, Clone, Default, Eq, PartialEq, Hash, InputObject)]
 pub struct StringFilter {
     pub eq: Option<String>,
     pub ne: Option<String>,
@@ -56,6 +65,33 @@ impl StringFilter {
                 .in_list
                 .as_ref()
                 .is_none_or(|xs| xs.iter().any(|x| x == v))
+    }
+
+    /// The same filter as SQL conditions on `col`, one per operation that is set.
+    ///
+    /// Only `eq`, `ne` and `in` are supported in SQL. NULLs behave as in [`Self::matches`]:
+    /// in SQL any comparison with NULL drops the row.
+    ///
+    /// # Errors
+    /// If `contains`, `notContains` or `isNull` is set, or `col` isn't a `Str` column.
+    pub fn to_sql<C: Column>(&self, col: C) -> Result<Vec<sql::Filter<C>>, String> {
+        if self.contains.is_some() || self.not_contains.is_some() || self.is_null.is_some() {
+            return Err(format!(
+                "only `eq`, `ne` and `in` are supported when filtering {}",
+                col.as_sql()
+            ));
+        }
+        let mut out = Vec::new();
+        if let Some(v) = &self.eq {
+            out.push(sql::Filter::new(col, Op::Eq, Value::Str(v.clone()))?);
+        }
+        if let Some(v) = &self.ne {
+            out.push(sql::Filter::new(col, Op::Ne, Value::Str(v.clone()))?);
+        }
+        if let Some(vs) = &self.in_list {
+            out.push(sql::Filter::in_str(col, vs.clone())?);
+        }
+        Ok(out)
     }
 }
 
@@ -195,5 +231,65 @@ impl ArrayFilter {
                 .contains_all
                 .as_ref()
                 .is_none_or(|wanted| wanted.iter().all(|w| values.iter().any(|v| v == w)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::query::sql::{ValueKind, columns};
+
+    columns!(TestCol {
+        Id    => "id"    : Str,
+        Count => "count" : U64,
+    });
+
+    #[test]
+    fn string_filter_ne_gives_one_condition() {
+        let f = StringFilter {
+            ne: Some("x".to_string()),
+            ..StringFilter::default()
+        };
+        let conditions = f.to_sql(TestCol::Id).unwrap();
+        assert_eq!(conditions.len(), 1);
+    }
+
+    #[test]
+    fn string_filter_gives_one_condition_per_operation() {
+        let f = StringFilter {
+            eq: Some("a".to_string()),
+            ne: Some("b".to_string()),
+            in_list: Some(vec!["c".to_string()]),
+            ..StringFilter::default()
+        };
+        assert_eq!(f.to_sql(TestCol::Id).unwrap().len(), 3);
+    }
+
+    #[test]
+    fn string_filter_rejects_unsupported_operations() {
+        let f = StringFilter {
+            contains: Some("a".to_string()),
+            ..StringFilter::default()
+        };
+        assert!(f.to_sql(TestCol::Id).is_err());
+    }
+
+    #[test]
+    fn string_filter_empty_gives_no_conditions() {
+        assert!(
+            StringFilter::default()
+                .to_sql(TestCol::Id)
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn string_filter_rejects_non_str_column() {
+        let f = StringFilter {
+            eq: Some("1".to_string()),
+            ..StringFilter::default()
+        };
+        assert!(f.to_sql(TestCol::Count).is_err());
     }
 }
