@@ -23,7 +23,7 @@ env:
   # Nightly is required: rustfmt.toml uses nightly-only options.
   RUST_NIGHTLY: nightly-2026-09-21
   # Matches the rust image in the Dockerfile.
-  RUST_STABLE: '1.94'
+  RUST_STABLE: '1.99'
 
 jobs:
   fmt:
