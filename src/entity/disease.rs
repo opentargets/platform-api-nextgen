@@ -328,11 +328,13 @@ impl Disease {
         #[graphql(desc = "Case-insensitive text search across the studies' text fields. \
                           Searches all fields unless `fields` is given.")]
         search: Option<ds::Search>,
+        #[graphql(desc = "Filter criteria to apply.")] filter: Option<ds::DiseaseStudiesFilter>,
         #[graphql(default, desc = "Pagination for the studies.")] page: Page,
     ) -> async_graphql::Result<Paged<ds::DiseaseStudy>> {
         let query_params = ds::QueryParams::new(
             self.id.clone(),
             enable_indirect,
+            filter,
             sort,
             search,
             page.index,

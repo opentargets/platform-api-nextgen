@@ -103,6 +103,11 @@ pub enum Filter<C: Column> {
         subquery: &'static str,
         value: Value,
     },
+    /// Case-insensitive substring match of `term` against `col`. With `negate`, the column
+    /// must not contain `term`.
+    Contains { col: C, term: Value, negate: bool },
+    /// `col IS NULL`, or `col IS NOT NULL` when `null` is false. Binds no value.
+    IsNull { col: C, null: bool },
 }
 
 impl<C: Column> Filter<C> {
@@ -181,10 +186,42 @@ impl<C: Column> Filter<C> {
         })
     }
 
-    /// The SQL condition, with one `?` placeholder for [`Self::value`].
+    /// A case-insensitive substring filter on a `Str` column: the column contains `term`,
+    /// or with `negate`, doesn't. Errors if `col` isn't `Str`.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn contains(col: C, term: String, negate: bool) -> Result<Self, String> {
+        if col.kind() != ValueKind::Str {
+            return Err(format!(
+                "column {} expects Str, got {:?}",
+                col.as_sql(),
+                col.kind()
+            ));
+        }
+        Ok(Self::Contains {
+            col,
+            term: Value::Str(term),
+            negate,
+        })
+    }
+
+    /// `col IS NULL`, or `col IS NOT NULL` when `null` is false.
+    #[must_use]
+    pub fn is_null(col: C, null: bool) -> Self { Self::IsNull { col, null } }
+
+    /// The SQL condition, with one `?` placeholder for [`Self::value`] if it has a value.
     fn to_sql(&self) -> String {
         match self {
             Self::Compare { col, op, .. } => format!("{} {} ?", col.as_sql(), op.as_sql()),
+            Self::Contains { col, negate, .. } => format!(
+                "positionCaseInsensitiveUTF8({}, ?) {} 0",
+                col.as_sql(),
+                if *negate { "=" } else { ">" }
+            ),
+            Self::IsNull { col, null } => format!(
+                "{} {}",
+                col.as_sql(),
+                if *null { "IS NULL" } else { "IS NOT NULL" }
+            ),
             Self::In { col, .. } => format!("{} IN ?", col.as_sql()),
             Self::InSubquery { col, subquery, .. } => format!("{} IN ({subquery})", col.as_sql()),
             Self::Search { cols, .. } => {
@@ -200,13 +237,15 @@ impl<C: Column> Filter<C> {
         }
     }
 
-    /// The value bound to this filter's `?`.
-    fn value(&self) -> &Value {
+    /// The value bound to this filter's `?`, or `None` if it has no `?`.
+    fn value(&self) -> Option<&Value> {
         match self {
             Self::Compare { value, .. }
             | Self::Search { term: value, .. }
             | Self::In { values: value, .. }
-            | Self::InSubquery { value, .. } => value,
+            | Self::InSubquery { value, .. }
+            | Self::Contains { term: value, .. } => Some(value),
+            Self::IsNull { .. } => None,
         }
     }
 }
@@ -322,7 +361,11 @@ impl<T: Table> PageSpec<T> {
             sql,
             offset: self.offset,
             limit: self.limit,
-            where_binds: self.filters.iter().map(|f| f.value().clone()).collect(),
+            where_binds: self
+                .filters
+                .iter()
+                .filter_map(|f| f.value().cloned())
+                .collect(),
         }
     }
 }
@@ -490,5 +533,50 @@ mod tests {
             panic!("expected an error for a U64 column");
         };
         assert_eq!(msg, "column count expects Str, got U64");
+    }
+
+    #[test]
+    fn contains_renders_position_check() {
+        let f = Filter::contains(TestCol::Id, "x".to_string(), false).unwrap();
+        assert_eq!(f.to_sql(), "positionCaseInsensitiveUTF8(id, ?) > 0");
+        let f = Filter::contains(TestCol::Id, "x".to_string(), true).unwrap();
+        assert_eq!(f.to_sql(), "positionCaseInsensitiveUTF8(id, ?) = 0");
+    }
+
+    #[test]
+    fn contains_rejects_non_str_column() {
+        let Err(msg) = Filter::contains(TestCol::Score, "x".to_string(), false) else {
+            panic!("expected an error for an F64 column");
+        };
+        assert_eq!(msg, "column score expects Str, got F64");
+    }
+
+    #[test]
+    fn is_null_renders_and_binds_nothing() {
+        assert_eq!(Filter::is_null(TestCol::Id, true).to_sql(), "id IS NULL");
+        assert_eq!(
+            Filter::is_null(TestCol::Id, false).to_sql(),
+            "id IS NOT NULL"
+        );
+        let r = spec(vec![Filter::is_null(TestCol::Id, true)], vec![]).render();
+        assert!(r.where_binds.is_empty());
+    }
+
+    #[test]
+    fn binds_match_placeholders_when_mixing_is_null() {
+        let r = spec(
+            vec![
+                Filter::is_null(TestCol::Id, false),
+                Filter::new(TestCol::Score, Op::Gt, Value::F64(1.0)).unwrap(),
+            ],
+            vec![],
+        )
+        .render();
+        assert!(
+            r.sql.contains("id IS NOT NULL AND score > ?"),
+            "sql was:\n{}",
+            r.sql
+        );
+        assert!(matches!(r.where_binds.as_slice(), [Value::F64(_)]));
     }
 }
