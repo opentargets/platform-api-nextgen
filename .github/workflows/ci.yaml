@@ -63,7 +63,7 @@ jobs:
             baseline=$(git rev-parse FETCH_HEAD)
           fi
           echo "sha=$baseline" >> "$GITHUB_OUTPUT"
-      - name: Check snapshot and generate schema release notes
+      - name: Compare schemas and generate schema release notes
         env:
           BASELINE: ${{ steps.baseline.outputs.sha }}
         run: bash scripts/check-graphql-schema-ci.sh "$BASELINE" "$RUNNER_TEMP/graphql-schema-changes.md"
