@@ -3,7 +3,7 @@ name: ci
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [main]
   schedule:
     # Weekly, so new RustSec advisories are caught even when the code doesn't change.
     - cron: '0 6 * * 1'
