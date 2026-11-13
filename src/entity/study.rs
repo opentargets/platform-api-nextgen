@@ -182,10 +182,9 @@ pub struct Study {
     /// Disease associated with a studied trait.
     #[graphql(skip)]
     disease_ids: Vec<String>,
-    /// Study locus IDs for the study.
+    /// Credible set IDs.
     #[graphql(skip)]
-    #[allow(clippy::struct_field_names)]
-    study_locus_ids: Vec<String>,
+    credible_set_ids: Vec<String>,
     /// In molQTL studies, the gene under study for changes in expression, abundance, etc.
     #[graphql(skip)]
     gene_id: Option<String>,
@@ -516,10 +515,12 @@ impl Study {
         ctx: &Context<'_>,
         #[graphql(default, desc = "Pagination for credible sets.")] page: Page,
     ) -> async_graphql::Result<Paged<credible_set::CredibleSet>> {
-        Ok(credible_set::load_credible_sets(ctx, &self.study_locus_ids)
-            .await?
-            .query()
-            .paginate(page))
+        Ok(
+            credible_set::load_credible_sets(ctx, &self.credible_set_ids)
+                .await?
+                .query()
+                .paginate(page),
+        )
     }
 
     /// Flat, sortable and searchable summary of this GWAS study's credible sets, for tables. Use
