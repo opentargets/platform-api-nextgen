@@ -15,7 +15,7 @@ module.exports = (changes) => {
   ];
   const lines = ['# GraphQL schema changes', '',
     process.env.SCHEMA_BASE_DESCRIPTION, '',
-    `Compared commit: \`${process.env.SCHEMA_HEAD_SHA}\``, ''];
+    process.env.SCHEMA_HEAD_DESCRIPTION, ''];
   for (const [title, entries] of sections) {
     if (!entries.length) continue;
     lines.push(`## ${title}`, '');

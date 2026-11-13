@@ -120,11 +120,14 @@ Fork and Dependabot PRs retain the job summary and artifact because restricted
 workflow tokens cannot update PR descriptions. The PR update job uses
 `pull-requests: write`; the schema generation job retains read-only permissions.
 
-For PRs into `master`, the comparison uses the PR event's master revision and the
-PR merge result, covering the combined change across all PR commits. On pushes to
+For PRs, the comparison uses the master revision fetched during the CI run and the
+PR branch's head commit, covering the combined change across all PR commits.
+The schema generation job checks out the PR head rather than GitHub's temporary
+merge commit. On pushes to
 `master`, the comparison uses master before the push, so the report shows the changes
 after merging. Manual runs and PRs into other branches compare with fetched master.
-The exact baseline and compared commit IDs are recorded in the notes.
+The notes link the master comparison commit and the checked-out commit to full
+GitHub commit URLs. 
 
 The generated Markdown contains release-note fragments relative to the selected
 master revision. CI does not publish or modify GitHub releases. If the baseline

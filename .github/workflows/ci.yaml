@@ -34,6 +34,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Install Rust
         run: |
           rustup toolchain install "$RUST_STABLE" --profile minimal
@@ -50,13 +51,9 @@ jobs:
         id: baseline
         env:
           EVENT_NAME: ${{ github.event_name }}
-          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           BEFORE_SHA: ${{ github.event.before }}
         run: |
-          if [[ "$EVENT_NAME" == pull_request && "$BASE_BRANCH" == master ]]; then
-            baseline="$BASE_SHA"
-          elif [[ "$EVENT_NAME" == push ]]; then
+          if [[ "$EVENT_NAME" == push ]]; then
             baseline="$BEFORE_SHA"
           else
             git fetch origin master
