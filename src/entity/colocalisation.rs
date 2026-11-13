@@ -26,10 +26,10 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 pub struct Colocalisation {
-    /// Credible set (study-locus) on the left side of the colocalisation pair.
-    study_locus_id: String,
-    /// The other credible set (study-locus) in the colocalisation pair.
-    other_study_locus_id: String,
+    /// Identifier of the credible set on this side of the colocalisation pair.
+    credible_set_id: String,
+    /// Identifier of the other credible set in the colocalisation pair.
+    other_credible_set_id: String,
     /// Type of the right-side study (e.g., gwas, eqtl, pqtl).
     right_study_type: study::StudyType,
     /// Chromosome where the colocalisation occurs.
