@@ -16,14 +16,14 @@ trap 'rm -rf "$temporary_dir"' EXIT
 export SCHEMA_NOTES_PATH="$temporary_dir/notes.md"
 
 # Use the baseline commit's graphql.schema, falling back to the deployed schema.
-export SCHEMA_BASE_DESCRIPTION="Master comparison commit: $base_commit_link"
+export SCHEMA_BASE_DESCRIPTION="Main comparison commit: $base_commit_link"
 if git cat-file -e "$SCHEMA_BASE_SHA:graphql.schema" 2>/dev/null; then
     git show "$SCHEMA_BASE_SHA:graphql.schema" > "$temporary_dir/old.graphql"
 else
     schema_url=https://api.platform.opentargets.xyz/latest/graphql/schema
     echo "Baseline $SCHEMA_BASE_SHA has no graphql.schema; using the deployed schema for bootstrap."
     curl --fail --location "$schema_url" --output "$temporary_dir/old.graphql"
-    SCHEMA_BASE_DESCRIPTION="Bootstrap baseline: [$schema_url]($schema_url), fetched $(date -u +%Y-%m-%dT%H:%M:%SZ). Master comparison commit $base_commit_link has no schema snapshot. Schema comparison uses the live deployment."
+    SCHEMA_BASE_DESCRIPTION="Bootstrap baseline: [$schema_url]($schema_url), fetched $(date -u +%Y-%m-%dT%H:%M:%SZ). Main comparison commit $base_commit_link has no schema snapshot. Schema comparison uses the live deployment."
 fi
 cargo run --quiet --locked --example export-schema --features product-platform \
     > "$temporary_dir/new.graphql"

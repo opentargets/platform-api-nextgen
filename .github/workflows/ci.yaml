@@ -47,7 +47,7 @@ jobs:
           node-version: '24'
       - name: Install GraphQL Inspector
         run: npm install --global @graphql-inspector/cli@7.0.2 graphql@16.11.0
-      - name: Select master baseline
+      - name: Select main baseline
         id: baseline
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -56,7 +56,7 @@ jobs:
           if [[ "$EVENT_NAME" == push ]]; then
             baseline="$BEFORE_SHA"
           else
-            git fetch origin master
+            git fetch origin main
             baseline=$(git rev-parse FETCH_HEAD)
           fi
           echo "sha=$baseline" >> "$GITHUB_OUTPUT"

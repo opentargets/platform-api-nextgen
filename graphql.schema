@@ -1215,6 +1215,12 @@ input DatasourcePolicy {
 	Whether the datasource is required for the association to be considered valid.
 	"""
 	required: Boolean!
+	"""
+	Whether the datasource's evidence counts towards indirect associations (descendant or
+	ancestor diseases). If omitted, the datasource's default is used (`false` for
+	`expression_atlas`, `true` for all others).
+	"""
+	propagate: Boolean = null
 }
 
 """
@@ -1337,6 +1343,32 @@ type Disease {
 		page: Page! = {index: 0, size: 10}
 	): ClinicalIndicationPage!
 	"""
+	Flat, sortable and searchable summary of the studies of this disease, for tables. Use
+	`studies(diseaseIds: ...)` for the full study entities and stats.
+	"""
+	studiesView(
+		"""
+		Whether to add studies for ontology-descendant diseases in the result.
+		"""
+		enableIndirect: Boolean! = false,
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [DiseaseStudiesSort!]! = [{key: N_SAMPLES, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the studies' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: DiseaseStudiesSearch,
+		"""
+		Filter criteria to apply.
+		"""
+		filter: DiseaseStudiesFilter,
+		"""
+		Pagination for the studies.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): DiseaseStudyPage!
+	"""
 	Direct parent terms in the disease ontology.
 	"""
 	parents: [Disease!]!
@@ -1376,9 +1408,9 @@ type Disease {
 		"""
 		facetFilters: [String!]! = [],
 		"""
-		Weight applied to indirect evidence (from descendant diseases), between 0 and 1. Default is 0.5.
+		Weight applied to indirect evidence (from descendant diseases), between 0 and 1. Default is 1.
 		"""
-		indirectWeight: Float! = 0.5,
+		indirectWeight: Float! = 1.0,
 		"""
 		Optional list of datasource policy overrides with changes to the defaults.
 		"""
@@ -1581,6 +1613,19 @@ type DiseasePhenotypePage {
 }
 
 """
+Text fields that `search` can match against.
+"""
+enum DiseaseSearchField {
+	ID
+	NAME
+	DESCRIPTION
+	"""
+	Any synonym, of any relation type.
+	"""
+	SYNONYMS
+}
+
+"""
 Sort types. Contain the sort field and direction.
 """
 input DiseaseSort {
@@ -1604,11 +1649,170 @@ enum DiseaseSortField {
 }
 
 """
+Filter for the disease's studies.
+"""
+input DiseaseStudiesFilter {
+	"""
+	Keep studies whose ID matches this filter, e.g. `{ ne: "GCST..." }` to exclude one.
+	"""
+	studyId: StringFilter
+}
+
+"""
+Case-insensitive text search.
+"""
+input DiseaseStudiesSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [DiseaseStudiesSearchField!]! = [STUDY_ID, PROJECT_ID, TRAIT_FROM_SOURCE, PUBLICATION_FIRST_AUTHOR, PUBLICATION_DATE, PUBLICATION_JOURNAL, COHORTS, PUBMED_ID, DISEASE_IDS, DISEASE_NAMES]
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum DiseaseStudiesSearchField {
+	STUDY_ID
+	PROJECT_ID
+	TRAIT_FROM_SOURCE
+	PUBLICATION_FIRST_AUTHOR
+	PUBLICATION_DATE
+	PUBLICATION_JOURNAL
+	COHORTS
+	PUBMED_ID
+	DISEASE_IDS
+	DISEASE_NAMES
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input DiseaseStudiesSort {
+	"""
+	The field to sort by.
+	"""
+	key: DiseaseStudiesSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum DiseaseStudiesSortField {
+	"""
+	Number of samples tested.
+	"""
+	N_SAMPLES
+	"""
+	Number of credible sets identified in the study.
+	"""
+	CREDIBLE_SETS_COUNT
+	"""
+	By publication date.
+	"""
+	PUBLICATION_DATE
+	"""
+	Alphabetically.
+	"""
+	TRAIT_FROM_SOURCE
+}
+
+"""
+A study linked to a disease, as shown in the disease page's GWAS studies table.
+
+Rows are decoded by position, so field order must match the column order of
+`DiseaseStudy::NAME`. Update both together.
+"""
+type DiseaseStudy {
+	"""
+	The GWAS or molQTL study identifier (e.g. GCST004132).
+	"""
+	id: String!
+	"""
+	Identifier of the source project collection that the study information is derived from.
+	"""
+	projectId: String!
+	"""
+	Molecular or phenotypic trait, derived from source, analysed in the study.
+	"""
+	traitFromSource: String!
+	"""
+	First name and initials of the author of the publication that references the study.
+	"""
+	publicationFirstAuthor: String
+	"""
+	Date of the publication that references the study.
+	"""
+	publicationDate: String
+	"""
+	Abbreviated journal name where the publication referencing study was published.
+	"""
+	publicationJournal: String
+	"""
+	The number of samples tested in GWAS analysis.
+	"""
+	nSamples: Int
+	"""
+	List of cohort(s) represented in the discovery sample.
+	"""
+	cohorts: [String!]!
+	"""
+	PubMed identifier of the publication that references the study [bioregistry:pubmed].
+	"""
+	pubmedId: String
+	"""
+	Collection of populations referenced by the study.
+	"""
+	ldPopulationStructure: [LdPopulationStructure!]!
+	"""
+	Number of credible sets identified in the study.
+	"""
+	credibleSetsCount: Int!
+	"""
+	Identifiers of the diseases or phenotypes the study's trait is mapped to.
+	"""
+	diseaseIds: [String!]!
+	"""
+	Names of the diseases in `disease_ids`, in the same order. Empty when a name is missing.
+	"""
+	diseaseNames: [String!]!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type DiseaseStudyPage {
+	count: Int!
+	rows: [DiseaseStudy!]!
+}
+
+"""
 List of synonymous disease labels.
 """
 type DiseaseSynonym {
 	relation: String!
 	terms: [String]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input DiseasesSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [DiseaseSearchField!]! = [ID, NAME, DESCRIPTION, SYNONYMS]
 }
 
 """
@@ -1969,7 +2173,7 @@ type EnhancerToGenePage {
 }
 
 """
-Case-insensitive text search over enhancer-to-gene predictions.
+Case-insensitive text search.
 """
 input EnhancerToGeneSearch {
 	"""
@@ -3559,7 +3763,7 @@ type PharmacogenomicsPage {
 }
 
 """
-Case-insensitive text search over pharmacogenomics records.
+Case-insensitive text search.
 """
 input PharmacogenomicsSearch {
 	"""
@@ -3934,9 +4138,9 @@ type Query {
 		"""
 		efoIds: [String!]!,
 		"""
-		Search term to filter by.
+		Case-insensitive text search across the diseases' text fields. Searches all fields unless `fields` is given.
 		"""
-		search: String,
+		search: DiseasesSearch,
 		"""
 		List of sort statements.
 		"""
@@ -3976,9 +4180,9 @@ type Query {
 		"""
 		enableIndirect: Boolean! = false,
 		"""
-		Search term to filter by.
+		Case-insensitive text search across the studies' text fields. Searches all fields unless `fields` is given.
 		"""
-		search: String,
+		search: StudiesSearch,
 		"""
 		Filter criteria to apply.
 		"""
@@ -4066,92 +4270,6 @@ type Query {
 		"""
 		ensemblId: String!
 	): Target
-	"""
-	GWAS credible sets for a study.
-	"""
-	studyCredibleSets(
-		"""
-		GWAS study ID to fetch credible sets for.
-		"""
-		studyId: String!,
-		"""
-		List of sort statements. Each field can be used at most once.
-		"""
-		sort: [StudyCredibleSetsSort!]! = [{key: P_VALUE, direction: ASCENDING}],
-		"""
-		Case-insensitive text search across the credible sets' text fields. Searches all fields unless `fields` is given.
-		"""
-		search: StudyCredibleSetsSearch,
-		"""
-		Pagination for the credible sets.
-		"""
-		page: Page! = {index: 0, size: 10}
-	): StudyCredibleSetPage!
-	"""
-	molQTL credible sets linked to a target.
-	"""
-	targetCredibleSets(
-		"""
-		Ensembl gene ID of the target to fetch credible sets for.
-		"""
-		ensemblId: String!,
-		"""
-		Study types to include, e.g. `[eqtl, sqtl]`. Includes all when empty.
-		"""
-		studyTypes: [StudyType!]! = [],
-		"""
-		List of sort statements. Each field can be used at most once.
-		"""
-		sort: [TargetCredibleSetsSort!]! = [{key: P_VALUE, direction: ASCENDING}],
-		"""
-		Case-insensitive text search across the credible sets' text fields. Searches all fields unless `fields` is given.
-		"""
-		search: TargetCredibleSetsSearch,
-		"""
-		Pagination for the credible sets.
-		"""
-		page: Page! = {index: 0, size: 10}
-	): TargetCredibleSetPage!
-	variantCredibleSets(
-		"""
-		variant ID to fetch credible sets for.
-		"""
-		variantId: String!,
-		"""
-		Study types to include, e.g. `[gwas]` or the QTL types.
-		"""
-		studyTypes: [StudyType!]!,
-		"""
-		List of sort statements. Each field can be used at most once.
-		"""
-		sort: [VariantCredibleSetsSort!]! = [{key: TOP_L2G_SCORE, direction: DESCENDING}],
-		"""
-		Case-insensitive text search across the credible sets' text fields. Searches all fields unless `fields` is given.
-		"""
-		search: VariantCredibleSetsSearch,
-		"""
-		Pagination for the credible sets.
-		"""
-		page: Page! = {index: 0, size: 10}
-	): VariantCredibleSetPage!
-	variantTranscriptConsequences(
-		"""
-		Variant ID to fetch transcript consequences for.
-		"""
-		variantId: String!,
-		"""
-		List of sort statements. Each field can be used at most once.
-		"""
-		sort: [VariantTranscriptConsequencesSort!]! = [{key: DISTANCE_FROM_FOOTPRINT, direction: ASCENDING}],
-		"""
-		Case-insensitive text search across the gene symbol, consequence and impact. Searches all of them unless `fields` is given.
-		"""
-		search: VariantTranscriptConsequencesSearch,
-		"""
-		Pagination for the transcript consequences.
-		"""
-		page: Page! = {index: 0, size: 10}
-	): VariantTranscriptConsequencePage!
 }
 
 """
@@ -4607,6 +4725,20 @@ input StringFilter {
 }
 
 """
+Case-insensitive text search.
+"""
+input StudiesSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [StudySearchField!]! = [STUDY_ID, TRAIT_FROM_SOURCE, PROJECT_ID]
+}
+
+"""
 Metadata for all complex trait GWAS and molecular QTL studies in the Platform. The dataset
 includes study metadata, phenotype information, sample sizes, publication information and more.
 Molecular QTL studies are split by their target trait (e.g. gene, splice junction, etc),
@@ -4730,6 +4862,24 @@ type Study {
 		page: Page! = {index: 0, size: 10}
 	): CredibleSetPage!
 	"""
+	Flat, sortable and searchable summary of this GWAS study's credible sets, for tables. Use
+	`credibleSets` for the full credible sets with locus, L2G, colocalisation, etc.
+	"""
+	credibleSetsView(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [StudyCredibleSetsSort!]! = [{key: P_VALUE, direction: ASCENDING}],
+		"""
+		Case-insensitive text search across the credible sets' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: StudyCredibleSetsSearch,
+		"""
+		Pagination for the credible sets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): StudyCredibleSetPage!
+	"""
 	In molQTL studies, the gene under study for changes in expression, abundance, etc.
 	"""
 	target: Target
@@ -4783,7 +4933,7 @@ type StudyCredibleSetPage {
 }
 
 """
-Case-insensitive text search over the credible sets.
+Case-insensitive text search.
 """
 input StudyCredibleSetsSearch {
 	"""
@@ -4873,6 +5023,15 @@ type StudyPage {
 	count: Int!
 	rows: [Study!]!
 	stats: StudyStats!
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum StudySearchField {
+	STUDY_ID
+	TRAIT_FROM_SOURCE
+	PROJECT_ID
 }
 
 """
@@ -5169,9 +5328,9 @@ type Target {
 		"""
 		includeMeasurements: Boolean! = false,
 		"""
-		Weight applied to indirect evidence (from descendant diseases), between 0 and 1. Default is 0.5.
+		Weight applied to indirect evidence (from descendant diseases), between 0 and 1. Default is 0.
 		"""
-		indirectWeight: Float! = 0.5,
+		indirectWeight: Float! = 0.0,
 		"""
 		Optional list of datasource policy overrides with changes to the defaults.
 		"""
@@ -5392,6 +5551,29 @@ type Target {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): CredibleSetPage!
+	"""
+	Flat, sortable and searchable summary of the molQTL credible sets linked to this target,
+	for tables. Use `credibleSets` for the full credible sets with locus, L2G, colocalisation,
+	etc.
+	"""
+	credibleSetsView(
+		"""
+		Study types to include, e.g. `[eqtl, sqtl]`. Includes all when empty.
+		"""
+		studyTypes: [StudyType!]! = [],
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [TargetCredibleSetsSort!]! = [{key: P_VALUE, direction: ASCENDING}],
+		"""
+		Case-insensitive text search across the credible sets' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: TargetCredibleSetsSearch,
+		"""
+		Pagination for the credible sets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): TargetCredibleSetPage!
 }
 
 """
@@ -5482,7 +5664,7 @@ type TargetCredibleSetPage {
 }
 
 """
-Case-insensitive text search over the credible sets.
+Case-insensitive text search.
 """
 input TargetCredibleSetsSearch {
 	"""
@@ -5877,6 +6059,28 @@ type Variant {
 		page: Page! = {index: 0, size: 10}
 	): CredibleSetPage!
 	"""
+	Flat, sortable and searchable summary of the credible sets containing this variant, for
+	tables. Use `credibleSets` for the full credible sets with locus, L2G, colocalisation, etc.
+	"""
+	credibleSetsView(
+		"""
+		Study types to include, e.g. `[gwas]` or the QTL types.
+		"""
+		studyTypes: [StudyType!]!,
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [VariantCredibleSetsSort!]! = [{key: TOP_L2G_SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the credible sets' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: VariantCredibleSetsSearch,
+		"""
+		Pagination for the credible sets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): VariantCredibleSetPage!
+	"""
 	Predicted consequences on transcript context.
 	"""
 	transcriptConsequences(
@@ -5885,6 +6089,24 @@ type Variant {
 		"""
 		sort: [TranscriptConsequenceSort!]! = []
 	): [TranscriptConsequence!]!
+	"""
+	Paginated, sortable and searchable predicted consequences on transcript context, for
+	tables. Use `transcriptConsequences` for the full list as stored on the variant.
+	"""
+	transcriptConsequencesView(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [VariantTranscriptConsequencesSort!]! = [{key: DISTANCE_FROM_FOOTPRINT, direction: ASCENDING}],
+		"""
+		Case-insensitive text search across the gene symbol, consequence and impact. Searches all of them unless `fields` is given.
+		"""
+		search: VariantTranscriptConsequencesSearch,
+		"""
+		Pagination for the transcript consequences.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): VariantTranscriptConsequencePage!
 	"""
 	The sequence ontology term of the most severe consequence of the variant based on Ensembl
 	VEP.
@@ -6036,7 +6258,7 @@ type VariantCredibleSetPage {
 }
 
 """
-Case-insensitive text search over the credible sets.
+Case-insensitive text search.
 """
 input VariantCredibleSetsSearch {
 	"""
@@ -6213,7 +6435,7 @@ type VariantTranscriptConsequencePage {
 }
 
 """
-Case-insensitive text search over the transcript consequences.
+Case-insensitive text search.
 """
 input VariantTranscriptConsequencesSearch {
 	"""

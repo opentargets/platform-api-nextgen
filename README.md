@@ -4,6 +4,14 @@ TBD
 
 ## Development
 
+The repository pins Rust 1.99.0 in `rust-toolchain.toml`, matching the minimum Rust
+version in `Cargo.toml`. Rustup selects the pinned toolchain for Cargo commands,
+including the GraphQL pre-commit hook. Install the toolchain before committing:
+
+```bash
+rustup toolchain install 1.99.0 --profile minimal --component clippy
+```
+
 ```bash
     cargo watch -c -w src -x 'run --features product-platform'
 ```
@@ -101,7 +109,7 @@ the working tree instead. Stage any new Rust source files before committing.
 
 ## GraphQL schema checks in CI
 
-CI runs one GraphQL Inspector comparison: the schema from the selected master
+CI runs one GraphQL Inspector comparison: the schema from the selected main
 commit, or the deployment fallback, versus the generated Platform schema.
 The comparison passes when GraphQL Inspector detects no schema differences.
 API changes remain advisory, including breaking changes. The job summary and
@@ -120,17 +128,17 @@ Fork and Dependabot PRs retain the job summary and artifact because restricted
 workflow tokens cannot update PR descriptions. The PR update job uses
 `pull-requests: write`; the schema generation job retains read-only permissions.
 
-For PRs, the comparison uses the master revision fetched during the CI run and the
+For PRs, the comparison uses the main revision fetched during the CI run and the
 PR branch's head commit, covering the combined change across all PR commits.
 The schema generation job checks out the PR head rather than GitHub's temporary
 merge commit. On pushes to
-`master`, the comparison uses master before the push, so the report shows the changes
-after merging. Manual runs and PRs into other branches compare with fetched master.
-The notes link the master comparison commit and the checked-out commit to full
+`main`, the comparison uses main before the push, so the report shows the changes
+after merging. Manual runs and PRs into other branches compare with fetched main.
+The notes link the main comparison commit and the checked-out commit to full
 GitHub commit URLs. 
 
 The generated Markdown contains release-note fragments relative to the selected
-master revision. CI does not publish or modify GitHub releases. If the baseline
+main revision. CI does not publish or modify GitHub releases. If the baseline
 commit lacks `graphql.schema`, CI downloads the baseline schema from
 `https://api.platform.opentargets.xyz/latest/graphql/schema`. The release-note
 fragments identify the deployment fallback explicitly.
