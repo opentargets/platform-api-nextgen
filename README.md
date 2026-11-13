@@ -4,6 +4,14 @@ TBD
 
 ## Development
 
+The repository pins Rust 1.99.0 in `rust-toolchain.toml`, matching the minimum Rust
+version in `Cargo.toml`. Rustup selects the pinned toolchain for Cargo commands,
+including the GraphQL pre-commit hook. Install the toolchain before committing:
+
+```bash
+rustup toolchain install 1.99.0 --profile minimal --component clippy
+```
+
 ```bash
     cargo watch -c -w src -x 'run --features product-platform'
 ```
@@ -18,6 +26,7 @@ TBD
 >          "cargo": {
 >             "features": ["ppp"]
 > ```
+
 
 ## Build
 
@@ -50,3 +59,86 @@ Every build includes both products, each to its own image:
 | ppp      | `platform-api-nextgen-ppp` |
 
 Both images share the tag's version. Each product is deployed independently.
+
+
+## Export the GraphQL schema
+
+Download the schema into `graphql.schema` from `https://api.platform.opentargets.xyz/latest/graphql/schema`:
+
+```bash
+curl --fail \
+  https://api.platform.opentargets.xyz/latest/graphql/schema \
+  --output graphql.schema
+```
+
+This saves the initial schema comparison baseline.
+
+Local Rust schema can be exported with:
+```bash
+cargo run --locked --example export-schema --features product-platform > graphql.schema
+```
+
+## Set up pre-commit
+
+Install pre-commit:
+```bash
+uv tool install pre-commit
+```
+
+Install the Git hook once per checkout, then check the current working tree:
+
+```bash
+pre-commit install
+pre-commit run graphql-schema --all-files
+```
+
+The hook installs a pinned GraphQL Inspector CLI in an isolated Node environment.
+The hook exports the Platform schema without starting the server or connecting to
+databases, then compares the generated schema with `graphql.schema` from `HEAD`.
+If `HEAD` lacks `graphql.schema`, the hook downloads the baseline schema from
+`https://api.platform.opentargets.xyz/latest/graphql/schema`.
+
+When the generated snapshot changes, the hook updates `graphql.schema` and stops
+the commit for review and staging of `graphql.schema`. All schema changes, including
+breaking changes, are advisory: confirm the schema changes are intentional, then stage
+`graphql.schema` and retry the commit. The report is shown again, but breaking
+changes do not block the retry. Export, download, or comparison errors still fail
+the check. During commits, pre-commit
+temporarily hides unstaged tracked changes. The manual `--all-files` command checks
+the working tree instead. Stage any new Rust source files before committing.
+
+## GraphQL schema checks in CI
+
+CI runs one GraphQL Inspector comparison: the schema from the selected main
+commit, or the deployment fallback, versus the generated Platform schema.
+The comparison passes when GraphQL Inspector detects no schema differences.
+API changes remain advisory, including breaking changes. The job summary and
+downloadable `graphql-schema-release-notes` Markdown artifact report breaking,
+dangerous, and non-breaking changes. CI performs no separate comparison between
+the PR's committed `graphql.schema` and the generated Platform schema.
+Export, download, and schema parsing errors fail CI.
+
+After successful schema comparison, CI adds the generated notes to the PR description
+between `<!-- graphql-schema-notes:start -->` and `<!-- graphql-schema-notes:end -->`.
+Subsequent CI runs replace the generated section while preserving description text
+outside the markers. The generated section includes the no-change result when
+GraphQL Inspector detects no changes. The downloadable artifact remains available in Github actions `upload-artifact` step.
+PR description updates run for branches in the same repository, excluding Dependabot.
+Fork and Dependabot PRs retain the job summary and artifact because restricted
+workflow tokens cannot update PR descriptions. The PR update job uses
+`pull-requests: write`; the schema generation job retains read-only permissions.
+
+For PRs, the comparison uses the main revision fetched during the CI run and the
+PR branch's head commit, covering the combined change across all PR commits.
+The schema generation job checks out the PR head rather than GitHub's temporary
+merge commit. On pushes to
+`main`, the comparison uses main before the push, so the report shows the changes
+after merging. Manual runs and PRs into other branches compare with fetched main.
+The notes link the main comparison commit and the checked-out commit to full
+GitHub commit URLs. 
+
+The generated Markdown contains release-note fragments relative to the selected
+main revision. CI does not publish or modify GitHub releases. If the baseline
+commit lacks `graphql.schema`, CI downloads the baseline schema from
+`https://api.platform.opentargets.xyz/latest/graphql/schema`. The release-note
+fragments identify the deployment fallback explicitly.
