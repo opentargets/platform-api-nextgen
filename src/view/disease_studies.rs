@@ -75,7 +75,7 @@ impl Table for DiseaseStudy {
             cohorts,
             pubmedId,
             ldPopulationStructure,
-            length(studyLocusIds) AS credibleSetsCount,
+            length(credibleSetIds) AS credibleSetsCount,
             diseaseIds,
             arrayMap(d -> dictGet('disease_names', 'name', d), diseaseIds) AS diseaseNames
         FROM studies
