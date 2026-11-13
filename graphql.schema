@@ -583,7 +583,7 @@ type ClinicalReport {
 	"""
 	Type of clinical study (e.g. Interventional, Observational).
 	"""
-	trialStudyType: String
+	trialStudyType: TrialStudyType
 	"""
 	Brief description of the clinical trial.
 	"""
@@ -5957,6 +5957,24 @@ type TrialSponsor {
 	Name of the lead sponsor associated with the clinical trial.
 	"""
 	name: String
+}
+
+"""
+Type of clinical study.
+"""
+enum TrialStudyType {
+	"""
+	Interventional.
+	"""
+	INTERVENTIONAL
+	"""
+	Observational.
+	"""
+	OBSERVATIONAL
+	"""
+	Expanded access.
+	"""
+	EXPANDED_ACCESS
 }
 
 """

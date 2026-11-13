@@ -241,7 +241,7 @@ pub struct ClinicalReport {
     title: Option<String>,
     /// Type of clinical study (e.g. Interventional, Observational).
     #[serde(deserialize_with = "from_nullable_string_opt")]
-    trial_study_type: Option<String>,
+    trial_study_type: Option<TrialStudyType>,
     /// Brief description of the clinical trial.
     trial_description: Option<String>,
     /// Number of arms in the clinical trial.
