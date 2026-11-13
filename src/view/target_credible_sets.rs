@@ -11,7 +11,7 @@ use strum::EnumIter;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{study::StudyType, variant::Chromosome},
+    entity::{credible_set::FineMappingMethod, study::StudyType, variant::Chromosome},
     query::{
         paginate::Paged,
         sort::{Sort, SortDirection},
@@ -32,13 +32,14 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct TargetCredibleSet {
     target_id: String,
-    study_locus_id: String,
-    p_value_mantissa: f64,
-    p_value_exponent: i32,
+    credible_set_id: String,
+    p_value_mantissa: Option<f32>,
+    p_value_exponent: Option<i32>,
     beta: Option<f64>,
-    finemapping_method: String,
-    confidence: String,
-    is_trans_qtl: Option<bool>,
+    fine_mapping_method: FineMappingMethod,
+    /// Confidence level, from 0 (unknown) to 4 (highest).
+    confidence: u8,
+    is_trans_qtl: bool,
     lead_variant_id: String,
     lead_chromosome: Chromosome,
     lead_position: u32,
@@ -51,13 +52,13 @@ pub struct TargetCredibleSet {
     /// Empty when the biosample is not in the biosample index.
     biosample_name: String,
     /// Number of variants in the credible set.
-    locus_size: u64,
+    locus_size: u32,
 }
 
 impl Table for TargetCredibleSet {
     type Col = TargetCredibleSetCol;
     const NAME: &'static str = "target_credible_sets";
-    const TIE_BREAKER: &'static str = "studyLocusId";
+    const TIE_BREAKER: &'static str = "credibleSetId";
 }
 
 columns!(TargetCredibleSetCol {
@@ -65,8 +66,8 @@ columns!(TargetCredibleSetCol {
     PValueMantissa      => "pValueMantissa"      : F64,
     PValueExponent      => "pValueExponent"      : I64,
     Beta                => "beta"                : F64,
-    FinemappingMethod   => "finemappingMethod"   : Str,
-    Confidence          => "confidence"          : Str,
+    FineMappingMethod   => "fineMappingMethod"   : Str,
+    Confidence          => "confidence"          : I64,
     LeadVariantId       => "leadVariantId"       : Str,
     LeadChromosome      => "leadChromosome"      : I64,
     LeadPosition        => "leadPosition"        : I64,
@@ -171,10 +172,10 @@ pub enum SortField {
     /// By exponent, then mantissa.
     PValue,
     Beta,
-    /// Alphabetically.
+    /// By confidence level.
     Confidence,
-    /// Alphabetically.
-    FinemappingMethod,
+    /// By fine-mapping method.
+    FineMappingMethod,
     /// Number of variants in the credible set.
     LocusSize,
 }
@@ -203,7 +204,7 @@ impl SortField {
             Self::PValue => &[C::PValueExponent, C::PValueMantissa],
             Self::Beta => &[C::Beta],
             Self::Confidence => &[C::Confidence],
-            Self::FinemappingMethod => &[C::FinemappingMethod],
+            Self::FineMappingMethod => &[C::FineMappingMethod],
             Self::LocusSize => &[C::LocusSize],
         };
         OrderBy::each(cols, dir)
@@ -222,7 +223,7 @@ column_subset! {
         StudyType,
         BiosampleName,
         Condition,
-        FinemappingMethod,
+        FineMappingMethod,
     }
 }
 

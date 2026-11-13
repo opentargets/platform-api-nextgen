@@ -480,7 +480,7 @@ pub struct Target {
     /// Known target safety effects and target safety risk information.
     safety_liabilities: Vec<SafetyLiability>,
     #[graphql(skip)]
-    study_locus_ids: Vec<String>,
+    credible_set_ids: Vec<String>,
     #[graphql(skip)]
     pharmacogenomics_ids: Vec<u64>,
     /// List of subcellular locations where the target protein is found.
@@ -945,10 +945,12 @@ impl Target {
         ctx: &Context<'_>,
         #[graphql(default, desc = "Pagination for credible sets.")] page: Page,
     ) -> async_graphql::Result<Paged<credible_set::CredibleSet>> {
-        Ok(credible_set::load_credible_sets(ctx, &self.study_locus_ids)
-            .await?
-            .query()
-            .paginate(page))
+        Ok(
+            credible_set::load_credible_sets(ctx, &self.credible_set_ids)
+                .await?
+                .query()
+                .paginate(page),
+        )
     }
 
     /// Flat, sortable and searchable summary of the molQTL credible sets linked to this target,

@@ -94,7 +94,7 @@ impl Loader<String> for AdverseEventLoader {
     async fn load(&self, keys: &[String]) -> Result<HashMap<String, Self::Value>, Self::Error> {
         let rows = self
             .ch
-            .query("SELECT ?fields FROM openfda_faers WHERE chembl_id IN ?")
+            .query("SELECT ?fields FROM pharmacovigilance WHERE chembl_id IN ?")
             .bind(keys)
             .fetch_all::<AdverseEventRow>()
             .await?;

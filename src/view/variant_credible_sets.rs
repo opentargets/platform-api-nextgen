@@ -11,7 +11,7 @@ use strum::EnumIter;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{study::StudyType, variant::Chromosome},
+    entity::{credible_set::FineMappingMethod, study::StudyType, variant::Chromosome},
     query::{
         paginate::Paged,
         sort::{Sort, SortDirection},
@@ -39,14 +39,15 @@ pub struct DiseaseRef {
 pub struct VariantCredibleSet {
     study_type: StudyType,
     variant_id: String,
-    study_locus_id: String,
-    posterior_probability: f64,
-    locus_size: u64,
-    p_value_mantissa: f64,
-    p_value_exponent: i32,
+    credible_set_id: String,
+    posterior_probability: f32,
+    locus_size: u32,
+    p_value_mantissa: Option<f32>,
+    p_value_exponent: Option<i32>,
     beta: Option<f64>,
-    finemapping_method: String,
-    confidence: String,
+    fine_mapping_method: FineMappingMethod,
+    /// Confidence level, from 0 (unknown) to 4 (highest).
+    confidence: u8,
     lead_variant_id: String,
     lead_chromosome: Chromosome,
     lead_position: u32,
@@ -64,16 +65,15 @@ pub struct VariantCredibleSet {
 impl Table for VariantCredibleSet {
     type Col = VariantCredibleSetCol;
     const NAME: &'static str = "variant_credible_sets";
-    const TIE_BREAKER: &'static str = "studyLocusId";
+    const TIE_BREAKER: &'static str = "credibleSetId";
 }
 
 columns!(VariantCredibleSetCol {
     VariantId                   => "variantId"                   : Str,
-    StudyLocusId                => "studyLocusId"                : Str,
+    CredibleSetId               => "credibleSetId"               : Str,
     PValueMantissa              => "pValueMantissa"              : F64,
     PValueExponent              => "pValueExponent"              : I64,
-    FinemappingMethod           => "finemappingMethod"           : Str,
-    Confidence                  => "confidence"                  : Str,
+    FineMappingMethod           => "fineMappingMethod"           : Str,
     LeadVariantId               => "leadVariantId"               : Str,
     LeadChromosome              => "leadChromosome"              : I64,
     LeadPosition                => "leadPosition"                : I64,
@@ -207,11 +207,10 @@ column_subset! {
     #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Enum, EnumIter)]
     #[graphql(name = "VariantCredibleSetsSearchField")]
     pub enum SearchField => VariantCredibleSetCol {
-        StudyLocusId,
+        CredibleSetId,
         StudyId,
         LeadVariantId,
-        FinemappingMethod,
-        Confidence,
+        FineMappingMethod,
         TraitFromSource,
         // Default naming would give `TOP_L_2G_...`.
         #[graphql(name = "TOP_L2G_GENE_ID")]

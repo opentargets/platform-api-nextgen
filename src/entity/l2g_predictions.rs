@@ -36,8 +36,8 @@ pub struct L2GFeature {
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 pub struct L2GPrediction {
-    /// Study-locus identifier for the credible set.
-    study_locus_id: String,
+    /// Identifier of the credible set.
+    credible_set_id: String,
     #[graphql(skip)]
     gene_id: String,
     /// Locus2gene prediction score for the gene assignment. Higher scores indicate a stronger
@@ -52,8 +52,8 @@ pub struct L2GPrediction {
 
 #[derive(Debug, Clone, Deserialize, SimpleObject, Row, Default)]
 pub struct L2GPredictionsRow {
-    #[serde(rename = "studyLocusId")]
-    study_locus_id: String,
+    #[serde(rename = "credibleSetId")]
+    credible_set_id: String,
     l2g_predictions: Vec<L2GPrediction>,
 }
 
@@ -71,20 +71,20 @@ impl Loader<String> for L2GPredictionsLoader {
     async fn load(&self, key: &[String]) -> Result<HashMap<String, Self::Value>, Self::Error> {
         let rows: Vec<L2GPredictionsRow> = self
             .ch
-            .query("SELECT ?fields FROM l2g_predictions WHERE studyLocusId IN ?")
+            .query("SELECT ?fields FROM l2g_predictions WHERE credibleSetId IN ?")
             .bind(key)
             .fetch_all()
             .await?;
         let mut results: HashMap<String, Vec<L2GPrediction>> = HashMap::new();
         for row in rows {
-            let id = row.study_locus_id.clone();
+            let id = row.credible_set_id.clone();
             results.entry(id).or_insert(row.l2g_predictions);
         }
         Ok(results)
     }
 }
 
-/// Loads L2G predictions for a given study locus ID.
+/// Loads L2G predictions for a given credible set ID.
 ///
 /// # Returns
 /// A `Vec` of `L2GPrediction` entities.
