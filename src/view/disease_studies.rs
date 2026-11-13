@@ -98,11 +98,12 @@ columns!(DiseaseStudyCol {
     DiseaseNames           => "diseaseNames"           : StrArray,
 });
 
-/// The disease's study ids, read from the `disease` row so `studies` is looked up by key.
-const DIRECT_STUDY_IDS: &str = "SELECT arrayJoin(studyIds) FROM disease WHERE id = ?";
-/// As [`DIRECT_STUDY_IDS`], plus the studies of the disease's ontology descendants.
+/// The diseases' study ids, read from the `disease` rows so `studies` is looked up by key.
+/// `studyId IN (...)` is a set test, so a study shared by several diseases appears once.
+const DIRECT_STUDY_IDS: &str = "SELECT arrayJoin(studyIds) FROM disease WHERE id IN ?";
+/// As [`DIRECT_STUDY_IDS`], plus the studies of the diseases' ontology descendants.
 const ALL_STUDY_IDS: &str =
-    "SELECT arrayJoin(arrayConcat(studyIds, indirectStudyIds)) FROM disease WHERE id = ?";
+    "SELECT arrayJoin(arrayConcat(studyIds, indirectStudyIds)) FROM disease WHERE id IN ?";
 
 // ---- filter ----
 
@@ -125,7 +126,8 @@ impl SqlFilter<DiseaseStudyCol> for DiseaseStudiesFilter {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct QueryParams {
-    disease_id: String,
+    /// Sorted and deduplicated, so equal sets of ids give equal loader keys.
+    disease_ids: Vec<String>,
     indirect: bool,
     filter: Option<DiseaseStudiesFilter>,
     sort: Vec<Sort<SortField>>,
@@ -137,7 +139,7 @@ pub struct QueryParams {
 impl QueryParams {
     #[must_use]
     pub fn new(
-        disease_id: String,
+        mut disease_ids: Vec<String>,
         indirect: bool,
         filter: Option<DiseaseStudiesFilter>,
         sort: Vec<Sort<SortField>>,
@@ -145,8 +147,10 @@ impl QueryParams {
         index: u32,
         size: u32,
     ) -> Self {
+        disease_ids.sort_unstable();
+        disease_ids.dedup();
         Self {
-            disease_id,
+            disease_ids,
             indirect,
             filter,
             sort,
@@ -166,7 +170,7 @@ impl QueryParams {
             Filter::in_subquery(
                 DiseaseStudyCol::StudyId,
                 study_ids,
-                Value::Str(self.disease_id.clone()),
+                Value::StrArray(self.disease_ids.clone()),
             )
             .map_err(Error::new)?,
         ];
