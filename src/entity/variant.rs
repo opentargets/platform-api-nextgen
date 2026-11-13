@@ -134,10 +134,6 @@ pub struct TranscriptConsequence {
     transcript_id: Option<String>,
     /// Loss-of-function prediction based on LOFTEE.
     loftee_prediction: Option<String>,
-    /// SIFT prediction of the variant impact on the transcript.
-    sift_prediction: Option<f64>,
-    /// Polyphen prediction of the variant impact on the transcript.
-    polyphen_prediction: Option<f64>,
     /// Index of the transcript in the list of transcripts around the gene.
     transcript_index: u32,
     /// Score assigned to transcript based on Ensembl VEP consequence.
@@ -253,7 +249,7 @@ pub struct Variant {
     #[graphql(skip)]
     most_severe_consequence_id: String,
     #[graphql(skip)]
-    study_locus_ids: Vec<String>,
+    credible_set_ids: Vec<String>,
     #[graphql(skip)]
     pharmacogenomics_ids: Vec<u64>,
 }
@@ -406,11 +402,13 @@ impl Variant {
         >,
         #[graphql(default, desc = "Pagination for credible sets.")] page: Page,
     ) -> async_graphql::Result<Paged<credible_set::CredibleSet>> {
-        Ok(credible_set::load_credible_sets(ctx, &self.study_locus_ids)
-            .await?
-            .query()
-            .filter(filter.as_ref())
-            .paginate(page))
+        Ok(
+            credible_set::load_credible_sets(ctx, &self.credible_set_ids)
+                .await?
+                .query()
+                .filter(filter.as_ref())
+                .paginate(page),
+        )
     }
 
     /// Flat, sortable and searchable summary of the credible sets containing this variant, for
