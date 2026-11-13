@@ -12,7 +12,6 @@ use crate::{
         clinical_target::ClinicalTarget,
         colocalisation::Colocalisation,
         credible_set::CredibleSet,
-        disease::Disease,
         disease_hpo::DiseasePhenotype,
         drug::Drug,
         drug_warning::DrugWarning,
@@ -83,7 +82,6 @@ pub fn page_complexity(page: Page, child_complexity: usize) -> usize {
 #[graphql(concrete(name = "CredibleSetPage", params(CredibleSet)))]
 #[graphql(concrete(name = "DepMapEssentialityPage", params(DepMapEssentiality)))]
 #[graphql(concrete(name = "DiseaseAssociationPage", params(DiseaseAssociation)))]
-#[graphql(concrete(name = "DiseasePage", params(Disease)))]
 #[graphql(concrete(name = "DiseasePhenotypePage", params(DiseasePhenotype)))]
 #[graphql(concrete(name = "DrugPage", params(Drug)))]
 #[graphql(concrete(name = "DrugWarningPage", params(DrugWarning)))]
