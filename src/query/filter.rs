@@ -69,24 +69,27 @@ impl StringFilter {
 
     /// The same filter as SQL conditions on `col`, one per operation that is set.
     ///
-    /// Only `eq`, `ne` and `in` are supported in SQL. NULLs behave as in [`Self::matches`]:
-    /// in SQL any comparison with NULL drops the row.
+    /// NULLs behave as in [`Self::matches`]: in SQL any comparison with NULL drops the row,
+    /// so only `isNull: true` keeps a NULL value.
     ///
     /// # Errors
-    /// If `contains`, `notContains` or `isNull` is set, or `col` isn't a `Str` column.
+    /// If `col` isn't a `Str` column.
     pub fn to_sql<C: Column>(&self, col: C) -> Result<Vec<sql::Filter<C>>, String> {
-        if self.contains.is_some() || self.not_contains.is_some() || self.is_null.is_some() {
-            return Err(format!(
-                "only `eq`, `ne` and `in` are supported when filtering {}",
-                col.as_sql()
-            ));
-        }
         let mut out = Vec::new();
+        if let Some(null) = self.is_null {
+            out.push(sql::Filter::is_null(col, null));
+        }
         if let Some(v) = &self.eq {
             out.push(sql::Filter::new(col, Op::Eq, Value::Str(v.clone()))?);
         }
         if let Some(v) = &self.ne {
             out.push(sql::Filter::new(col, Op::Ne, Value::Str(v.clone()))?);
+        }
+        if let Some(v) = &self.contains {
+            out.push(sql::Filter::contains(col, v.clone(), false)?);
+        }
+        if let Some(v) = &self.not_contains {
+            out.push(sql::Filter::contains(col, v.clone(), true)?);
         }
         if let Some(vs) = &self.in_list {
             out.push(sql::Filter::in_str(col, vs.clone())?);
@@ -259,19 +262,12 @@ mod tests {
         let f = StringFilter {
             eq: Some("a".to_string()),
             ne: Some("b".to_string()),
-            in_list: Some(vec!["c".to_string()]),
-            ..StringFilter::default()
+            contains: Some("c".to_string()),
+            not_contains: Some("d".to_string()),
+            in_list: Some(vec!["e".to_string()]),
+            is_null: Some(false),
         };
-        assert_eq!(f.to_sql(TestCol::Id).unwrap().len(), 3);
-    }
-
-    #[test]
-    fn string_filter_rejects_unsupported_operations() {
-        let f = StringFilter {
-            contains: Some("a".to_string()),
-            ..StringFilter::default()
-        };
-        assert!(f.to_sql(TestCol::Id).is_err());
+        assert_eq!(f.to_sql(TestCol::Id).unwrap().len(), 6);
     }
 
     #[test]
