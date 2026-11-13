@@ -80,6 +80,57 @@ jobs:
           path: ${{ runner.temp }}/graphql-schema-changes.md
           if-no-files-found: ignore
 
+  graphql-schema-pr-description:
+    name: Update PR schema notes
+    needs: graphql-schema
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: graphql-schema-release-notes
+          path: schema-notes
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs');
+            const notes = fs.readFileSync('schema-notes/graphql-schema-changes.md', 'utf8').trim();
+            const start = '<!-- graphql-schema-notes:start -->';
+            const end = '<!-- graphql-schema-notes:end -->';
+            const section = `${start}\n${notes}\n${end}`;
+            const params = { ...context.repo, pull_number: context.payload.pull_request.number };
+            const { data: pr } = await github.rest.pulls.get(params);
+            if (pr.state !== 'open' || pr.head.sha !== context.payload.pull_request.head.sha) {
+              core.info('Skipping notes from an outdated run or closed PR.');
+              return;
+            }
+            const original = pr.body || '';
+            const startIndex = original.indexOf(start);
+            const endIndex = original.indexOf(end);
+            let body;
+            if (startIndex === -1 && endIndex === -1) {
+              body = original + (original ? '\n\n' : '') + section;
+            } else if (startIndex >= 0 && endIndex > startIndex &&
+                       original.indexOf(start, startIndex + start.length) === -1 &&
+                       original.indexOf(end, endIndex + end.length) === -1) {
+              body = original.slice(0, startIndex) + section + original.slice(endIndex + end.length);
+            } else {
+              core.setFailed('PR description contains incomplete or duplicate GraphQL schema markers. Restore one complete marker pair before retrying.');
+              return;
+            }
+            if (body === original) return;
+            if (body.length > 65536) {
+              core.warning('Schema notes exceed the PR description size limit. Full notes remain available in the workflow artifact.');
+              return;
+            }
+            await github.rest.pulls.update({ ...params, body });
+
   fmt:
     name: rustfmt
     if: github.event_name != 'schedule'

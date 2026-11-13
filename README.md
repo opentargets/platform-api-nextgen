@@ -110,6 +110,16 @@ dangerous, and non-breaking changes. CI performs no separate comparison between
 the PR's committed `graphql.schema` and the generated Platform schema.
 Export, download, and schema parsing errors fail CI.
 
+After successful schema comparison, CI adds the generated notes to the PR description
+between `<!-- graphql-schema-notes:start -->` and `<!-- graphql-schema-notes:end -->`.
+Subsequent CI runs replace the generated section while preserving description text
+outside the markers. The generated section includes the no-change result when
+GraphQL Inspector detects no changes. The downloadable artifact remains available in Github actions `upload-artifact` step.
+PR description updates run for branches in the same repository, excluding Dependabot.
+Fork and Dependabot PRs retain the job summary and artifact because restricted
+workflow tokens cannot update PR descriptions. The PR update job uses
+`pull-requests: write`; the schema generation job retains read-only permissions.
+
 For PRs into `master`, the comparison uses the PR event's master revision and the
 PR merge result, covering the combined change across all PR commits. On pushes to
 `master`, the comparison uses master before the push, so the report shows the changes
