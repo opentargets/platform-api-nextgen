@@ -61,10 +61,6 @@ pub struct VariantTranscriptConsequence {
     transcript_id: Option<String>,
     /// Loss-of-function prediction based on LOFTEE.
     loftee_prediction: Option<String>,
-    /// SIFT prediction of the variant impact on the transcript.
-    sift_prediction: Option<f64>,
-    /// Polyphen prediction of the variant impact on the transcript.
-    polyphen_prediction: Option<f64>,
     /// Index of the transcript in the list of transcripts around the gene.
     transcript_index: u32,
     /// Score assigned to transcript based on Ensembl VEP consequence.

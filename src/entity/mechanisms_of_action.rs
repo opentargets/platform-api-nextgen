@@ -58,6 +58,9 @@ pub struct MechanismOfActionRow {
     /// of action.
     #[graphql(skip)]
     targets: Vec<String>,
+    /// How the mechanism was curated, e.g. whether it was inferred from trial text or the
+    /// literature.
+    curation: String,
     /// Reference information supporting the mechanism of action.
     references: Vec<Reference>,
 }

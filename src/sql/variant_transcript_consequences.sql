@@ -12,8 +12,6 @@
     tc.impact AS impact,
     tc.transcriptId AS transcriptId,
     tc.lofteePrediction AS lofteePrediction,
-    tc.siftPrediction AS siftPrediction,
-    tc.polyphenPrediction AS polyphenPrediction,
     tc.transcriptIndex AS transcriptIndex,
     tc.consequenceScore AS consequenceScore,
     nullIf(

@@ -45,7 +45,7 @@ pub struct InteractionSpeciesA {
     /// Scientific name of the associated species.
     scientific_name: String,
     /// NCBI taxon ID of the associated species.
-    taxon_id: u8,
+    taxon_id: u32,
 }
 
 /// Taxonomic annotation of the second interaction participant.
@@ -57,7 +57,7 @@ pub struct InteractionSpeciesB {
     /// Scientific name of the associated species.
     scientific_name: Option<String>,
     /// NCBI taxon ID of the associated species.
-    taxon_id: Option<u8>,
+    taxon_id: Option<u32>,
 }
 
 /// Evidence supporting molecular interactions between targets. Contains detailed information about
