@@ -146,6 +146,16 @@ pub enum DiseaseSortField {
     IsTherapeuticArea,
 }
 
+const DEFAULT_SORT: [Sort<DiseaseSortField>; 1] = [Sort {
+    key: DiseaseSortField::Id,
+    direction: SortDirection::Ascending,
+}];
+
+impl DiseaseSortField {
+    /// By ID, ascending.
+    fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
+}
+
 impl SortKey<Disease> for DiseaseSortField {
     fn compare(&self, a: &Disease, b: &Disease, direction: SortDirection) -> Ordering {
         let primary = Term::new(direction, Nulls::Last);
@@ -257,6 +267,58 @@ pub async fn load_disease(ctx: &Context<'_>, id: String) -> async_graphql::Resul
         .await
 }
 
+/// A page of diseases, plus a combined view over the studies of all the requested diseases.
+#[derive(SimpleObject)]
+#[graphql(complex)]
+pub struct DiseasePage {
+    /// Total number of diseases matching the query.
+    pub count: u64,
+    /// The diseases on this page.
+    pub rows: Vec<Disease>,
+    /// Every requested EFO ID, used by `studiesView` regardless of search and paging.
+    #[graphql(skip)]
+    efo_ids: Vec<String>,
+}
+
+#[ComplexObject]
+impl DiseasePage {
+    /// Flat, sortable and searchable summary of the studies of all the requested diseases, for
+    /// tables. Covers every ID in `efoIds`, ignoring the diseases' `search` and `page`. A study
+    /// linked to several of the diseases appears once.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn studies_view(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default = false,
+            desc = "Whether to add studies for ontology-descendant diseases in the result."
+        )]
+        enable_indirect: bool,
+        #[graphql(
+            default_with = "ds::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<ds::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the studies' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<ds::Search>,
+        #[graphql(desc = "Filter criteria to apply.")] filter: Option<ds::DiseaseStudiesFilter>,
+        #[graphql(default, desc = "Pagination for the studies.")] page: Page,
+    ) -> async_graphql::Result<Paged<ds::DiseaseStudy>> {
+        let query_params = ds::QueryParams::new(
+            self.efo_ids.clone(),
+            enable_indirect,
+            filter,
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        ds::load_disease_studies(ctx, query_params).await
+    }
+}
+
 // ---- resolvers ----
 
 #[derive(Default)]
@@ -273,15 +335,24 @@ impl DiseaseQuery {
         #[graphql(desc = "Case-insensitive text search across the diseases' text fields. \
                           Searches all fields unless `fields` is given.")]
         search: Option<Search<DiseaseSearchField>>,
-        #[graphql(desc = "List of sort statements.")] sort: Vec<Sort<DiseaseSortField>>,
+        #[graphql(
+            default_with = "DiseaseSortField::default_sort()",
+            desc = "List of sort statements. Defaults to ID, ascending."
+        )]
+        sort: Vec<Sort<DiseaseSortField>>,
         #[graphql(default, desc = "Pagination for the diseases.")] page: Page,
-    ) -> async_graphql::Result<Paged<Disease>> {
+    ) -> async_graphql::Result<DiseasePage> {
         let items = load_diseases(ctx, &efo_ids).await?;
-        Ok(items
+        let Paged { count, rows } = items
             .query()
             .search(search)
             .sort(sort.as_ref())
-            .paginate(page))
+            .paginate(page);
+        Ok(DiseasePage {
+            count,
+            rows,
+            efo_ids,
+        })
     }
 
     async fn disease(
@@ -306,41 +377,6 @@ impl Disease {
     ) -> async_graphql::Result<Paged<ClinicalIndication>> {
         let items = load_clinical_indications_from_disease(ctx, self.id.clone()).await?;
         Ok(items.query().paginate(page))
-    }
-
-    /// Flat, sortable and searchable summary of the studies of this disease, for tables. Use
-    /// `studies(diseaseIds: ...)` for the full study entities and stats.
-    #[graphql(complexity = "page_complexity(page, child_complexity)")]
-    async fn studies_view(
-        &self,
-        ctx: &Context<'_>,
-        #[graphql(
-            default = false,
-            desc = "Whether to add studies for ontology-descendant diseases in the result."
-        )]
-        enable_indirect: bool,
-        #[graphql(
-            default_with = "ds::SortField::default_sort()",
-            validator(custom = "UniqueSortKeys"),
-            desc = "List of sort statements. Each field can be used at most once."
-        )]
-        sort: Vec<Sort<ds::SortField>>,
-        #[graphql(desc = "Case-insensitive text search across the studies' text fields. \
-                          Searches all fields unless `fields` is given.")]
-        search: Option<ds::Search>,
-        #[graphql(desc = "Filter criteria to apply.")] filter: Option<ds::DiseaseStudiesFilter>,
-        #[graphql(default, desc = "Pagination for the studies.")] page: Page,
-    ) -> async_graphql::Result<Paged<ds::DiseaseStudy>> {
-        let query_params = ds::QueryParams::new(
-            self.id.clone(),
-            enable_indirect,
-            filter,
-            sort,
-            search,
-            page.index,
-            page.size,
-        );
-        ds::load_disease_studies(ctx, query_params).await
     }
 
     /// Direct parent terms in the disease ontology.
