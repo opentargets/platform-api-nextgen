@@ -308,8 +308,6 @@ pub struct Evidence {
     literature: Vec<String>,
     /// Percentile of top differentially regulated genes (transcripts) within experiment.
     log_2_fold_change_percentile_rank: Option<i32>,
-    /// Log 2 fold expression change in contrast experiment.
-    log_2_fold_change_value: Option<f64>,
     /// Samples with a given mutation tested.
     mutated_samples: Vec<EvidenceVariation>,
     /// Size of effect captured as odds ratio.
@@ -328,6 +326,8 @@ pub struct Evidence {
     phenotypic_consequence_log_fold_change: Option<f64>,
     /// P-value of the the cell survival test.
     phenotypic_consequence_p_value: Option<f64>,
+    /// Score of the phenotypic consequence of the target perturbation in the CRISPR screen.
+    phenotypic_consequence_score: Option<f64>,
     /// If a given target was found to be a hit in the primary project.
     primary_project_hit: Option<bool>,
     /// Open Targets project identifier of the primary project.
@@ -594,7 +594,7 @@ impl Evidence {
         load_disease(ctx, self.disease_id.clone()).await
     }
 
-    /// Credible set (`StudyLocus`) supporting this evidence
+    /// Credible set supporting this evidence.
     async fn credible_set(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<CredibleSet>> {
         match &self.study_locus_id {
             Some(id) => load_credible_set(ctx, id.clone()).await,
