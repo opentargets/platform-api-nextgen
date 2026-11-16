@@ -63,19 +63,19 @@ Both images share the tag's version. Each product is deployed independently.
 
 ## Export the GraphQL schema
 
-Download the schema into `graphql.schema` from `https://api.platform.opentargets.xyz/latest/graphql/schema`:
+Download the schema into `schema.graphql` from `https://api.platform.opentargets.xyz/latest/graphql/schema`:
 
 ```bash
 curl --fail \
   https://api.platform.opentargets.xyz/latest/graphql/schema \
-  --output graphql.schema
+  --output schema.graphql
 ```
 
 This saves the initial schema comparison baseline.
 
 Local Rust schema can be exported with:
 ```bash
-cargo run --locked --example export-schema --features product-platform > graphql.schema
+cargo run --locked --example export-schema --features product-platform > schema.graphql
 ```
 
 ## Set up pre-commit
@@ -94,14 +94,14 @@ pre-commit run graphql-schema --all-files
 
 The hook installs a pinned GraphQL Inspector CLI in an isolated Node environment.
 The hook exports the Platform schema without starting the server or connecting to
-databases, then compares the generated schema with `graphql.schema` from `HEAD`.
-If `HEAD` lacks `graphql.schema`, the hook downloads the baseline schema from
+databases, then compares the generated schema with `schema.graphql` from `HEAD`.
+If `HEAD` lacks `schema.graphql`, the hook downloads the baseline schema from
 `https://api.platform.opentargets.xyz/latest/graphql/schema`.
 
-When the generated snapshot changes, the hook updates `graphql.schema` and stops
-the commit for review and staging of `graphql.schema`. All schema changes, including
+When the generated snapshot changes, the hook updates `schema.graphql` and stops
+the commit for review and staging of `schema.graphql`. All schema changes, including
 breaking changes, are advisory: confirm the schema changes are intentional, then stage
-`graphql.schema` and retry the commit. The report is shown again, but breaking
+`schema.graphql` and retry the commit. The report is shown again, but breaking
 changes do not block the retry. Export, download, or comparison errors still fail
 the check. During commits, pre-commit
 temporarily hides unstaged tracked changes. The manual `--all-files` command checks
@@ -115,8 +115,9 @@ The comparison passes when GraphQL Inspector detects no schema differences.
 API changes remain advisory, including breaking changes. The job summary and
 downloadable `graphql-schema-release-notes` Markdown artifact report breaking,
 dangerous, and non-breaking changes. CI performs no separate comparison between
-the PR's committed `graphql.schema` and the generated Platform schema.
-Export, download, and schema parsing errors fail CI.
+the PR's committed `schema.graphql` and the generated Platform schema.
+Schema jobs are non-blocking. Export, download, and schema parsing errors remain
+visible in workflow logs without blocking other CI jobs or release builds.
 
 After successful schema comparison, CI adds the generated notes to the PR description
 between `<!-- graphql-schema-notes:start -->` and `<!-- graphql-schema-notes:end -->`.
@@ -133,12 +134,13 @@ PR branch's head commit, covering the combined change across all PR commits.
 The schema generation job checks out the PR head rather than GitHub's temporary
 merge commit. On pushes to
 `main`, the comparison uses main before the push, so the report shows the changes
-after merging. Manual runs and PRs into other branches compare with fetched main.
+after merging. Development-branch pushes, PRs targeting other branches, scheduled
+runs, and manual CI runs skip the schema jobs.
 The notes link the main comparison commit and the checked-out commit to full
 GitHub commit URLs. 
 
 The generated Markdown contains release-note fragments relative to the selected
 main revision. CI does not publish or modify GitHub releases. If the baseline
-commit lacks `graphql.schema`, CI downloads the baseline schema from
+commit lacks `schema.graphql`, CI downloads the baseline schema from
 `https://api.platform.opentargets.xyz/latest/graphql/schema`. The release-note
 fragments identify the deployment fallback explicitly.

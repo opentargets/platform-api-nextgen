@@ -28,7 +28,10 @@ env:
 jobs:
   graphql-schema:
     name: GraphQL schema and release notes
-    if: github.event_name != 'schedule'
+    continue-on-error: true
+    if: >-
+      (github.event_name == 'pull_request' && github.base_ref == 'main') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -79,6 +82,7 @@ jobs:
 
   graphql-schema-pr-description:
     name: Update PR schema notes
+    continue-on-error: true
     needs: graphql-schema
     if: >-
       github.event_name == 'pull_request' &&
