@@ -92,20 +92,16 @@ pre-commit install
 pre-commit run graphql-schema --all-files
 ```
 
-The hook installs a pinned GraphQL Inspector CLI in an isolated Node environment.
-The hook exports the Platform schema without starting the server or connecting to
-databases, then compares the generated schema with `schema.graphql` from `HEAD`.
-If `HEAD` lacks `schema.graphql`, the hook downloads the baseline schema from
-`https://api.platform.opentargets.xyz/latest/graphql/schema`.
+The hook regenerates `schema.graphql` from the Platform Rust types and automatically
+stages `schema.graphql` for every commit. No local schema diff or developer approval
+is required. The hook requires Cargo and the repository-pinned Rust toolchain;
+Node and GraphQL Inspector are needed only in CI.
 
-When the generated snapshot changes, the hook updates `schema.graphql` and stops
-the commit for review and staging of `schema.graphql`. All schema changes, including
-breaking changes, are advisory: confirm the schema changes are intentional, then stage
-`schema.graphql` and retry the commit. The report is shown again, but breaking
-changes do not block the retry. Export, download, or comparison errors still fail
-the check. During commits, pre-commit
-temporarily hides unstaged tracked changes. The manual `--all-files` command checks
-the working tree instead. Stage any new Rust source files before committing.
+During commits, pre-commit hides unstaged tracked changes before schema generation.
+Stage new Rust source files before committing. The manual `--all-files` command
+regenerates and stages the schema from the working tree. Export failures stop the
+commit to prevent committing an outdated or incomplete snapshot; schema changes
+never block commits.
 
 ## GraphQL schema checks in CI
 
@@ -140,7 +136,21 @@ The notes link the main comparison commit and the checked-out commit to full
 GitHub commit URLs. 
 
 The generated Markdown contains release-note fragments relative to the selected
-main revision. CI does not publish or modify GitHub releases. If the baseline
+main revision. PR schema jobs do not modify GitHub releases. If the baseline
 commit lacks `schema.graphql`, CI downloads the baseline schema from
 `https://api.platform.opentargets.xyz/latest/graphql/schema`. The release-note
 fragments identify the deployment fallback explicitly.
+
+## Schema notes on releases
+
+Publishing a GitHub release generates a schema diff between the previous published
+release tag and the new release tag. Stable releases compare with the previous
+stable release; prereleases compare with the previous published release, including
+prereleases. Selection uses release publication timestamps.
+
+CI inserts the report between GraphQL schema markers in the release description,
+preserving surrounding release text. The report also appears in the job summary
+and a downloadable artifact. The schema job is non-blocking and runs independently
+of release image builds. Initial releases report the absence of a previous release.
+Historical releases without a saved schema report an unavailable comparison;
+release comparisons never substitute a live deployment for a historical schema.

@@ -5,7 +5,7 @@ module.exports = ({ breakingChanges, dangerousChanges, nonBreakingChanges }) => 
     `Schema review: ${breakingChanges.length} breaking, ` +
       `${dangerousChanges.length} dangerous, ${nonBreakingChanges.length} non-breaking change(s).`,
   );
-  console.log('Double-check that these schema changes are intentional before committing.');
+  console.log('Schema changes are informational; no developer action is required by the schema report.');
   if (breakingChanges.length) {
     console.warn('Breaking changes may require updates to API clients.');
   }

@@ -8,6 +8,80 @@ on:
       - published
 
 jobs:
+  schema-notes:
+    name: Generate release schema notes
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install GraphQL Inspector
+        run: npm install --global @graphql-inspector/cli@7.0.2 graphql@16.11.0
+      - name: Select previous published release
+        id: previous
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const current = context.payload.release;
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              ...context.repo, per_page: 100,
+            });
+            const previous = releases
+              .filter(release => !release.draft && release.id !== current.id &&
+                (current.prerelease || !release.prerelease) &&
+                Date.parse(release.published_at) < Date.parse(current.published_at))
+              .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at))[0];
+            core.setOutput('tag', previous ? previous.tag_name : '');
+      - name: Generate schema release notes
+        env:
+          PREVIOUS_TAG: ${{ steps.previous.outputs.tag }}
+          CURRENT_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [[ -z "$PREVIOUS_TAG" ]]; then
+            printf '# GraphQL schema changes\n\nInitial release: no previous published release is available for comparison.\n' > "$RUNNER_TEMP/graphql-schema-changes.md"
+          else
+            bash scripts/release-schema-notes.sh "$PREVIOUS_TAG" "$CURRENT_TAG" "$RUNNER_TEMP/graphql-schema-changes.md"
+          fi
+          cat "$RUNNER_TEMP/graphql-schema-changes.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Add schema notes to release description
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs');
+            const notes = fs.readFileSync(`${process.env.RUNNER_TEMP}/graphql-schema-changes.md`, 'utf8').trim();
+            const start = '<!-- graphql-schema-notes:start -->';
+            const end = '<!-- graphql-schema-notes:end -->';
+            const section = `${start}\n${notes}\n${end}`;
+            const params = { ...context.repo, release_id: context.payload.release.id };
+            const { data: release } = await github.rest.repos.getRelease(params);
+            const original = release.body || '';
+            const first = original.indexOf(start), last = original.indexOf(end);
+            let body;
+            if (first === -1 && last === -1) {
+              body = original + (original ? '\n\n' : '') + section;
+            } else if (first >= 0 && last > first &&
+                       original.indexOf(start, first + start.length) === -1 &&
+                       original.indexOf(end, last + end.length) === -1) {
+              body = original.slice(0, first) + section + original.slice(last + end.length);
+            } else {
+              core.warning('Release description contains incomplete or duplicate schema markers; description preserved.');
+              return;
+            }
+            if (body !== original) await github.rest.repos.updateRelease({ ...params, body });
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: graphql-schema-release-notes
+          path: ${{ runner.temp }}/graphql-schema-changes.md
+          if-no-files-found: ignore
+
   build:
     name: Build release images
     permissions:
