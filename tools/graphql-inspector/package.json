@@ -1,0 +1,8 @@
+{
+  "name": "platform-api-schema-tools",
+  "private": true,
+  "dependencies": {
+    "@graphql-inspector/cli": "7.0.2",
+    "graphql": "16.11.0"
+  }
+}

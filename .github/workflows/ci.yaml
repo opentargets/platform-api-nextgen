@@ -41,8 +41,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: npm
+          cache-dependency-path: tools/graphql-inspector/package-lock.json
       - name: Install GraphQL Inspector
-        run: npm install --global @graphql-inspector/cli@7.0.2 graphql@16.11.0
+        run: |
+          npm ci --prefix tools/graphql-inspector --prefer-offline --no-audit --no-fund
+          echo "$GITHUB_WORKSPACE/tools/graphql-inspector/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Select main baseline
         id: baseline
         env:

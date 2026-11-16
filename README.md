@@ -105,6 +105,14 @@ never block commits.
 
 ## GraphQL schema checks in CI
 
+Schema CI and release jobs install GraphQL Inspector from
+`tools/graphql-inspector/package-lock.json`. GitHub Actions caches npm package
+downloads using the lockfile hash. Subsequent runs restore cached downloads, and
+`npm ci --prefer-offline` installs the locked dependency versions. Changes to the
+lockfile select a new cache key. The cache stores npm package downloads rather
+than `node_modules`; installation still runs on every job. Cache misses download
+the required packages normally.
+
 CI runs one GraphQL Inspector comparison: the committed schema from the selected
 main commit versus the committed schema from the PR head or pushed commit.
 Schema CI does not install Rust, compile the API, or regenerate the schema.

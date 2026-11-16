@@ -1,2 +1,3 @@
 /target
+/tools/graphql-inspector/node_modules/
 .DS_Store
