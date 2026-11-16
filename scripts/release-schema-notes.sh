@@ -11,12 +11,10 @@ repository_url="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-op
 
 extract_schema() {
     local commit=$1 destination=$2
-    for filename in schema.graphql graphql.schema; do
-        if git cat-file -e "$commit:$filename" 2>/dev/null; then
-            git show "$commit:$filename" > "$destination"
-            return
-        fi
-    done
+    if git cat-file -e "$commit:schema.graphql" 2>/dev/null; then
+        git show "$commit:schema.graphql" > "$destination"
+        return
+    fi
     echo "Release commit $commit has no saved schema; historical comparison unavailable." >&2
     return 1
 }

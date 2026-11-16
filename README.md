@@ -105,14 +105,16 @@ never block commits.
 
 ## GraphQL schema checks in CI
 
-CI runs one GraphQL Inspector comparison: the schema from the selected main
-commit, or the deployment fallback, versus the generated Platform schema.
+CI runs one GraphQL Inspector comparison: the committed schema from the selected
+main commit versus the committed schema from the PR head or pushed commit.
+Schema CI does not install Rust, compile the API, or regenerate the schema.
 The comparison passes when GraphQL Inspector detects no schema differences.
 API changes remain advisory, including breaking changes. The job summary and
 downloadable `graphql-schema-release-notes` Markdown artifact report breaking,
-dangerous, and non-breaking changes. CI performs no separate comparison between
-the PR's committed `schema.graphql` and the generated Platform schema.
-Schema jobs are non-blocking. Export, download, and schema parsing errors remain
+dangerous, and non-breaking changes. The local pre-commit hook keeps
+`schema.graphql` synchronized with staged Rust changes; bypassing the hook can
+leave the committed snapshot outdated.
+Schema jobs are non-blocking. Git extraction and schema parsing errors remain
 visible in workflow logs without blocking other CI jobs or release builds.
 
 After successful schema comparison, CI adds the generated notes to the PR description
@@ -123,11 +125,11 @@ GraphQL Inspector detects no changes. The downloadable artifact remains availabl
 PR description updates run for branches in the same repository, excluding Dependabot.
 Fork and Dependabot PRs retain the job summary and artifact because restricted
 workflow tokens cannot update PR descriptions. The PR update job uses
-`pull-requests: write`; the schema generation job retains read-only permissions.
+`pull-requests: write`; the schema comparison job retains read-only permissions.
 
 For PRs, the comparison uses the main revision fetched during the CI run and the
 PR branch's head commit, covering the combined change across all PR commits.
-The schema generation job checks out the PR head rather than GitHub's temporary
+The schema comparison job checks out the PR head rather than GitHub's temporary
 merge commit. On pushes to
 `main`, the comparison uses main before the push, so the report shows the changes
 after merging. Development-branch pushes, PRs targeting other branches, scheduled
@@ -136,10 +138,10 @@ The notes link the main comparison commit and the checked-out commit to full
 GitHub commit URLs. 
 
 The generated Markdown contains release-note fragments relative to the selected
-main revision. PR schema jobs do not modify GitHub releases. If the baseline
-commit lacks `schema.graphql`, CI downloads the baseline schema from
-`https://api.platform.opentargets.xyz/latest/graphql/schema`. The release-note
-fragments identify the deployment fallback explicitly.
+main revision. PR schema jobs do not modify GitHub releases. Comparisons read only
+`schema.graphql`. If either compared commit lacks `schema.graphql`, the report
+states that the comparison is unavailable. Schema CI
+does not download a deployment schema as a substitute for a committed snapshot.
 
 ## Schema notes on releases
 

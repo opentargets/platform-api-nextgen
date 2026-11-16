@@ -38,13 +38,6 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - name: Install Rust
-        run: |
-          rustup toolchain install "$RUST_STABLE" --profile minimal
-          rustup default "$RUST_STABLE"
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: platform
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
