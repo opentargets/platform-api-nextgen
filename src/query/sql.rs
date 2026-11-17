@@ -20,6 +20,7 @@ pub trait Table: Send + Sync + 'static {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ValueKind {
     Str,
+    U32,
     U64,
     I64,
     F64,
@@ -40,13 +41,16 @@ fn as_text_sql<C: Column>(col: C) -> Option<String> {
         // drop the row from every search. It's a no-op on non-Nullable columns.
         ValueKind::Str => Some(format!("ifNull({name}, '')")),
         ValueKind::StrArray => Some(format!("arrayStringConcat({name}, {SEARCH_SEP})")),
-        ValueKind::U64 | ValueKind::I64 | ValueKind::F64 | ValueKind::U64Array => None,
+        ValueKind::U32 | ValueKind::U64 | ValueKind::I64 | ValueKind::F64 | ValueKind::U64Array => {
+            None
+        }
     }
 }
 
 #[derive(Clone, Debug)]
 pub enum Value {
     Str(String),
+    U32(u32),
     U64(u64),
     I64(i64),
     F64(f64),
@@ -57,6 +61,7 @@ impl Value {
     fn kind(&self) -> ValueKind {
         match self {
             Value::Str(_) => ValueKind::Str,
+            Value::U32(_) => ValueKind::U32,
             Value::U64(_) => ValueKind::U64,
             Value::I64(_) => ValueKind::I64,
             Value::F64(_) => ValueKind::F64,
@@ -373,6 +378,7 @@ impl<T: Table> PageSpec<T> {
 fn bind_value(q: Query, v: &Value) -> Query {
     match v {
         Value::Str(s) => q.bind(s.as_str()),
+        Value::U32(n) => q.bind(*n),
         Value::U64(n) => q.bind(*n),
         Value::I64(n) => q.bind(*n),
         Value::F64(n) => q.bind(*n),

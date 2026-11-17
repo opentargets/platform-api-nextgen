@@ -111,6 +111,7 @@ columns!(VariantTranscriptConsequenceCol {
     Impact                   => "impact"                   : Str,
     DistanceFromFootprint    => "distanceFromFootprint"    : I64,
     DistanceFromTss          => "distanceFromTss"          : I64,
+    TranscriptIndex          => "transcriptIndex"          : U32,
 });
 
 // ---- query params ----
@@ -177,10 +178,11 @@ pub enum SortField {
     DistanceFromFootprint,
     /// Distance of the variant from the transcription start site.
     DistanceFromTss,
+    TranscriptIndex,
 }
 
 const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
-    key: SortField::DistanceFromFootprint,
+    key: SortField::TranscriptIndex,
     direction: SortDirection::Ascending,
 }];
 
@@ -193,6 +195,7 @@ impl SortField {
             Self::TargetApprovedSymbol => C::TargetApprovedSymbol,
             Self::DistanceFromFootprint => C::DistanceFromFootprint,
             Self::DistanceFromTss => C::DistanceFromTss,
+            Self::TranscriptIndex => C::TranscriptIndex,
         };
         OrderBy::each(&[col], dir)
     }
