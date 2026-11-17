@@ -63,10 +63,14 @@ Both images share the tag's version. Each product is deployed independently.
 
 ## GraphQL schema tracking
 
-Schema tracking makes API changes visible during review and provides schema release
-notes. The committed `schema.graphql` describes the public Platform API generated
-from Rust types. GraphQL Inspector reports breaking, potentially dangerous, and
-non-breaking changes. Schema reports are informational and require no approval.
+Changes to Rust types can change the public GraphQL API: fields can disappear, argument types can change, and new fields can become available. Schema tracking makes API changes visible during review and provides schema release notes.
+
+The idea is to keep a readable API snapshot alongside the Rust code. Before every commit, a local hook generates `schema.graphql` from the Platform Rust types and includes the snapshot in the commit. GitHub CI compares committed snapshots with GraphQL Inspector and reports breaking, potentially dangerous, and non-breaking
+changes in PRs. Publishing a release generates schema release notes from the
+previous and current release snapshots.
+
+Schema reports are informational and require no approval.
+
 Schema tracking covers `product-platform`.
 
 ### Set up
@@ -83,8 +87,8 @@ pre-commit install
 
 Stage the intended Rust changes and commit normally. The hook generates
 `schema.graphql` and automatically stages the generated snapshot in the same commit.
-The hook creates `schema.graphql` from `https://api.platform.opentargets.xyz/latest/graphql/schema`
-when the snapshot is missing and refreshes the snapshot on every commit.
+The hook creates `schema.graphql` from the local Rust code when the snapshot is
+missing and refreshes the snapshot on every commit.
 
 Schema export runs without starting the API
 server or connecting to databases. Export failures stop the commit before replacing
