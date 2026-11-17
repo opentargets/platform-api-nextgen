@@ -10,6 +10,7 @@ pub mod clinical_report;
 pub mod clinical_target;
 pub mod colocalisation;
 pub mod credible_set;
+mod date;
 pub mod disease;
 pub mod disease_hpo;
 pub mod drug;

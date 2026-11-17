@@ -153,7 +153,6 @@ dependencies = [
  "asynk-strim",
  "base64 0.22.1",
  "bytes",
- "chrono",
  "fast_chemail",
  "fnv",
  "futures-channel",
@@ -561,10 +560,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aa79e62e7697b8e29b513a68abacf485adcd1fe8284a4316c5ae868e6633327"
 dependencies = [
  "iana-time-zone",
- "js-sys",
  "num-traits",
  "serde",
- "wasm-bindgen",
  "windows-link 0.2.1",
 ]
 
@@ -623,7 +620,6 @@ dependencies = [
  "bnum",
  "bstr",
  "bytes",
- "chrono",
  "cityhash-rs",
  "clickhouse-macros",
  "clickhouse-types",
@@ -2322,13 +2318,13 @@ dependencies = [
  "axum",
  "axum-prometheus",
  "axum-server",
- "chrono",
  "clap",
  "clickhouse",
  "derive_more",
  "figment",
  "graphql-parser",
  "humantime-serde",
+ "jiff",
  "moka",
  "opensearch",
  "reqwest",
