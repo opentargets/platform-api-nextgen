@@ -122,8 +122,14 @@ the PR description between `<!-- graphql-schema-notes:start -->` and
 unchanged. Fork and Dependabot PRs use the job summary and artifact because restricted
 workflow tokens cannot update PR descriptions.
 
-No differences produces a “No schema changes” report. Missing snapshots produce a
-“Schema comparison unavailable” report. Schema jobs are non-blocking, including
+No differences produces a “No schema changes” report. Until the selected `main`
+commit contains `schema.graphql`, PR and push comparisons download the baseline
+from `https://api.platform.opentargets.xyz/latest/graphql/schema`. Reports identify
+the deployment fallback and download time. Once `main` contains `schema.graphql`,
+comparisons use the committed main snapshot. A missing snapshot in the PR or pushed
+commit produces a “Schema comparison unavailable” report naming the missing side.
+Release comparisons require saved snapshots from both release tags.
+Schema jobs are non-blocking, including
 reports containing breaking changes. Execution errors remain visible in workflow
 logs. Other CI checks operate independently.
 

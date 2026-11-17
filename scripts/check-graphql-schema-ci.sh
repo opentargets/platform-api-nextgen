@@ -25,11 +25,19 @@ extract_schema() {
     return 1
 }
 
-if ! extract_schema "$SCHEMA_BASE_SHA" "$temporary_dir/old.graphql" ||
-   ! extract_schema "$SCHEMA_HEAD_SHA" "$temporary_dir/new.graphql"; then
-    printf '# GraphQL schema changes\n\n%s\n\n%s\n\nSchema comparison unavailable: a compared commit has no saved schema.\n' \
+if ! extract_schema "$SCHEMA_HEAD_SHA" "$temporary_dir/new.graphql"; then
+    printf '# GraphQL schema changes\n\n%s\n\n%s\n\nSchema comparison unavailable: the compared PR or pushed commit has no schema.graphql. Enable the pre-commit hook and commit the generated snapshot.\n' \
         "$SCHEMA_BASE_DESCRIPTION" "$SCHEMA_HEAD_DESCRIPTION" > "$notes_output"
     exit 0
+fi
+
+if git cat-file -e "$SCHEMA_BASE_SHA:schema.graphql" 2>/dev/null; then
+    git show "$SCHEMA_BASE_SHA:schema.graphql" > "$temporary_dir/old.graphql"
+else
+    schema_url=https://api.platform.opentargets.xyz/latest/graphql/schema
+    echo "Main comparison commit $SCHEMA_BASE_SHA has no schema.graphql; downloading the deployment schema."
+    curl --fail --location "$schema_url" --output "$temporary_dir/old.graphql"
+    SCHEMA_BASE_DESCRIPTION="Main comparison commit: $base_commit_link (schema.graphql absent). Bootstrap comparison uses [$schema_url]($schema_url), fetched $(date -u +%Y-%m-%dT%H:%M:%SZ). The deployment schema does not represent the historical main commit."
 fi
 
 # Inspector does not invoke onComplete when there are no changes.
