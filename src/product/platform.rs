@@ -48,7 +48,10 @@ use crate::{
     product::{Flavor, Product, loader},
     view::{
         disease_studies::DiseaseStudiesLoader,
-        evidence::clinical_precedence::EvidenceClinicalPrecedenceLoader,
+        evidence::{
+            clinical_precedence::EvidenceClinicalPrecedenceLoader,
+            gwas_credible_sets::EvidenceGwasCredibleSetsLoader,
+        },
         study_credible_sets::StudyCredibleSetsLoader,
         target_credible_sets::TargetCredibleSetsLoader,
         variant_credible_sets::VariantCredibleSetsLoader,
@@ -116,6 +119,7 @@ impl Product for Platform {
             .data(loader::<VariantLoader>(ch))
             .data(loader::<DiseaseStudiesLoader>(ch))
             .data(loader::<EvidenceClinicalPrecedenceLoader>(ch))
+            .data(loader::<EvidenceGwasCredibleSetsLoader>(ch))
             .data(loader::<StudyCredibleSetsLoader>(ch))
             .data(loader::<TargetCredibleSetsLoader>(ch))
             .data(loader::<VariantCredibleSetsLoader>(ch))
