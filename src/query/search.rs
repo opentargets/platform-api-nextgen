@@ -12,6 +12,7 @@ use crate::{
     query::sql::{Column, Filter},
     view::{
         disease_studies::SearchField as DiseaseStudiesSearchField,
+        evidence::clinical_precedence::SearchField as EvidenceClinicalPrecedenceSearchField,
         study_credible_sets::SearchField as StudyCredibleSetsSearchField,
         target_credible_sets::SearchField as TargetCredibleSetsSearchField,
         variant_credible_sets::SearchField as VariantCredibleSetsSearchField,
@@ -44,6 +45,10 @@ pub fn contains(haystack: &str, needle: &str) -> bool { haystack.to_lowercase().
 #[graphql(concrete(name = "StudiesSearch", params(StudySearchField)))]
 #[graphql(concrete(name = "PharmacogenomicsSearch", params(PharmacogenomicsSearchField)))]
 #[graphql(concrete(name = "EnhancerToGeneSearch", params(EnhancerToGeneSearchField)))]
+#[graphql(concrete(
+    name = "EvidenceClinicalPrecedenceSearch",
+    params(EvidenceClinicalPrecedenceSearchField)
+))]
 #[graphql(concrete(name = "DiseaseStudiesSearch", params(DiseaseStudiesSearchField)))]
 #[graphql(concrete(name = "StudyCredibleSetsSearch", params(StudyCredibleSetsSearchField)))]
 #[graphql(concrete(name = "TargetCredibleSetsSearch", params(TargetCredibleSetsSearchField)))]

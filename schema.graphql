@@ -1343,32 +1343,6 @@ type Disease {
 		page: Page! = {index: 0, size: 10}
 	): ClinicalIndicationPage!
 	"""
-	Flat, sortable and searchable summary of the studies of this disease, for tables. Use
-	`studies(diseaseIds: ...)` for the full study entities and stats.
-	"""
-	studiesView(
-		"""
-		Whether to add studies for ontology-descendant diseases in the result.
-		"""
-		enableIndirect: Boolean! = false,
-		"""
-		List of sort statements. Each field can be used at most once.
-		"""
-		sort: [DiseaseStudiesSort!]! = [{key: N_SAMPLES, direction: DESCENDING}],
-		"""
-		Case-insensitive text search across the studies' text fields. Searches all fields unless `fields` is given.
-		"""
-		search: DiseaseStudiesSearch,
-		"""
-		Filter criteria to apply.
-		"""
-		filter: DiseaseStudiesFilter,
-		"""
-		Pagination for the studies.
-		"""
-		page: Page! = {index: 0, size: 10}
-	): DiseaseStudyPage!
-	"""
 	Direct parent terms in the disease ontology.
 	"""
 	parents: [Disease!]!
@@ -1438,6 +1412,33 @@ type Disease {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): EvidencePage!
+	"""
+	Clinical precedence evidence for this disease and the given targets: drugs that target the
+	target and are in clinical development or approved for the disease. Sorted, searched and
+	paged in the database.
+	"""
+	evidenceClinicalPrecedence(
+		"""
+		A list of target ids to filter evidences on.
+		"""
+		ensemblIds: [String!]!,
+		"""
+		Whether to include evidence for ontology-descendant diseases.
+		"""
+		enableIndirect: Boolean! = true,
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EvidenceClinicalPrecedenceSort!]! = [{key: SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the evidences' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: EvidenceClinicalPrecedenceSearch,
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceClinicalPrecedencePage!
 	"""
 	Association time series.
 	"""
@@ -1577,11 +1578,44 @@ type DiseaseCellLine {
 }
 
 """
-The result of a paginated query, containing the total number of items and the items.
+A page of diseases, plus a combined view over the studies of all the requested diseases.
 """
 type DiseasePage {
+	"""
+	Total number of diseases matching the query.
+	"""
 	count: Int!
+	"""
+	The diseases on this page.
+	"""
 	rows: [Disease!]!
+	"""
+	Flat, sortable and searchable summary of the studies of all the requested diseases, for
+	tables. Covers every ID in `efoIds`, ignoring the diseases' `search` and `page`. A study
+	linked to several of the diseases appears once.
+	"""
+	studiesView(
+		"""
+		Whether to add studies for ontology-descendant diseases in the result.
+		"""
+		enableIndirect: Boolean! = false,
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [DiseaseStudiesSort!]! = [{key: N_SAMPLES, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the studies' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: DiseaseStudiesSearch,
+		"""
+		Filter criteria to apply.
+		"""
+		filter: DiseaseStudiesFilter,
+		"""
+		Pagination for the studies.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): DiseaseStudyPage!
 }
 
 """
@@ -2656,6 +2690,125 @@ type Evidence {
 	Sequence ontology (SO) term of the functional consequence of the variant from QTL.
 	"""
 	variantFunctionalConsequenceFromQtl: SequenceOntologyTerm
+}
+
+"""
+A clinical precedence evidence, as shown in the evidence page's clinical precedence table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/clinical_precedence.sql`. Update both together.
+"""
+type EvidenceClinicalPrecedence {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Gain or loss of function effect of the evidence on the target resulting from genetic
+	variants, pharmacological modulation, or other perturbations.
+	"""
+	directionOnTarget: String
+	"""
+	Predicted direction of effect on the trait.
+	"""
+	directionOnTrait: String
+	"""
+	Clinical stage of the drug-disease pair.
+	"""
+	clinicalStage: String
+	"""
+	Identifier of the clinical report.
+	"""
+	clinicalReportId: String
+	"""
+	Start date of study in a YYYY-MM-DD format.
+	"""
+	studyStartDate: String
+	"""
+	Disease for which the target is associated in this evidence.
+	"""
+	disease: Disease
+	"""
+	Target for which the disease is associated in this evidence.
+	"""
+	target: Target
+	"""
+	Drug or clinical candidate targeting the target and studied/approved for the disease.
+	"""
+	drug: Drug
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceClinicalPrecedencePage {
+	count: Int!
+	rows: [EvidenceClinicalPrecedence!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input EvidenceClinicalPrecedenceSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [EvidenceClinicalPrecedenceSearchField!]! = [DISEASE_NAME, TARGET_APPROVED_SYMBOL, DRUG_TARGET_SYMBOLS, DRUG_NAME, DIRECTION_ON_TARGET, DIRECTION_ON_TRAIT, CLINICAL_STAGE, CLINICAL_REPORT_ID, STUDY_START_DATE]
+}
+
+"""
+Text fields that `search` can match against: the text shown in the table.
+"""
+enum EvidenceClinicalPrecedenceSearchField {
+	DISEASE_NAME
+	TARGET_APPROVED_SYMBOL
+	DRUG_TARGET_SYMBOLS
+	DRUG_NAME
+	DIRECTION_ON_TARGET
+	DIRECTION_ON_TRAIT
+	CLINICAL_STAGE
+	CLINICAL_REPORT_ID
+	STUDY_START_DATE
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input EvidenceClinicalPrecedenceSort {
+	"""
+	The field to sort by.
+	"""
+	key: EvidenceClinicalPrecedenceSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum EvidenceClinicalPrecedenceSortField {
+	"""
+	Evidence score.
+	"""
+	SCORE
+	"""
+	Clinical stage, from unknown up to approval.
+	"""
+	CLINICAL_STAGE
+	"""
+	Study start date.
+	"""
+	STUDY_START_DATE
 }
 
 """
@@ -4142,9 +4295,9 @@ type Query {
 		"""
 		search: DiseasesSearch,
 		"""
-		List of sort statements.
+		List of sort statements. Defaults to ID, ascending.
 		"""
-		sort: [DiseaseSort!]!,
+		sort: [DiseaseSort!]! = [{key: ID, direction: ASCENDING}],
 		"""
 		Pagination for the diseases.
 		"""
@@ -5375,6 +5528,33 @@ type Target {
 		page: Page! = {index: 0, size: 10}
 	): EvidencePage!
 	"""
+	Clinical precedence evidence for this target and the given diseases: drugs that target the
+	target and are in clinical development or approved for the disease. Sorted, searched and
+	paged in the database.
+	"""
+	evidenceClinicalPrecedence(
+		"""
+		A list of disease ids to filter evidences on.
+		"""
+		efoIds: [String!]!,
+		"""
+		Whether to include evidence for ontology-descendant diseases.
+		"""
+		enableIndirect: Boolean! = true,
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EvidenceClinicalPrecedenceSort!]! = [{key: SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the evidences' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: EvidenceClinicalPrecedenceSearch,
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceClinicalPrecedencePage!
+	"""
 	Target-drug associations derived from clinical reports for this target.
 	"""
 	drugAndClinicalCandidates(
@@ -6097,7 +6277,7 @@ type Variant {
 		"""
 		List of sort statements. Each field can be used at most once.
 		"""
-		sort: [VariantTranscriptConsequencesSort!]! = [{key: DISTANCE_FROM_FOOTPRINT, direction: ASCENDING}],
+		sort: [VariantTranscriptConsequencesSort!]! = [{key: TRANSCRIPT_INDEX, direction: ASCENDING}],
 		"""
 		Case-insensitive text search across the gene symbol, consequence and impact. Searches all of them unless `fields` is given.
 		"""
@@ -6268,7 +6448,7 @@ input VariantCredibleSetsSearch {
 	"""
 	Fields to search in. Defaults to all of them.
 	"""
-	fields: [VariantCredibleSetsSearchField!]! = [STUDY_LOCUS_ID, STUDY_ID, LEAD_VARIANT_ID, FINEMAPPING_METHOD, CONFIDENCE, TRAIT_FROM_SOURCE, TOP_L2G_GENE_ID, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES, DISEASE_THERAPEUTIC_AREA_IDS, DISEASE_THERAPEUTIC_AREA_NAMES]
+	fields: [VariantCredibleSetsSearchField!]! = [STUDY_ID, LEAD_VARIANT_ID, FINEMAPPING_METHOD, TRAIT_FROM_SOURCE, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
 }
 
 """
@@ -6278,18 +6458,13 @@ Leaves out `variantId` (the same on every row) and the alleles (single letters
 that would match almost every search).
 """
 enum VariantCredibleSetsSearchField {
-	STUDY_LOCUS_ID
 	STUDY_ID
 	LEAD_VARIANT_ID
 	FINEMAPPING_METHOD
-	CONFIDENCE
 	TRAIT_FROM_SOURCE
-	TOP_L2G_GENE_ID
 	TOP_L2G_APPROVED_SYMBOL
 	DISEASE_IDS
 	DISEASE_NAMES
-	DISEASE_THERAPEUTIC_AREA_IDS
-	DISEASE_THERAPEUTIC_AREA_NAMES
 }
 
 """
@@ -6313,6 +6488,9 @@ enum VariantCredibleSetsSortField {
 	TOP_L2G_SCORE
 	P_VALUE
 	LEAD_VARIANT
+	BETA
+	POSTERIOR_PROBABLITY
+	CREDIBLE_SET_SIZE
 }
 
 """
@@ -6487,6 +6665,7 @@ enum VariantTranscriptConsequencesSortField {
 	Distance of the variant from the transcription start site.
 	"""
 	DISTANCE_FROM_TSS
+	TRANSCRIPT_INDEX
 }
 
 """

@@ -100,13 +100,13 @@ pub enum Filter<C: Column> {
     Search { cols: Vec<C>, term: Value },
     /// `col IN ?`: the column equals one of `values`.
     In { col: C, values: Value },
-    /// `col IN (subquery)`: the column equals one of the subquery's rows. The subquery has one
-    /// `?`, bound to `value`. Use it when the set of values is too big to send in the query,
-    /// or already lives in another table.
+    /// `col IN (subquery)`: the column equals one of the subquery's rows. The subquery's `?`s
+    /// are bound to `values`, in order. Use it when the set of values is too big to send in the
+    /// query, or already lives in another table.
     InSubquery {
         col: C,
         subquery: &'static str,
-        value: Value,
+        values: Vec<Value>,
     },
     /// Case-insensitive substring match of `term` against `col`. With `negate`, the column
     /// must not contain `term`.
@@ -177,17 +177,21 @@ impl<C: Column> Filter<C> {
         })
     }
 
-    /// An `IN (subquery)` filter. `subquery` must contain exactly one `?`, which is bound to
-    /// `value`. Errors if it doesn't.
+    /// An `IN (subquery)` filter. `subquery` must contain one `?` per entry of `values`, which
+    /// are bound in order. Errors if the counts differ.
     #[allow(clippy::missing_errors_doc)]
-    pub fn in_subquery(col: C, subquery: &'static str, value: Value) -> Result<Self, String> {
-        if subquery.matches('?').count() != 1 {
-            return Err(format!("subquery must have exactly one `?`: {subquery}"));
+    pub fn in_subquery(col: C, subquery: &'static str, values: Vec<Value>) -> Result<Self, String> {
+        let placeholders = subquery.matches('?').count();
+        if placeholders != values.len() {
+            return Err(format!(
+                "subquery has {placeholders} `?` but {} values: {subquery}",
+                values.len()
+            ));
         }
         Ok(Self::InSubquery {
             col,
             subquery,
-            value,
+            values,
         })
     }
 
@@ -242,15 +246,15 @@ impl<C: Column> Filter<C> {
         }
     }
 
-    /// The value bound to this filter's `?`, or `None` if it has no `?`.
-    fn value(&self) -> Option<&Value> {
+    /// The values bound to this filter's `?`s, in order. Empty if it has none.
+    fn values(&self) -> &[Value] {
         match self {
             Self::Compare { value, .. }
             | Self::Search { term: value, .. }
             | Self::In { values: value, .. }
-            | Self::InSubquery { value, .. }
-            | Self::Contains { term: value, .. } => Some(value),
-            Self::IsNull { .. } => None,
+            | Self::Contains { term: value, .. } => std::slice::from_ref(value),
+            Self::InSubquery { values, .. } => values,
+            Self::IsNull { .. } => &[],
         }
     }
 }
@@ -369,7 +373,7 @@ impl<T: Table> PageSpec<T> {
             where_binds: self
                 .filters
                 .iter()
-                .filter_map(|f| f.value().cloned())
+                .flat_map(|f| f.values().iter().cloned())
                 .collect(),
         }
     }
@@ -488,7 +492,7 @@ mod tests {
         let f = Filter::in_subquery(
             TestCol::Id,
             "SELECT arrayJoin(ids) FROM other WHERE key = ?",
-            Value::Str("k".to_string()),
+            vec![Value::Str("k".to_string())],
         )
         .unwrap();
         assert_eq!(
@@ -501,8 +505,39 @@ mod tests {
 
     #[test]
     fn in_subquery_rejects_wrong_number_of_placeholders() {
-        assert!(Filter::in_subquery(TestCol::Id, "SELECT 1", Value::U64(1)).is_err());
-        assert!(Filter::in_subquery(TestCol::Id, "SELECT ? + ?", Value::U64(1)).is_err());
+        assert!(Filter::in_subquery(TestCol::Id, "SELECT 1", vec![Value::U64(1)]).is_err());
+        assert!(Filter::in_subquery(TestCol::Id, "SELECT ? + ?", vec![Value::U64(1)]).is_err());
+        assert!(Filter::in_subquery(TestCol::Id, "SELECT ?", vec![]).is_err());
+    }
+
+    #[test]
+    fn in_subquery_binds_several_values_in_order_after_earlier_filters() {
+        let r = spec(
+            vec![
+                Filter::new(TestCol::Score, Op::Gt, Value::F64(1.0)).unwrap(),
+                Filter::in_subquery(
+                    TestCol::Id,
+                    "SELECT id FROM other WHERE a = ? AND b IN ?",
+                    vec![
+                        Value::Str("a".to_string()),
+                        Value::StrArray(vec!["b".to_string()]),
+                    ],
+                )
+                .unwrap(),
+            ],
+            vec![],
+        )
+        .render();
+        assert!(
+            r.sql
+                .contains("score > ? AND id IN (SELECT id FROM other WHERE a = ? AND b IN ?)"),
+            "sql was:\n{}",
+            r.sql
+        );
+        assert!(matches!(
+            r.where_binds.as_slice(),
+            [Value::F64(_), Value::Str(a), Value::StrArray(b)] if a == "a" && b == &["b"]
+        ));
     }
 
     #[test]

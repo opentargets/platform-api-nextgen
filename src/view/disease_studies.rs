@@ -170,7 +170,7 @@ impl QueryParams {
             Filter::in_subquery(
                 DiseaseStudyCol::StudyId,
                 study_ids,
-                Value::StrArray(self.disease_ids.clone()),
+                vec![Value::StrArray(self.disease_ids.clone())],
             )
             .map_err(Error::new)?,
         ];

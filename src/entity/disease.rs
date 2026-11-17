@@ -38,7 +38,10 @@ use crate::{
         search::{Search, Searchable, contains},
         sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
     },
-    view::disease_studies as ds,
+    view::{
+        disease_studies as ds,
+        evidence::{EvidenceScope, clinical_precedence as cp},
+    },
 };
 
 // ---- models ----
@@ -493,6 +496,35 @@ impl Disease {
         )
         .await?;
         Ok(all.query().paginate(page))
+    }
+
+    /// Clinical precedence evidence for this disease and the given targets: drugs that target the
+    /// target and are in clinical development or approved for the disease. Sorted, searched and
+    /// paged in the database.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn evidence_clinical_precedence(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(desc = "A list of target ids to filter evidences on.")] ensembl_ids: Vec<String>,
+        #[graphql(
+            default = true,
+            desc = "Whether to include evidence for ontology-descendant diseases."
+        )]
+        enable_indirect: bool,
+        #[graphql(
+            default_with = "cp::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<cp::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<cp::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> async_graphql::Result<Paged<cp::EvidenceClinicalPrecedence>> {
+        let scope = EvidenceScope::new(vec![self.id.clone()], ensembl_ids, enable_indirect);
+        let key = cp::QueryParams::new(scope, sort, search, page.index, page.size);
+        cp::load_evidence_clinical_precedence(ctx, key).await
     }
 
     /// Association time series.
