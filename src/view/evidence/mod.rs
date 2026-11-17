@@ -9,6 +9,7 @@ use async_graphql::{Error, Result};
 use crate::query::sql::{Column, Filter, Value};
 
 pub mod clinical_precedence;
+pub mod gwas_credible_sets;
 
 /// Evidence ids for the scope's targets and diseases, read from the index table so `evidence` is
 /// looked up by key. Binds: datasource, disease ids (expanded to their ontology descendants),

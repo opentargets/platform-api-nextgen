@@ -1440,6 +1440,33 @@ type Disease {
 		page: Page! = {index: 0, size: 10}
 	): EvidenceClinicalPrecedencePage!
 	"""
+	GWAS credible sets evidence for this disease and the given targets: fine-mapped GWAS
+	signals whose locus-to-gene (L2G) model prioritises the target. Sorted, searched and paged
+	in the database.
+	"""
+	evidenceGwasCredibleSets(
+		"""
+		A list of target ids to filter evidences on.
+		"""
+		ensemblIds: [String!]!,
+		"""
+		Whether to include evidence for ontology-descendant diseases.
+		"""
+		enableIndirect: Boolean! = true,
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EvidenceGwasCredibleSetsSort!]! = [{key: SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the evidences' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: EvidenceGwasCredibleSetsSearch,
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceGwasCredibleSetsPage!
+	"""
 	Association time series.
 	"""
 	associationTimeSeries(
@@ -2708,6 +2735,38 @@ type EvidenceClinicalPrecedence {
 	"""
 	score: Float!
 	"""
+	Identifier of the disease for which the target is associated in this evidence.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Identifier of the target for which the disease is associated in this evidence.
+	"""
+	targetId: String!
+	"""
+	Approved symbol of the target. Empty if the target isn't found.
+	"""
+	targetApprovedSymbol: String!
+	"""
+	Identifier of the drug or clinical candidate [bioregistry:chembl].
+	"""
+	drugId: String
+	"""
+	Name of the drug or clinical candidate.
+	"""
+	drugName: String
+	"""
+	Identifiers of all the targets in the drug's mechanisms of action.
+	"""
+	drugTargetIds: [String!]!
+	"""
+	Approved symbols of `drugTargetIds`, in the same order. Empty when a symbol is missing.
+	"""
+	drugTargetSymbols: [String!]!
+	"""
 	Gain or loss of function effect of the evidence on the target resulting from genetic
 	variants, pharmacological modulation, or other perturbations.
 	"""
@@ -2728,18 +2787,6 @@ type EvidenceClinicalPrecedence {
 	Start date of study in a YYYY-MM-DD format.
 	"""
 	studyStartDate: String
-	"""
-	Disease for which the target is associated in this evidence.
-	"""
-	disease: Disease
-	"""
-	Target for which the disease is associated in this evidence.
-	"""
-	target: Target
-	"""
-	Drug or clinical candidate targeting the target and studied/approved for the disease.
-	"""
-	drug: Drug
 }
 
 """
@@ -2809,6 +2856,187 @@ enum EvidenceClinicalPrecedenceSortField {
 	Study start date.
 	"""
 	STUDY_START_DATE
+}
+
+"""
+A GWAS credible sets evidence, as shown in the evidence page's GWAS associations table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/gwas_credible_sets.sql`. Update both together.
+"""
+type EvidenceGwasCredibleSets {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Locus-to-gene (L2G) score of the target for the credible set.
+	"""
+	score: Float!
+	"""
+	Identifier of the disease the study's trait is mapped to.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Identifier of the target prioritised by L2G.
+	"""
+	targetId: String!
+	"""
+	Identifier of the credible set (`StudyLocus`) supporting this evidence.
+	"""
+	studyLocusId: String
+	"""
+	Identifier of the credible set's lead variant.
+	"""
+	leadVariantId: String!
+	"""
+	Chromosome of the lead variant.
+	"""
+	leadChromosome: Chromosome!
+	"""
+	Position of the lead variant (`GRCh38`).
+	"""
+	leadPosition: Int!
+	"""
+	Reference allele of the lead variant.
+	"""
+	leadReferenceAllele: String!
+	"""
+	Alternate allele of the lead variant.
+	"""
+	leadAlternateAllele: String!
+	"""
+	Mantissa of the lead variant's p-value.
+	"""
+	pValueMantissa: Float!
+	"""
+	Exponent of the lead variant's p-value.
+	"""
+	pValueExponent: Int!
+	"""
+	Effect size of the lead variant.
+	"""
+	beta: Float
+	"""
+	Fine-mapping method used to derive the credible set.
+	"""
+	finemappingMethod: String!
+	"""
+	Fine-mapping confidence of the credible set.
+	"""
+	confidence: String!
+	"""
+	Identifier of the GWAS study.
+	"""
+	studyId: String!
+	"""
+	Trait, derived from source, analysed in the study.
+	"""
+	traitFromSource: String!
+	"""
+	Identifier of the project the study comes from.
+	"""
+	projectId: String!
+	"""
+	First author of the publication that references the study.
+	"""
+	publicationFirstAuthor: String
+	"""
+	Date of the publication that references the study.
+	"""
+	publicationDate: String
+	"""
+	PubMed identifier of the publication that references the study [bioregistry:pubmed].
+	"""
+	pubmedId: String
+	"""
+	Number of samples tested in the study.
+	"""
+	nSamples: Int
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceGwasCredibleSetsPage {
+	count: Int!
+	rows: [EvidenceGwasCredibleSets!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input EvidenceGwasCredibleSetsSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [EvidenceGwasCredibleSetsSearchField!]! = [LEAD_VARIANT_ID, TRAIT_FROM_SOURCE, DISEASE_NAME, STUDY_ID, FINEMAPPING_METHOD, CONFIDENCE, PUBLICATION_FIRST_AUTHOR, PUBLICATION_DATE]
+}
+
+"""
+Text fields that `search` can match against: the text shown in the table.
+"""
+enum EvidenceGwasCredibleSetsSearchField {
+	LEAD_VARIANT_ID
+	TRAIT_FROM_SOURCE
+	DISEASE_NAME
+	STUDY_ID
+	FINEMAPPING_METHOD
+	CONFIDENCE
+	PUBLICATION_FIRST_AUTHOR
+	PUBLICATION_DATE
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input EvidenceGwasCredibleSetsSort {
+	"""
+	The field to sort by.
+	"""
+	key: EvidenceGwasCredibleSetsSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum EvidenceGwasCredibleSetsSortField {
+	"""
+	Evidence score, which is the target's locus-to-gene (L2G) score.
+	"""
+	SCORE
+	"""
+	Lead variant, by genomic position.
+	"""
+	LEAD_VARIANT
+	"""
+	Number of samples in the study.
+	"""
+	SAMPLE_SIZE
+	"""
+	P-value of the lead variant.
+	"""
+	P_VALUE
+	"""
+	Effect size of the lead variant.
+	"""
+	BETA
+	"""
+	Fine-mapping confidence, from PICS on a reported top hit up to `SuSiE` with in-sample LD.
+	"""
+	FINEMAPPING_CONFIDENCE
 }
 
 """
@@ -5554,6 +5782,33 @@ type Target {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): EvidenceClinicalPrecedencePage!
+	"""
+	GWAS credible sets evidence for this target and the given diseases: fine-mapped GWAS
+	signals whose locus-to-gene (L2G) model prioritises the target. Sorted, searched and paged
+	in the database.
+	"""
+	evidenceGwasCredibleSets(
+		"""
+		A list of disease ids to filter evidences on.
+		"""
+		efoIds: [String!]!,
+		"""
+		Whether to include evidence for ontology-descendant diseases.
+		"""
+		enableIndirect: Boolean! = true,
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EvidenceGwasCredibleSetsSort!]! = [{key: SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the evidences' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: EvidenceGwasCredibleSetsSearch,
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceGwasCredibleSetsPage!
 	"""
 	Target-drug associations derived from clinical reports for this target.
 	"""

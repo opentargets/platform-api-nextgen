@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use async_graphql::{
-    ComplexObject, Context, Enum, Error, Result, SimpleObject,
+    Context, Enum, Error, Result, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -15,11 +15,6 @@ use strum::EnumIter;
 use super::EvidenceScope;
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{
-        disease::{Disease, load_disease},
-        drug::{Drug, load_drug},
-        target::{Target, load_target},
-    },
     query::{
         paginate::Paged,
         sort::{Sort, SortDirection},
@@ -37,32 +32,26 @@ const DATASOURCE: &str = "clinical_precedence";
 /// `src/sql/evidence/clinical_precedence.sql`. Update both together.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-#[graphql(complex)]
 pub struct EvidenceClinicalPrecedence {
     /// Identifier of the disease/target evidence.
     id: String,
     /// Score of the evidence reflecting the strength of the disease/target relationship.
     score: f64,
-    #[graphql(skip)]
+    /// Identifier of the disease for which the target is associated in this evidence.
     disease_id: String,
-    #[allow(dead_code, reason = "read only to keep the column order")]
-    #[graphql(skip)]
+    /// Name of the disease. Empty if the disease isn't found.
     disease_name: String,
-    #[graphql(skip)]
+    /// Identifier of the target for which the disease is associated in this evidence.
     target_id: String,
-    #[allow(dead_code, reason = "read only to keep the column order")]
-    #[graphql(skip)]
+    /// Approved symbol of the target. Empty if the target isn't found.
     target_approved_symbol: String,
-    #[graphql(skip)]
+    /// Identifier of the drug or clinical candidate [bioregistry:chembl].
     drug_id: Option<String>,
-    #[allow(dead_code, reason = "read only to keep the column order")]
-    #[graphql(skip)]
+    /// Name of the drug or clinical candidate.
     drug_name: Option<String>,
-    #[allow(dead_code, reason = "read only to keep the column order")]
-    #[graphql(skip)]
+    /// Identifiers of all the targets in the drug's mechanisms of action.
     drug_target_ids: Vec<String>,
-    #[allow(dead_code, reason = "read only to keep the column order")]
-    #[graphql(skip)]
+    /// Approved symbols of `drugTargetIds`, in the same order. Empty when a symbol is missing.
     drug_target_symbols: Vec<String>,
     /// Gain or loss of function effect of the evidence on the target resulting from genetic
     /// variants, pharmacological modulation, or other perturbations.
@@ -78,27 +67,6 @@ pub struct EvidenceClinicalPrecedence {
     clinical_report_id: Option<String>,
     /// Start date of study in a YYYY-MM-DD format.
     study_start_date: Option<String>,
-}
-
-#[ComplexObject]
-impl EvidenceClinicalPrecedence {
-    /// Disease for which the target is associated in this evidence.
-    async fn disease(&self, ctx: &Context<'_>) -> Result<Option<Disease>> {
-        load_disease(ctx, self.disease_id.clone()).await
-    }
-
-    /// Target for which the disease is associated in this evidence.
-    async fn target(&self, ctx: &Context<'_>) -> Result<Option<Target>> {
-        load_target(ctx, self.target_id.clone()).await
-    }
-
-    /// Drug or clinical candidate targeting the target and studied/approved for the disease.
-    async fn drug(&self, ctx: &Context<'_>) -> Result<Option<Drug>> {
-        match &self.drug_id {
-            Some(id) => load_drug(ctx, id.clone()).await,
-            None => Ok(None),
-        }
-    }
 }
 
 impl Table for EvidenceClinicalPrecedence {

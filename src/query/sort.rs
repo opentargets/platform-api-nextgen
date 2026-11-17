@@ -11,7 +11,10 @@ use crate::{
     query::Entity,
     view::{
         disease_studies::SortField as DiseaseStudiesSortField,
-        evidence::clinical_precedence::SortField as EvidenceClinicalPrecedenceSortField,
+        evidence::{
+            clinical_precedence::SortField as EvidenceClinicalPrecedenceSortField,
+            gwas_credible_sets::SortField as EvidenceGwasCredibleSetsSortField,
+        },
         study_credible_sets::SortField as StudyCredibleSetsSortField,
         target_credible_sets::SortField as TargetCredibleSetsSortField,
         variant_credible_sets::SortField as VariantCredibleSetsSortField,
@@ -53,6 +56,10 @@ impl SortDirection {
 #[graphql(concrete(
     name = "EvidenceClinicalPrecedenceSort",
     params(EvidenceClinicalPrecedenceSortField)
+))]
+#[graphql(concrete(
+    name = "EvidenceGwasCredibleSetsSort",
+    params(EvidenceGwasCredibleSetsSortField)
 ))]
 #[graphql(concrete(
     name = "VariantTranscriptConsequencesSort",
