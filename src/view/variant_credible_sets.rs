@@ -91,6 +91,9 @@ columns!(VariantCredibleSetCol {
     TopL2gGeneId                => "topL2GGeneId"                : Str,
     TopL2gApprovedSymbol        => "topL2GApprovedSymbol"        : Str,
     TopL2gScore                 => "topL2GScore"                 : F64,
+    Beta                        => "beta"                        : F64,
+    PosteriorProbability        => "posteriorProbability"        : F64,
+    CredibleSetSize             => "locusSize"                   : U64
 });
 
 // ---- query params ----
@@ -169,6 +172,9 @@ pub enum SortField {
     TopL2gScore,
     PValue,
     LeadVariant,
+    Beta,
+    PosteriorProbablity,
+    CredibleSetSize,
 }
 
 const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
@@ -193,6 +199,9 @@ impl SortField {
                 ],
                 dir,
             ),
+            Self::Beta => OrderBy::each(&[C::Beta], dir),
+            Self::PosteriorProbablity => OrderBy::each(&[C::PosteriorProbability], dir),
+            Self::CredibleSetSize => OrderBy::each(&[C::CredibleSetSize], dir),
         }
     }
 }
@@ -207,21 +216,14 @@ column_subset! {
     #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Enum, EnumIter)]
     #[graphql(name = "VariantCredibleSetsSearchField")]
     pub enum SearchField => VariantCredibleSetCol {
-        StudyLocusId,
         StudyId,
         LeadVariantId,
         FinemappingMethod,
-        Confidence,
         TraitFromSource,
-        // Default naming would give `TOP_L_2G_...`.
-        #[graphql(name = "TOP_L2G_GENE_ID")]
-        TopL2gGeneId,
         #[graphql(name = "TOP_L2G_APPROVED_SYMBOL")]
         TopL2gApprovedSymbol,
         DiseaseIds,
         DiseaseNames,
-        DiseaseTherapeuticAreaIds,
-        DiseaseTherapeuticAreaNames,
     }
 }
 
