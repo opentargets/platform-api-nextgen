@@ -1,0 +1,6525 @@
+"""
+Significant adverse events associated with drugs sharing the same pharmacological target. This
+dataset is based on the FDA's Adverse Event Reporting System (FAERS) reporting post-marketing
+surveillance data and it's filtered to include only reports submitted by health professionals.
+The significance of a given target-ADR is estimated using a Likelihood Ratio Test (LRT) using
+all reports associated with the drugs with the same target.
+"""
+type AdverseEvent {
+	"""
+	Number of reports mentioning drug and adverse event.
+	"""
+	count: Int!
+	"""
+	Meddra term on adverse event.
+	"""
+	name: String!
+	"""
+	Log-likelihood ratio.
+	"""
+	logLR: Float!
+	"""
+	8 digit unique meddra identification number.
+	"""
+	meddraCode: String!
+}
+
+"""
+The result of a paginated query, containing the total number of items, the items, and statistics
+about the query.
+"""
+type AdverseEventPage {
+	count: Int!
+	rows: [AdverseEvent!]!
+	stats: AdverseEventStats!
+}
+
+"""
+Statistics for a set of adverse events.
+"""
+type AdverseEventStats {
+	"""
+	LLR critical value to define significance.
+	"""
+	criticalValue: Float!
+}
+
+"""
+Type of aggregation used to calculate the yearly evidence count.
+"""
+enum AggregationType {
+	"""
+	Aggregates all the evidence of all datasources into an overall score.
+	"""
+	overall
+	"""
+	Aggregates the evidence of each datasource separately.
+	"""
+	datasourceId
+}
+
+"""
+Allele frequencies of the variant in different populations.
+"""
+type AlleleFrequency {
+	"""
+	Name of the population where the allele frequency was measured.
+	"""
+	populationName: String
+	"""
+	Frequency of the alternate allele in the population (ranging from 0 to 1).
+	"""
+	alleleFrequency: Float
+}
+
+"""
+Assays used in the study.
+"""
+type Assay {
+	"""
+	Description of the assay.
+	"""
+	description: String
+	"""
+	Indicates if the assay was positive or negative for the target.
+	"""
+	isHit: Boolean
+	"""
+	Short name of the assay.
+	"""
+	shortName: String
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input AssociationSort {
+	"""
+	The key to sort by. Can either be `score` to use the overall association score (default) or
+	a datasource id (e.g., `impc`).
+	"""
+	key: String! = "score"
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection!
+}
+
+"""
+Association time series entry for a target-disease association.
+"""
+type AssociationTimeseries {
+	"""
+	EFO ID of the association disease.
+	"""
+	diseaseId: String!
+	"""
+	Ensembl ID of the association target.
+	"""
+	targetId: String!
+	"""
+	Type of aggregation used to calculate the yearly evidence count.
+	"""
+	aggregationType: AggregationType!
+	"""
+	Datasource identifier of the aggregation: eg. `gwas_credible_set` or `None` if the
+	aggregation is by overall score.
+	"""
+	aggregationValue: Datasource
+	"""
+	Flag indicating whether the novelty calculation is based on direct evidence only or
+	includes indirect evidence.
+	"""
+	isDirect: Boolean!
+	"""
+	Year up to and including which evidence is considered.
+	"""
+	year: Int
+	"""
+	Association score based on evidence up until a given year.
+	"""
+	associationScore: Float!
+	"""
+	Novelty of the association at the given year.
+	"""
+	novelty: Float
+	"""
+	Yearly count of evidence supporting the disease/target association (for a given
+	datasource).
+	"""
+	yearlyEvidenceCount: Int
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type AssociationTimeseriesPage {
+	count: Int!
+	rows: [AssociationTimeseries!]!
+}
+
+"""
+Attributes of the hallmark annotation.
+"""
+type Attributes {
+	"""
+	Name of the hallmark attribute.
+	"""
+	name: String!
+	"""
+	Description of the hallmark attribute.
+	"""
+	description: String!
+	"""
+	PubMed ID of the supporting literature for the hallmark attribute [bioregistry:pubmed].
+	"""
+	pmid: Int
+}
+
+"""
+Aggregated expression data generated from RNA-seq and mass spectrometry proteomic data.
+"""
+type BaselineExpression {
+	"""
+	Unique identifier for the target.
+	"""
+	targetId: String!
+	"""
+	Target identifier from the source.
+	"""
+	targetFromSourceId: String
+	"""
+	Cell type reported by study.
+	"""
+	tissueBiosampleFromSource: String
+	"""
+	Tissue or cell type reported by study.
+	"""
+	celltypeBiosampleFromSource: String
+	"""
+	Minimum value of expression.
+	"""
+	min: Float
+	"""
+	First quantile of expression.
+	"""
+	q1: Float
+	"""
+	Median value of expression.
+	"""
+	median: Float
+	"""
+	Third quantile of expression.
+	"""
+	q3: Float
+	"""
+	Maximum value of expression.
+	"""
+	max: Float
+	"""
+	Proportion of biosamples, within the dataset, that display median expression above a
+	threshold.
+	"""
+	distributionScore: Float!
+	"""
+	Measure of how specific expression is to a biosample.
+	"""
+	specificityScore: Float
+	"""
+	Origin of expression data.
+	"""
+	datasourceId: String!
+	"""
+	Type of expression data.
+	"""
+	datatypeId: String!
+	"""
+	Unit for the target expression.
+	"""
+	unit: String!
+	"""
+	Quality control flags or notes for baseline expression.
+	"""
+	qualityControls: [String!]!
+	"""
+	Tissue biosample reported by study.
+	"""
+	tissueBiosample: Biosample
+	"""
+	Tissue biosample parent reported by study.
+	"""
+	tissueBiosampleParent: Biosample
+	"""
+	Cell type biosample reported by study.
+	"""
+	celltypeBiosample: Biosample
+	"""
+	Cell type biosample parent reported by study.
+	"""
+	celltypeBiosampleParent: Biosample
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type BaselineExpressionPage {
+	count: Int!
+	rows: [BaselineExpression!]!
+}
+
+"""
+Container for all biological model-related attributes.
+"""
+type BiologicalModels {
+	"""
+	The specific allelic composition of the mouse model.
+	"""
+	allelicComposition: String!
+	"""
+	The genetic background strain of the mouse model.
+	"""
+	geneticBackground: String!
+	"""
+	Unique identifier for the biological model [bioregistry:mgi].
+	"""
+	id: String
+	"""
+	References related to the mouse model [bioregistry:pubmed].
+	"""
+	literature: [String!]!
+}
+
+type BiomarkerGeneExpression {
+	"""
+	Raw gene expression annotation from the source.
+	"""
+	name: String
+	id: GeneOntology
+}
+
+"""
+List of biomarkers.
+"""
+type Biomarkers {
+	"""
+	List of gene expression altering biomarkers.
+	"""
+	geneExpression: [BiomarkerGeneExpression!]!
+	"""
+	List of genetic variation biomarkers.
+	"""
+	geneticVariation: [GeneticVariation!]!
+}
+
+"""
+Integration of biosample metadata about tissues or cell types derived from multiple ontologies
+including EFO, UBERON, CL, GO and others.
+"""
+type Biosample {
+	"""
+	Unique identifier for the biosample.
+	"""
+	biosampleId: String!
+	"""
+	Name of the biosample.
+	"""
+	biosampleName: String!
+	"""
+	Description of the biosample.
+	"""
+	description: String
+	"""
+	Cross-reference IDs from other ontologies.
+	"""
+	xrefs: [String!]!
+	"""
+	List of synonymous names for the term.
+	"""
+	synonyms: [String!]!
+	"""
+	Direct parent biosample IDs in the ontology.
+	"""
+	parents: [String!]!
+	"""
+	List of ancestor biosample IDs in the ontology.
+	"""
+	ancestors: [String!]!
+	"""
+	Direct child biosample IDs in the ontology.
+	"""
+	children: [String!]!
+	"""
+	List of descendant biosample IDs in the ontology.
+	"""
+	descendants: [String!]!
+}
+
+"""
+Cancer hallmarks associated with the target gene.
+"""
+type CancerHallmarks {
+	"""
+	Description of the cancer hallmark.
+	"""
+	description: String!
+	"""
+	Impact of the cancer hallmark on the target.
+	"""
+	impact: String
+	"""
+	Label associated with the cancer hallmark.
+	"""
+	label: String!
+	"""
+	PubMed ID of the supporting literature for the cancer hallmark [bioregistry:pubmed].
+	"""
+	pmid: Int!
+}
+
+"""
+The Ensembl canonical transcript of the target gene.
+"""
+type CanonicalTranscript {
+	"""
+	The Ensembl transcript identifier for the canonical transcript.
+	"""
+	id: String!
+	"""
+	Chromosome location of the canonical transcript.
+	"""
+	chromosome: String!
+	"""
+	Genomic start position of the canonical transcript.
+	"""
+	start: Int!
+	"""
+	Genomic end position of the canonical transcript.
+	"""
+	end: Int!
+	"""
+	Strand orientation of the canonical transcript.
+	"""
+	strand: Strand!
+}
+
+"""
+Entity category this similarity refers to (`Target`, `Disease` or `Drug`).
+"""
+enum Category {
+	"""
+	The similarity refers to a `Target` entity.
+	"""
+	TARGET
+	"""
+	The similarity refers to a `Disease` entity.
+	"""
+	DISEASE
+	"""
+	The similarity refers to a `Drug` entity.
+	"""
+	DRUG
+}
+
+"""
+Chemical probes related to the target. High-quality chemical probes are small molecules that can
+be used to modulate and study the function of proteins.
+"""
+type ChemicalProbe {
+	"""
+	Unique identifier for the chemical probe.
+	"""
+	id: String!
+	"""
+	Whether the chemical probe serves as a control.
+	"""
+	control: String
+	"""
+	Drug ID associated with the chemical probe.
+	"""
+	drugId: String
+	"""
+	Probe identifier from the source, used to cross-reference drug information.
+	"""
+	drugFromSourceId: String
+	"""
+	Mechanism of action of the chemical probe.
+	"""
+	mechanismOfAction: [String!]!
+	"""
+	Indicates if the chemical probe is high quality.
+	"""
+	isHighQuality: Boolean!
+	"""
+	Origin of the chemical probe.
+	"""
+	origin: [String!]!
+	"""
+	Score for chemical probes related to druggability.
+	"""
+	probesDrugsScore: Float
+	"""
+	Score indicating chemical probe activity in cells.
+	"""
+	scoreInCells: Float
+	"""
+	Score indicating chemical probe activity in organisms.
+	"""
+	scoreInOrganisms: Float
+	"""
+	Ensembl gene ID of the target for the chemical probe.
+	"""
+	targetFromSourceId: String!
+	"""
+	URLs linking to more information about the chemical probe.
+	"""
+	urls: [Url!]!
+}
+
+"""
+Chromosome type.
+"""
+enum Chromosome {
+	chr1
+	chr2
+	chr3
+	chr4
+	chr5
+	chr6
+	chr7
+	chr8
+	chr9
+	chr10
+	chr11
+	chr12
+	chr13
+	chr14
+	chr15
+	chr16
+	chr17
+	chr18
+	chr19
+	chr20
+	chr21
+	chr22
+	chrx
+	chry
+	chrmt
+}
+
+"""
+Diseases associated with the clinical report.
+"""
+type ClinicalDiseaseListItem {
+	"""
+	Disease name as reported in the source.
+	"""
+	diseaseFromSource: String!
+	"""
+	Disease in the clinical report.
+	"""
+	disease: Disease!
+}
+
+"""
+A drug-disease pair as reported by clinical trial records.
+"""
+type ClinicalIndication {
+	"""
+	Hash of drugId and diseaseId.
+	"""
+	id: String!
+	"""
+	Maximum Clinical Development Status for the association.
+	"""
+	maxClinicalStage: String!
+	"""
+	The molecule entity related to this clinical indication.
+	"""
+	drug: Drug!
+	"""
+	The disease entity related to this clinical indication.
+	"""
+	disease: Disease!
+	clinicalReports: [ClinicalReport!]!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type ClinicalIndicationPage {
+	count: Int!
+	rows: [ClinicalIndication!]!
+}
+
+"""
+A clinical record (e.g. trial, drug label) reporting on drugs and diseases.
+"""
+type ClinicalReport {
+	"""
+	Unique identifier for the clinical report.
+	"""
+	id: String!
+	"""
+	Source database or registry from which the clinical report was obtained.
+	"""
+	source: String!
+	"""
+	Clinical stage of the report.
+	"""
+	clinicalStage: ClinicalStage!
+	"""
+	Clinical phase as reported in the source.
+	"""
+	phaseFromSource: String
+	"""
+	Kind of evidence the report describes: INDICATION for a drug/disease claim, SAFETY for a
+	drug warning.
+	"""
+	evidenceType: String
+	"""
+	Title of the clinical report.
+	"""
+	title: String
+	"""
+	Type of clinical study (e.g. Interventional, Observational).
+	"""
+	trialStudyType: TrialStudyType
+	"""
+	Brief description of the clinical trial.
+	"""
+	trialDescription: String
+	"""
+	Number of arms in the clinical trial.
+	"""
+	trialNumberOfArms: Int
+	"""
+	Start date of the clinical trial.
+	"""
+	trialStartDate: NaiveDate
+	"""
+	Literature references associated with the clinical trial.
+	"""
+	trialLiterature: [TrialLiterature!]!
+	"""
+	Overall status of the clinical trial (e.g. Completed, Terminated).
+	"""
+	trialOverallStatus: String
+	"""
+	Reason provided for stopping the clinical trial.
+	"""
+	trialWhyStopped: String
+	"""
+	Primary purpose of the clinical trial (e.g. Treatment, Prevention).
+	"""
+	trialPrimaryPurpose: String
+	"""
+	Phase of the clinical trial.
+	"""
+	trialPhase: String
+	"""
+	Categories describing reasons why the trial was stopped.
+	"""
+	trialStopReasonCategories: [String!]!
+	"""
+	Lead sponsor associated with the clinical trial.
+	"""
+	trialSponsor: TrialSponsor!
+	"""
+	Quality control flags or notes for the clinical report.
+	"""
+	qualityControls: [String!]!
+	"""
+	Diseases associated with the clinical report.
+	"""
+	diseases: [ClinicalDiseaseListItem!]!
+	"""
+	Drugs associated with the clinical report.
+	"""
+	drugs: [ClinicalReportDrugListItem!]!
+	"""
+	Countries associated with the clinical report.
+	"""
+	countries: [String!]!
+	"""
+	Year the report was registered or published.
+	"""
+	year: Int
+	"""
+	Side effects or adverse events associated with the clinical report.
+	"""
+	sideEffects: [ClinicalSideEffectListItem!]!
+	"""
+	Official title of the clinical trial as registered.
+	"""
+	trialOfficialTitle: String
+	"""
+	URL linking to the source record.
+	"""
+	url: String
+	"""
+	Nature of the record the report originates from.
+	"""
+	origin: Origin!
+	"""
+	Resource or organisation that distributes the data fetched from the primary source.
+	"""
+	provider: Provider!
+}
+
+type ClinicalReportDrugListItem {
+	"""
+	Drug name as reported in the source.
+	"""
+	drugFromSource: String!
+	"""
+	Drug in the clinical report.
+	"""
+	drug: Drug!
+}
+
+"""
+Side effects or adverse events associated with the clinical report.
+"""
+type ClinicalSideEffectListItem {
+	"""
+	Side effect disease name as reported in the source.
+	"""
+	diseaseFromSource: String
+	"""
+	Disease for the reported side effect.
+	"""
+	disease: Disease
+}
+
+"""
+Clinical stage of the report.
+"""
+enum ClinicalStage {
+	"""
+	Unknown phase.
+	"""
+	UNKNOWN
+	"""
+	Preclinical stage.
+	"""
+	PRECLINICAL
+	"""
+	Ind.
+	"""
+	IND
+	"""
+	Early phase 1.
+	"""
+	EARLY_PHASE_1
+	"""
+	Phase 1.
+	"""
+	PHASE_1
+	"""
+	Phase 1/2.
+	"""
+	PHASE_1_2
+	"""
+	Phase 2.
+	"""
+	PHASE_2
+	"""
+	Phase 2/3.
+	"""
+	PHASE_2_3
+	"""
+	Phase 3.
+	"""
+	PHASE_3
+	"""
+	Preapproval.
+	"""
+	PREAPPROVAL
+	"""
+	The drog is approved for general use.
+	"""
+	APPROVAL
+	"""
+	Phase 4.
+	"""
+	PHASE_4
+	"""
+	The drug has been Withdrawn.
+	"""
+	WITHDRAWAL
+}
+
+"""
+Target-drug associations derived from clinical reports, capturing the maximum clinical stage and
+associated diseases for each target-drug pair.
+"""
+type ClinicalTargetFromTarget {
+	"""
+	Hash between drugId and targetId.
+	"""
+	id: String!
+	"""
+	Diseases associated with the clinical reports linked to the drug in question.
+	"""
+	diseases: [ClinicalDiseaseListItem!]!
+	maxClinicalStage: String!
+	"""
+	Drug or clinical candidate entity.
+	"""
+	drug: Drug!
+	"""
+	Reports related with the drug in question.
+	"""
+	clinicalReports: [ClinicalReport!]!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type ClinicalTargetPage {
+	count: Int!
+	rows: [ClinicalTargetFromTarget!]!
+}
+
+"""
+GWAS-GWAS and GWAS-molQTL credible set colocalisation results. Dataset includes colocalising
+pairs as well as the method and statistics used to estimate the colocalisation.
+"""
+type Colocalisation {
+	"""
+	Credible set (study-locus) on the left side of the colocalisation pair.
+	"""
+	studyLocusId: String!
+	"""
+	The other credible set (study-locus) in the colocalisation pair.
+	"""
+	otherStudyLocusId: String!
+	"""
+	Type of the right-side study (e.g., gwas, eqtl, pqtl).
+	"""
+	rightStudyType: StudyType!
+	"""
+	Chromosome where the colocalisation occurs.
+	"""
+	chromosome: Chromosome!
+	"""
+	Method used to estimate colocalisation (e.g., coloc, eCAVIAR).
+	"""
+	colocalisationMethod: String!
+	"""
+	Number of variants intersecting between two overlapping study-loci.
+	"""
+	numberColocalisingVariants: Int!
+	"""
+	Posterior probability that both traits are associated, but with different causal variants
+	(H3). Used in coloc method.
+	"""
+	h3: Float!
+	"""
+	Posterior probability that both traits are associated and share a causal variant (H4). Used
+	in coloc method.
+	"""
+	h4: Float!
+	"""
+	Colocalisation posterior probability (CLPP) score estimating the probability of shared
+	causal variants. Used in eCAVIAR method.
+	"""
+	clpp: Float!
+	"""
+	Average sign of the beta ratio between colocalised variants.
+	"""
+	betaRatioSignAverage: Float!
+	"""
+	The other credible set (study-locus) in the colocalisation pair.
+	"""
+	otherStudyLocus: CredibleSet
+}
+
+"""
+Filter for colocalisations.
+"""
+input ColocalisationFilter {
+	"""
+	Keep colocalisations whose study type is one of these.
+	"""
+	studyTypes: [StudyType!]! = [gwas]
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type ColocalisationPage {
+	count: Int!
+	rows: [Colocalisation!]!
+}
+
+"""
+Constraint scores for the target gene from GnomAD. Indicates gene intolerance to
+loss-of-function mutations.
+"""
+type Constraint {
+	"""
+	Type of constraint applied to the target.
+	"""
+	constraintType: String!
+	"""
+	Expected constraint score.
+	"""
+	exp: Float
+	"""
+	Observed constraint score.
+	"""
+	obs: Int
+	"""
+	Observed/Expected (OE) constraint score.
+	"""
+	oe: Float
+	"""
+	Lower bound of the OE constraint score.
+	"""
+	oeLower: Float
+	"""
+	Upper bound of the OE constraint score.
+	"""
+	oeUpper: Float
+	"""
+	Constraint score indicating gene intolerance.
+	"""
+	score: Float
+	"""
+	Upper bin classification going from more constrained to less constrained.
+	"""
+	upperBin: Int
+	"""
+	Interpretable classification of constraint based on 6 bins. [GnomAD labels: 0: `very high`,
+	1: `high`, 2: `medium`, 3: `low`, 4: `very low`, 5: `very low`].
+	"""
+	upperBin6: Int
+	"""
+	Upper rank classification for every coding gene assessed by GnomAD going from more
+	constrained to less constrained.
+	"""
+	upperRank: Int
+}
+
+"""
+95% credible sets for GWAS and molQTL studies. Credible sets include all variants in the
+credible set (locus) as well as the fine-mapping method and derived statistics.
+"""
+type CredibleSet {
+	"""
+	Identifier of the credible set (`StudyLocus`).
+	"""
+	studyLocusId: String!
+	"""
+	Chromosome which the credible set is located.
+	"""
+	chromosome: Chromosome!
+	"""
+	Position of the lead variant for the credible set (`GRCh38`).
+	"""
+	position: Int!
+	"""
+	Start and end positions of the region used for fine-mapping.
+	"""
+	region: String
+	"""
+	Identifier of the GWAS or molQTL study in which the credible set was identified.
+	"""
+	studyId: String!
+	"""
+	Beta coefficient of the lead variant.
+	"""
+	beta: Float
+	"""
+	Z-score of the lead variant from the GWAS.
+	"""
+	zScore: Float
+	"""
+	Mantissa value of the lead variant P-value.
+	"""
+	pValueMantissa: Float!
+	"""
+	Exponent value of the lead variant P-value.
+	"""
+	pValueExponent: Int!
+	"""
+	Allele frequency of the lead variant from the GWAS.
+	"""
+	effectAlleleFrequencyFromSource: Float
+	"""
+	Standard error of the lead variant.
+	"""
+	standardError: Float
+	"""
+	[Deprecated]
+	"""
+	subStudyDescription: String
+	"""
+	Quality control flags for this credible set.
+	"""
+	qualityControls: [String!]!
+	"""
+	Method used for fine-mapping of credible set.
+	"""
+	finemappingMethod: String!
+	"""
+	Integer label for the order of credible sets from study-region.
+	"""
+	credibleSetIndex: Int
+	"""
+	Log10 Bayes factor for the entire credible set.
+	"""
+	credibleSetlog10BF: Float
+	"""
+	Mean R-squared linkage disequilibrium for variants in the credible set.
+	"""
+	purityMeanR2: Float
+	"""
+	Minimum R-squared linkage disequilibrium for variants in the credible set.
+	"""
+	purityMinR2: Float
+	"""
+	Start position of the region that was fine-mapped for this credible set.
+	"""
+	locusStart: Int
+	"""
+	End position of the region that was fine-mapped for this credible set.
+	"""
+	locusEnd: Int
+	"""
+	Sample size of the study which this credible set is derived.
+	"""
+	sampleSize: Int
+	"""
+	Array of structs which denote the variants in LD with the credible set lead variant.
+	"""
+	ldSet: [Ldset!]!
+	"""
+	Descriptor for whether the credible set is derived from GWAS or molecular QTL.
+	"""
+	studyType: StudyType!
+	"""
+	Ensembl identifier of the gene representing a specific gene whose molecular is being
+	analysed in molQTL study.
+	"""
+	qtlGeneId: String
+	"""
+	Description of how this credible set was derived in terms of data and fine-mapping method.
+	"""
+	confidence: String!
+	"""
+	Boolean for whether this credible set is a trans-pQTL or not.
+	"""
+	isTransQtl: Boolean
+	"""
+	The lead variant for the credible set, by posterior probability.
+	"""
+	variant: Variant
+	"""
+	GWAS or molQTL study in which the credible set was identified.
+	"""
+	study: Study
+	"""
+	Predictions from Locus2gene gene assignment model.
+	"""
+	l2GPredictions(
+		"""
+		Pagination for the Locus2gene predictions.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): L2GPredictionPage!
+	"""
+	Locus information for all variants in the credible set.
+	"""
+	locus(
+		"""
+		Filter criteria to apply.
+		"""
+		filter: LocusFilter,
+		"""
+		Pagination for the locus information.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): LocusPage!
+	"""
+	GWAS-GWAS and GWAS-molQTL credible set colocalisation results. Dataset includes colocalising
+	pairs as well as the method and statistics used to estimate the colocalisation.
+	"""
+	colocalisation(
+		"""
+		Filter criteria to apply.
+		"""
+		filter: ColocalisationFilter! = {studyTypes: [gwas]},
+		"""
+		Pagination for the colocalisation results.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): ColocalisationPage!
+}
+
+"""
+Filter for credible sets.
+"""
+input CredibleSetFilter {
+	"""
+	Keep credible sets whose study type is one of these.
+	"""
+	studyTypes: [StudyType!]
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type CredibleSetPage {
+	count: Int!
+	rows: [CredibleSet!]!
+}
+
+"""
+Represents a datasource for association scoring.
+"""
+enum Datasource {
+	"""
+	Clinical evidence linking a target/disease via a drug that targets the gene product and is
+	indicated for the disease (approved or in development); inferred from clinical reports +
+	drug MoA data.
+	See <https://platform-docs.opentargets.org/evidence#clinical-precedence>.
+	"""
+	clinical_precedence
+	"""
+	Target-disease relationships from GWAS-significant signals, fine-mapped, colocalised against
+	molQTL, and scored by the Locus-to-Gene (L2G) ML method; evidence is any credible set with
+	L2G > 0.05.
+	See <https://platform-docs.opentargets.org/evidence#gwas-associations>.
+	"""
+	gwas_credible_sets
+	"""
+	Gene–phenotype relationships observed in gene-level association tests using rare variant
+	collapsing analyses.
+	See <https://platform-docs.opentargets.org/evidence#gene-burden>.
+	"""
+	gene_burden
+	"""
+	Germline variant-phenotype relationships from ClinVar (NIH archive), the germline subset;
+	each evidence captures a single RCV record.
+	See <https://platform-docs.opentargets.org/evidence#clinvar>.
+	"""
+	eva
+	"""
+	Gene-disease relationships from Genomics England PanelApp expert-reviewed gene panels.
+	See <https://platform-docs.opentargets.org/evidence#genomics-england-gel-panelapp>.
+	"""
+	genomics_england
+	"""
+	Gene-disease relationships from Gene2Phenotype (G2P), literature-curated by expert clinical
+	geneticist panels.
+	See <https://platform-docs.opentargets.org/evidence#gene2phenotype>.
+	"""
+	gene2phenotype
+	"""
+	UniProt-curated target-disease relationships from publications supporting a protein's
+	involvement in disease, aggregated per evidence.
+	See <https://platform-docs.opentargets.org/evidence#uniprot-literature>.
+	"""
+	uniprot_literature
+	"""
+	UniProt-curated variants known to alter protein function in disease, aggregated from
+	supporting publications.
+	See <https://platform-docs.opentargets.org/evidence#uniprot-curated-variants>.
+	"""
+	uniprot_variants
+	"""
+	Orphanet gene-disease associations for rare disorders of genetic origin, with relationship
+	classification, mutation type, and supporting references.
+	See <https://platform-docs.opentargets.org/evidence#orphanet>.
+	"""
+	orphanet
+	"""
+	ClinGen gene-disease validity curation: evaluates the strength of evidence for a gene
+	causing a disease, classified via a semi-quantitative framework.
+	See <https://platform-docs.opentargets.org/evidence#clingen>.
+	"""
+	clingen
+	"""
+	Cancer Gene Census (CGC, part of COSMIC): curated genes with mutations causally implicated
+	in cancer, aggregated per target-disease.
+	See <https://platform-docs.opentargets.org/evidence#cancer-gene-census>.
+	"""
+	cancer_gene_census
+	"""
+	IntOGen consensus cancer driver genes from harmonised tumour sequencing (PCAWG and others);
+	each evidence is a significant driver in one cohort.
+	See <https://platform-docs.opentargets.org/evidence#intogen>.
+	"""
+	intogen
+	"""
+	Somatic variant-phenotype relationships from ClinVar (NIH archive), the somatic subset; each
+	evidence captures a single RCV record.
+	See <https://platform-docs.opentargets.org/evidence#clinvar-somatic>.
+	"""
+	eva_somatic
+	"""
+	Expert-curated cancer biomarkers of drug sensitivity, resistance, and toxicity from Cancer
+	Genome Interpreter, by cancer type.
+	See <https://platform-docs.opentargets.org/evidence#cancer-biomarkers>.
+	"""
+	cancer_biomarkers
+	"""
+	Target-disease evidence from genome-wide CRISPRi/a/KO functional genomics screens in human
+	brain cell types (CRISPRbrain), linking cell types to diseases.
+	See <https://platform-docs.opentargets.org/evidence#crispr-screens>.
+	"""
+	crispr_screen
+	"""
+	Cancer target dependencies from whole-genome CRISPR-Cas9 fitness screens in cell lines
+	(Project Score, Sanger), mapped to tumours; targets scoring ≥ 36.0.
+	See <https://platform-docs.opentargets.org/evidence#project-score>.
+	"""
+	crispr
+	"""
+	Reactome-curated reaction pathways affected by disease, linking target to disease via
+	protein-coding mutation or altered expression.
+	See <https://platform-docs.opentargets.org/evidence#reactome>.
+	"""
+	reactome
+	"""
+	Target-disease co-occurrences mined from Europe PMC literature via deep-learning NER,
+	aggregated per publication with a confidence assessment.
+	See <https://platform-docs.opentargets.org/evidence#europe-pmc>.
+	"""
+	europepmc
+	"""
+	Target-disease evidence from differentially expressed genes (disease vs control) in EMBL-EBI
+	Expression Atlas; each study contrast is one evidence.
+	See <https://platform-docs.opentargets.org/evidence#expression-atlas>.
+	"""
+	expression_atlas
+	"""
+	Target-disease evidence from mouse knockout genotype-phenotype associations (IMPC), scored
+	by human-mouse phenotypic similarity (PhenoDigm).
+	See <https://platform-docs.opentargets.org/evidence#impc>.
+	"""
+	impc
+}
+
+"""
+Represents the policy for a datasource.
+"""
+input DatasourcePolicy {
+	"""
+	The weight of the datasource in association scoring. Range is [0.0, 1.0].
+	"""
+	weight: Float!
+	"""
+	Whether the datasource is required for the association to be considered valid.
+	"""
+	required: Boolean!
+	"""
+	Whether the datasource's evidence counts towards indirect associations (descendant or
+	ancestor diseases). If omitted, the datasource's default is used (`false` for
+	`expression_atlas`, `true` for all others).
+	"""
+	propagate: Boolean = null
+}
+
+"""
+Policy override for a datasource.
+"""
+input DatasourcePolicyOverride {
+	"""
+	The datasource to override the policy for.
+	"""
+	id: Datasource!
+	"""
+	The policy to override with.
+	"""
+	policy: DatasourcePolicy!
+}
+
+"""
+Cross-references for the variant in different databases.
+"""
+type DbXref {
+	"""
+	Identifier of the variant in the given database.
+	"""
+	id: String
+	"""
+	Name of the database the variant is referenced in.
+	"""
+	source: String
+}
+
+type DepMapEssentiality {
+	"""
+	List of CRISPR screening experiments supporting the essentiality assessment.
+	"""
+	screens: [GeneEssentialityScreen!]!
+	"""
+	Identifier of the tissue from where the cells were sampled for assay [bioregistry:uberon].
+	"""
+	tissueId: String
+	"""
+	Name of the tissue from where the cells were sampled for assay.
+	"""
+	tissueName: String
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type DepMapEssentialityPage {
+	count: Int!
+	rows: [DepMapEssentiality!]!
+}
+
+"""
+Core annotation for diseases or phenotypes. A disease or phenotype in the Platform is understood
+as any disease, phenotype, biological process or measurement that might have any type of
+causality relationship with a human target. The EMBL-EBI Experimental Factor Ontology (EFO)
+(slim version) is used as scaffold for the disease or phenotype entity.
+"""
+type Disease {
+	"""
+	Open Targets disease identifier [bioregistry:efo].
+	"""
+	id: String!
+	"""
+	Name of the disease.
+	"""
+	name: String!
+	"""
+	Description of the disease.
+	"""
+	description: String
+	"""
+	Boolean column indicating if a disease is root of the ontology tree, a therapeutic area.
+	"""
+	isTherapeuticArea: Boolean!
+	"""
+	List of all ancestral disease terms.
+	"""
+	ancestors: [String!]!
+	"""
+	List of all descendant terms.
+	"""
+	descendants: [String!]!
+	"""
+	List of synonyms for the disease.
+	"""
+	synonyms: [DiseaseSynonym!]!
+	"""
+	List of obsoleted terms.
+	"""
+	obsoleteTerms: [String!]!
+	"""
+	Cross-references in other disease ontologies.
+	"""
+	dbXRefs: [String!]!
+	"""
+	EFO terms for direct anatomical locations.
+	"""
+	directLocationIds: [String!]!
+	"""
+	EFO terms for indirect anatomical locations (propagated).
+	"""
+	indirectLocationIds: [String!]!
+	"""
+	List of studies associated with the disease.
+	"""
+	studyIds: [String!]!
+	"""
+	List of studies associated with the disease and its descendants.
+	"""
+	indirectStudyIds: [String!]!
+	"""
+	Clinical indications for this disease as reported by clinical trial records.
+	"""
+	drugAndClinicalCandidates(
+		"""
+		Pagination for the drug and clinical candidates.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): ClinicalIndicationPage!
+	"""
+	Flat, sortable and searchable summary of the studies of this disease, for tables. Use
+	`studies(diseaseIds: ...)` for the full study entities and stats.
+	"""
+	studiesView(
+		"""
+		Whether to add studies for ontology-descendant diseases in the result.
+		"""
+		enableIndirect: Boolean! = false,
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [DiseaseStudiesSort!]! = [{key: N_SAMPLES, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the studies' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: DiseaseStudiesSearch,
+		"""
+		Filter criteria to apply.
+		"""
+		filter: DiseaseStudiesFilter,
+		"""
+		Pagination for the studies.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): DiseaseStudyPage!
+	"""
+	Direct parent terms in the disease ontology.
+	"""
+	parents: [Disease!]!
+	"""
+	Direct child terms in the disease ontology.
+	"""
+	children: [Disease!]!
+	"""
+	All ancestor diseases up to the top-level therapeutic area.
+	"""
+	resolvedAncestors: [Disease!]!
+	"""
+	Clinical signs and symptoms observed in diseases or phenotypes. Signs and symptoms are
+	integrated from multiple sources including EFO, MONDO and HPO.
+	"""
+	phenotypes(
+		"""
+		Pagination for the phenotypes.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): DiseasePhenotypePage!
+	"""
+	Disease-target associations computed on the fly with configurable datasource weights and
+	filters.
+	"""
+	associatedTargets(
+		"""
+		List of target ids to use as the second dimension for associations.
+		"""
+		Bs: [String!]! = [],
+		"""
+		Filter to apply to the B dimension items.
+		"""
+		BFilter: String,
+		"""
+		List of the facet ids to filter by (using AND).
+		"""
+		facetFilters: [String!]! = [],
+		"""
+		Weight applied to indirect evidence (from descendant diseases), between 0 and 1. Default is 1.
+		"""
+		indirectWeight: Float! = 1.0,
+		"""
+		Optional list of datasource policy overrides with changes to the defaults.
+		"""
+		datasourcePolicyOverrides: [DatasourcePolicyOverride!]! = [],
+		"""
+		Ordering for the associations. Can either be `score` to use the overall association score (default), or datasource id (e.g., `impc`)
+		"""
+		sort: AssociationSort! = {key: "score", direction: DESCENDING},
+		"""
+		Pagination for the associations.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): TargetAssociationPage!
+	evidences(
+		"""
+		A list of target ids to filter evidences on.
+		"""
+		ensemblIds: [String!]!,
+		"""
+		A list of datasources to narrow down the selection of evidences.
+		"""
+		datasourceIds: [Datasource!]! = [],
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidencePage!
+	"""
+	Association time series.
+	"""
+	associationTimeSeries(
+		"""
+		Ensembl ID of the target.
+		"""
+		ensemblId: String!,
+		"""
+		Whether to include only direct associations.
+		"""
+		isDirect: Boolean!,
+		"""
+		Aggregation types.
+		"""
+		aggregationTypes: [AggregationType!],
+		"""
+		Year at the lower end of the filter.
+		"""
+		startYear: Int,
+		"""
+		Year at the higher end of the filter.
+		"""
+		endYear: Int,
+		"""
+		Pagination for the associations time series.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): AssociationTimeseriesPage!
+	"""
+	Return the list of publications that mention the main entity, alone or in combination with
+	other entities.
+	"""
+	literatureOcurrences(
+		"""
+		Optional list of IDs (EFO disease IDs, Ensembl gene IDs, or ChEMBL molecule IDs) that the
+		                    literature must mention along with the main entity. The resulting list of publications will
+		                    be narrowed down to those papers mentioning the main entity and **ALL** IDs included in this
+		                    list.
+		"""
+		additionalIds: [String!],
+		"""
+		Year at the lower end of the filter.
+		"""
+		startYear: Int,
+		"""
+		Month at the lower end of the filter (1–12). Defaults to 1. Ignored if `startYear` is not set.
+		"""
+		startMonth: Int,
+		"""
+		Year at the higher end of the filter.
+		"""
+		endYear: Int,
+		"""
+		Month at the higher end of the filter (1–12). Defaults to 12. Ignored if `endYear` is not set.
+		"""
+		endMonth: Int,
+		"""
+		Pagination for the publications.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): PublicationPage!
+	"""
+	Semantically similar diseases based on a PubMed word embedding model.
+	"""
+	similarEntities(
+		"""
+		List of EFO disease IDs.
+		"""
+		additionalIds: [String!],
+		"""
+		List of entity names to search for (target, disease, drug,...)
+		"""
+		entityNames: [String!],
+		"""
+		Threshold similarity between 0 and 1
+		"""
+		threshold: Float,
+		"""
+		Pagination for similar entities.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): SimilarEntityPage!
+	"""
+	List of major therapeutic areas the disease belongs to.
+	"""
+	therapeuticAreas: [Disease!]!
+}
+
+"""
+A scored association between a disease and a target or vice versa.
+"""
+type DiseaseAssociation {
+	"""
+	Overall association score aggregated across all evidence types. A higher score indicates a
+	stronger association between target and disease. Scores are normalized to a range of 0-1.
+	"""
+	score: Float!
+	"""
+	Association scores computed for every datasource (e.g., IMPC, ChEMBL, Gene2Phenotype).
+	"""
+	datasourceScores: [Score!]!
+	"""
+	Associated disease entity.
+	"""
+	disease: Disease
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type DiseaseAssociationPage {
+	count: Int!
+	rows: [DiseaseAssociation!]!
+}
+
+"""
+Cancer cell lines used to generate evidence.
+"""
+type DiseaseCellLine {
+	"""
+	Cell type identifier in cell ontology or in cell model database.
+	"""
+	id: String
+	"""
+	Name of the cell model.
+	"""
+	name: String
+	"""
+	Name of the tissue from which the cells were sampled.
+	"""
+	tissue: String
+	"""
+	Anatomical identifier of the sampled organ/tissue [bioregistry:uberon].
+	"""
+	tissueId: String
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type DiseasePage {
+	count: Int!
+	rows: [Disease!]!
+}
+
+"""
+Clinical signs and symptoms observed in diseases or phenotypes. Signs and symptoms are
+integrated from multiple sources including EFO, MONDO and HPO.
+"""
+type DiseasePhenotype {
+	"""
+	A container for all evidence-related attributes supporting the disease-phenotype
+	association.
+	"""
+	evidence: [PhenotypeEvidence!]!
+	"""
+	Resolved HPO term. Null when the phenotype id is not an HPO (e.g. MONDO).
+	"""
+	phenotypeHPO: Hpo
+	"""
+	Resolved EFO term. Null when the phenotype id is an HPO.
+	"""
+	phenotypeEFO: Disease
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type DiseasePhenotypePage {
+	count: Int!
+	rows: [DiseasePhenotype!]!
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum DiseaseSearchField {
+	ID
+	NAME
+	DESCRIPTION
+	"""
+	Any synonym, of any relation type.
+	"""
+	SYNONYMS
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input DiseaseSort {
+	"""
+	The field to sort by.
+	"""
+	key: DiseaseSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Contains the fields available for sorting diseases.
+"""
+enum DiseaseSortField {
+	ID
+	NAME
+	IS_THERAPEUTIC_AREA
+}
+
+"""
+Filter for the disease's studies.
+"""
+input DiseaseStudiesFilter {
+	"""
+	Keep studies whose ID matches this filter, e.g. `{ ne: "GCST..." }` to exclude one.
+	"""
+	studyId: StringFilter
+}
+
+"""
+Case-insensitive text search.
+"""
+input DiseaseStudiesSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [DiseaseStudiesSearchField!]! = [STUDY_ID, PROJECT_ID, TRAIT_FROM_SOURCE, PUBLICATION_FIRST_AUTHOR, PUBLICATION_DATE, PUBLICATION_JOURNAL, COHORTS, PUBMED_ID, DISEASE_IDS, DISEASE_NAMES]
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum DiseaseStudiesSearchField {
+	STUDY_ID
+	PROJECT_ID
+	TRAIT_FROM_SOURCE
+	PUBLICATION_FIRST_AUTHOR
+	PUBLICATION_DATE
+	PUBLICATION_JOURNAL
+	COHORTS
+	PUBMED_ID
+	DISEASE_IDS
+	DISEASE_NAMES
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input DiseaseStudiesSort {
+	"""
+	The field to sort by.
+	"""
+	key: DiseaseStudiesSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum DiseaseStudiesSortField {
+	"""
+	Number of samples tested.
+	"""
+	N_SAMPLES
+	"""
+	Number of credible sets identified in the study.
+	"""
+	CREDIBLE_SETS_COUNT
+	"""
+	By publication date.
+	"""
+	PUBLICATION_DATE
+	"""
+	Alphabetically.
+	"""
+	TRAIT_FROM_SOURCE
+}
+
+"""
+A study linked to a disease, as shown in the disease page's GWAS studies table.
+
+Rows are decoded by position, so field order must match the column order of
+`DiseaseStudy::NAME`. Update both together.
+"""
+type DiseaseStudy {
+	"""
+	The GWAS or molQTL study identifier (e.g. GCST004132).
+	"""
+	id: String!
+	"""
+	Identifier of the source project collection that the study information is derived from.
+	"""
+	projectId: String!
+	"""
+	Molecular or phenotypic trait, derived from source, analysed in the study.
+	"""
+	traitFromSource: String!
+	"""
+	First name and initials of the author of the publication that references the study.
+	"""
+	publicationFirstAuthor: String
+	"""
+	Date of the publication that references the study.
+	"""
+	publicationDate: String
+	"""
+	Abbreviated journal name where the publication referencing study was published.
+	"""
+	publicationJournal: String
+	"""
+	The number of samples tested in GWAS analysis.
+	"""
+	nSamples: Int
+	"""
+	List of cohort(s) represented in the discovery sample.
+	"""
+	cohorts: [String!]!
+	"""
+	PubMed identifier of the publication that references the study [bioregistry:pubmed].
+	"""
+	pubmedId: String
+	"""
+	Collection of populations referenced by the study.
+	"""
+	ldPopulationStructure: [LdPopulationStructure!]!
+	"""
+	Number of credible sets identified in the study.
+	"""
+	credibleSetsCount: Int!
+	"""
+	Identifiers of the diseases or phenotypes the study's trait is mapped to.
+	"""
+	diseaseIds: [String!]!
+	"""
+	Names of the diseases in `disease_ids`, in the same order. Empty when a name is missing.
+	"""
+	diseaseNames: [String!]!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type DiseaseStudyPage {
+	count: Int!
+	rows: [DiseaseStudy!]!
+}
+
+"""
+List of synonymous disease labels.
+"""
+type DiseaseSynonym {
+	relation: String!
+	terms: [String]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input DiseasesSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [DiseaseSearchField!]! = [ID, NAME, DESCRIPTION, SYNONYMS]
+}
+
+"""
+Core annotation for drug or clinical candidate molecules. A drug in the platform is understood
+as any bioactive molecule with drug-like properties included in the EMBL-EBI ChEMBL database.
+All ChEMBL molecules fullfilling any of the next criteria are included in the database: a)
+Molecules with a known indication. b) Molecules with a known mechanism of action c) ChEMBL
+molecules included in the DrugBank database d) Molecules that are acknowledged as chemical
+probes.
+"""
+type Drug {
+	"""
+	Drug or clinical candidate molecule identifier.
+	"""
+	id: String!
+	"""
+	Generic name of the drug molecule.
+	"""
+	name: String!
+	"""
+	List of alternative names for the drug, each with its source (e.g. ChEMBL, or AACT for
+	names mined from clinical trials).
+	"""
+	synonyms: [DrugLabelAndSource!]!
+	"""
+	List of brand names for the drug, each with its source.
+	"""
+	tradeNames: [DrugLabelAndSource!]!
+	"""
+	Classification of the molecule's therapeutic category or chemical class (e.g. Antibody).
+	"""
+	drugType: String!
+	"""
+	Cross-reference information for this molecule from external databases.
+	"""
+	crossReferences: [DrugReferences!]!
+	"""
+	Highest clinical stage reached by the drug or clinical candidate molecule.
+	"""
+	maximumClinicalStage: String!
+	"""
+	Summary of the drug's clinical development.
+	"""
+	description: String
+	"""
+	Mol Block is a chemical structure file format that serves as a connection table,
+	representing molecules through a list of atoms, bonds, and spatial coordinates.
+	"""
+	molblock: String
+	"""
+	Parent molecule for derivative compounds.
+	"""
+	parentMolecule: Drug
+	"""
+	List of molecules corresponding to derivative compounds.
+	"""
+	childMolecules: [Drug!]!
+	"""
+	Warnings present on drug as identified by ChEMBL.
+	"""
+	drugWarnings(
+		"""
+		Pagination for the drug warnings.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): DrugWarningPage!
+	"""
+	Clinical indications for this drug as reported by clinical trial records.
+	"""
+	indications(
+		"""
+		Pagination for the clinical indications.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): ClinicalIndicationPage!
+	"""
+	Mechanisms of action to produce intended pharmacological effects. Curated from scientific
+	literature and post-marketing package inserts.
+	"""
+	mechanismsOfAction: MechanismsOfAction
+	"""
+	Return the list of publications that mention the main entity, alone or in combination with
+	other entities.
+	"""
+	literatureOcurrences(
+		"""
+		Optional list of IDs (EFO disease IDs, Ensembl gene IDs, or ChEMBL molecule IDs) that the
+		                    literature must mention along with the main entity. The resulting list of publications will
+		                    be narrowed down to those papers mentioning the main entity and **ALL** IDs included in this
+		                    list.
+		"""
+		additionalIds: [String!],
+		"""
+		Year at the lower end of the filter.
+		"""
+		startYear: Int,
+		"""
+		Month at the lower end of the filter (1–12). Defaults to 1. Ignored if `startYear` is not set.
+		"""
+		startMonth: Int,
+		"""
+		Year at the higher end of the filter.
+		"""
+		endYear: Int,
+		"""
+		Month at the higher end of the filter (1–12). Defaults to 12. Ignored if `endYear` is not set.
+		"""
+		endMonth: Int,
+		"""
+		Pagination for the publications.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): PublicationPage!
+	"""
+	Pharmacogenomics data linking genetic variants to responses to this drug. Data is integrated
+	from sources including ClinPGx and describes how genetic variants influence individual
+	responses to this drug.
+	"""
+	pharmacogenomics(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [PharmacogenomicsSort!]! = [{key: EVIDENCE_LEVEL, direction: ASCENDING}],
+		"""
+		Case-insensitive text search across the records' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: PharmacogenomicsSearch,
+		"""
+		Pagination for the pharmacogenomics.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): PharmacogenomicsPage!
+	"""
+	Semantically similar drugs based on a PubMed word embedding model.
+	"""
+	similarEntities(
+		"""
+		List of ChEMBL molecule IDs.
+		"""
+		additionalIds: [String!],
+		"""
+		List of entity names to search for (target, disease, drug,...)
+		"""
+		entityNames: [String!],
+		"""
+		Threshold similarity between 0 and 1
+		"""
+		threshold: Float,
+		"""
+		Pagination for Similar Entities.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): SimilarEntityPage!
+	"""
+	Significant adverse events estimated from pharmacovigilance reports deposited in FAERS.
+	"""
+	adverseEvents(
+		"""
+		Pagination for the adverse events.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): AdverseEventPage
+}
+
+"""
+Drug label with source information.
+"""
+type DrugLabelAndSource {
+	"""
+	Label value (e.g., synonym, symbol).
+	"""
+	label: String!
+	"""
+	Source database of the label.
+	"""
+	source: String!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type DrugPage {
+	count: Int!
+	rows: [Drug!]!
+}
+
+"""
+Cross-reference information for a drug molecule.
+"""
+type DrugReferences {
+	"""
+	Source database providing the cross-reference.
+	"""
+	source: String!
+	"""
+	List of identifiers from the source database.
+	"""
+	ids: [String!]!
+}
+
+"""
+Blackbox and withdrawn information for drugs molecules included in ChEMBL database.
+"""
+type DrugWarning {
+	"""
+	Classification of toxicity type associated with the drug.
+	"""
+	toxicityClass: String
+	"""
+	List of molecule identifiers associated with the warning.
+	"""
+	chemblIds: [String!]!
+	"""
+	Country where the warning was issued.
+	"""
+	country: String
+	"""
+	Description of the drug adverse effect.
+	"""
+	description: String
+	"""
+	Internal identifier for the drug warning record.
+	"""
+	id: Int
+	"""
+	List of sources supporting the warning information.
+	"""
+	references: [DrugWarningReference!]!
+	"""
+	Classification of action taken (drug is withdrawn or has a black box warning).
+	"""
+	warningType: String!
+	"""
+	Year when the warning was issued.
+	"""
+	year: Int
+	"""
+	List of disease labels associated with the warning.
+	"""
+	efoTerm: String
+	"""
+	List of disease identifiers associated with the warning [bioregistry:efo].
+	"""
+	efoId: String
+	"""
+	Disease identifier categorising the type of warning [bioregistry:efo]
+	"""
+	efoIdForWarningClass: String
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type DrugWarningPage {
+	count: Int!
+	rows: [DrugWarning!]!
+}
+
+type DrugWarningReference {
+	id: String!
+	source: String!
+	url: String!
+}
+
+"""
+Drug with drug identifiers.
+"""
+type DrugWithIdentifiers {
+	"""
+	Drug or clinical candidate identifier.
+	"""
+	drugId: String!
+	"""
+	Drug identifier from the original data source.
+	"""
+	drugFromSource: String!
+	"""
+	Drug or clinical candidate entity.
+	"""
+	drug: Drug
+}
+
+"""
+Regulatory enhancer/promoter regions to gene (target) predictions for
+a specific tissue/cell type based on the integration of experimental sources.
+
+Field order must match the column list in `enhancer_to_gene.sql`.
+"""
+type EnhancerToGene {
+	"""
+	Chromosome containing the regulatory region.
+	"""
+	chromosome: Chromosome!
+	"""
+	Genomic start position of the regulatory region.
+	"""
+	start: Int!
+	"""
+	Genomic end position of the regulatory region.
+	"""
+	end: Int!
+	"""
+	Name of the biosample where the interval was identified.
+	"""
+	biosampleName: String!
+	"""
+	Identifier of the biosample defined by the datasource provider.
+	"""
+	biosampleFromSourceId: String
+	"""
+	Type of regulatory region (e.g., enhancer, promoter).
+	"""
+	intervalType: String!
+	"""
+	Distance from the regulatory region to the transcription start site.
+	"""
+	distanceToTss: Int!
+	"""
+	Combined score for the enhancer/promoter region to gene prediction.
+	"""
+	score: Float!
+	"""
+	Scores from individual resources used in prediction.
+	"""
+	resourceScore: [ResourceScore!]!
+	"""
+	Identifier of the data source providing the regulatory region to gene prediction.
+	"""
+	datasourceId: String!
+	"""
+	PubMed identifier for the study providing the evidence [bioregistry:pubmed].
+	"""
+	pmid: String!
+	"""
+	Identifier of the study providing the experimental data.
+	"""
+	studyId: String!
+	"""
+	Quality control flags for this interval.
+	"""
+	qualityControls: [String!]!
+	"""
+	Cell type or tissue where the regulatory region to gene prediction was identified.
+	"""
+	biosample: Biosample
+	"""
+	Predicted gene (target).
+	"""
+	target: Target
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EnhancerToGenePage {
+	count: Int!
+	rows: [EnhancerToGene!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input EnhancerToGeneSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [EnhancerToGeneSearchField!]! = [TARGET_APPROVED_SYMBOL, BIOSAMPLE_NAME, INTERVAL_TYPE, STUDY_ID]
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum EnhancerToGeneSearchField {
+	TARGET_APPROVED_SYMBOL
+	BIOSAMPLE_NAME
+	INTERVAL_TYPE
+	STUDY_ID
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input EnhancerToGeneSort {
+	"""
+	The field to sort by.
+	"""
+	key: EnhancerToGeneSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting enhancer-to-gene predictions.
+"""
+enum EnhancerToGeneSortField {
+	"""
+	Type of regulatory region, alphabetically.
+	"""
+	INTERVAL_TYPE
+	"""
+	Distance from the regulatory region to the transcription start site.
+	"""
+	DISTANCE_TO_TSS
+	"""
+	Length of the regulatory region in base pairs.
+	"""
+	INTERVAL_SIZE
+	"""
+	Combined prediction score.
+	"""
+	SCORE
+}
+
+"""
+Union of core Platform entities (target, disease, drug, variant, study).
+"""
+union EntityObject = Disease | Drug | Study | Target | Variant
+
+"""
+Kind of core Platform entity; used to select the search index to query.
+"""
+enum EntityType {
+	disease
+	drug
+	study
+	target
+	variant
+}
+
+type Evidence {
+	"""
+	Identifer of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Origin of the variant allele.
+	"""
+	alleleOrigins: [String!]!
+	"""
+	Inheritance patterns.
+	"""
+	allelicRequirements: [String!]!
+	"""
+	Genetic origin of a population.
+	"""
+	ancestry: String
+	"""
+	Identifier of the ancestry in the HANCESTRO ontology [bioregistry:hancestro].
+	"""
+	ancestryId: String
+	"""
+	Assays used in the study.
+	"""
+	assays: [Assay!]!
+	"""
+	Short name of the assay.
+	"""
+	assessments: [String!]!
+	"""
+	Effect size of numeric traits.
+	"""
+	beta: Float
+	"""
+	Lower value of the confidence interval.
+	"""
+	betaConfidenceIntervalLower: Float
+	"""
+	Upper value of the confidence interval.
+	"""
+	betaConfidenceIntervalUpper: Float
+	"""
+	Allelic composition of the model organism.
+	"""
+	biologicalModelAllelicComposition: String
+	"""
+	Genetic background of the model organism.
+	"""
+	biologicalModelGeneticBackground: String
+	"""
+	Identifier of the biological model (eg. in MGI).
+	"""
+	biologicalModelId: String
+	"""
+	List of biomarkers associated with the biological model.
+	"""
+	biomarkerList: [NameDescription!]!
+	"""
+	Altered characteristics that influences the disease process.
+	"""
+	biomarkerName: String
+	"""
+	List of biomarkers.
+	"""
+	biomarkers: Biomarkers!
+	"""
+	Identifier of the referenced biological material.
+	"""
+	biosamplesFromSource: [String!]!
+	"""
+	Background of the derived cell lines.
+	"""
+	cellLineBackground: String
+	"""
+	The studied cell type. Preferably the cell line ontology label.
+	"""
+	cellType: String
+	"""
+	Identifier of the clinical report.
+	"""
+	clinicalReportId: String
+	"""
+	Standard terms to define clinical significance.
+	"""
+	clinicalSignificances: [String!]!
+	"""
+	Clinical stage of the drug-disease pair.
+	"""
+	clinicalStage: String
+	"""
+	Description of the studied cohort.
+	"""
+	cohortDescription: String
+	"""
+	Identifier of the studied cohort
+	"""
+	cohortId: String
+	"""
+	Clinical features/phenotypes observed in studied individuals.
+	"""
+	cohortPhenotypes: [String!]!
+	"""
+	Short name of the studied cohort.
+	"""
+	cohortShortName: String
+	"""
+	Confidence qualifier on the reported evidence.
+	"""
+	confidence: String
+	"""
+	Experiment contrast.
+	"""
+	contrast: String
+	"""
+	Applied screening library in the CRISPR/Cas9 project.
+	"""
+	crisprScreenLibrary: String
+	"""
+	Identifer of the evidence source.
+	"""
+	datasourceId: String!
+	"""
+	Datatype of the evidence.
+	"""
+	datatypeId: String!
+	"""
+	Gain or loss of function effect of the evidence on the target resulting from genetic
+	variants, pharmacological modulation, or other perturbations.
+	"""
+	directionOnTarget: String
+	"""
+	Predicted direction of effect on the trait.
+	"""
+	directionOnTrait: String
+	"""
+	Cancer cell lines used to generate evidence.
+	"""
+	diseaseCellLines: [DiseaseCellLine!]!
+	"""
+	Disease label from the original source.
+	"""
+	diseaseFromSource: String
+	"""
+	Disease identifier from the original source.
+	"""
+	diseaseFromSourceId: String
+	"""
+	Mapped Open Targets disease identifier.
+	"""
+	diseaseFromSourceMappedId: String
+	"""
+	Human phenotypes equivalent to those observed in animal models.
+	"""
+	diseaseModelAssociatedHumanPhenotypes: [LabelledElement!]!
+	"""
+	Phenotypes observed in genetically modified animal models.
+	"""
+	diseaseModelAssociatedModelPhenotypes: [LabelledElement!]!
+	"""
+	Drug name/family in resource of origin.
+	"""
+	drugFromSource: String
+	"""
+	Earliest data for the evidence.
+	"""
+	evidenceDate: String
+	"""
+	Description of the interaction between the two genes.
+	"""
+	geneticInteractionType: String
+	"""
+	The strength of the genetic interaction. Directionality is captured as well: antagonistics
+	< 0 < cooperative.
+	"""
+	geneticInteractionScore: Float
+	"""
+	Identifer of the interacting target.
+	"""
+	interactingTargetFromSourceId: String
+	"""
+	Role of a target in the genetic interaction test.
+	"""
+	interactingTargetRole: String
+	"""
+	List of PubMed or preprint reference identifiers.
+	"""
+	literature: [String!]!
+	"""
+	Percentile of top differentially regulated genes (transcripts) within experiment.
+	"""
+	log2FoldChangePercentileRank: Int
+	"""
+	Log 2 fold expression change in contrast experiment.
+	"""
+	log2FoldChangeValue: Float
+	"""
+	Samples with a given mutation tested.
+	"""
+	mutatedSamples: [EvidenceVariation!]!
+	"""
+	Size of effect captured as odds ratio.
+	"""
+	oddsRatio: Float
+	"""
+	Lower value of the confidence interval for odds ratio.
+	"""
+	oddsRatioConfidenceIntervalLower: Float
+	"""
+	Upper value of the confidence interval for odds ratio.
+	"""
+	oddsRatioConfidenceIntervalUpper: Float
+	"""
+	Exponent of the p-value.
+	"""
+	pValueExponent: Int
+	"""
+	Mantissa of the p-value.
+	"""
+	pValueMantissa: Float
+	"""
+	List of pooled pathways.
+	"""
+	pathways: [Pathway!]!
+	"""
+	Log 2 fold change of the cell survival.
+	"""
+	phenotypicConsequenceLogFoldChange: Float
+	"""
+	P-value of the the cell survival test.
+	"""
+	phenotypicConsequencePValue: Float
+	"""
+	If a given target was found to be a hit in the primary project.
+	"""
+	primaryProjectHit: Boolean
+	"""
+	Open Targets project identifier of the primary project.
+	"""
+	primaryProjectId: String
+	"""
+	Description of the project that generated the data.
+	"""
+	projectDescription: String
+	"""
+	The identifer of the project that generated the data.
+	"""
+	projectId: String
+	"""
+	Date of the earliest publication supporting the evidence.
+	"""
+	publicationDate: String
+	"""
+	Last name and initials of the author of the publication that references the study.
+	"""
+	publicationFirstAuthor: String
+	"""
+	Year of publication.
+	"""
+	publicationYear: Int
+	"""
+	Evidence quality flags.
+	"""
+	qualityControls: [String!]!
+	"""
+	Pathway, gene set or reaction identifier in Reactome.
+	"""
+	reactionId: String
+	"""
+	Name of the reaction, patway or gene set in Reactome.
+	"""
+	reactionName: String
+	"""
+	Date of the release of the data in a 'YYYY-MM-DD' format.
+	"""
+	releaseDate: String
+	"""
+	Open Targets data release version
+	"""
+	releaseVersion: String
+	"""
+	Score provided by datasource indicating strength of target-disease association.
+	"""
+	resourceScore: Float
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Methods to detect cancer driver genes producing significant results.
+	"""
+	significantDriverMethods: [String!]!
+	"""
+	Statistical method used to calculate the association.
+	"""
+	statisticalMethod: String
+	"""
+	Overview of the statistical method used to calculate the association.
+	"""
+	statisticalMethodOverview: String
+	"""
+	End of the distribution the target was picked from.
+	"""
+	statisticalTestTail: String
+	"""
+	Number of cases in case-control study.
+	"""
+	studyCases: Int
+	"""
+	Number of cases in case-control study that carry at least one allele of the qualifying
+	variant.
+	"""
+	studyCasesWithQualifyingVariants: Int
+	"""
+	Identifier of the study generating the data.
+	"""
+	studyId: String
+	"""
+	Description of the study.
+	"""
+	studyOverview: String
+	"""
+	Sample size of study.
+	"""
+	studySampleSize: Int
+	"""
+	Start date of study in a YYYY-MM-DD format.
+	"""
+	studyStartDate: String
+	"""
+	Target name/synonym or non HGNC symbol in resource of origin.
+	"""
+	targetFromSource: String
+	"""
+	Target ID in resource of origin (accepted sources include Ensembl gene ID, Uniprot ID, gene
+	symbol), only capital letters are accepted.
+	"""
+	targetFromSourceId: String
+	"""
+	Target name/synonym in animal model.
+	"""
+	targetInModel: String
+	"""
+	Description of target modulation event.
+	"""
+	targetModulation: String
+	"""
+	Role of a target in the genetic interaction test.
+	"""
+	targetRole: String
+	"""
+	Sentences of a publication supporting the disease/target relationship.
+	"""
+	textMiningSentences: [EvidenceTextMiningSentence!]!
+	"""
+	Categorised reason(s) why the trial was stopped.
+	"""
+	trialStopReasonCategories: [String!]!
+	"""
+	Reason why the trial was stopped, as reported.
+	"""
+	trialWhyStopped: String
+	"""
+	Reference to linked external resource (e.g. clinical trials, studies, package inserts,
+	reports, etc.).
+	"""
+	urls: [LabelledUri!]!
+	"""
+	Descriptions of variant consequences at protein level.
+	"""
+	variantAminoacidDescriptions: [String!]!
+	"""
+	Variant reference SNP cluster ID (Rsid).
+	"""
+	variantRsId: String
+	warningMessage: String @deprecated(reason: "empty")
+	"""
+	Disease for which the target is associated in this evidence.
+	"""
+	disease: Disease
+	"""
+	Credible set (`StudyLocus`) supporting this evidence
+	"""
+	credibleSet: CredibleSet
+	"""
+	Variant supporting the relationship between the target and the disease.
+	"""
+	variant: Variant
+	"""
+	Target for which the disease is associated in this evidence.
+	"""
+	target: Target
+	"""
+	Drug or clinical candidate targeting the target and studied/approved for the specific
+	disease as potential indication [bioregistry:chembl].
+	"""
+	drug: Drug
+	"""
+	Observed patterns of drug response.
+	"""
+	drugResponse: Drug
+	"""
+	Sequence ontology (SO) term of the functional consequence of the variant.
+	"""
+	variantFunctionalConsequence: SequenceOntologyTerm
+	"""
+	Sequence ontology (SO) term of the functional consequence of the variant from QTL.
+	"""
+	variantFunctionalConsequenceFromQtl: SequenceOntologyTerm
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidencePage {
+	count: Int!
+	rows: [Evidence!]!
+}
+
+"""
+List of available evidence datasources and their datatypes.
+"""
+type EvidenceSource {
+	"""
+	Name of the evidence datasource.
+	"""
+	datasource: String!
+	"""
+	Datatype/category of the evidence (e.g., Genetic association, Somatic, Literature).
+	"""
+	datatype: String!
+}
+
+"""
+Sentences of a publication supporting the disease/target relationship.
+"""
+type EvidenceTextMiningSentence {
+	"""
+	End position of the disease label in sentence.
+	"""
+	dEnd: Int!
+	"""
+	End position of the target label in the sentence.
+	"""
+	tEnd: Int!
+	"""
+	Start position of the disease label in the sentence.
+	"""
+	dStart: Int!
+	"""
+	Start position of the target label in the sentence.
+	"""
+	tStart: Int!
+	"""
+	Section of the publication the sentence was extracted from.
+	"""
+	section: String!
+	"""
+	Text of the sentence with the disease/target relationship.
+	"""
+	text: String!
+}
+
+"""
+Mutation counts for a single functional consequence, across a tested sample cohort.
+"""
+type EvidenceVariation {
+	"""
+	Number of cohort samples in which target is mutated with a mutation of any type.
+	"""
+	numberMutatedSamples: Int
+	"""
+	Number of cohort samples tested.
+	"""
+	numberSamplesTested: Int
+	"""
+	Number of cohort samples in which target is mutated with a specific mutation type.
+	"""
+	numberSamplesWithMutationType: Int
+	"""
+	Functional consequene of the pooled mutations [bioregistry:so].
+	"""
+	functionalConsequence: SequenceOntologyTerm
+}
+
+"""
+Kind of entity that has a facet search index.
+"""
+enum FacetEntity {
+	disease
+	target
+}
+
+"""
+The different product flavors served by the API (platform/ppp).
+"""
+enum Flavor {
+	"""
+	Open Targets Platform Public version.
+	"""
+	PLATFORM
+	"""
+	Open Targets Partner Preview Platform version.
+	"""
+	PPP
+}
+
+type GeneEssentialityScreen {
+	"""
+	Name of the cancer cell line in which the gene essentiality was assessed.
+	"""
+	cellLineName: String
+	"""
+	Unique identifier of the assay in DepMap.
+	"""
+	depmapId: String
+	"""
+	Cell model passport identifier of a cell line modelling a disease.
+	"""
+	diseaseCellLineId: String
+	"""
+	Disease associated with the cell line as reported in the source data.
+	"""
+	diseaseFromSource: String
+	"""
+	Gene expression level in the corresponding cell line.
+	"""
+	expression: Float
+	"""
+	Gene effect score indicating the impact of gene knockout.
+	"""
+	geneEffect: Float
+	"""
+	Background mutation in the tested cell line.
+	"""
+	mutation: String
+}
+
+"""
+A term from the Gene Ontology (GO) TODO DESCRIPTION
+"""
+type GeneOntology {
+	"""
+	Gene Ontology term identifier [bioregistry:so].
+	"""
+	id: String!
+	"""
+	Human-readable label for the term (e.g. `missense_variant`).
+	"""
+	label: String!
+}
+
+"""
+Gene Ontology (GO) annotations related to the target.
+"""
+type GeneOntologyAnnotation {
+	"""
+	Gene ontology term identifier [bioregistry:go].
+	"""
+	id: String!
+	"""
+	Type of the GO annotation: molecular function (F), biological process (P) and cellular
+	localisation (C).
+	"""
+	aspect: String!
+	"""
+	Evidence supporting the GO annotation.
+	"""
+	evidence: String!
+	"""
+	Gene product associated with the GO annotation [bioregistry:uniprot].
+	"""
+	geneProduct: String!
+	"""
+	Source database and identifier where the ontology term was sourced from.
+	"""
+	source: String!
+	"""
+	Gene ontology term
+	"""
+	term: GeneOntology
+}
+
+"""
+List of gene expression altering biomarkers.
+"""
+type GeneticVariation {
+	"""
+	Variant identifier.
+	"""
+	id: String
+	"""
+	Name of the variant biomarker.
+	"""
+	name: String
+	functionalConsequence: SequenceOntologyTerm
+}
+
+"""
+Genomic location information of the target gene.
+"""
+type GenomicLocation {
+	"""
+	Chromosome on which the target is located.
+	"""
+	chromosome: String!
+	"""
+	Genomic start position of the target gene.
+	"""
+	start: Int!
+	"""
+	Genomic end position of the target gene.
+	"""
+	end: Int!
+	"""
+	Strand orientation of the canonical transcript.
+	"""
+	strand: Strand!
+}
+
+"""
+Hallmarks related to the target gene sourced from COSMIC.
+"""
+type Hallmark {
+	"""
+	Cancer hallmarks associated with the target gene.
+	"""
+	cancerHallmarks: [CancerHallmarks!]!
+	"""
+	Attributes of the hallmark annotation.
+	"""
+	attributes: [Attributes!]!
+}
+
+"""
+Homologues of the target gene in other species according to Ensembl Compara.
+"""
+type Homologue {
+	"""
+	Type of homology relationship.
+	"""
+	homologyType: String!
+	"""
+	Percentage identity of the query gene in the homologue.
+	"""
+	queryPercentageIdentity: Float!
+	"""
+	Species ID for the homologue.
+	"""
+	speciesId: String!
+	"""
+	Species name for the homologue.
+	"""
+	speciesName: String!
+	"""
+	Gene ID of the homologue.
+	"""
+	targetGeneId: String!
+	"""
+	Gene symbol of the homologous target.
+	"""
+	targetGeneSymbol: String!
+	"""
+	Percentage identity of the homologue in the query gene.
+	"""
+	targetPercentageIdentity: Float!
+	"""
+	Indicates if the homology is high confidence according to Ensembl Compara.
+	"""
+	isHighConfidence: String
+}
+
+"""
+Human Phenotype Ontology subset of information included in the Platform.
+"""
+type Hpo {
+	"""
+	Unique identifier for the disease in the Human Phenotype Ontology (HPO).
+	"""
+	id: String!
+	"""
+	Name of the disease (in HPO).
+	"""
+	name: String!
+	"""
+	Description of the disease.
+	"""
+	description: String
+	namespace: [String!]! @deprecated(reason: "empty")
+}
+
+"""
+Identifier with source information.
+"""
+type IdAndSource {
+	"""
+	Identifier value.
+	"""
+	id: String!
+	"""
+	Source database or organization providing the identifier.
+	"""
+	source: String!
+}
+
+"""
+Filter for an integer field.
+"""
+input IntFilter {
+	eq: Int
+	ne: Int
+	gt: Int
+	lt: Int
+	gte: Int
+	lte: Int
+	in: [Int!]
+	isNull: Boolean
+}
+
+"""
+Molecular interactions reporting experimental or functional interactions between this target and
+other molecules. This dataset contains pair-wise interactions deposited in several databases
+capturing: physical interactions (e.g. IntAct), directional interactions (e.g. Signor), pathway
+relationships (e.g. Reactome) or functional interactions (e.g. STRINGdb).
+"""
+type Interaction {
+	"""
+	Identifier for target A in source.
+	"""
+	intA: String!
+	"""
+	Identifier for target B in source.
+	"""
+	intB: String!
+	"""
+	Biological role of target A in the interaction.
+	"""
+	intABiologicalRole: String!
+	"""
+	Biological role of target B in the interaction.
+	"""
+	intBBiologicalRole: String!
+	"""
+	Scoring or confidence value assigned to the interaction.
+	"""
+	score: Float
+	"""
+	Number of interaction occurrences reported in the source databases.
+	"""
+	count: Int!
+	"""
+	Source database reporting the molecular interaction.
+	"""
+	sourceDatabase: InteractionSourceDatabase!
+	"""
+	Taxonomic annotation of target A.
+	"""
+	speciesA: InteractionSpeciesA!
+	"""
+	Taxonomic annotation of target B.
+	"""
+	speciesB: InteractionSpeciesB!
+	"""
+	Evidence supporting the molecular interaction.
+	"""
+	evidences: [InteractionEvidence!]!
+	targetA: Target
+	targetB: Target
+}
+
+"""
+Evidence supporting molecular interactions between targets. Contains detailed information about
+how the interaction was detected, the experimental context, and supporting publications.
+"""
+type InteractionEvidence {
+	"""
+	Score indicating the confidence or strength of the interaction evidence.
+	"""
+	evidenceScore: Float
+	"""
+	Molecular Interactions (MI) identifier for the expansion method used [bioregistry:mi].
+	"""
+	expansionMethodMiIdentifier: String
+	"""
+	Short name of the method used to expand the interaction dataset.
+	"""
+	expansionMethodShortName: String
+	"""
+	Scientific name of the host organism in which the interaction was observed.
+	"""
+	hostOrganismScientificName: String
+	"""
+	NCBI taxon ID of the host organism.
+	"""
+	hostOrganismTaxId: Int
+	"""
+	Molecular Interactions (MI) identifier for the interaction detection method
+	[bioregistry:mi].
+	"""
+	interactionDetectionMethodMiIdentifier: String!
+	"""
+	Short name of the method used to detect the interaction.
+	"""
+	interactionDetectionMethodShortName: String!
+	"""
+	Unique identifier for the interaction evidence entry at the source.
+	"""
+	interactionIdentifier: String
+	"""
+	Molecular Interactions (MI) identifier for the type of interaction [bioregistry:mi].
+	"""
+	interactionTypeMiIdentifier: String
+	"""
+	Short name of the interaction type.
+	"""
+	interactionTypeShortName: String
+	"""
+	Detection method used to identify participant A in the interaction.
+	"""
+	participantDetectionMethodA: [ParticipantDetectionMethod!]!
+	"""
+	Detection method used to identify participant B in the interaction.
+	"""
+	participantDetectionMethodB: [ParticipantDetectionMethod!]!
+	"""
+	PubMed ID of the publication supporting the interaction evidence.
+	"""
+	pubmedId: String
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type InteractionPage {
+	count: Int!
+	rows: [Interaction!]!
+}
+
+"""
+Databases providing evidence for the interaction.
+"""
+type InteractionResource {
+	"""
+	Version of the source database providing interaction evidence.
+	"""
+	databaseVersion: String!
+	"""
+	Name of the source database reporting the interaction evidence.
+	"""
+	sourceDatabase: String!
+}
+
+"""
+Source database reporting the molecular interaction.
+"""
+enum InteractionSourceDatabase {
+	"""
+	IntAct: <https://www.ebi.ac.uk/intact/>.
+	"""
+	intact
+	"""
+	Reactome: <https://reactome.org/>.
+	"""
+	reactome
+	"""
+	Signor: <https://signor.uniroma2.it/>.
+	"""
+	signor
+	"""
+	String: <https://string-db.org/>.
+	"""
+	string
+}
+
+"""
+Taxonomic annotation of the first interaction participant.
+"""
+type InteractionSpeciesA {
+	"""
+	Short mnemonic name of the associated species.
+	"""
+	mnemonic: String!
+	"""
+	Scientific name of the associated species.
+	"""
+	scientificName: String!
+	"""
+	NCBI taxon ID of the associated species.
+	"""
+	taxonId: Int!
+}
+
+"""
+Taxonomic annotation of the second interaction participant.
+"""
+type InteractionSpeciesB {
+	"""
+	Short mnemonic name of the associated species.
+	"""
+	mnemonic: String!
+	"""
+	Scientific name of the associated species.
+	"""
+	scientificName: String
+	"""
+	NCBI taxon ID of the associated species.
+	"""
+	taxonId: Int
+}
+
+"""
+Relevance of a publication to one of the queried ids.
+"""
+type KeywordRelevance {
+	"""
+	Queried id.
+	"""
+	id: String!
+	"""
+	Relevance of the publication to this id.
+	"""
+	relevance: Float!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type L2GPredictionPage {
+	count: Int!
+	rows: [L2Gprediction!]!
+}
+
+"""
+Feature used in Locus2gene model predictions.
+"""
+type L2Gfeature {
+	"""
+	Name of the feature.
+	"""
+	name: String!
+	"""
+	Value of the feature.
+	"""
+	value: Float!
+	"""
+	SHAP (Shapley Additive exPlanations) value indicating the feature's contribution to the
+	prediction.
+	"""
+	shapValue: Float!
+}
+
+"""
+Predictions from Locus2gene gene assignment model. The dataset contains all predictions for
+every combination of credible set and genes in the region as well as statistics to explain the
+model interpretation of the predictions.
+"""
+type L2Gprediction {
+	"""
+	Study-locus identifier for the credible set.
+	"""
+	studyLocusId: String!
+	"""
+	Locus2gene prediction score for the gene assignment. Higher scores indicate a stronger
+	association between the credible set and the gene. Scores range from 0 to 1.
+	"""
+	score: Float!
+	"""
+	Features used in the Locus2gene model prediction.
+	"""
+	features: [L2Gfeature!]!
+	"""
+	SHAP base value for the prediction. This value is common to all predictions for a given
+	credible set.
+	"""
+	shapBaseValue: Float!
+	"""
+	Target entity of the L2G predicted gene.
+	"""
+	target: Target
+}
+
+"""
+Label with source information.
+"""
+type LabelSource {
+	"""
+	Label value (e.g., synonym, symbol).
+	"""
+	label: String!
+	"""
+	Source database of the label.
+	"""
+	source: String!
+}
+
+"""
+An element with a label.
+"""
+type LabelledElement {
+	"""
+	The unique identifier of the element.
+	"""
+	id: String!
+	"""
+	The human-readable label of the element.
+	"""
+	label: String!
+}
+
+"""
+Reference to linked external resource (e.g. clinical trials, studies, package inserts, reports,
+etc.).
+"""
+type LabelledUri {
+	"""
+	URL to remote resource.
+	"""
+	url: String
+	"""
+	Human readable label of the remote reference.
+	"""
+	niceName: String
+}
+
+"""
+Collection of populations.
+"""
+type LdPopulationStructure {
+	"""
+	Population identifier.
+	"""
+	ldPopulation: String!
+	"""
+	Fraction of the total sample represented by the population.
+	"""
+	relativeSampleSize: Float
+}
+
+"""
+Variants in linkage disequilibrium (LD) with the credible set lead variant.
+"""
+type Ldset {
+	"""
+	The variant ID for tag variants in LD with the credible set lead variant.
+	"""
+	tagVariantId: String!
+	"""
+	The R-squared value for the tag variants with the credible set lead variant.
+	"""
+	r2Overall: Float!
+}
+
+"""
+Subcellular location information with source.
+"""
+type LocationAndSource {
+	"""
+	Name of the subcellular compartment where the protein was found.
+	"""
+	location: String!
+	"""
+	Source database for the subcellular location.
+	"""
+	source: String!
+	"""
+	Subcellular location term identifier from SwissProt [bioregistry:sl].
+	"""
+	termSL: String
+	"""
+	Subcellular location category from SwissProt.
+	"""
+	labelSL: String
+	"""
+	Protein isoform or modification that specific for the given subcellular location.
+	"""
+	targetModifier: String
+}
+
+"""
+List of variants within the credible set.
+"""
+type Locus {
+	"""
+	Boolean for if the variant is part of the 95% credible set.
+	"""
+	is95CredibleSet: Boolean!
+	"""
+	Boolean for if the variant is part of the 99% credible set.
+	"""
+	is99CredibleSet: Boolean!
+	"""
+	Log (natural) Bayes factor for the variant from fine-mapping.
+	"""
+	logBF: Float
+	"""
+	Posterior inclusion probability for the variant within this credible set.
+	"""
+	posteriorProbability: Float!
+	"""
+	Mantissa of the P-value for this variant in the credible set.
+	"""
+	pValueMantissa: Float
+	"""
+	Exponent of the P-value for this variant in the credible set.
+	"""
+	pValueExponent: Int
+	"""
+	Beta coefficient of this variant in the credible set.
+	"""
+	beta: Float
+	"""
+	Standard error of this variant in the credible set.
+	"""
+	standardError: Float
+	"""
+	R-squared (LD) between this credible set variant and the lead variant.
+	"""
+	r2Overall: Float
+	"""
+	Variant in the credible set.
+	"""
+	variant: Variant
+}
+
+"""
+Filter for locus.
+"""
+input LocusFilter {
+	"""
+	Keep loci whose variant ID is one of these.
+	"""
+	variantIds: [String!]
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type LocusPage {
+	count: Int!
+	rows: [Locus!]!
+}
+
+"""
+Mapping result for a single input term.
+"""
+type MappingResult {
+	"""
+	Input term submitted for mapping.
+	"""
+	term: String!
+	"""
+	Search hits that the term maps to, if any.
+	"""
+	hits: [SearchResult!]
+}
+
+"""
+Mapping results for multiple terms with total hit count and aggregations.
+"""
+type MappingResults {
+	"""
+	Per-term mapping results.
+	"""
+	mappings: [MappingResult!]!
+	"""
+	Facet aggregations over mapped entities and categories.
+	"""
+	aggregations: SearchResultAggs
+	"""
+	Total number of mapped hits across all terms.
+	"""
+	total: Int!
+}
+
+"""
+Mechanism of action information for a drug.
+"""
+type MechanismOfActionRow {
+	"""
+	Description of the mechanism of action.
+	"""
+	mechanismOfAction: String!
+	"""
+	Classification of how the drug interacts with its target (e.g., ACTIVATOR, INHIBITOR).
+	"""
+	actionType: String
+	"""
+	Name of the target molecule.
+	"""
+	targetName: String
+	"""
+	Reference information supporting the mechanism of action.
+	"""
+	references: [Reference!]!
+	"""
+	List of on-target (genes or proteins) involved in the drug or clinical candidate
+	mechanism of action.
+	"""
+	targets: [Target!]!
+}
+
+"""
+Collection of mechanisms of action for a drug molecule.
+"""
+type MechanismsOfAction {
+	"""
+	List of mechanism of action entries.
+	"""
+	rows: [MechanismOfActionRow!]!
+	"""
+	Unique list of action types across all mechanisms.
+	"""
+	uniqueActionTypes: [String!]!
+	"""
+	Unique list of target types across all mechanisms.
+	"""
+	uniqueTargetTypes: [String!]!
+}
+
+"""
+Metadata for the API and its underlying data sources.
+"""
+type Meta {
+	"""
+	Name of the API.
+	"""
+	name: String!
+	"""
+	Open Targets platform API product name.
+	"""
+	product: Flavor!
+	"""
+	API version information.
+	"""
+	apiVersion: Version!
+	"""
+	Data release version information.
+	"""
+	dataVersion: Version!
+	"""
+	Data release namespace.
+	"""
+	dataNamespace: String!
+	"""
+	Platform datasets described following MLCroissant metadata format.
+	"""
+	downloads: String
+}
+
+"""
+Container for phenotype class-related attributes.
+"""
+type ModelPhenotypeClasses {
+	"""
+	Unique identifier for the phenotype class [bioregistry:mp].
+	"""
+	id: String!
+	"""
+	Descriptive label for the phenotype class.
+	"""
+	label: String!
+}
+
+"""
+Mouse phenotype information linking human targets to observed phenotypes in mouse models.
+"""
+type MousePhenotype {
+	"""
+	Container for all biological model-related attributes.
+	"""
+	biologicalModels: [BiologicalModels!]!
+	"""
+	Container for phenotype class-related attributes.
+	"""
+	modelPhenotypeClasses: [ModelPhenotypeClasses!]!
+	"""
+	Identifier for the specific phenotype observed in the model [bioregistry:mp].
+	"""
+	modelPhenotypeId: String!
+	"""
+	Human-readable label describing the observed phenotype.
+	"""
+	modelPhenotypeLabel: String!
+	"""
+	Name of the target gene as represented in the mouse model.
+	"""
+	targetInModel: String!
+	"""
+	Ensembl identifier for the target gene in the mouse model.
+	"""
+	targetInModelEnsemblId: String
+	"""
+	MGI identifier for the target gene in the mouse model [bioregistry:mgi].
+	"""
+	targetInModelMgiId: String!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type MousePhenotypePage {
+	count: Int!
+	rows: [MousePhenotype!]!
+}
+
+"""
+ISO 8601 calendar date without timezone.
+Format: %Y-%m-%d
+
+# Examples
+
+* `1994-11-13`
+* `2000-02-24`
+"""
+scalar NaiveDate
+
+"""
+An element with name and description.
+"""
+type NameDescription {
+	"""
+	Name of the element.
+	"""
+	name: String!
+	"""
+	Description of the element.
+	"""
+	description: String!
+}
+
+"""
+A bucket for a distribution of values.
+"""
+type OptBoolBucket {
+	"""
+	The value of the bucket.
+	"""
+	value: Boolean
+	"""
+	The number of occurrences of the value.
+	"""
+	count: Int!
+}
+
+"""
+Nature of the record the report originates from.
+"""
+enum Origin {
+	"""
+	TODO DESCRIPTION: Clinical trial record.
+	"""
+	CLINICAL_TRIAL
+	"""
+	TODO DESCRIPTION: Drug label record.
+	"""
+	DRUG_LABEL
+	"""
+	TODO DESCRIPTION: Regulatory agency record.
+	"""
+	REGULATORY_AGENCY
+	"""
+	TODO DESCRIPTION: Curated resource record.
+	"""
+	CURATED_RESOURCE
+}
+
+"""
+Represents a paginated list of items.
+"""
+input Page {
+	"""
+	The index of the page to fetch, starting from 0.
+	"""
+	index: Int! = 0
+	"""
+	The number of items per page.
+	"""
+	size: Int! = 10
+}
+
+"""
+Detection method used to identify participants in the interaction.
+"""
+type ParticipantDetectionMethod {
+	"""
+	Molecular Interactions (MI) identifier for participant B's detection method
+	[bioregistry:mi].
+	"""
+	miIdentifier: String
+	"""
+	Short name of participant A's detection method.
+	"""
+	shortName: String
+}
+
+"""
+Pathway annotations for a target.
+"""
+type Pathway {
+	"""
+	Name of the pathway.
+	"""
+	id: String
+	"""
+	Unique identifier for the pathway.
+	"""
+	name: String
+}
+
+"""
+Pharmacogenomics data linking genetic variants to drug responses. Data is integrated from
+sources including ClinPGx.
+"""
+type Pharmacogenomics {
+	"""
+	Identifier for the data provider.
+	"""
+	datasourceId: String!
+	"""
+	Classification of the type of pharmacogenomic data (e.g., `clinical_annotation`).
+	"""
+	datatypeId: String!
+	"""
+	List of drugs or clinical candidates associated with the pharmacogenomic data.
+	"""
+	drugs: [DrugWithIdentifiers!]!
+	"""
+	Strength of the scientific support for the variant/drug response.
+	"""
+	evidenceLevel: String!
+	"""
+	Genetic variant configuration.
+	"""
+	genotype: String
+	"""
+	Explanation of the genotype's clinical significance.
+	"""
+	genotypeAnnotationText: String
+	"""
+	Identifier for the specific genetic variant combination (e.g., `1_1500_A_A,T`).
+	"""
+	genotypeId: String
+	"""
+	Haplotype ID in the ClinPGx dataset.
+	"""
+	haplotypeFromSourceId: String
+	"""
+	Combination of genetic variants that constitute a particular allele of a gene (e.g.,
+	CYP2C9*3).
+	"""
+	haplotypeId: String
+	"""
+	PubMed identifier (PMID) of the literature entry [bioregistry:pubmed].
+	"""
+	literature: [String!]!
+	"""
+	Classification of the drug response type (e.g., Toxicity).
+	"""
+	pgxCategory: String!
+	"""
+	Phenotype identifier from the source.
+	"""
+	phenotypeFromSourceId: String
+	"""
+	Description of the phenotype associated with the variant.
+	"""
+	phenotypeText: String
+	"""
+	Annotation details about the variant effect on drug response.
+	"""
+	variantAnnotation: [VariantAnnotation!]!
+	"""
+	Identifier of the study providing the pharmacogenomic evidence.
+	"""
+	studyId: String
+	"""
+	Target (gene/protein) identifier as reported by the data source.
+	"""
+	targetFromSourceId: String
+	"""
+	The sequence ontology identifier of the consequence of the variant based on Ensembl VEP in
+	the context of the transcript [bioregistry:so].
+	"""
+	variantFunctionalConsequenceId: String
+	"""
+	dbSNP rsID identifier for the variant.
+	"""
+	variantRsId: String
+	"""
+	Variant identifier in CHROM_POS_REF_ALT notation.
+	"""
+	variantId: String
+	"""
+	Whether the target is directly affected by the variant.
+	"""
+	isDirectTarget: Boolean!
+	"""
+	Target entity.
+	"""
+	target: Target
+	"""
+	The sequence ontology identifier of the consequence of the variant based on Ensembl VEP in
+	the context of the transcript [bioregistry:so]
+	"""
+	variantFunctionalConsequence: SequenceOntologyTerm
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type PharmacogenomicsPage {
+	count: Int!
+	rows: [Pharmacogenomics!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input PharmacogenomicsSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [PharmacogenomicsSearchField!]! = [VARIANT_RS_ID, GENOTYPE_ID, HAPLOTYPE_ID, HAPLOTYPE_FROM_SOURCE_ID, TARGET_FROM_SOURCE_ID, TARGET_APPROVED_SYMBOL, VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL, DRUG_IDS, DRUG_FROM_SOURCES, PHENOTYPE_FROM_SOURCE_ID, GENOTYPE_ANNOTATION_TEXT, PHENOTYPE_TEXT, PGX_CATEGORY, EVIDENCE_LEVEL, STUDY_ID]
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum PharmacogenomicsSearchField {
+	VARIANT_RS_ID
+	GENOTYPE_ID
+	HAPLOTYPE_ID
+	HAPLOTYPE_FROM_SOURCE_ID
+	TARGET_FROM_SOURCE_ID
+	TARGET_APPROVED_SYMBOL
+	VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL
+	DRUG_IDS
+	DRUG_FROM_SOURCES
+	PHENOTYPE_FROM_SOURCE_ID
+	GENOTYPE_ANNOTATION_TEXT
+	PHENOTYPE_TEXT
+	PGX_CATEGORY
+	EVIDENCE_LEVEL
+	STUDY_ID
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input PharmacogenomicsSort {
+	"""
+	The field to sort by.
+	"""
+	key: PharmacogenomicsSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting pharmacogenomics records.
+"""
+enum PharmacogenomicsSortField {
+	"""
+	Evidence level, strongest (1A) first when ascending.
+	"""
+	EVIDENCE_LEVEL
+}
+
+"""
+A container for all evidence-related attributes supporting the disease-phenotype association.
+"""
+type PhenotypeEvidence {
+	"""
+	The category of biological information being provided (e.g., clinical, genetic, etc.).
+	"""
+	aspect: String
+	"""
+	Indicates whether the evidence has been manually curated.
+	"""
+	bioCuration: String
+	"""
+	Unique identifier for the disease from the original source.
+	"""
+	diseaseFromSourceId: String!
+	"""
+	The disease name as recorded in the original source.
+	"""
+	diseaseFromSource: String!
+	"""
+	Standardised disease name.
+	"""
+	diseaseName: String!
+	"""
+	The type of evidence supporting the disease-phenotype relationship.
+	"""
+	evidenceType: String
+	"""
+	The observed frequency of the phenotype in individuals with the disease.
+	"""
+	frequency: String
+	"""
+	Specifies if a phenotype is not observed in a given disease.
+	"""
+	qualifierNot: Boolean!
+	"""
+	References or citations supporting the evidence [bioregistry:pubmed].
+	"""
+	references: [String!]!
+	"""
+	Indicates if the association is specific to a biological sex.
+	"""
+	sex: String
+	"""
+	The data source from which the evidence was obtained.
+	"""
+	resource: String!
+	"""
+	Additional characteristics or modifiers related to the phenotype.
+	"""
+	modifiers: [Hpo!]!
+	"""
+	Age or stage of disease onset for the phenotype.
+	"""
+	onset: [Hpo!]!
+	"""
+	HPO Entity
+	"""
+	frequencyHPO: Hpo
+}
+
+"""
+Data source information for protein coding coordinates.
+"""
+type ProteinCodingCoordinateDatasource {
+	"""
+	Count of evidence from this data source.
+	"""
+	datasourceCount: Int!
+	"""
+	Identifier of the data source.
+	"""
+	datasourceId: String!
+	"""
+	Human-readable name of the data source.
+	"""
+	datasourceNiceName: String!
+}
+
+"""
+Protein coding coordinates linking this variant to its amino acid-level consequences in protein
+products. Describes variant consequences at the protein level including amino acid changes and
+their positions.
+"""
+type ProteinCodingCoordinates {
+	"""
+	UniProt protein accessions for the affected protein [bioregistry:uniprot].
+	"""
+	uniprotAccessions: [String!]!
+	"""
+	Position of the amino acid affected by the variant in the protein sequence.
+	"""
+	aminoAcidPosition: Int!
+	"""
+	Amino acid resulting from the variant.
+	"""
+	alternateAminoAcid: String!
+	"""
+	Reference amino acid at this position.
+	"""
+	referenceAminoAcid: String!
+	variantFunctionalConsequenceIds: [String!]!
+	"""
+	Score indicating the predicted effect of the variant on the protein.
+	"""
+	variantEffect: Float
+	"""
+	Data sources providing evidence for the protein coding coordinate.
+	"""
+	datasources: [ProteinCodingCoordinateDatasource!]!
+	"""
+	Therapeutic areas associated with the variant-consequence relationship.
+	"""
+	therapeuticAreas: [String!]!
+	"""
+	Disease the protein coding variant has been associated with.
+	"""
+	diseases: [Disease!]!
+	"""
+	Target (gene/protein) the protein coding variant has been associated with.
+	"""
+	target: Target
+	"""
+	Protein coding variant
+	"""
+	variant: Variant
+	"""
+	The sequence ontology term capturing the consequence of the variant based on Ensembl VEP in
+	the context of the transcript [bioregistry:so].\
+	"""
+	variantConsequences: [SequenceOntologyTerm!]!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type ProteinCodingCoordinatesPage {
+	count: Int!
+	rows: [ProteinCodingCoordinates!]!
+}
+
+"""
+Source that provided the clinical report.
+"""
+enum Provider {
+	"""
+	ChEMBL.
+	"""
+	CHEMBL
+	"""
+	Therapeutic Target Database.
+	"""
+	TTD
+	"""
+	Aggregate Analysis of ClinicalTrials.gov.
+	"""
+	AACT
+	"""
+	European Medicines Agency.
+	"""
+	EMA
+	"""
+	Pharmaceuticals and Medical Devices Agency.
+	"""
+	PMDA
+}
+
+"""
+Referenced publication information.
+"""
+type Publication {
+	"""
+	PubMed identifier [bioregistry:pubmed].
+	"""
+	pmid: String!
+	"""
+	PubMed Central identifier (if available) [bioregistry:pmc].
+	"""
+	pmcid: String
+	"""
+	Relevance to each queried id.
+	"""
+	relevances: [KeywordRelevance!]!
+	"""
+	Publication date.
+	"""
+	publicationDate: String!
+}
+
+"""
+The result of a paginated query, containing the total number of items, the items, and statistics
+about the query.
+"""
+type PublicationPage {
+	count: Int!
+	rows: [Publication!]!
+	stats: PublicationStats!
+}
+
+"""
+Statistics for a set of publications.
+"""
+type PublicationStats {
+	"""
+	Earliest publication date for the target without considering the time range.
+	"""
+	earliestPubDate: Int!
+}
+
+"""
+The query root for the `Platform` product.
+"""
+type Query {
+	meta: Meta!
+	"""
+	Full-text, multi-entity search across all types of entities (targets, diseases, drugs,
+	variants or studies).
+	"""
+	search(
+		"""
+		Search query string.
+		"""
+		queryString: String!,
+		"""
+		List of entity names to search for (target, disease, drug, etc.).
+		"""
+		entityNames: [EntityType!],
+		"""
+		Pagination for the search results.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): SearchResults!
+	"""
+	Search sets of targets or diseases used to facet associations.
+	"""
+	facets(
+		"""
+		Search query string.
+		"""
+		queryString: String!,
+		"""
+		List of entity names to search for (target, disease).
+		"""
+		entityNames: [FacetEntity!],
+		"""
+		Category filter.
+		"""
+		category: String,
+		"""
+		Pagination for the facet search results.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): SearchFacetsResults!
+	"""
+	Map terms to entities (targets, diseases, drugs, variants or studies) by exact keyword
+	match.
+	"""
+	mapIds(
+		"""
+		List of query terms to map.
+		"""
+		queryTerms: [String!]!,
+		"""
+		List of entity names to search for (target, disease, drug, etc.).
+		"""
+		entityNames: [EntityType!]
+	): MappingResults!
+	"""
+	Retrieve a clinical report by an identifier.
+	"""
+	clinicalReport(
+		"""
+		Clinical Report ID.
+		"""
+		clinicalReportId: String!
+	): ClinicalReport
+	"""
+	Retrieve a list of clinical reports by identifiers.
+	"""
+	clinicalReports(
+		"""
+		List of Clinical Report IDs.
+		"""
+		clinicalReportsIds: [String!]!
+	): [ClinicalReport!]!
+	"""
+	Retrieve a list of credible sets by their identifier.
+	"""
+	credibleSets(
+		"""
+		List of study locus IDs to fetch.
+		"""
+		studyLocusIds: [String!]!,
+		"""
+		Pagination for the credible sets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): CredibleSetPage!
+	"""
+	Retrieve a credible set by its identifier.
+	"""
+	credibleSet(
+		"""
+		Study locus ID to fetch.
+		"""
+		studyLocusId: String!
+	): CredibleSet
+	"""
+	Fetch diseases by EFO ID.
+	"""
+	diseases(
+		"""
+		List of EFO IDs of diseases to fetch.
+		"""
+		efoIds: [String!]!,
+		"""
+		Case-insensitive text search across the diseases' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: DiseasesSearch,
+		"""
+		List of sort statements.
+		"""
+		sort: [DiseaseSort!]!,
+		"""
+		Pagination for the diseases.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): DiseasePage!
+	disease(
+		"""
+		EFO ID of the disease to fetch.
+		"""
+		efoId: String!
+	): Disease
+	"""
+	List of available evidence datasources and their datatypes.
+	"""
+	associationDatasources: [EvidenceSource!]!
+	"""
+	List of molecular interaction resources and their versions.
+	"""
+	interactionResources: [InteractionResource!]!
+	studies(
+		"""
+		List of Study IDs to fetch. If both `studyIds` and `diseaseIds` are provided,
+		                    the intersection of the two is returned.
+		"""
+		studyIds: [String!],
+		"""
+		List of Disease IDs to fetch. If both `studyIds` and `diseaseIds` are provided,
+		                    the intersection of the two is returned.
+		"""
+		diseaseIds: [String!],
+		"""
+		Whether to add studies for ontology-descendant diseases in the result.
+		"""
+		enableIndirect: Boolean! = false,
+		"""
+		Case-insensitive text search across the studies' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: StudiesSearch,
+		"""
+		Filter criteria to apply.
+		"""
+		filter: StudyFilter,
+		"""
+		List of sort statements. Defaults to sample size, largest first.
+		"""
+		sort: [StudySort!]! = [{key: N_SAMPLES, direction: DESCENDING}],
+		"""
+		Pagination for the Studies.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): StudyPage!
+	study(
+		"""
+		The Study ID to fetch.
+		"""
+		studyId: String!
+	): Study
+	"""
+	Retrieve multiple drugs or clinical candidates by identifiers.
+	"""
+	drugs(
+		"""
+		List of Chembl IDs of the drugs to fetch.
+		"""
+		chemblIds: [String!]!,
+		"""
+		Pagination for the drugs.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): DrugPage!
+	"""
+	Retrieve a drug or a clinical candidate by an identifier.
+	"""
+	drug(
+		"""
+		Chembl ID of the drug to fetch.
+		"""
+		chemblId: String!
+	): Drug
+	"""
+	Retrieve a list of variants by their identifier in the format of CHROM_POS_REF_ALT for SNPs
+	and short indels (e.g. 19_44908684_T_C).
+	"""
+	variants(
+		"""
+		List of variant IDs to fetch.
+		"""
+		variantIds: [String!]!,
+		"""
+		Pagination for the variants.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): VariantPage!
+	"""
+	Retrieve a variant by identifier in the format of CHROM_POS_REF_ALT for SNPs and short
+	indels (e.g. 19_44908684_T_C).
+	"""
+	variant(
+		"""
+		Variant ID to fetch.
+		"""
+		variantId: String!
+	): Variant
+	"""
+	Retrieve multiple targets by target identifiers.
+	"""
+	targets(
+		"""
+		List of Ensembl IDs of targets to fetch.
+		"""
+		ensemblIds: [String!]!,
+		"""
+		Pagination for the targets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): TargetPage!
+	"""
+	Retrieve a target (gene/protein) by target identifier (e.g. ENSG00000139618).
+	"""
+	target(
+		"""
+		Ensembl ID of the target to fetch.
+		"""
+		ensemblId: String!
+	): Target
+}
+
+"""
+Pathway metadata from Reactome pathway database.
+"""
+type ReactomePathway {
+	"""
+	Reactome pathway name.
+	"""
+	pathway: String!
+	"""
+	Reactome pathway identifier [bioregistry:reactome].
+	"""
+	pathwayId: String!
+	topLevelTerm: String!
+}
+
+"""
+Reference information supporting the drug mechanisms of action.
+"""
+type Reference {
+	"""
+	List of reference identifiers.
+	"""
+	ids: [String!]!
+	"""
+	Source of the reference (e.g., PubMed, FDA, package inserts).
+	"""
+	source: String!
+	"""
+	List of URLs linking to the reference.
+	"""
+	urls: [String!]!
+}
+
+"""
+Score from a specific datasource.
+"""
+type ResourceScore {
+	"""
+	Name of the resource providing the score.
+	"""
+	name: String!
+	"""
+	Score value from the resource.
+	"""
+	value: Float!
+}
+
+"""
+Biosamples used in safety assessments.
+"""
+type SafetyBiosamples {
+	"""
+	Label of the biosample tissue.
+	"""
+	tissueLabel: String
+	"""
+	Tissue ID for the biosample.
+	"""
+	tissueId: String
+	"""
+	Label of the biosample cell.
+	"""
+	cellLabel: String
+	"""
+	Format of the biosample cells.
+	"""
+	cellFormat: String
+	"""
+	Cell identifier for the biosample.
+	"""
+	cellId: String
+}
+
+"""
+Effects reported for safety events.
+"""
+type SafetyEffects {
+	"""
+	Direction of the reported effect (e.g., increase or decrease).
+	"""
+	direction: String!
+	"""
+	Dosing conditions related to the reported effect.
+	"""
+	dosing: String
+}
+
+"""
+Safety liabilities associated with the target.
+"""
+type SafetyLiability {
+	"""
+	Biosamples used in safety assessments.
+	"""
+	biosamples: [SafetyBiosamples!]!
+	"""
+	Data source reporting the safety liability.
+	"""
+	datasource: String!
+	"""
+	Effects reported for the safety event.
+	"""
+	effects: [SafetyEffects!]!
+	"""
+	Safety event associated with the target.
+	"""
+	event: String
+	"""
+	Unique identifier for the safety event.
+	"""
+	eventId: String
+	"""
+	Literature references for the safety liability.
+	"""
+	literature: String
+	"""
+	URL linking to more details on safety liabilities.
+	"""
+	url: String
+	"""
+	Studies related to safety assessments.
+	"""
+	studies: [SafetyStudies!]!
+}
+
+"""
+Studies related to safety assessments.
+"""
+type SafetyStudies {
+	"""
+	Name of the safety study.
+	"""
+	name: String
+	"""
+	Description of the safety study.
+	"""
+	description: String
+	"""
+	Type of safety study.
+	"""
+	type: String
+}
+
+"""
+Represents a sample of biological material.
+"""
+type Sample {
+	"""
+	Sample ancestry name.
+	"""
+	ancestry: String!
+	"""
+	Sample size.
+	"""
+	sampleSize: Int!
+}
+
+"""
+A score for a datasource, used in association scoring.
+"""
+type Score {
+	"""
+	Identifier of the Datasource (e.g., `impc`, `chembl`).
+	"""
+	id: String!
+	"""
+	Association score for the Datasource. Scores are normalized to a range of 0-1. The higher
+	the score, the stronger the association.
+	"""
+	score: Float!
+}
+
+"""
+Facet search hit for a single category item.
+"""
+type SearchFacetResult {
+	"""
+	Facet identifier.
+	"""
+	id: String!
+	"""
+	Human-readable facet label.
+	"""
+	label: String!
+	"""
+	Facet category this item belongs to (e.g., target, disease).
+	"""
+	category: String!
+	"""
+	Identifier of the datasource contributing this facet.
+	"""
+	datasourceId: String
+	"""
+	Optional list of underlying entity identifiers represented by this facet.
+	"""
+	entityIds: [String!]!
+	"""
+	Highlighted text snippets showing why this facet matched the query.
+	"""
+	highlights: [String!]!
+	"""
+	Relevance score of the facet hit for the current query.
+	"""
+	score: Float!
+}
+
+"""
+Facet search category with result count.
+"""
+type SearchFacetsCategory {
+	"""
+	Facet category name.
+	"""
+	name: String!
+	"""
+	Total number of results in this category.
+	"""
+	total: Int!
+}
+
+"""
+Facet search results including hits and category counts.
+"""
+type SearchFacetsResults {
+	"""
+	Total number of facetable results for the current query.
+	"""
+	total: Int!
+	"""
+	List of facetable hits matching the query.
+	"""
+	hits: [SearchFacetResult!]!
+	"""
+	Facet categories with their result counts.
+	"""
+	categories: [SearchFacetsCategory!]!
+}
+
+"""
+Full-text search hit describing a single entity and its relevance to the
+query.
+"""
+type SearchResult {
+	"""
+	Entity identifier (e.g., Ensembl, EFO, ChEMBL, variant or study ID).
+	"""
+	id: String!
+	"""
+	Primary display name for the entity.
+	"""
+	name: String!
+	"""
+	Entity type (target, disease, drug, variant, study).
+	"""
+	entity: EntityType!
+	"""
+	List of categories the hit belongs to.
+	"""
+	category: [String!]!
+	"""
+	Short description or summary of the entity.
+	"""
+	description: String
+	"""
+	Additional keywords associated with the entity.
+	"""
+	keywords: [String!]!
+	"""
+	List of name prefixes used for prefix matching.
+	"""
+	prefixes: [String!]!
+	"""
+	List of n-grams derived from the name used for fuzzy matching.
+	"""
+	ngrams: [String!]!
+	"""
+	Highlighted text snippets showing where the query matched.
+	"""
+	highlights: [String!]!
+	"""
+	Score boosting multiplier applied to the hit during ranking.
+	"""
+	multiplier: Float!
+	"""
+	Relevance score returned from the search engine for this hit.
+	"""
+	score: Float!
+	"""
+	Resolved entity corresponding to the search hit.
+	"""
+	object: EntityObject
+}
+
+"""
+Search result aggregation category with result count.
+"""
+type SearchResultAggCategory {
+	"""
+	Category name (e.g., target, disease, drug).
+	"""
+	name: String!
+	"""
+	Total number of search results in this category.
+	"""
+	total: Int!
+}
+
+"""
+Search result aggregation by entity type with category breakdown.
+"""
+type SearchResultAggEntity {
+	"""
+	Entity type name (e.g., target, disease, drug, variant, study).
+	"""
+	name: String!
+	"""
+	Total number of search results in this entity type.
+	"""
+	total: Int!
+	"""
+	List of category aggregations within this entity type.
+	"""
+	categories: [SearchResultAggCategory!]!
+}
+
+"""
+Search result aggregations grouped by entity type.
+"""
+type SearchResultAggs {
+	"""
+	Total number of search results across all entities.
+	"""
+	total: Int!
+	"""
+	List of entity type aggregations with category breakdowns.
+	"""
+	entities: [SearchResultAggEntity!]!
+}
+
+"""
+Search results including hits and facet aggregations.
+"""
+type SearchResults {
+	"""
+	Total number of results for the current query and entity filter.
+	"""
+	total: Int!
+	"""
+	Combined list of search hits across requested entities.
+	"""
+	hits: [SearchResult!]!
+	"""
+	Facet aggregations by entity and category for the current query.
+	"""
+	aggregations: SearchResultAggs
+}
+
+"""
+A term from the Sequence Ontology (SO), a controlled vocabulary of sequence features and variant
+consequences.
+"""
+type SequenceOntologyTerm {
+	"""
+	Sequence Ontology term identifier [bioregistry:so].
+	"""
+	id: String!
+	"""
+	Human-readable label for the term (e.g. `missense_variant`).
+	"""
+	label: String!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type SimilarEntityPage {
+	count: Int!
+	rows: [Similarity!]!
+}
+
+"""
+Semantic similarity score between labels, used to suggest related entities.
+"""
+type Similarity {
+	"""
+	Entity category this similarity refers to (`Target`, `Disease` or `Drug`).
+	"""
+	category: Category!
+	"""
+	Identifier of the similar entity (e.g., Ensembl, EFO, ChEMBL ID).
+	"""
+	id: String!
+	"""
+	Similarity score between this entity and the query label. Scores are normalised between 0
+	and 1; higher scores indicate more similar entities.
+	"""
+	score: Float!
+	"""
+	Resolved Platform entity corresponding to this similar label.
+	"""
+	object: SimilarityUnion
+}
+
+"""
+The union of `Target`, `Disease` and `Drug` entities.
+"""
+union SimilarityUnion = Target | Drug | Disease
+
+"""
+Sort direction: ascending or descending.
+"""
+enum SortDirection {
+	"""
+	Ascending order.
+	"""
+	ASCENDING
+	"""
+	Descending order.
+	"""
+	DESCENDING
+}
+
+"""
+Strand orientation of a genomic feature.
+"""
+enum Strand {
+	"""
+	Positive strand orientation.
+	"""
+	POSITIVE
+	"""
+	Negative strand orientation.
+	"""
+	NEGATIVE
+	"""
+	Unknown strand orientation.
+	"""
+	UNKNOWN
+}
+
+"""
+Filter for a string field.
+"""
+input StringFilter {
+	eq: String
+	ne: String
+	contains: String
+	notContains: String
+	in: [String!]
+	isNull: Boolean
+}
+
+"""
+Case-insensitive text search.
+"""
+input StudiesSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [StudySearchField!]! = [STUDY_ID, TRAIT_FROM_SOURCE, PROJECT_ID]
+}
+
+"""
+Metadata for all complex trait GWAS and molecular QTL studies in the Platform. The dataset
+includes study metadata, phenotype information, sample sizes, publication information and more.
+Molecular QTL studies are split by their target trait (e.g. gene, splice junction, etc),
+biosample (tissue, cell type or cell line) and condition (e.g. stimulation, time period, etc),
+potentially leading to tens of thousands of studies derived from the same publication.
+"""
+type Study {
+	"""
+	The GWAS or molQTL study identifier (e.g. GCST004132).
+	"""
+	id: String!
+	"""
+	Identifier of the source project collection that the study information is derived from.
+	"""
+	projectId: String!
+	"""
+	Field specifying if study contains phenotype/disease or molecular genetic associations.
+	"""
+	studyType: StudyType!
+	"""
+	Molecular or phenotypic trait, derived from source, analysed in the study.
+	"""
+	traitFromSource: String!
+	"""
+	Phenotypic trait IDs that map to the analysed trait reported by study.
+	"""
+	traitFromSourceMappedIds: [String!]!
+	"""
+	Reported sample conditions.
+	"""
+	condition: String
+	"""
+	Study initial sample size.
+	"""
+	initialSampleSize: String
+	"""
+	The number of samples tested in GWAS analysis.
+	"""
+	nSamples: Int
+	"""
+	The number of cases in this broad ancestry group.
+	"""
+	nCases: Int
+	"""
+	The number of controls in this broad ancestry group.
+	"""
+	nControls: Int
+	"""
+	List of cohort(s) represented in the discovery sample.
+	"""
+	cohorts: [String!]!
+	"""
+	Collection of ancestries reported by the study discovery phase.
+	"""
+	discoverySamples: [Sample!]!
+	"""
+	Collection of ancestries reported by the study replication phase.
+	"""
+	replicationSamples: [Sample!]!
+	"""
+	Collection of populations referenced by the study.
+	"""
+	ldPopulationStructure: [LdPopulationStructure!]!
+	"""
+	Indication whether the summary statistics exist in the source.
+	"""
+	hasSumstats: Boolean
+	"""
+	Path to the source study summary statistics (if exists at the source).
+	"""
+	summarystatsLocation: String
+	"""
+	Collection of flags indicating the type of the analysis conducted in the association study.
+	"""
+	analysisFlags: [String!]!
+	"""
+	Control metrics refining study validation.
+	"""
+	qualityControls: [String!]!
+	"""
+	Mapping of quality control flags.
+	"""
+	SumstatQCValues: [SumStatQC!]!
+	"""
+	PubMed identifier of the publication that references the study [bioregistry:pubmed].
+	"""
+	pubmedId: String
+	"""
+	First name and initials of the author of the publication that references the study.
+	"""
+	publicationFirstAuthor: String
+	"""
+	Title of the publication that references the study.
+	"""
+	publicationTitle: String
+	"""
+	Abbreviated journal name where the publication referencing study was published.
+	"""
+	publicationJournal: String
+	"""
+	Date of the publication that references the study.
+	"""
+	publicationDate: String
+	"""
+	Disease associated with a studied trait.
+	"""
+	diseases: [Disease!]!
+	"""
+	Publication in the narrative-in-text author-date style.
+	"""
+	publicationAuthorDate: String
+	"""
+	95% credible sets for GWAS and molQTL studies. Credible sets include all variants in the
+	credible set as well as the fine-mapping method and statistics used to estimate the credible
+	set.
+	"""
+	credibleSets(
+		"""
+		Pagination for credible sets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): CredibleSetPage!
+	"""
+	Flat, sortable and searchable summary of this GWAS study's credible sets, for tables. Use
+	`credibleSets` for the full credible sets with locus, L2G, colocalisation, etc.
+	"""
+	credibleSetsView(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [StudyCredibleSetsSort!]! = [{key: P_VALUE, direction: ASCENDING}],
+		"""
+		Case-insensitive text search across the credible sets' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: StudyCredibleSetsSearch,
+		"""
+		Pagination for the credible sets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): StudyCredibleSetPage!
+	"""
+	In molQTL studies, the gene under study for changes in expression, abundance, etc.
+	"""
+	target: Target
+	"""
+	Tissue or cell type in which the molQTL has been detected.
+	"""
+	biosample: Biosample
+	"""
+	Any background trait(s) shared by all individuals in the study.
+	"""
+	backgroundTraits: [Disease!]!
+}
+
+"""
+A GWAS credible set, as shown in the study page's credible sets table.
+
+Rows are decoded by position, so field order must match the column order of the
+`study_credible_sets` table. Update this struct if that table's columns change.
+"""
+type StudyCredibleSet {
+	studyId: String!
+	studyLocusId: String!
+	leadVariantId: String!
+	leadChromosome: Chromosome!
+	leadPosition: Int!
+	leadReferenceAllele: String!
+	leadAlternateAllele: String!
+	pValueMantissa: Float!
+	pValueExponent: Int!
+	beta: Float
+	finemappingMethod: String!
+	confidence: String!
+	"""
+	Number of variants in the credible set.
+	"""
+	locusSize: Int!
+	"""
+	Null when the credible set has no L2G predictions.
+	"""
+	topL2GGeneId: String
+	topL2GApprovedSymbol: String
+	topL2GScore: Float
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type StudyCredibleSetPage {
+	count: Int!
+	rows: [StudyCredibleSet!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input StudyCredibleSetsSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [StudyCredibleSetsSearchField!]! = [LEAD_VARIANT_ID, FINEMAPPING_METHOD, TOP_L2G_APPROVED_SYMBOL]
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum StudyCredibleSetsSearchField {
+	LEAD_VARIANT_ID
+	FINEMAPPING_METHOD
+	TOP_L2G_APPROVED_SYMBOL
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input StudyCredibleSetsSort {
+	"""
+	The field to sort by.
+	"""
+	key: StudyCredibleSetsSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum StudyCredibleSetsSortField {
+	"""
+	By chromosome, then position, then alleles.
+	"""
+	LEAD_VARIANT
+	"""
+	By exponent, then mantissa.
+	"""
+	P_VALUE
+	BETA
+	"""
+	Alphabetically.
+	"""
+	CONFIDENCE
+	"""
+	By the top L2G gene's symbol.
+	"""
+	TOP_L2G_APPROVED_SYMBOL
+	TOP_L2G_SCORE
+	"""
+	Number of variants in the credible set.
+	"""
+	LOCUS_SIZE
+}
+
+"""
+Filter for studies.
+"""
+input StudyFilter {
+	"""
+	Keep studies whose type is one of these.
+	"""
+	studyType: [StudyType!]
+	"""
+	Keep studies whose project ID matches this filter.
+	"""
+	projectId: StringFilter
+	"""
+	Keep studies whose number of samples matches this filter.
+	"""
+	nSamples: IntFilter
+}
+
+"""
+The result of a paginated query, containing the total number of items, the items, and statistics
+about the query.
+"""
+type StudyPage {
+	count: Int!
+	rows: [Study!]!
+	stats: StudyStats!
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum StudySearchField {
+	STUDY_ID
+	TRAIT_FROM_SOURCE
+	PROJECT_ID
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input StudySort {
+	"""
+	The field to sort by.
+	"""
+	key: StudySortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Contains the fields available for sorting studies.
+"""
+enum StudySortField {
+	STUDY_TYPE
+	TRAIT_FROM_SOURCE
+	N_SAMPLES
+	N_CASES
+	N_CONTROLS
+	PUBLICATION_AUTHOR_DATE
+}
+
+"""
+Statistics for a set of studies.
+"""
+type StudyStats {
+	"""
+	The distribution of study types.
+	"""
+	studyType: [StudyTypeBucket!]!
+	"""
+	The distribution of studies with sumstats.
+	"""
+	hasSumstats: [OptBoolBucket!]!
+	"""
+	The summary statistics of sample sizes.
+	"""
+	nSamples: Sumstats!
+	"""
+	The samples to cases ratio.
+	"""
+	samplesByCase: Sumstats!
+}
+
+"""
+Field specifying if study contains phenotype/disease or molecular genetic associations.
+"""
+enum StudyType {
+	"""
+	Bulk tissue transcript uptake quantitative trait locus (tuQTL) study.
+	"""
+	tuqtl
+	"""
+	Bulk tissue protein quantitative trait locus (pQTL) study.
+	"""
+	pqtl
+	"""
+	Bulk tissue expression quantitative trait locus (eQTL) study.
+	"""
+	eqtl
+	"""
+	Bulk tissue splicing quantitative trait locus (sQTL) study.
+	"""
+	sqtl
+	"""
+	Single-cell transcript uptake quantitative trait locus (sc-tuQTL) study.
+	"""
+	sctuqtl
+	"""
+	Single-cell protein quantitative trait locus (sc-pQTL) study.
+	"""
+	scpqtl
+	"""
+	Single-cell expression quantitative trait locus (sc-eQTL) study.
+	"""
+	sceqtl
+	"""
+	Single-cell splicing quantitative trait locus (sc-sQTL) study.
+	"""
+	scsqtl
+	"""
+	Genome-wide association study (GWAS) of complex traits or diseases.
+	"""
+	gwas
+}
+
+"""
+A bucket for a distribution of values.
+"""
+type StudyTypeBucket {
+	"""
+	The value of the bucket.
+	"""
+	value: StudyType!
+	"""
+	The number of occurrences of the value.
+	"""
+	count: Int!
+}
+
+"""
+Mapping of quality control flags.
+"""
+type SumStatQC {
+	"""
+	Quality control metric identifier.
+	"""
+	QCCheckName: String!
+	"""
+	Quality control metric value.
+	"""
+	QCCheckValue: Float!
+}
+
+"""
+Summary statistics for a set of values.
+"""
+type Sumstats {
+	"""
+	The number of values.
+	"""
+	count: Int!
+	"""
+	The mean of the values.
+	"""
+	mean: Float!
+	"""
+	The standard deviation of the values.
+	"""
+	std: Float!
+	"""
+	The minimum value.
+	"""
+	min: Float!
+	"""
+	The 25th percentile value.
+	"""
+	_25: Float!
+	"""
+	The 50th percentile value.
+	"""
+	_50: Float!
+	"""
+	The 75th percentile value.
+	"""
+	_75: Float!
+	"""
+	The maximum value.
+	"""
+	max: Float!
+}
+
+"""
+Core annotation for drug targets (gene/proteins). Targets are defined based on EMBL-EBI Ensembl
+database and uses the Ensembl gene ID as the primary identifier. An Ensembl gene ID is
+considered potential drug target if included in the canonical assembly or if present alternative
+assemblies but encoding for a reviewed protein product according to the UniProt database.
+"""
+type Target {
+	"""
+	Unique identifier for the target [bioregistry:ensembl].
+	"""
+	id: String!
+	"""
+	List of alternative Ensembl gene identifiers mapped to non-canonical chromosomes.
+	"""
+	alternativeGenes: [String!]!
+	"""
+	Approved gene symbol of the target.
+	"""
+	approvedSymbol: String!
+	"""
+	Approved full name of the target gene.
+	"""
+	approvedName: String!
+	"""
+	Biotype classification of the target gene, indicating if the gene is protein coding.
+	"""
+	biotype: String!
+	"""
+	The Ensembl canonical transcript of the target gene.
+	"""
+	canonicalTranscript: CanonicalTranscript!
+	"""
+	Chemical probes with high selectivity and specificity for the target.
+	"""
+	chemicalProbes: [ChemicalProbe!]!
+	"""
+	Database cross-references for the target.
+	"""
+	dbXrefs: [IdAndSource!]!
+	"""
+	Functional descriptions of the target gene sourced from UniProt.
+	"""
+	functionDescriptions: [String!]!
+	"""
+	Constraint scores for the target gene from GnomAD based on loss-of-function intolerance.
+	"""
+	geneticConstraint: [Constraint!]!
+	"""
+	Genomic location information of the target gene.
+	"""
+	genomicLocation: GenomicLocation!
+	"""
+	List of Gene Ontology (GO) annotations related to the target.
+	"""
+	geneOntology: [GeneOntologyAnnotation!]!
+	"""
+	Hallmarks related to the target gene sourced from COSMIC.
+	"""
+	hallmarks: Hallmark!
+	"""
+	Homologues of the target gene in other species.
+	"""
+	homologues: [Homologue!]!
+	"""
+	Pathway annotations for the target.
+	"""
+	pathways: [ReactomePathway!]!
+	"""
+	Protein identifiers associated with the target.
+	"""
+	proteinIds: [IdAndSource!]!
+	"""
+	Known target safety effects and target safety risk information.
+	"""
+	safetyLiabilities: [SafetyLiability!]!
+	"""
+	List of subcellular locations where the target protein is found.
+	"""
+	subcellularLocations: [LocationAndSource!]!
+	"""
+	List of synonyms for the target gene.
+	"""
+	synonyms: [LabelSource!]!
+	"""
+	List of symbol-based synonyms for the target gene.
+	"""
+	symbolSynonyms: [LabelSource!]!
+	"""
+	List of name-based synonyms for the target gene.
+	"""
+	nameSynonyms: [LabelSource!]!
+	"""
+	List of obsolete symbols previously used for the target gene.
+	"""
+	obsoleteSymbols: [LabelSource!]!
+	"""
+	List of obsolete names previously used for the target gene.
+	"""
+	obsoleteNames: [LabelSource!]!
+	"""
+	Target classification categories from ChEMBL.
+	"""
+	targetClass: [TargetClass!]!
+	"""
+	Tractability information for the target.
+	"""
+	tractability: [Tractability!]!
+	"""
+	List of Ensembl transcript identifiers associated with the target.
+	"""
+	transcriptIds: [String!]!
+	"""
+	List of transcripts associated with the target including protein and structure annotations.
+	"""
+	transcripts: [Transcript!]!
+	"""
+	Target-disease associations calculated on-the-fly using configurable data source weights and
+	evidence filters. Returns associations with aggregated scores and evidence counts supporting
+	the target-disease relationship.
+	"""
+	associatedDiseases(
+		"""
+		List of `Disease` IDs to use as the second dimension for associations.
+		"""
+		Bs: [String!]! = [],
+		"""
+		Filter to apply to the `B` dimension items.
+		"""
+		BFilter: String,
+		"""
+		List of the Facet IDs to filter by (using AND).
+		"""
+		facetFilters: [String!]! = [],
+		"""
+		Whether to include diseases from the _measurement_ family in `B` set. Default is `false`.
+		"""
+		includeMeasurements: Boolean! = false,
+		"""
+		Weight applied to indirect evidence (from descendant diseases), between 0 and 1. Default is 0.
+		"""
+		indirectWeight: Float! = 0.0,
+		"""
+		Optional list of datasource policy overrides with changes to the defaults.
+		"""
+		datasourcePolicyOverrides: [DatasourcePolicyOverride!]! = [],
+		"""
+		Ordering for the associations. Can either be `score` to use the overall association score (default), a datasource id (e.g., `impc`), or a datatype id (e.g., `animal_model`).
+		"""
+		sort: AssociationSort! = {key: "score", direction: DESCENDING},
+		"""
+		Pagination for the associations.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): DiseaseAssociationPage!
+	"""
+	Mouse phenotype information linking this human target to observed phenotypes in mouse
+	models. Provides data on phenotypes observed when the target gene is modified in mouse
+	models.
+	"""
+	mousePhenotypes(
+		"""
+		Pagination for the mouse phenotypes.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): MousePhenotypePage!
+	"""
+	Target-disease evidence from all data sources supporting associations between this target
+	and diseases or phenotypes. Evidence entries are reported and scored according to confidence
+	in the association.
+	"""
+	evidences(
+		"""
+		A list of disease ids to filter evidences on.
+		"""
+		efoIds: [String!]!,
+		"""
+		A list of datasources to narrow down the selection of evidences.
+		"""
+		datasourceIds: [Datasource!]! = [],
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidencePage!
+	"""
+	Target-drug associations derived from clinical reports for this target.
+	"""
+	drugAndClinicalCandidates(
+		"""
+		Pagination for the drug and clinical candidates.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): ClinicalTargetPage!
+	"""
+	Baseline expression
+	"""
+	baselineExpression(
+		"""
+		Pagination for baseline expressions.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): BaselineExpressionPage!
+	"""
+	Target-specific properties used to prioritise targets for further investigation.
+	Prioritisation factors cover several areas around clinical precedence, tractability,
+	do-ability, and safety of the target. Values range from -1 (unfavourable/deprioritised) to 1
+	(favourable/prioritised).
+	"""
+	prioritisation: TargetPrioritisations!
+	"""
+	Essentiality measurements extracted from DepMap, stratified by tissue or anatomical units.
+	Gene essentiality is assessed based on dependencies exhibited when knocking out genes in
+	cancer cellular models using CRISPR screenings from the Cancer Dependency Map (DepMap)
+	Project. Gene effects below -1 can be considered dependencies.
+	"""
+	depMapEssentiality(
+		"""
+		Pagination for essentiality measurements.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): DepMapEssentialityPage!
+	"""
+	Flag indicating whether this target is essential based on CRISPR screening data from cancer
+	cell line models. Essential genes are those that show dependency when knocked out in
+	cellular models.
+	"""
+	isEssential: Boolean
+	"""
+	Molecular interactions reporting experimental or functional interactions between this target
+	and other molecules. This dataset contains pair-wise interactions deposited in several
+	databases capturing: physical interactions (e.g. IntAct), directional interactions (e.g.
+	Signor), pathway relationships (e.g. Reactome) or functional interactions (e.g.
+	STRINGdb).
+	"""
+	interactions(
+		"""
+		Threshold similarity between 0 and 1.
+		"""
+		scoreThreshold: Float,
+		"""
+		Source database name.
+		"""
+		sourceDatabase: InteractionSourceDatabase,
+		"""
+		Pagination for the interactions.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): InteractionPage!
+	"""
+	Association time series.
+	"""
+	associationTimeSeries(
+		"""
+		EFO ID of the disease.
+		"""
+		efoId: String!,
+		"""
+		Whether to include only direct associations.
+		"""
+		isDirect: Boolean!,
+		"""
+		Aggregation types.
+		"""
+		aggregationTypes: [AggregationType!],
+		"""
+		Year at the lower end of the filter.
+		"""
+		startYear: Int,
+		"""
+		Year at the higher end of the filter.
+		"""
+		endYear: Int,
+		"""
+		Pagination for the associations time series.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): AssociationTimeseriesPage!
+	"""
+	Return the list of publications that mention the main entity, alone or in combination with
+	other entities.
+	"""
+	literatureOcurrences(
+		"""
+		Optional list of IDs (EFO disease IDs, Ensembl gene IDs, or ChEMBL molecule IDs) that the
+		                    literature must mention along with the main entity. The resulting list of publications will
+		                    be narrowed down to those papers mentioning the main entity and **ALL** IDs included in this
+		                    list.
+		"""
+		additionalIds: [String!],
+		"""
+		Year at the lower end of the filter.
+		"""
+		startYear: Int,
+		"""
+		Month at the lower end of the filter (1–12). Defaults to 1. Ignored if `startYear` is not set.
+		"""
+		startMonth: Int,
+		"""
+		Year at the higher end of the filter.
+		"""
+		endYear: Int,
+		"""
+		Month at the higher end of the filter (1–12). Defaults to 12. Ignored if `endYear` is not set.
+		"""
+		endMonth: Int,
+		"""
+		Pagination for the publications.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): PublicationPage!
+	"""
+	Pharmacogenomics data linking genetic variants affecting this target to drug responses. Data
+	is integrated from sources including ClinPGx and describes how genetic variants influence
+	individual drug responses when targeting this gene product.
+	"""
+	pharmacogenomics(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [PharmacogenomicsSort!]! = [{key: EVIDENCE_LEVEL, direction: ASCENDING}],
+		"""
+		Case-insensitive text search across the records' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: PharmacogenomicsSearch,
+		"""
+		Pagination for the pharmacogenomics.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): PharmacogenomicsPage!
+	"""
+	Return similar labels using a model Word2CVec trained with PubMed.
+	"""
+	similarEntities(
+		"""
+		List of Ensembl gene IDs.
+		"""
+		additionalIds: [String!],
+		"""
+		List of entity names to search for (target, disease, drug,...)
+		"""
+		entityNames: [String!],
+		"""
+		Threshold similarity between 0 and 1
+		"""
+		threshold: Float,
+		"""
+		Pagination for Similar Entities.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): SimilarEntityPage!
+	"""
+	95% credible sets for GWAS and molQTL studies. Credible sets include all variants in the
+	credible set as well as the fine-mapping method and statistics used to estimate the credible
+	set.
+	"""
+	credibleSets(
+		"""
+		Pagination for credible sets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): CredibleSetPage!
+	"""
+	Flat, sortable and searchable summary of the molQTL credible sets linked to this target,
+	for tables. Use `credibleSets` for the full credible sets with locus, L2G, colocalisation,
+	etc.
+	"""
+	credibleSetsView(
+		"""
+		Study types to include, e.g. `[eqtl, sqtl]`. Includes all when empty.
+		"""
+		studyTypes: [StudyType!]! = [],
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [TargetCredibleSetsSort!]! = [{key: P_VALUE, direction: ASCENDING}],
+		"""
+		Case-insensitive text search across the credible sets' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: TargetCredibleSetsSearch,
+		"""
+		Pagination for the credible sets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): TargetCredibleSetPage!
+}
+
+"""
+A scored association between a disease and a target or vice versa.
+"""
+type TargetAssociation {
+	"""
+	Overall association score aggregated across all evidence types. A higher score indicates a
+	stronger association between target and disease. Scores are normalized to a range of 0-1.
+	"""
+	score: Float!
+	"""
+	Association scores computed for every datasource (e.g., IMPC, ChEMBL, Gene2Phenotype).
+	"""
+	datasourceScores: [Score!]!
+	"""
+	Associated target entity.
+	"""
+	target: Target
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type TargetAssociationPage {
+	count: Int!
+	rows: [TargetAssociation!]!
+}
+
+"""
+Target classification categories from ChEMBL.
+"""
+type TargetClass {
+	"""
+	Unique identifier for the target class.
+	"""
+	id: Int!
+	"""
+	Label for the target class.
+	"""
+	label: String!
+	"""
+	Hierarchical level of the target class.
+	"""
+	level: String!
+}
+
+"""
+A molQTL credible set, as shown in the target page's credible sets table.
+
+Rows are decoded by position, so field order must match the column order of the
+`target_credible_sets` table. Update this struct if that table's columns change.
+"""
+type TargetCredibleSet {
+	targetId: String!
+	studyLocusId: String!
+	pValueMantissa: Float!
+	pValueExponent: Int!
+	beta: Float
+	finemappingMethod: String!
+	confidence: String!
+	isTransQtl: Boolean
+	leadVariantId: String!
+	leadChromosome: Chromosome!
+	leadPosition: Int!
+	leadReferenceAllele: String!
+	leadAlternateAllele: String!
+	studyId: String!
+	studyType: StudyType!
+	condition: String
+	biosampleId: String
+	"""
+	Empty when the biosample is not in the biosample index.
+	"""
+	biosampleName: String!
+	"""
+	Number of variants in the credible set.
+	"""
+	locusSize: Int!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type TargetCredibleSetPage {
+	count: Int!
+	rows: [TargetCredibleSet!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input TargetCredibleSetsSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [TargetCredibleSetsSearchField!]! = [LEAD_VARIANT_ID, STUDY_ID, STUDY_TYPE, BIOSAMPLE_NAME, CONDITION, FINEMAPPING_METHOD]
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum TargetCredibleSetsSearchField {
+	LEAD_VARIANT_ID
+	STUDY_ID
+	STUDY_TYPE
+	BIOSAMPLE_NAME
+	CONDITION
+	FINEMAPPING_METHOD
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input TargetCredibleSetsSort {
+	"""
+	The field to sort by.
+	"""
+	key: TargetCredibleSetsSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum TargetCredibleSetsSortField {
+	"""
+	By chromosome, then position, then alleles.
+	"""
+	LEAD_VARIANT
+	"""
+	Alphabetically by study ID.
+	"""
+	STUDY
+	"""
+	Alphabetically by study type name.
+	"""
+	STUDY_TYPE
+	"""
+	Alphabetically by biosample (affected tissue/cell) name.
+	"""
+	BIOSAMPLE_NAME
+	"""
+	Alphabetically.
+	"""
+	CONDITION
+	"""
+	By exponent, then mantissa.
+	"""
+	P_VALUE
+	BETA
+	"""
+	Alphabetically.
+	"""
+	CONFIDENCE
+	"""
+	Alphabetically.
+	"""
+	FINEMAPPING_METHOD
+	"""
+	Number of variants in the credible set.
+	"""
+	LOCUS_SIZE
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type TargetPage {
+	count: Int!
+	rows: [Target!]!
+}
+
+"""
+A target prioritisation factor.
+"""
+type TargetPrioritisation {
+	"""
+	Key for the area of prioritisation.
+	"""
+	key: String!
+	"""
+	Score for the prioritisation factor.
+	"""
+	value: String!
+}
+
+"""
+Target-specific properties used to prioritise targets for further investigation. Prioritisation
+factors cover several areas around clinical precedence, tractability, do-ability, and safety of
+the target. Values range from -1 (unfavourable/deprioritised) to 1 (favourable/prioritised).
+"""
+type TargetPrioritisations {
+	items: [TargetPrioritisation!]!
+}
+
+"""
+Tractability information for the target. Indicates the feasibility of targeting the gene/protein
+with different therapeutic modalities.
+"""
+type Tractability {
+	"""
+	Tractability category label.
+	"""
+	label: String!
+	"""
+	Modality of the tractability assessment.
+	"""
+	modality: String!
+	"""
+	Tractability value assigned to the target (true indicates tractable).
+	"""
+	value: Boolean!
+}
+
+"""
+Transcript annotation for a target gene.
+"""
+type Transcript {
+	"""
+	Ensembl transcript identifier.
+	"""
+	transcriptId: String!
+	"""
+	Biotype classification of the transcript.
+	"""
+	biotype: String!
+	"""
+	Whether this is the Ensembl canonical transcript.
+	"""
+	isEnsemblCanonical: Boolean
+	"""
+	UniProt accession mapped to the transcript.
+	"""
+	uniprotId: String
+	"""
+	Whether the UniProt entry is reviewed (Swiss-Prot).
+	"""
+	isUniprotReviewed: Boolean
+	"""
+	Ensembl translation identifier.
+	"""
+	translationId: String
+	"""
+	AlphaFold structure prediction identifier.
+	"""
+	alphafoldId: String
+	"""
+	UniProt isoform identifier.
+	"""
+	uniprotIsoformId: String
+}
+
+"""
+Predicted consequences on transcript context.
+"""
+type TranscriptConsequence {
+	"""
+	Amino acid change caused by this variant on this gene.
+	"""
+	aminoAcidChange: String
+	"""
+	Uniprot identifiers of the gene product [bioregistry:uniprot].
+	"""
+	uniprotAccessions: [String!]!
+	"""
+	Flagging if the transcript is the canonical transcript for the gene.
+	"""
+	isEnsemblCanonical: Boolean!
+	"""
+	Affected codon in the transcript.
+	"""
+	codons: String
+	"""
+	Distance of the variant from the transcript.
+	"""
+	distanceFromFootprint: Int!
+	"""
+	Distance of the variant from the transcription start site.
+	"""
+	distanceFromTss: Int!
+	"""
+	Ensembl VEP predicted impact of the variant on the transcript.
+	"""
+	impact: String
+	"""
+	Ensembl transcript identifier [bioregistry:ensembl].
+	"""
+	transcriptId: String
+	"""
+	Loss-of-function prediction based on LOFTEE.
+	"""
+	lofteePrediction: String
+	"""
+	SIFT prediction of the variant impact on the transcript.
+	"""
+	siftPrediction: Float
+	"""
+	Polyphen prediction of the variant impact on the transcript.
+	"""
+	polyphenPrediction: Float
+	"""
+	Index of the transcript in the list of transcripts around the gene.
+	"""
+	transcriptIndex: Int!
+	"""
+	Score assigned to transcript based on Ensembl VEP consequence.
+	"""
+	consequenceScore: Float!
+	"""
+	The target (gene/protein) associated with the transcript.
+	"""
+	target: Target
+	"""
+	The sequence ontology term of the consequence of the variant based on Ensembl VEP in the
+	context of the transcript.
+	"""
+	variantConsequences: [SequenceOntologyTerm!]!
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input TranscriptConsequenceSort {
+	"""
+	The field to sort by.
+	"""
+	key: TranscriptConsequenceSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+enum TranscriptConsequenceSortField {
+	"""
+	Approved gene symbol of the target (gene/protein) associated with the transcript.
+	"""
+	TARGET_APPROVED_SYMBOL
+	"""
+	Distance of the variant from the transcript.
+	"""
+	DISTANCE_FROM_FOOTPRINT
+	"""
+	Distance of the variant from the transcription start site.
+	"""
+	DISTANCE_FROM_TSS
+}
+
+"""
+Literature references associated with the clinical trial.
+"""
+type TrialLiterature {
+	"""
+	PubMed identifier of the reference, when the source records one.
+	"""
+	id: String!
+	"""
+	How the reference relates to the trial: RESULT and DERIVED report its outcome, BACKGROUND
+	is literature its authors cited.
+	"""
+	referenceType: String!
+}
+
+"""
+Lead sponsor associated with the clinical trial.
+"""
+type TrialSponsor {
+	"""
+	Classification of the lead trial sponsor (e.g. INDUSTRY, NIH, OTHER).
+	"""
+	agencyClass: String
+	"""
+	Name of the lead sponsor associated with the clinical trial.
+	"""
+	name: String
+}
+
+"""
+Type of clinical study.
+"""
+enum TrialStudyType {
+	"""
+	Interventional.
+	"""
+	INTERVENTIONAL
+	"""
+	Observational.
+	"""
+	OBSERVATIONAL
+	"""
+	Expanded access.
+	"""
+	EXPANDED_ACCESS
+}
+
+"""
+External resource link with an optional display name.
+"""
+type Url {
+	"""
+	Optional human-readable label for the URL.
+	"""
+	niceName: String!
+	"""
+	URL to the external resource.
+	"""
+	url: String
+}
+
+"""
+Core variant information for all variants in the Platform.
+Variants are included if any phenotypic information is available for the variant,
+including GWAS or molQTL credible sets, ClinVar, Uniprot or ClinPGx.
+The dataset includes variant metadata as well as variant effects derived from Ensembl VEP.
+"""
+type Variant {
+	"""
+	Unique identifier for the variant following schema:
+	{chromosome}-{position}-{referenceAllele}-{alternateAllele}.
+	"""
+	variantId: String!
+	"""
+	Chromosome on which the variant is located.
+	"""
+	chromosome: Chromosome!
+	"""
+	Variant's position on the chromosome.
+	"""
+	position: Int!
+	"""
+	Reference allele for the variant.
+	"""
+	referenceAllele: String!
+	"""
+	Alternate allele for the variant.
+	"""
+	alternateAllele: String!
+	"""
+	List of predicted or measured effects of the variant based on various methods.
+	"""
+	variantEffect: [VariantEffect!]!
+	"""
+	`RsIds` for the variant.
+	"""
+	rsIds: [String!]!
+	"""
+	Cross-references for the variant in different databases.
+	"""
+	dbXrefs: [DbXref!]!
+	"""
+	Allele frequencies of the variant in different populations.
+	"""
+	alleleFrequencies: [AlleleFrequency!]!
+	"""
+	HGVS identifier of the variant.
+	"""
+	hgvsId: String
+	"""
+	Short summary of the variant effect.
+	"""
+	variantDescription: String!
+	"""
+	95% credible sets for GWAS and molQTL studies that contain this variant. Credible sets
+	include all variants in the credible set (locus) as well as the fine-mapping method and
+	derived statistics.
+	"""
+	credibleSets(
+		"""
+		Filter criteria to apply.
+		"""
+		filter: CredibleSetFilter,
+		"""
+		Pagination for credible sets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): CredibleSetPage!
+	"""
+	Flat, sortable and searchable summary of the credible sets containing this variant, for
+	tables. Use `credibleSets` for the full credible sets with locus, L2G, colocalisation, etc.
+	"""
+	credibleSetsView(
+		"""
+		Study types to include, e.g. `[gwas]` or the QTL types.
+		"""
+		studyTypes: [StudyType!]!,
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [VariantCredibleSetsSort!]! = [{key: TOP_L2G_SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the credible sets' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: VariantCredibleSetsSearch,
+		"""
+		Pagination for the credible sets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): VariantCredibleSetPage!
+	"""
+	Predicted consequences on transcript context.
+	"""
+	transcriptConsequences(
+		"""
+		List of sort statements.
+		"""
+		sort: [TranscriptConsequenceSort!]! = []
+	): [TranscriptConsequence!]!
+	"""
+	Paginated, sortable and searchable predicted consequences on transcript context, for
+	tables. Use `transcriptConsequences` for the full list as stored on the variant.
+	"""
+	transcriptConsequencesView(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [VariantTranscriptConsequencesSort!]! = [{key: DISTANCE_FROM_FOOTPRINT, direction: ASCENDING}],
+		"""
+		Case-insensitive text search across the gene symbol, consequence and impact. Searches all of them unless `fields` is given.
+		"""
+		search: VariantTranscriptConsequencesSearch,
+		"""
+		Pagination for the transcript consequences.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): VariantTranscriptConsequencePage!
+	"""
+	The sequence ontology term of the most severe consequence of the variant based on Ensembl
+	VEP.
+	"""
+	mostSevereConsequence: SequenceOntologyTerm
+	"""
+	Protein coding coordinates linking this variant to its amino acid-level consequences in
+	protein products. Describes variant consequences at the protein level including amino acid
+	changes and their positions.
+	"""
+	proteinCodingCoordinates(
+		"""
+		Pagination for the protein coding coordinates.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): ProteinCodingCoordinatesPage!
+	enhancerToGene(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EnhancerToGeneSort!]! = [{key: SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the gene symbol, tissue/cell, interval type and study. Searches all of them unless `fields` is given.
+		"""
+		search: EnhancerToGeneSearch,
+		"""
+		Pagination for the enhancer-to-gene relationships.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EnhancerToGenePage!
+	"""
+	Pharmacogenomics data linking this genetic variant to drug responses. Data is integrated
+	from sources including ClinPGx and describes how genetic variants influence individual drug
+	responses.
+	"""
+	pharmacogenomics(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [PharmacogenomicsSort!]! = [{key: EVIDENCE_LEVEL, direction: ASCENDING}],
+		"""
+		Case-insensitive text search across the records' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: PharmacogenomicsSearch,
+		"""
+		Pagination for the pharmacogenomics.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): PharmacogenomicsPage!
+	"""
+	Target-disease evidence from all data sources where this variant supports the association.
+	Evidence entries report associations between targets (genes or proteins) and diseases or
+	phenotypes, scored according to confidence in the association.
+	"""
+	evidences(
+		"""
+		A list of datasources to narrow down the selection of evidences.
+		"""
+		datasourceIds: [Datasource!]! = [],
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidencePage!
+}
+
+"""
+Genetic variants influencing individual drug responses. Pharmacogenetics data is integrated from
+sources including Pharmacogenomics Knowledgebase (`PharmGKB`).
+"""
+type VariantAnnotation {
+	"""
+	Allele or genotype in the base case.
+	"""
+	baseAlleleOrGenotype: String
+	"""
+	Allele or genotype in the comparison case.
+	"""
+	comparisonAlleleOrGenotype: String
+	"""
+	Indicates in which direction the genetic variant increases or decreases drug response.
+	"""
+	directionality: String
+	"""
+	Allele observed effect.
+	"""
+	effect: String
+	"""
+	Summary of the impact of the allele on the drug response.
+	"""
+	effectDescription: String
+	"""
+	Type of effect.
+	"""
+	effectType: String
+	"""
+	Entity affected by the effect.
+	"""
+	entity: String
+	"""
+	PubMed identifier (PMID) of the literature entry.
+	"""
+	literature: String
+}
+
+"""
+Rows are decoded by position, so field order must match the column order of the
+`variant_credible_sets` table. Update this struct if that table's columns change.
+"""
+type VariantCredibleSet {
+	studyType: StudyType!
+	variantId: String!
+	studyLocusId: String!
+	posteriorProbability: Float!
+	locusSize: Int!
+	pValueMantissa: Float!
+	pValueExponent: Int!
+	beta: Float
+	finemappingMethod: String!
+	confidence: String!
+	leadVariantId: String!
+	leadChromosome: Chromosome!
+	leadPosition: Int!
+	leadReferenceAllele: String!
+	leadAlternateAllele: String!
+	studyId: String!
+	traitFromSource: String!
+	diseases: [VariantCredibleSetDisease!]!
+	diseaseTherapeuticAreas: [VariantCredibleSetDisease!]!
+	topL2GGeneId: String
+	topL2GApprovedSymbol: String
+	topL2GScore: Float
+}
+
+"""
+A disease (or therapeutic area) linked to a credible set.
+"""
+type VariantCredibleSetDisease {
+	id: String!
+	name: String!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type VariantCredibleSetPage {
+	count: Int!
+	rows: [VariantCredibleSet!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input VariantCredibleSetsSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [VariantCredibleSetsSearchField!]! = [STUDY_LOCUS_ID, STUDY_ID, LEAD_VARIANT_ID, FINEMAPPING_METHOD, CONFIDENCE, TRAIT_FROM_SOURCE, TOP_L2G_GENE_ID, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES, DISEASE_THERAPEUTIC_AREA_IDS, DISEASE_THERAPEUTIC_AREA_NAMES]
+}
+
+"""
+Text fields that `search` can match against.
+
+Leaves out `variantId` (the same on every row) and the alleles (single letters
+that would match almost every search).
+"""
+enum VariantCredibleSetsSearchField {
+	STUDY_LOCUS_ID
+	STUDY_ID
+	LEAD_VARIANT_ID
+	FINEMAPPING_METHOD
+	CONFIDENCE
+	TRAIT_FROM_SOURCE
+	TOP_L2G_GENE_ID
+	TOP_L2G_APPROVED_SYMBOL
+	DISEASE_IDS
+	DISEASE_NAMES
+	DISEASE_THERAPEUTIC_AREA_IDS
+	DISEASE_THERAPEUTIC_AREA_NAMES
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input VariantCredibleSetsSort {
+	"""
+	The field to sort by.
+	"""
+	key: VariantCredibleSetsSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum VariantCredibleSetsSortField {
+	TOP_L2G_SCORE
+	P_VALUE
+	LEAD_VARIANT
+}
+
+"""
+Predicted or measured effect of the variant based on various methods.
+"""
+type VariantEffect {
+	"""
+	Method name used to predict the effect of the variant.
+	"""
+	method: String
+	"""
+	Textual assessment of the variant effect.
+	"""
+	assessment: String
+	"""
+	Score of the variant effect.
+	"""
+	score: Float
+	"""
+	Flagging if the variant effect is considered pathogenic.
+	"""
+	assessmentFlag: String
+	"""
+	Variant effect normalised between -1 and 1.
+	"""
+	normalisedScore: Float
+	"""
+	The target (gene/protein) on which the variant effect is interpreted.
+	"""
+	target: Target
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type VariantPage {
+	count: Int!
+	rows: [Variant!]!
+}
+
+"""
+Predicted consequence of a variant on one transcript.
+
+Field order must match the column list in `variant_transcript_consequences.sql`.
+"""
+type VariantTranscriptConsequence {
+	"""
+	Variant identifier in CHROM_POS_REF_ALT notation.
+	"""
+	variantId: String!
+	"""
+	Amino acid change caused by this variant on this gene.
+	"""
+	aminoAcidChange: String
+	"""
+	Uniprot identifiers of the gene product [bioregistry:uniprot].
+	"""
+	uniprotAccessions: [String!]!
+	"""
+	Flagging if the transcript is the canonical transcript for the gene.
+	"""
+	isEnsemblCanonical: Boolean!
+	"""
+	Affected codon in the transcript.
+	"""
+	codons: String
+	"""
+	Distance of the variant from the transcript.
+	"""
+	distanceFromFootprint: Int!
+	"""
+	Distance of the variant from the transcription start site.
+	"""
+	distanceFromTss: Int!
+	"""
+	Ensembl VEP predicted impact of the variant on the transcript.
+	"""
+	impact: String
+	"""
+	Ensembl transcript identifier [bioregistry:ensembl].
+	"""
+	transcriptId: String
+	"""
+	Loss-of-function prediction based on LOFTEE.
+	"""
+	lofteePrediction: String
+	"""
+	SIFT prediction of the variant impact on the transcript.
+	"""
+	siftPrediction: Float
+	"""
+	Polyphen prediction of the variant impact on the transcript.
+	"""
+	polyphenPrediction: Float
+	"""
+	Index of the transcript in the list of transcripts around the gene.
+	"""
+	transcriptIndex: Int!
+	"""
+	Score assigned to transcript based on Ensembl VEP consequence.
+	"""
+	consequenceScore: Float!
+	"""
+	The target (gene/protein) associated with the transcript.
+	"""
+	target: Target
+	"""
+	The sequence ontology terms of the consequence of the variant based on Ensembl VEP in the
+	context of the transcript.
+	"""
+	variantConsequences: [SequenceOntologyTerm!]!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type VariantTranscriptConsequencePage {
+	count: Int!
+	rows: [VariantTranscriptConsequence!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input VariantTranscriptConsequencesSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [VariantTranscriptConsequencesSearchField!]! = [TARGET_APPROVED_SYMBOL, VARIANT_CONSEQUENCE_LABELS, IMPACT]
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum VariantTranscriptConsequencesSearchField {
+	TARGET_APPROVED_SYMBOL
+	VARIANT_CONSEQUENCE_LABELS
+	IMPACT
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input VariantTranscriptConsequencesSort {
+	"""
+	The field to sort by.
+	"""
+	key: VariantTranscriptConsequencesSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum VariantTranscriptConsequencesSortField {
+	"""
+	Approved gene symbol of the target. Rows without a target come last.
+	"""
+	TARGET_APPROVED_SYMBOL
+	"""
+	Distance of the variant from the transcript.
+	"""
+	DISTANCE_FROM_FOOTPRINT
+	"""
+	Distance of the variant from the transcription start site.
+	"""
+	DISTANCE_FROM_TSS
+}
+
+"""
+Version information for the API and its underlying data sources.
+"""
+type Version {
+	"""
+	Year of the version, e.g. `23`.
+	"""
+	year: String!
+	"""
+	Month of the version, e.g. `06`.
+	"""
+	month: String!
+	"""
+	Revision of the version, e.g. `0`. This field is optional for data releases and may be
+	omitted, but not for the API version, which always has a revision even if it is `0`.
+	"""
+	revision: String!
+}
+
+"""
+Marks an element of a GraphQL schema as no longer supported.
+"""
+directive @deprecated(reason: String = "No longer supported") on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
+"""
+Directs the executor to include this field or fragment only when the `if` argument is true.
+"""
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+"""
+Directs the executor to skip this field or fragment when the `if` argument is true.
+"""
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+schema {
+	query: Query
+}
