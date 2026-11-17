@@ -1,12 +1,20 @@
-use async_graphql::{InputValueError, InputValueResult, Scalar, ScalarType, Value};
+use async_graphql::NewType;
 use jiff::{civil, civil::Date as CivilDate};
 use serde::Deserialize;
 
-/// A date decoded from ClickHouse's unsigned day count since 1970-01-01.
-#[derive(Debug, Clone, Copy, Deserialize)]
+/// ISO 8601 calendar date without timezone.
+/// Format: %Y-%m-%d
+///
+/// # Examples
+///
+/// * `1994-11-13`
+/// * `2000-02-24`
+#[derive(Debug, Clone, Copy, Deserialize, NewType)]
 #[serde(try_from = "u16")]
+#[graphql(name = "NaiveDate")]
 pub(super) struct Date(CivilDate);
 
+// ClickHouse Date stores an unsigned day count since 1970-01-01.
 impl TryFrom<u16> for Date {
     type Error = jiff::Error;
 
@@ -17,28 +25,10 @@ impl TryFrom<u16> for Date {
     }
 }
 
-// Retain the existing public scalar name and description for schema compatibility.
-#[Scalar(name = "NaiveDate")]
-/// ISO 8601 calendar date without timezone.
-/// Format: %Y-%m-%d
-///
-/// # Examples
-///
-/// * `1994-11-13`
-/// * `2000-02-24`
-impl ScalarType for Date {
-    fn parse(value: Value) -> InputValueResult<Self> {
-        match value {
-            Value::String(s) => Ok(Self(CivilDate::strptime("%Y-%m-%d", s)?)),
-            _ => Err(InputValueError::expected_type(value)),
-        }
-    }
-
-    fn to_value(&self) -> Value { Value::String(self.0.strftime("%Y-%m-%d").to_string()) }
-}
-
 #[cfg(test)]
 mod tests {
+    use async_graphql::{ScalarType, Value};
+
     use super::*;
 
     #[test]

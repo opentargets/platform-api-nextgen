@@ -13,7 +13,7 @@ product-platform = []
 product-ppp = []
 
 [dependencies]
-async-graphql = { version = "7.2.1", features = ["dataloader", "tracing"] }
+async-graphql = { version = "7.2.1", features = ["dataloader", "jiff", "tracing"] }
 async-graphql-axum = "7.2.1"
 axum = "0.8.9"
 axum-server = { version = "0.8.0", features = ["tls-rustls"] }
