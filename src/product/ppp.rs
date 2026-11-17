@@ -50,7 +50,9 @@ use crate::{
     },
     product::{Flavor, Product, loader},
     view::{
-        disease_studies::DiseaseStudiesLoader, study_credible_sets::StudyCredibleSetsLoader,
+        disease_studies::DiseaseStudiesLoader,
+        evidence::clinical_precedence::EvidenceClinicalPrecedenceLoader,
+        study_credible_sets::StudyCredibleSetsLoader,
         target_credible_sets::TargetCredibleSetsLoader,
         variant_credible_sets::VariantCredibleSetsLoader,
         variant_transcript_consequences::VariantTranscriptConsequencesLoader,
@@ -120,6 +122,7 @@ impl Product for Ppp {
             .data(loader::<TargetPrioritisationsLoader>(ch))
             .data(loader::<VariantLoader>(ch))
             .data(loader::<DiseaseStudiesLoader>(ch))
+            .data(loader::<EvidenceClinicalPrecedenceLoader>(ch))
             .data(loader::<StudyCredibleSetsLoader>(ch))
             .data(loader::<TargetCredibleSetsLoader>(ch))
             .data(loader::<VariantCredibleSetsLoader>(ch))
