@@ -1,5 +1,4 @@
 const { writeFileSync } = require('node:fs');
-const feedback = require('./graphql-schema-feedback.cjs');
 
 // Escape schema descriptions before embedding Inspector messages in Markdown.
 const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -7,7 +6,6 @@ const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;')
   .replace(/\r?\n/g, ' ');
 
 module.exports = (changes) => {
-  feedback(changes);
   const sections = [
     ['Breaking changes', changes.breakingChanges],
     ['Potentially dangerous changes', changes.dangerousChanges],

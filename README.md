@@ -1,6 +1,6 @@
-# Open Targets nextgen Platform API 
+# Open Targets nextgen Platform API
 
-TBD
+Rust GraphQL API for Open Targets Platform and Partner Preview Platform.
 
 ## Development
 
@@ -61,106 +61,77 @@ Every build includes both products, each to its own image:
 Both images share the tag's version. Each product is deployed independently.
 
 
-## Export the GraphQL schema
+## GraphQL schema tracking
 
-Download the schema into `schema.graphql` from `https://api.platform.opentargets.xyz/latest/graphql/schema`:
+Schema tracking makes API changes visible during review and provides schema release
+notes. The committed `schema.graphql` describes the public Platform API generated
+from Rust types. GraphQL Inspector reports breaking, potentially dangerous, and
+non-breaking changes. Schema reports are informational and require no approval.
+Schema tracking covers `product-platform`.
 
-```bash
-curl --fail \
-  https://api.platform.opentargets.xyz/latest/graphql/schema \
-  --output schema.graphql
-```
+### Set up
 
-This saves the initial schema comparison baseline.
+Install the Rust toolchain described under Development, then install the commit hook:
 
-Local Rust schema can be exported with:
-```bash
-cargo run --locked --example export-schema --features product-platform > schema.graphql
-```
-
-## Set up pre-commit
-
-Install pre-commit:
 ```bash
 uv tool install pre-commit
+pre-commit install
 ```
 
-Install the Git hook once per checkout, then check the current working tree:
+
+### Commit API changes
+
+Stage the intended Rust changes and commit normally. The hook generates
+`schema.graphql` and automatically stages the generated snapshot in the same commit.
+The hook creates `schema.graphql` from `https://api.platform.opentargets.xyz/latest/graphql/schema`
+when the snapshot is missing and refreshes the snapshot on every commit.
+
+Schema export runs without starting the API
+server or connecting to databases. Export failures stop the commit before replacing
+the snapshot. Schema changes never block the commit.
+
+To regenerate and stage the schema from the current working tree manually:
 
 ```bash
-pre-commit install
 pre-commit run graphql-schema --all-files
 ```
 
-The hook regenerates `schema.graphql` from the Platform Rust types and automatically
-stages `schema.graphql` for every commit. No local schema diff or developer approval
-is required. The hook requires Cargo and the repository-pinned Rust toolchain;
-Node and GraphQL Inspector are needed only in CI.
+### Read PR reports
 
-During commits, pre-commit hides unstaged tracked changes before schema generation.
-Stage new Rust source files before committing. The manual `--all-files` command
-regenerates and stages the schema from the working tree. Export failures stop the
-commit to prevent committing an outdated or incomplete snapshot; schema changes
-never block commits.
+Schema CI compares committed snapshots with GraphQL Inspector:
 
-## GraphQL schema checks in CI
+| Event | Comparison |
+| --- | --- |
+| PR targeting `main` | Latest fetched `main` commit → PR head commit |
+| Push to `main` | `main` before the push → pushed commit |
+| Development-branch push without a PR to `main` | No schema comparison |
 
-Schema CI and release jobs install GraphQL Inspector from
-`tools/graphql-inspector/package-lock.json`. GitHub Actions caches npm package
-downloads using the lockfile hash. Subsequent runs restore cached downloads, and
-`npm ci --prefer-offline` installs the locked dependency versions. Changes to the
-lockfile select a new cache key. The cache stores npm package downloads rather
-than `node_modules`; installation still runs on every job. Cache misses download
-the required packages normally.
+Pushing to a branch with an open PR targeting `main` triggers the PR comparison.
+PRs targeting other branches, scheduled runs, and manual CI runs skip schema jobs.
+CI reads `schema.graphql` directly from Git; CI does not compile Rust or modify
+committed snapshots. Installing the commit hook keeps the snapshots current.
 
-CI runs one GraphQL Inspector comparison: the committed schema from the selected
-main commit versus the committed schema from the PR head or pushed commit.
-Schema CI does not install Rust, compile the API, or regenerate the schema.
-The comparison passes when GraphQL Inspector detects no schema differences.
-API changes remain advisory, including breaking changes. The job summary and
-downloadable `graphql-schema-release-notes` Markdown artifact report breaking,
-dangerous, and non-breaking changes. The local pre-commit hook keeps
-`schema.graphql` synchronized with staged Rust changes; bypassing the hook can
-leave the committed snapshot outdated.
-Schema jobs are non-blocking. Git extraction and schema parsing errors remain
-visible in workflow logs without blocking other CI jobs or release builds.
+Reports appear in workflow logs, the job summary, and the
+`graphql-schema-release-notes` artifact. For same-repository PRs, CI also updates
+the PR description between `<!-- graphql-schema-notes:start -->` and
+`<!-- graphql-schema-notes:end -->`. Description text outside the markers remains
+unchanged. Fork and Dependabot PRs use the job summary and artifact because restricted
+workflow tokens cannot update PR descriptions.
 
-After successful schema comparison, CI adds the generated notes to the PR description
-between `<!-- graphql-schema-notes:start -->` and `<!-- graphql-schema-notes:end -->`.
-Subsequent CI runs replace the generated section while preserving description text
-outside the markers. The generated section includes the no-change result when
-GraphQL Inspector detects no changes. The downloadable artifact remains available in Github actions `upload-artifact` step.
-PR description updates run for branches in the same repository, excluding Dependabot.
-Fork and Dependabot PRs retain the job summary and artifact because restricted
-workflow tokens cannot update PR descriptions. The PR update job uses
-`pull-requests: write`; the schema comparison job retains read-only permissions.
+No differences produces a “No schema changes” report. Missing snapshots produce a
+“Schema comparison unavailable” report. Schema jobs are non-blocking, including
+reports containing breaking changes. Execution errors remain visible in workflow
+logs. Other CI checks operate independently.
 
-For PRs, the comparison uses the main revision fetched during the CI run and the
-PR branch's head commit, covering the combined change across all PR commits.
-The schema comparison job checks out the PR head rather than GitHub's temporary
-merge commit. On pushes to
-`main`, the comparison uses main before the push, so the report shows the changes
-after merging. Development-branch pushes, PRs targeting other branches, scheduled
-runs, and manual CI runs skip the schema jobs.
-The notes link the main comparison commit and the checked-out commit to full
-GitHub commit URLs. 
+### Read release notes
 
-The generated Markdown contains release-note fragments relative to the selected
-main revision. PR schema jobs do not modify GitHub releases. Comparisons read only
-`schema.graphql`. If either compared commit lacks `schema.graphql`, the report
-states that the comparison is unavailable. Schema CI
-does not download a deployment schema as a substitute for a committed snapshot.
+Publishing a GitHub release triggers a comparison between the saved schemas in the
+previous and new release tags. Stable releases compare with the previous published
+stable release. Prereleases compare with the previous published release, including
+prereleases. Release publication timestamps determine the previous release.
 
-## Schema notes on releases
-
-Publishing a GitHub release generates a schema diff between the previous published
-release tag and the new release tag. Stable releases compare with the previous
-stable release; prereleases compare with the previous published release, including
-prereleases. Selection uses release publication timestamps.
-
-CI inserts the report between GraphQL schema markers in the release description,
-preserving surrounding release text. The report also appears in the job summary
-and a downloadable artifact. The schema job is non-blocking and runs independently
-of release image builds. Initial releases report the absence of a previous release.
-Historical releases without a saved schema report an unavailable comparison;
-release comparisons never substitute a live deployment for a historical schema.
+CI adds the schema report to the release description between the GraphQL schema
+markers, preserving surrounding release text. The job summary and artifact also
+contain the report. Schema reporting runs independently of release image builds.
+The first release reports the absence of a previous release; missing historical
+snapshots produce an unavailable-comparison report.

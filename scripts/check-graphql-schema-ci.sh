@@ -4,8 +4,6 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 baseline=${1:?Usage: check-graphql-schema-ci.sh BASE_REF OUTPUT_MARKDOWN}
 notes_output=${2:?Provide an output Markdown path}
-export SCHEMA_BASE_SHA
-export SCHEMA_HEAD_SHA
 SCHEMA_BASE_SHA=$(git rev-parse --verify "${baseline}^{commit}")
 SCHEMA_HEAD_SHA=$(git rev-parse HEAD)
 repository_url="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-opentargets/platform-api-nextgen}"
