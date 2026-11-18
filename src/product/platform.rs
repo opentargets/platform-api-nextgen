@@ -50,6 +50,7 @@ use crate::{
         disease_studies::DiseaseStudiesLoader,
         evidence::{
             clinical_precedence::EvidenceClinicalPrecedenceLoader,
+            gene_burden::EvidenceGeneBurdenLoader,
             gwas_credible_sets::EvidenceGwasCredibleSetsLoader,
         },
         study_credible_sets::StudyCredibleSetsLoader,
@@ -120,6 +121,7 @@ impl Product for Platform {
             .data(loader::<DiseaseStudiesLoader>(ch))
             .data(loader::<EvidenceClinicalPrecedenceLoader>(ch))
             .data(loader::<EvidenceGwasCredibleSetsLoader>(ch))
+            .data(loader::<EvidenceGeneBurdenLoader>(ch))
             .data(loader::<StudyCredibleSetsLoader>(ch))
             .data(loader::<TargetCredibleSetsLoader>(ch))
             .data(loader::<VariantCredibleSetsLoader>(ch))

@@ -3,12 +3,19 @@
 //!
 //! A datasource module doesn't know whether it is resolved from a disease or a target: its key
 //! always carries an [`EvidenceScope`] with both id lists, and the entity fills in its own id.
+//! `Disease` and `Target` each expose one `evidenceViews` field returning [`EvidenceViews`], which
+//! holds the scope and has one field per datasource.
 
-use async_graphql::{Error, Result};
+use async_graphql::{Context, Error, Object, Result};
 
-use crate::query::sql::{Column, Filter, Value};
+use crate::query::{
+    paginate::{Page, Paged, page_complexity},
+    sort::{Sort, UniqueSortKeys},
+    sql::{Column, Filter, Value},
+};
 
 pub mod clinical_precedence;
+pub mod gene_burden;
 pub mod gwas_credible_sets;
 
 /// Evidence ids for the scope's targets and diseases, read from the index table so `evidence` is
@@ -79,6 +86,95 @@ impl EvidenceScope {
             ],
         )
         .map_err(Error::new)
+    }
+}
+
+/// Sorted, searched and paged evidence tables, one field per datasource, all for the same
+/// diseases and targets.
+pub struct EvidenceViews {
+    scope: EvidenceScope,
+}
+
+impl EvidenceViews {
+    #[must_use]
+    pub fn new(scope: EvidenceScope) -> Self { Self { scope } }
+}
+
+#[Object]
+impl EvidenceViews {
+    /// Clinical precedence evidence: drugs that target the target and are in clinical
+    /// development or approved for the disease.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn clinical_precedence(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "clinical_precedence::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<clinical_precedence::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<clinical_precedence::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<clinical_precedence::EvidenceClinicalPrecedence>> {
+        let key = clinical_precedence::QueryParams::new(
+            self.scope.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        clinical_precedence::load_evidence_clinical_precedence(ctx, key).await
+    }
+
+    /// GWAS credible sets evidence: fine-mapped GWAS signals whose locus-to-gene (L2G) model
+    /// prioritises the target.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn gwas_credible_sets(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "gwas_credible_sets::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<gwas_credible_sets::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<gwas_credible_sets::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<gwas_credible_sets::EvidenceGwasCredibleSets>> {
+        let key = gwas_credible_sets::QueryParams::new(
+            self.scope.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        gwas_credible_sets::load_evidence_gwas_credible_sets(ctx, key).await
+    }
+
+    /// Gene burden evidence: rare-variant collapsing (burden) tests.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn gene_burden(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "gene_burden::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<gene_burden::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<gene_burden::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<gene_burden::EvidenceGeneBurden>> {
+        let key =
+            gene_burden::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
+        gene_burden::load_evidence_gene_burden(ctx, key).await
     }
 }
 
