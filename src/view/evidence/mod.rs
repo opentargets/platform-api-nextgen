@@ -18,6 +18,7 @@ pub mod clinical_precedence;
 pub mod eva;
 pub mod gene2phenotype;
 pub mod gene_burden;
+pub mod genomics_england_panel_app;
 pub mod gwas_credible_sets;
 pub mod uniprot_literature;
 
@@ -265,6 +266,33 @@ impl EvidenceViews {
             page.size,
         );
         uniprot_literature::load_evidence_uniprot_literature(ctx, key).await
+    }
+
+    /// Genomics England `PanelApp` evidence: gene-disease relationships from expert-reviewed gene
+    /// panels.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn genomics_england_panel_app(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "genomics_england_panel_app::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<genomics_england_panel_app::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<genomics_england_panel_app::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<genomics_england_panel_app::EvidenceGenomicsEnglandPanelApp>> {
+        let key = genomics_england_panel_app::QueryParams::new(
+            self.scope.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        genomics_england_panel_app::load_evidence_genomics_england_panel_app(ctx, key).await
     }
 
     /// `ClinVar` (EVA) evidence: germline variants in the target with a clinical significance
