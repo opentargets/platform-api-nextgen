@@ -4,11 +4,6 @@ use serde::Deserialize;
 
 /// ISO 8601 calendar date without timezone.
 /// Format: %Y-%m-%d
-///
-/// # Examples
-///
-/// * `1994-11-13`
-/// * `2000-02-24`
 #[derive(Debug, Clone, Copy, Deserialize, NewType)]
 #[serde(try_from = "u16")]
 #[graphql(name = "NaiveDate")]
