@@ -11,10 +11,11 @@ use async_graphql::{Context, Error, Object, Result};
 use crate::query::{
     paginate::{Page, Paged, page_complexity},
     sort::{Sort, UniqueSortKeys},
-    sql::{Column, Filter, Value},
+    sql::{Column, Filter, Op, Value},
 };
 
 pub mod clinical_precedence;
+pub mod eva;
 pub mod gene_burden;
 pub mod gwas_credible_sets;
 
@@ -28,6 +29,10 @@ const INDIRECT_EVIDENCE_IDS: &str = "SELECT id FROM evidence_by_disease_and_targ
 /// As [`INDIRECT_EVIDENCE_IDS`], for the given diseases only.
 const DIRECT_EVIDENCE_IDS: &str = "SELECT id FROM evidence_by_disease_and_target \
      WHERE datasourceId = ? AND diseaseId IN ? AND targetId IN ?";
+
+/// The diseases plus their ontology descendants. Bind: disease ids.
+const DISEASES_AND_DESCENDANTS: &str =
+    "SELECT arrayJoin(arrayConcat(descendants, [id])) FROM disease WHERE id IN ?";
 
 /// The disease/target pairs whose evidence a view shows.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -86,6 +91,35 @@ impl EvidenceScope {
             ],
         )
         .map_err(Error::new)
+    }
+
+    /// Filters keeping only `datasource`'s evidence for this scope, for a view whose source is
+    /// `evidence_by_disease_and_target` itself, so ClickHouse reads it by its sorting key.
+    ///
+    /// # Errors
+    /// If a column isn't `Str`.
+    pub fn index_filters<C: Column>(
+        &self,
+        datasource_col: C,
+        disease_col: C,
+        target_col: C,
+        datasource: &'static str,
+    ) -> Result<Vec<Filter<C>>> {
+        let disease = if self.enable_indirect {
+            Filter::in_subquery(
+                disease_col,
+                DISEASES_AND_DESCENDANTS,
+                vec![Value::StrArray(self.efo_ids.clone())],
+            )
+        } else {
+            Filter::in_str(disease_col, self.efo_ids.clone())
+        };
+        Ok(vec![
+            Filter::new(datasource_col, Op::Eq, Value::Str(datasource.to_owned()))
+                .map_err(Error::new)?,
+            disease.map_err(Error::new)?,
+            Filter::in_str(target_col, self.ensembl_ids.clone()).map_err(Error::new)?,
+        ])
     }
 }
 
@@ -176,6 +210,25 @@ impl EvidenceViews {
             gene_burden::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
         gene_burden::load_evidence_gene_burden(ctx, key).await
     }
+
+    /// `ClinVar` (EVA) evidence: germline variants in the target with a clinical significance
+    /// for the disease. Sorted by score only, with no search, so it's paged from the evidence
+    /// index and only the page's rows are read in full.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn eva(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "eva::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<eva::SortField>>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<eva::EvidenceEva>> {
+        let key = eva::QueryParams::new(self.scope.clone(), sort, page.index, page.size);
+        eva::load_evidence_eva(ctx, key).await
+    }
 }
 
 #[cfg(test)]
@@ -210,6 +263,14 @@ mod tests {
         for indirect in [true, false] {
             let scope = EvidenceScope::new(vec!["d".into()], vec!["t".into()], indirect);
             assert!(scope.candidate_filter(Id, "clinical_precedence").is_ok());
+        }
+    }
+
+    #[test]
+    fn index_filters_are_datasource_disease_target() {
+        for indirect in [true, false] {
+            let scope = EvidenceScope::new(vec!["d".into()], vec!["t".into()], indirect);
+            assert_eq!(scope.index_filters(Id, Id, Id, "eva").unwrap().len(), 3);
         }
     }
 
