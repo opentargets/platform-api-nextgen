@@ -2956,6 +2956,138 @@ enum EvidenceEvaSortField {
 }
 
 """
+A Gene2Phenotype evidence, as shown in the evidence page's Gene2Phenotype table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/gene2phenotype.sql`. Update both together.
+"""
+type EvidenceGene2Phenotype {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Identifier of the disease for which the target is associated in this evidence.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Disease label from the original source.
+	"""
+	diseaseFromSource: String
+	"""
+	Identifier of the target for which the disease is associated in this evidence.
+	"""
+	targetId: String!
+	"""
+	Approved symbol of the target. Empty if the target isn't found.
+	"""
+	targetApprovedSymbol: String!
+	"""
+	Target ID in resource of origin.
+	"""
+	targetFromSourceId: String
+	"""
+	Sequence Ontology identifier of the functional consequence.
+	"""
+	variantFunctionalConsequenceId: String
+	"""
+	Sequence Ontology label of the functional consequence.
+	"""
+	variantFunctionalConsequenceLabel: String
+	"""
+	Gain or loss of function effect of the evidence on the target.
+	"""
+	directionOnTarget: String
+	"""
+	Predicted direction of effect on the trait.
+	"""
+	directionOnTrait: String
+	"""
+	Inheritance patterns.
+	"""
+	allelicRequirements: [String!]!
+	"""
+	Gene2Phenotype panels the relationship is curated in, e.g. `DD; Ear`.
+	"""
+	studyId: String
+	"""
+	Gene2Phenotype confidence category: limited, moderate, strong or definitive.
+	"""
+	confidence: String
+	"""
+	List of PubMed or preprint reference identifiers.
+	"""
+	literature: [String!]!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceGene2PhenotypePage {
+	count: Int!
+	rows: [EvidenceGene2Phenotype!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input EvidenceGene2PhenotypeSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [EvidenceGene2PhenotypeSearchField!]! = [DISEASE_NAME, DISEASE_FROM_SOURCE, VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL, ALLELIC_REQUIREMENTS, STUDY_ID, CONFIDENCE]
+}
+
+"""
+Text fields that `search` can match against: the disease/phenotype, functional
+consequence, allelic requirement, panel and confidence category columns of the table.
+"""
+enum EvidenceGene2PhenotypeSearchField {
+	DISEASE_NAME
+	DISEASE_FROM_SOURCE
+	VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL
+	ALLELIC_REQUIREMENTS
+	STUDY_ID
+	CONFIDENCE
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input EvidenceGene2PhenotypeSort {
+	"""
+	The field to sort by.
+	"""
+	key: EvidenceGene2PhenotypeSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum EvidenceGene2PhenotypeSortField {
+	"""
+	Evidence score.
+	"""
+	SCORE
+}
+
+"""
 A gene burden evidence, as shown in the evidence page's gene burden table.
 
 Rows are decoded by position, so field order must match the column order of
@@ -3490,6 +3622,24 @@ type EvidenceViews {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): EvidenceGeneBurdenPage!
+	"""
+	Gene2Phenotype evidence: curated gene-disease relationships from the Gene2Phenotype
+	panels.
+	"""
+	gene2Phenotype(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EvidenceGene2PhenotypeSort!]! = [{key: SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the evidences' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: EvidenceGene2PhenotypeSearch,
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceGene2PhenotypePage!
 	"""
 	`ClinVar` (EVA) evidence: germline variants in the target with a clinical significance
 	for the disease. Sorted by score only, with no search, so it's paged from the evidence

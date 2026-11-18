@@ -16,6 +16,7 @@ use crate::query::{
 
 pub mod clinical_precedence;
 pub mod eva;
+pub mod gene2phenotype;
 pub mod gene_burden;
 pub mod gwas_credible_sets;
 
@@ -209,6 +210,33 @@ impl EvidenceViews {
         let key =
             gene_burden::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
         gene_burden::load_evidence_gene_burden(ctx, key).await
+    }
+
+    /// Gene2Phenotype evidence: curated gene-disease relationships from the Gene2Phenotype
+    /// panels.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn gene2phenotype(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "gene2phenotype::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<gene2phenotype::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<gene2phenotype::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<gene2phenotype::EvidenceGene2Phenotype>> {
+        let key = gene2phenotype::QueryParams::new(
+            self.scope.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        gene2phenotype::load_evidence_gene2phenotype(ctx, key).await
     }
 
     /// `ClinVar` (EVA) evidence: germline variants in the target with a clinical significance
