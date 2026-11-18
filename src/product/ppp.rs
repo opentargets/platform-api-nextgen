@@ -55,6 +55,7 @@ use crate::{
             clinical_precedence::EvidenceClinicalPrecedenceLoader, eva::EvidenceEvaLoader,
             gene_burden::EvidenceGeneBurdenLoader, gene2phenotype::EvidenceGene2PhenotypeLoader,
             gwas_credible_sets::EvidenceGwasCredibleSetsLoader,
+            uniprot_literature::EvidenceUniprotLiteratureLoader,
         },
         study_credible_sets::StudyCredibleSetsLoader,
         target_credible_sets::TargetCredibleSetsLoader,
@@ -131,6 +132,7 @@ impl Product for Ppp {
             .data(loader::<EvidenceGeneBurdenLoader>(ch))
             .data(loader::<EvidenceEvaLoader>(ch))
             .data(loader::<EvidenceGene2PhenotypeLoader>(ch))
+            .data(loader::<EvidenceUniprotLiteratureLoader>(ch))
             .data(loader::<StudyCredibleSetsLoader>(ch))
             .data(loader::<TargetCredibleSetsLoader>(ch))
             .data(loader::<VariantCredibleSetsLoader>(ch))
