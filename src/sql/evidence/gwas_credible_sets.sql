@@ -5,28 +5,18 @@
     e.diseaseId AS diseaseId,
     dictGet('disease_names', 'name', e.diseaseId) AS diseaseName,
     e.targetId AS targetId,
-    e.studyLocusId AS studyLocusId,
-    c.variantId AS leadVariantId,
+    e.studyLocusId AS credibleSetId,
+    c.leadVariantId AS leadVariantId,
     c.chromosome AS leadChromosome,
-    c.position AS leadPosition,
+    c.leadPosition AS leadPosition,
     -- Variant ids are `chromosome_position_reference_alternate`.
-    splitByChar('_', c.variantId)[3] AS leadReferenceAllele,
-    splitByChar('_', c.variantId)[4] AS leadAlternateAllele,
-    c.pValueMantissa AS pValueMantissa,
-    c.pValueExponent AS pValueExponent,
-    c.beta AS beta,
-    c.finemappingMethod AS finemappingMethod,
+    splitByChar('_', c.leadVariantId)[3] AS leadReferenceAllele,
+    splitByChar('_', c.leadVariantId)[4] AS leadAlternateAllele,
+    c.leadPValueMantissa AS pValueMantissa,
+    c.leadPValueExponent AS pValueExponent,
+    c.leadBeta AS beta,
+    c.fineMappingMethod AS fineMappingMethod,
     c.confidence AS confidence,
-    -- Ascending confidence order, so `DESC` puts the best fine-mapping first. Unknown values get 0.
-    toUInt64(indexOf(
-      [
-        'PICS fine-mapped credible set based on reported top hit',
-        'PICS fine-mapped credible set extracted from summary statistics',
-        'SuSiE fine-mapped credible set with out-of-sample LD',
-        'SuSiE fine-mapped credible set with in-sample LD'
-      ],
-      toString(c.confidence)
-    )) AS confidenceRank,
     c.studyId AS studyId,
     s.traitFromSource AS traitFromSource,
     s.projectId AS projectId,
@@ -35,6 +25,6 @@
     s.pubmedId AS pubmedId,
     s.nSamples AS nSamples
   FROM evidence AS e
-  LEFT JOIN credible_sets AS c ON c.studyLocusId = ifNull(e.studyLocusId, '')
+  LEFT JOIN credible_sets AS c ON c.credibleSetId = ifNull(e.studyLocusId, '')
   LEFT JOIN studies AS s ON s.studyId = c.studyId
 )
