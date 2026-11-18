@@ -15,7 +15,7 @@ use strum::EnumIter;
 use super::EvidenceScope;
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::variant::Chromosome,
+    entity::{credible_set::FineMappingMethod, variant::Chromosome},
     query::{
         paginate::Paged,
         sort::{Sort, SortDirection},
@@ -44,8 +44,8 @@ pub struct EvidenceGwasCredibleSets {
     disease_name: String,
     /// Identifier of the target prioritised by L2G.
     target_id: String,
-    /// Identifier of the credible set (`StudyLocus`) supporting this evidence.
-    study_locus_id: Option<String>,
+    /// Identifier of the credible set supporting this evidence.
+    credible_set_id: Option<String>,
     /// Identifier of the credible set's lead variant.
     lead_variant_id: String,
     /// Chromosome of the lead variant.
@@ -57,18 +57,16 @@ pub struct EvidenceGwasCredibleSets {
     /// Alternate allele of the lead variant.
     lead_alternate_allele: String,
     /// Mantissa of the lead variant's p-value.
-    p_value_mantissa: f64,
+    p_value_mantissa: Option<f32>,
     /// Exponent of the lead variant's p-value.
-    p_value_exponent: i32,
+    p_value_exponent: Option<i32>,
     /// Effect size of the lead variant.
     beta: Option<f64>,
     /// Fine-mapping method used to derive the credible set.
-    finemapping_method: String,
-    /// Fine-mapping confidence of the credible set.
-    confidence: String,
-    #[allow(dead_code, reason = "read only to keep the column order")]
-    #[graphql(skip)]
-    confidence_rank: u64,
+    fine_mapping_method: FineMappingMethod,
+    /// Confidence level of the credible set, from 1 (PICS on a reported top hit) to 4 (`SuSiE`
+    /// with in-sample LD); 0 means unknown.
+    confidence: u8,
     /// Identifier of the GWAS study.
     study_id: String,
     /// Trait, derived from source, analysed in the study.
@@ -95,7 +93,7 @@ columns!(EvidenceGwasCredibleSetsCol {
     Id                     => "id"                     : Str,
     Score                  => "score"                  : F64,
     DiseaseName            => "diseaseName"            : Str,
-    StudyLocusId           => "studyLocusId"           : Str,
+    CredibleSetId          => "credibleSetId"          : Str,
     LeadVariantId          => "leadVariantId"          : Str,
     // Enum8 in ClickHouse, ordered by its numeric value.
     LeadChromosome         => "leadChromosome"         : I64,
@@ -103,10 +101,9 @@ columns!(EvidenceGwasCredibleSetsCol {
     PValueMantissa         => "pValueMantissa"         : F64,
     PValueExponent         => "pValueExponent"         : I64,
     Beta                   => "beta"                   : F64,
-    FinemappingMethod      => "finemappingMethod"      : Str,
-    Confidence             => "confidence"             : Str,
-    // Position of `confidence` in the fine-mapping confidence order, best highest.
-    ConfidenceRank         => "confidenceRank"         : U64,
+    FineMappingMethod      => "fineMappingMethod"      : Str,
+    // Level from 0 (unknown) to 4 (best).
+    Confidence             => "confidence"             : I64,
     StudyId                => "studyId"                : Str,
     TraitFromSource        => "traitFromSource"        : Str,
     PublicationFirstAuthor => "publicationFirstAuthor" : Str,
@@ -178,8 +175,8 @@ pub enum SortField {
     PValue,
     /// Effect size of the lead variant.
     Beta,
-    /// Fine-mapping confidence, from PICS on a reported top hit up to `SuSiE` with in-sample LD.
-    FinemappingConfidence,
+    /// By confidence level, from PICS on a reported top hit up to `SuSiE` with in-sample LD.
+    Confidence,
 }
 
 const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
@@ -198,7 +195,7 @@ impl SortField {
             Self::SampleSize => &[C::NSamples],
             Self::PValue => &[C::PValueExponent, C::PValueMantissa],
             Self::Beta => &[C::Beta],
-            Self::FinemappingConfidence => &[C::ConfidenceRank],
+            Self::Confidence => &[C::Confidence],
         };
         OrderBy::each(cols, dir)
     }
@@ -215,8 +212,7 @@ column_subset! {
         TraitFromSource,
         DiseaseName,
         StudyId,
-        FinemappingMethod,
-        Confidence,
+        FineMappingMethod,
         PublicationFirstAuthor,
         PublicationDate,
     }
