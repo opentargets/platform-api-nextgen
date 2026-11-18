@@ -23,8 +23,7 @@ clickhouse = "0.15.1"
 derive_more = { version = "2.1.1", features = ["from"] }
 figment = { version = "0.10.19", features = ["env", "toml"] }
 graphql-parser = "0.4.1"
-humantime-serde = "1.1.1"
-jiff = { version = "0.2.43", default-features = false, features = ["std"] }
+jiff = { version = "0.2.43", default-features = false, features = ["serde", "std"] }
 moka = { version = "0.12.16", features = ["future", "sync"] }
 opensearch = { version = "2.4.0", default-features = false, features = ["rustls-tls"] }
 reqwest = { version = "0.13.4", features = ["json"] }

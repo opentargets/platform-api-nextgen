@@ -61,12 +61,15 @@ pub struct Config {
     /// The URL of the ClickHouse database.
     pub clickhouse_url: String,
     /// The maximum execution time for ClickHouse queries. Defaults to 0 (no limit).
-    #[serde(default, with = "humantime_serde")]
+    #[serde(default, with = "jiff::fmt::serde::unsigned_duration::required")]
     pub clickhouse_max_execution_time: Duration,
     /// The URL of the OpenSearch database.
     pub opensearch_url: String,
     /// The timeout for OpenSearch requests. Defaults to 10 seconds.
-    #[serde(default = "default_opensearch_timeout", with = "humantime_serde")]
+    #[serde(
+        default = "default_opensearch_timeout",
+        with = "jiff::fmt::serde::unsigned_duration::required"
+    )]
     pub opensearch_timeout: Duration,
     /// The maximum depth of the GraphQL schema. Defaults to 15.
     #[serde(default = "default_max_depth")]
@@ -186,4 +189,79 @@ fn plugins<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<Plugin>, D::Error> {
     }
 
     d.deserialize_any(PluginsVisitor)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn config_with_timeouts(timeouts: &str) -> Result<Config, Box<figment::Error>> {
+        let toml = format!(
+            "data_release = \"26.12\"\nclickhouse_url = \"http://localhost:8123\"\n\
+             opensearch_url = \"http://localhost:9200\"\n{timeouts}"
+        );
+        Figment::from(Toml::string(&toml))
+            .extract()
+            .map_err(Box::new)
+    }
+
+    #[test]
+    fn timeout_defaults_are_preserved() {
+        let config = config_with_timeouts("").unwrap();
+        assert_eq!(config.clickhouse_max_execution_time, Duration::ZERO);
+        assert_eq!(config.opensearch_timeout, Duration::from_secs(10));
+    }
+
+    #[test]
+    fn checked_in_timeouts_are_preserved() {
+        let config: Config = Figment::from(Toml::string(include_str!("../config.toml")))
+            .extract()
+            .unwrap();
+        assert_eq!(
+            config.clickhouse_max_execution_time,
+            Duration::from_secs(30)
+        );
+        assert_eq!(config.opensearch_timeout, Duration::from_secs(10));
+    }
+
+    #[test]
+    fn timeouts_accept_friendly_and_iso_durations() {
+        for (input, expected) in [
+            ("0s", Duration::ZERO),
+            ("30s", Duration::from_secs(30)),
+            ("500ms", Duration::from_millis(500)),
+            ("1h 30m", Duration::from_mins(90)),
+            ("1.5s", Duration::from_millis(1500)),
+            ("1ns", Duration::from_nanos(1)),
+            ("PT30S", Duration::from_secs(30)),
+        ] {
+            let config = config_with_timeouts(&format!(
+                "clickhouse_max_execution_time = {input:?}\nopensearch_timeout = {input:?}"
+            ))
+            .unwrap();
+            assert_eq!(config.clickhouse_max_execution_time, expected, "{input}");
+            assert_eq!(config.opensearch_timeout, expected, "{input}");
+        }
+    }
+
+    #[test]
+    fn timeouts_reject_invalid_or_calendar_durations() {
+        for field in ["clickhouse_max_execution_time", "opensearch_timeout"] {
+            for input in [
+                "-1s",
+                "",
+                "invalid",
+                "1d",
+                "1month",
+                "1year",
+                "18446744073709551616s",
+            ] {
+                assert!(
+                    config_with_timeouts(&format!("{field} = {input:?}")).is_err(),
+                    "{field}: {input}"
+                );
+            }
+            assert!(config_with_timeouts(&format!("{field} = 30")).is_err());
+        }
+    }
 }

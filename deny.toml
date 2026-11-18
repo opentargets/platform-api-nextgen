@@ -17,7 +17,6 @@ yanked = "deny"
 ignore = [
     # Only add entries here with a reason. Revisit them when deps are updated.
     { id = "RUSTSEC-2024-0436", reason = "paste is unmaintained (not vulnerable); compile-time only, via clickhouse -> polonius-the-crab. No replacement available upstream yet." },
-    { id = "RUSTSEC-2026-0542", reason = "Temporary exception for humantime's unmaintained status. humantime-serde uses humantime to parse ClickHouse execution-time and OpenSearch timeout configuration. Remove after migrating duration configuration parsing to a maintained library." },
 ]
 
 [licenses]
