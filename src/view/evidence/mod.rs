@@ -19,6 +19,7 @@ pub mod eva;
 pub mod gene2phenotype;
 pub mod gene_burden;
 pub mod gwas_credible_sets;
+pub mod uniprot_literature;
 
 /// Evidence ids for the scope's targets and diseases, read from the index table so `evidence` is
 /// looked up by key. Binds: datasource, disease ids (expanded to their ontology descendants),
@@ -237,6 +238,33 @@ impl EvidenceViews {
             page.size,
         );
         gene2phenotype::load_evidence_gene2phenotype(ctx, key).await
+    }
+
+    /// `UniProt` literature evidence: disease/target relationships curated by `UniProt` from the
+    /// literature.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn uniprot_literature(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "uniprot_literature::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<uniprot_literature::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<uniprot_literature::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<uniprot_literature::EvidenceUniprotLiterature>> {
+        let key = uniprot_literature::QueryParams::new(
+            self.scope.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        uniprot_literature::load_evidence_uniprot_literature(ctx, key).await
     }
 
     /// `ClinVar` (EVA) evidence: germline variants in the target with a clinical significance
