@@ -41,6 +41,10 @@ pub struct EvidenceGenomicsEnglandPanelApp {
     disease_id: String,
     /// Name of the disease. Empty if the disease isn't found.
     disease_name: String,
+    /// Identifier of the target for which the disease is associated in this evidence.
+    target_id: String,
+    /// Approved symbol of the target, used to link to `PanelApp`. Empty if the target isn't found.
+    target_approved_symbol: String,
     /// Allelic requirements of the gene-disease relationship.
     allelic_requirements: Vec<String>,
     /// Identifier of the Genomics England panel, used to link to `PanelApp`.
@@ -65,6 +69,8 @@ columns!(EvidenceGenomicsEnglandPanelAppCol {
     Score               => "score"               : F64,
     DiseaseId           => "diseaseId"           : Str,
     DiseaseName         => "diseaseName"         : Str,
+    TargetId            => "targetId"            : Str,
+    TargetApprovedSymbol => "targetApprovedSymbol" : Str,
     AllelicRequirements => "allelicRequirements" : StrArray,
     PanelId             => "panelId"             : Str,
     PanelName           => "panelName"           : Str,
@@ -131,6 +137,8 @@ pub enum SortField {
     Score,
     /// Disease name.
     DiseaseName,
+    /// Approved symbol of the target.
+    TargetApprovedSymbol,
     /// Allelic requirements.
     AllelicRequirements,
     /// Panel name.
@@ -152,6 +160,7 @@ impl SortField {
         let cols: &[C] = match self {
             Self::Score => &[C::Score],
             Self::DiseaseName => &[C::DiseaseName],
+            Self::TargetApprovedSymbol => &[C::TargetApprovedSymbol],
             Self::AllelicRequirements => &[C::AllelicRequirements],
             Self::PanelName => &[C::PanelName],
             Self::Confidence => &[C::ConfidenceRank],
@@ -168,6 +177,7 @@ column_subset! {
     #[graphql(name = "EvidenceGenomicsEnglandPanelAppSearchField")]
     pub enum SearchField => EvidenceGenomicsEnglandPanelAppCol {
         DiseaseName,
+        TargetApprovedSymbol,
         AllelicRequirements,
         PanelName,
         Confidence,

@@ -4,6 +4,8 @@
     e.score AS score,
     e.diseaseId AS diseaseId,
     dictGet('disease_names', 'name', e.diseaseId) AS diseaseName,
+    e.targetId AS targetId,
+    dictGet('target_symbols', 'approvedSymbol', e.targetId) AS targetApprovedSymbol,
     e.allelicRequirements AS allelicRequirements,
     e.studyId AS panelId,
     e.studyOverview AS panelName,
