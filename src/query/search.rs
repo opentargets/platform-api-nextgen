@@ -15,6 +15,7 @@ use crate::{
         evidence::{
             clinical_precedence::SearchField as EvidenceClinicalPrecedenceSearchField,
             gene_burden::SearchField as EvidenceGeneBurdenSearchField,
+            gene2phenotype::SearchField as EvidenceGene2PhenotypeSearchField,
             gwas_credible_sets::SearchField as EvidenceGwasCredibleSetsSearchField,
         },
         study_credible_sets::SearchField as StudyCredibleSetsSearchField,
@@ -56,6 +57,10 @@ pub fn contains(haystack: &str, needle: &str) -> bool { haystack.to_lowercase().
 #[graphql(concrete(
     name = "EvidenceGwasCredibleSetsSearch",
     params(EvidenceGwasCredibleSetsSearchField)
+))]
+#[graphql(concrete(
+    name = "EvidenceGene2PhenotypeSearch",
+    params(EvidenceGene2PhenotypeSearchField)
 ))]
 #[graphql(concrete(name = "EvidenceGeneBurdenSearch", params(EvidenceGeneBurdenSearchField)))]
 #[graphql(concrete(name = "DiseaseStudiesSearch", params(DiseaseStudiesSearchField)))]
