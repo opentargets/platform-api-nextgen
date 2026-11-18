@@ -40,7 +40,7 @@ use crate::{
     },
     view::{
         disease_studies as ds,
-        evidence::{EvidenceScope, clinical_precedence as cp, gwas_credible_sets as gcs},
+        evidence::{EvidenceScope, EvidenceViews},
     },
 };
 
@@ -498,62 +498,22 @@ impl Disease {
         Ok(all.query().paginate(page))
     }
 
-    /// Clinical precedence evidence for this disease and the given targets: drugs that target the
-    /// target and are in clinical development or approved for the disease. Sorted, searched and
-    /// paged in the database.
-    #[graphql(complexity = "page_complexity(page, child_complexity)")]
-    async fn evidence_clinical_precedence(
+    /// Sorted, searched and paged evidence tables for this disease and the given targets, one
+    /// field per datasource.
+    async fn evidence_views(
         &self,
-        ctx: &Context<'_>,
         #[graphql(desc = "A list of target ids to filter evidences on.")] ensembl_ids: Vec<String>,
         #[graphql(
             default = true,
             desc = "Whether to include evidence for ontology-descendant diseases."
         )]
         enable_indirect: bool,
-        #[graphql(
-            default_with = "cp::SortField::default_sort()",
-            validator(custom = "UniqueSortKeys"),
-            desc = "List of sort statements. Each field can be used at most once."
-        )]
-        sort: Vec<Sort<cp::SortField>>,
-        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
-                          Searches all fields unless `fields` is given.")]
-        search: Option<cp::Search>,
-        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
-    ) -> async_graphql::Result<Paged<cp::EvidenceClinicalPrecedence>> {
-        let scope = EvidenceScope::new(vec![self.id.clone()], ensembl_ids, enable_indirect);
-        let key = cp::QueryParams::new(scope, sort, search, page.index, page.size);
-        cp::load_evidence_clinical_precedence(ctx, key).await
-    }
-
-    /// GWAS credible sets evidence for this disease and the given targets: fine-mapped GWAS
-    /// signals whose locus-to-gene (L2G) model prioritises the target. Sorted, searched and paged
-    /// in the database.
-    #[graphql(complexity = "page_complexity(page, child_complexity)")]
-    async fn evidence_gwas_credible_sets(
-        &self,
-        ctx: &Context<'_>,
-        #[graphql(desc = "A list of target ids to filter evidences on.")] ensembl_ids: Vec<String>,
-        #[graphql(
-            default = true,
-            desc = "Whether to include evidence for ontology-descendant diseases."
-        )]
-        enable_indirect: bool,
-        #[graphql(
-            default_with = "gcs::SortField::default_sort()",
-            validator(custom = "UniqueSortKeys"),
-            desc = "List of sort statements. Each field can be used at most once."
-        )]
-        sort: Vec<Sort<gcs::SortField>>,
-        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
-                          Searches all fields unless `fields` is given.")]
-        search: Option<gcs::Search>,
-        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
-    ) -> async_graphql::Result<Paged<gcs::EvidenceGwasCredibleSets>> {
-        let scope = EvidenceScope::new(vec![self.id.clone()], ensembl_ids, enable_indirect);
-        let key = gcs::QueryParams::new(scope, sort, search, page.index, page.size);
-        gcs::load_evidence_gwas_credible_sets(ctx, key).await
+    ) -> EvidenceViews {
+        EvidenceViews::new(EvidenceScope::new(
+            vec![self.id.clone()],
+            ensembl_ids,
+            enable_indirect,
+        ))
     }
 
     /// Association time series.
