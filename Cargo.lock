@@ -153,7 +153,6 @@ dependencies = [
  "asynk-strim",
  "base64 0.22.1",
  "bytes",
- "chrono",
  "fast_chemail",
  "fnv",
  "futures-channel",
@@ -161,6 +160,7 @@ dependencies = [
  "handlebars",
  "http",
  "indexmap 2.14.2",
+ "jiff",
  "lru",
  "mime",
  "multer",
@@ -561,10 +561,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aa79e62e7697b8e29b513a68abacf485adcd1fe8284a4316c5ae868e6633327"
 dependencies = [
  "iana-time-zone",
- "js-sys",
  "num-traits",
  "serde",
- "wasm-bindgen",
  "windows-link 0.2.1",
 ]
 
@@ -623,7 +621,6 @@ dependencies = [
  "bnum",
  "bstr",
  "bytes",
- "chrono",
  "cityhash-rs",
  "clickhouse-macros",
  "clickhouse-types",
@@ -1486,22 +1483,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
-name = "humantime"
-version = "2.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15cdd26707701c53297e2fa6afb323d55fbc1d0810c3aec078ae3ef0424c3c15"
-
-[[package]]
-name = "humantime-serde"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57a3db5ea5923d99402c94e9feb261dc5ee9b4efa158b0315f788cf549cc200c"
-dependencies = [
- "humantime",
- "serde",
-]
-
-[[package]]
 name = "hyper"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2322,13 +2303,12 @@ dependencies = [
  "axum",
  "axum-prometheus",
  "axum-server",
- "chrono",
  "clap",
  "clickhouse",
  "derive_more",
  "figment",
  "graphql-parser",
- "humantime-serde",
+ "jiff",
  "moka",
  "opensearch",
  "reqwest",

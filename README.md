@@ -28,6 +28,18 @@ rustup toolchain install 1.99.0 --profile minimal --component clippy
 > ```
 
 
+## Timeout configuration
+
+`clickhouse_max_execution_time` and `opensearch_timeout` accept nonnegative
+Jiff duration strings, such as `"30s"`, `"500ms"`, `"1h 30m"`, or ISO 8601
+`"PT30S"`. The same syntax applies to the `PLATFORM_API_` environment overrides.
+When omitted, ClickHouse defaults to `0s` (no execution limit) and OpenSearch
+defaults to `10s`.
+
+Following the migration from humantime, units of days or larger are no longer
+accepted for these fixed timeouts. Use `"24h"` instead of `"1d"`; months and years
+are not supported.
+
 ## Build
 
 Exactly one product feature must be enabled:

@@ -4,7 +4,6 @@ use async_graphql::{
     ComplexObject, Context, Enum, Object, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
-use chrono::NaiveDate;
 use clickhouse::Row;
 use derive_more::From;
 use moka::future::Cache;
@@ -13,6 +12,7 @@ use serde::Deserialize;
 use crate::{
     datasource::clickhouse::{ClickHouse, from_nullable_string_opt, from_string},
     entity::{
+        date::Date,
         disease::{Disease, load_disease},
         drug::{Drug, load_drug},
     },
@@ -247,8 +247,7 @@ pub struct ClinicalReport {
     /// Number of arms in the clinical trial.
     trial_number_of_arms: Option<i32>,
     /// Start date of the clinical trial.
-    #[serde(with = "clickhouse::serde::chrono::date::option")]
-    trial_start_date: Option<NaiveDate>,
+    trial_start_date: Option<Date>,
     /// Literature references associated with the clinical trial.
     trial_literature: Vec<TrialLiterature>,
     /// Overall status of the clinical trial (e.g. Completed, Terminated).
