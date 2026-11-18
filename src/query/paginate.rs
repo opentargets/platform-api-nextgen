@@ -36,8 +36,8 @@ use crate::{
     view::{
         disease_studies::DiseaseStudy,
         evidence::{
-            clinical_precedence::EvidenceClinicalPrecedence, gene_burden::EvidenceGeneBurden,
-            gwas_credible_sets::EvidenceGwasCredibleSets,
+            clinical_precedence::EvidenceClinicalPrecedence, eva::EvidenceEva,
+            gene_burden::EvidenceGeneBurden, gwas_credible_sets::EvidenceGwasCredibleSets,
         },
         study_credible_sets::StudyCredibleSet,
         target_credible_sets::TargetCredibleSet,
@@ -112,6 +112,7 @@ pub fn page_complexity(page: Page, child_complexity: usize) -> usize {
 #[graphql(concrete(name = "TargetCredibleSetPage", params(TargetCredibleSet)))]
 #[graphql(concrete(name = "EvidenceClinicalPrecedencePage", params(EvidenceClinicalPrecedence)))]
 #[graphql(concrete(name = "EvidenceGwasCredibleSetsPage", params(EvidenceGwasCredibleSets)))]
+#[graphql(concrete(name = "EvidenceEvaPage", params(EvidenceEva)))]
 #[graphql(concrete(name = "EvidenceGeneBurdenPage", params(EvidenceGeneBurden)))]
 #[graphql(concrete(
     name = "VariantTranscriptConsequencePage",

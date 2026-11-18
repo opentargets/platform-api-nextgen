@@ -52,7 +52,7 @@ use crate::{
     view::{
         disease_studies::DiseaseStudiesLoader,
         evidence::{
-            clinical_precedence::EvidenceClinicalPrecedenceLoader,
+            clinical_precedence::EvidenceClinicalPrecedenceLoader, eva::EvidenceEvaLoader,
             gene_burden::EvidenceGeneBurdenLoader,
             gwas_credible_sets::EvidenceGwasCredibleSetsLoader,
         },
@@ -129,6 +129,7 @@ impl Product for Ppp {
             .data(loader::<EvidenceClinicalPrecedenceLoader>(ch))
             .data(loader::<EvidenceGwasCredibleSetsLoader>(ch))
             .data(loader::<EvidenceGeneBurdenLoader>(ch))
+            .data(loader::<EvidenceEvaLoader>(ch))
             .data(loader::<StudyCredibleSetsLoader>(ch))
             .data(loader::<TargetCredibleSetsLoader>(ch))
             .data(loader::<VariantCredibleSetsLoader>(ch))

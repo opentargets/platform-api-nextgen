@@ -2819,6 +2819,143 @@ enum EvidenceClinicalPrecedenceSortField {
 }
 
 """
+A `ClinVar` evidence, as shown in the evidence page's `ClinVar` table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/eva.sql`. Update both together.
+"""
+type EvidenceEva {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Identifier of the disease for which the target is associated in this evidence.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Disease label from the original source.
+	"""
+	diseaseFromSource: String
+	"""
+	Identifier of the target for which the disease is associated in this evidence.
+	"""
+	targetId: String!
+	"""
+	Identifier of the variant, as `chromosome_position_ref_alt`.
+	"""
+	variantId: String
+	"""
+	Chromosome of the variant. Null if the variant isn't found.
+	"""
+	variantChromosome: Chromosome
+	"""
+	Position of the variant (`GRCh38`). Null if the variant isn't found.
+	"""
+	variantPosition: Int
+	"""
+	Reference allele of the variant. Null if the variant isn't found.
+	"""
+	variantReferenceAllele: String
+	"""
+	Alternate allele of the variant. Null if the variant isn't found.
+	"""
+	variantAlternateAllele: String
+	"""
+	HGVS identifier of the variant.
+	"""
+	variantHgvsId: String
+	"""
+	dbSNP rsID of the variant.
+	"""
+	variantRsId: String
+	"""
+	`ClinVar` record (RCV) identifier.
+	"""
+	studyId: String
+	"""
+	Sequence Ontology identifier of the variant's functional consequence.
+	"""
+	variantFunctionalConsequenceId: String
+	"""
+	Sequence Ontology label of the variant's functional consequence.
+	"""
+	variantFunctionalConsequenceLabel: String
+	"""
+	Gain or loss of function effect of the evidence on the target.
+	"""
+	directionOnTarget: String
+	"""
+	Predicted direction of effect on the trait.
+	"""
+	directionOnTrait: String
+	"""
+	Clinical significances of the variant.
+	"""
+	clinicalSignificances: [String!]!
+	"""
+	Inheritance patterns.
+	"""
+	allelicRequirements: [String!]!
+	"""
+	Origins of the variant allele.
+	"""
+	alleleOrigins: [String!]!
+	"""
+	`ClinVar` review status.
+	"""
+	confidence: String
+	"""
+	List of PubMed or preprint reference identifiers.
+	"""
+	literature: [String!]!
+	"""
+	Phenotypes of the cohort, from the source.
+	"""
+	cohortPhenotypes: [String!]!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceEvaPage {
+	count: Int!
+	rows: [EvidenceEva!]!
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input EvidenceEvaSort {
+	"""
+	The field to sort by.
+	"""
+	key: EvidenceEvaSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum EvidenceEvaSortField {
+	"""
+	Evidence score.
+	"""
+	SCORE
+}
+
+"""
 A gene burden evidence, as shown in the evidence page's gene burden table.
 
 Rows are decoded by position, so field order must match the column order of
@@ -3353,6 +3490,21 @@ type EvidenceViews {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): EvidenceGeneBurdenPage!
+	"""
+	`ClinVar` (EVA) evidence: germline variants in the target with a clinical significance
+	for the disease. Sorted by score only, with no search, so it's paged from the evidence
+	index and only the page's rows are read in full.
+	"""
+	eva(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EvidenceEvaSort!]! = [{key: SCORE, direction: DESCENDING}],
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceEvaPage!
 }
 
 """

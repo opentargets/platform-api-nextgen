@@ -15,6 +15,11 @@ pub trait Table: Send + Sync + 'static {
     const NAME: &'static str;
     /// Unique column used as the final ORDER BY key so OFFSET paging is stable.
     const TIE_BREAKER: &'static str;
+    /// Where to read the returned rows from, when [`Self::NAME`] only holds the columns to
+    /// filter and sort on (e.g. a narrow index table). Only the page's rows are read from it, by
+    /// [`Self::TIE_BREAKER`], so expensive columns and joins cost one page, not every candidate.
+    /// It must have the tie-breaker and every sort column. `None` returns rows from `NAME`.
+    const ROW_SOURCE: Option<&'static str> = None;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -360,10 +365,23 @@ impl<T: Table> PageSpec<T> {
             .collect();
         order.push(format!("{} ASC", T::TIE_BREAKER));
 
+        let order_by = order.join(", ");
+        let rows = T::ROW_SOURCE.map_or_else(
+            || "paged".to_string(),
+            |source| {
+                let tie = T::TIE_BREAKER;
+                format!(
+                    "(SELECT * FROM {source} WHERE {tie} IN (SELECT {tie} FROM paged) \
+                     ORDER BY {order_by})"
+                )
+            },
+        );
+
         let sql = TEMPLATE
             .replace("{{table}}", T::NAME)
             .replace("{{where}}", &where_sql)
-            .replace("{{order_by}}", &order.join(", "));
+            .replace("{{order_by}}", &order_by)
+            .replace("{{rows}}", &rows);
         debug_assert!(!sql.contains("{{"), "unfilled template slot");
 
         Rendered {
@@ -469,6 +487,46 @@ mod tests {
             "sql was:\n{}",
             r.sql
         );
+    }
+
+    #[test]
+    fn rows_come_from_paged_without_a_row_source() {
+        let r = spec(vec![], vec![]).render();
+        assert!(
+            r.sql.contains("FROM paged\nGROUP BY"),
+            "sql was:\n{}",
+            r.sql
+        );
+    }
+
+    #[test]
+    fn row_source_reads_only_the_page_in_order() {
+        struct Narrow;
+        impl Table for Narrow {
+            type Col = TestCol;
+            const NAME: &'static str = "narrow";
+            const TIE_BREAKER: &'static str = "id";
+            const ROW_SOURCE: Option<&'static str> = Some("wide");
+        }
+        let r = PageSpec::<Narrow> {
+            filters: vec![],
+            order_by: vec![OrderBy {
+                col: TestCol::Score,
+                dir: SortDirection::Descending,
+            }],
+            offset: 0,
+            limit: 10,
+        }
+        .render();
+        assert!(
+            r.sql.contains(
+                "FROM (SELECT * FROM wide WHERE id IN (SELECT id FROM paged) \
+                 ORDER BY score DESC, id ASC)\nGROUP BY"
+            ),
+            "sql was:\n{}",
+            r.sql
+        );
+        assert!(r.sql.contains("FROM narrow\n"), "sql was:\n{}", r.sql);
     }
 
     #[test]

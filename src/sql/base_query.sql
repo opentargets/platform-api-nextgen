@@ -22,5 +22,5 @@ SELECT
         CAST(total AS UInt64),
         groupArray(tuple(*)) AS rows
     )
-FROM paged
+FROM {{rows}}
 GROUP BY query_id
