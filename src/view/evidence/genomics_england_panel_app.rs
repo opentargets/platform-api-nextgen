@@ -135,14 +135,6 @@ impl QueryParams {
 pub enum SortField {
     /// Evidence score.
     Score,
-    /// Disease name.
-    DiseaseName,
-    /// Approved symbol of the target.
-    TargetApprovedSymbol,
-    /// Allelic requirements.
-    AllelicRequirements,
-    /// Panel name.
-    PanelName,
     /// Gene rating, from red up to green.
     Confidence,
 }
@@ -158,12 +150,8 @@ impl SortField {
     fn as_order_by(self, dir: SortDirection) -> Vec<OrderBy<EvidenceGenomicsEnglandPanelAppCol>> {
         use EvidenceGenomicsEnglandPanelAppCol as C;
         let cols: &[C] = match self {
-            Self::Score => &[C::Score],
-            Self::DiseaseName => &[C::DiseaseName],
-            Self::TargetApprovedSymbol => &[C::TargetApprovedSymbol],
-            Self::AllelicRequirements => &[C::AllelicRequirements],
-            Self::PanelName => &[C::PanelName],
             Self::Confidence => &[C::ConfidenceRank],
+            Self::Score => &[C::Score],
         };
         OrderBy::each(cols, dir)
     }
@@ -180,7 +168,6 @@ column_subset! {
         TargetApprovedSymbol,
         AllelicRequirements,
         PanelName,
-        Confidence,
     }
 }
 
