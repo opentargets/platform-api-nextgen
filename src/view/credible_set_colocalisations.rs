@@ -34,10 +34,10 @@ use crate::{
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct CredibleSetColocalisation {
-    /// This credible set (`StudyLocus`), on the left side of the colocalisation pair.
-    study_locus_id: String,
-    /// The other credible set (`StudyLocus`) in the colocalisation pair.
-    other_study_locus_id: String,
+    /// This credible set, on the left side of the colocalisation pair.
+    credible_set_id: String,
+    /// The other credible set in the colocalisation pair.
+    other_credible_set_id: String,
     /// Type of the other credible set's study (e.g. gwas, eqtl, pqtl).
     study_type: StudyType,
     /// Study of the other credible set.
@@ -61,7 +61,7 @@ pub struct CredibleSetColocalisation {
     /// Description of `biosampleId`.
     biosample_description: Option<String>,
     /// Whether the other credible set is a trans-QTL.
-    is_trans_qtl: Option<bool>,
+    is_trans_qtl: bool,
     /// Lead variant of the other credible set.
     lead_variant_id: String,
     /// Chromosome of the lead variant.
@@ -69,9 +69,9 @@ pub struct CredibleSetColocalisation {
     /// Position of the lead variant (`GRCh38`).
     lead_position: u32,
     /// Mantissa of the other credible set's lead variant P-value.
-    p_value_mantissa: f64,
+    p_value_mantissa: Option<f32>,
     /// Exponent of the other credible set's lead variant P-value.
-    p_value_exponent: i32,
+    p_value_exponent: Option<i32>,
     /// Method used to estimate colocalisation (e.g. coloc, eCAVIAR).
     colocalisation_method: String,
     /// Number of variants intersecting between the two credible sets.
@@ -86,18 +86,18 @@ pub struct CredibleSetColocalisation {
     /// causal variants. Used in eCAVIAR method.
     clpp: f64,
     /// Average sign of the beta ratio between colocalised variants (directionality).
-    beta_ratio_sign_average: f64,
+    beta_ratio_sign_average: Option<f64>,
 }
 
 impl Table for CredibleSetColocalisation {
     type Col = CredibleSetColocalisationCol;
     const NAME: &'static str = include_str!("../sql/credible_set_colocalisations.sql");
     // Unique within a credible set, which is all a page ever holds.
-    const TIE_BREAKER: &'static str = "otherStudyLocusId";
+    const TIE_BREAKER: &'static str = "otherCredibleSetId";
 }
 
 columns!(CredibleSetColocalisationCol {
-    StudyLocusId               => "studyLocusId"               : Str,
+    CredibleSetId              => "credibleSetId"              : Str,
     // Enum8 in ClickHouse, compared against its names, e.g. 'eqtl'.
     StudyType                  => "studyType"                  : Str,
     StudyId                    => "studyId"                    : Str,
@@ -120,7 +120,7 @@ columns!(CredibleSetColocalisationCol {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct QueryParams {
-    study_locus_id: String,
+    credible_set_id: String,
     /// Never empty: the GraphQL argument requires at least one.
     study_types: Vec<StudyType>,
     sort: Vec<Sort<SortField>>,
@@ -132,7 +132,7 @@ pub struct QueryParams {
 impl QueryParams {
     #[must_use]
     pub fn new(
-        study_locus_id: String,
+        credible_set_id: String,
         mut study_types: Vec<StudyType>,
         sort: Vec<Sort<SortField>>,
         search: Option<Search>,
@@ -143,7 +143,7 @@ impl QueryParams {
         study_types.sort_unstable();
         study_types.dedup();
         Self {
-            study_locus_id,
+            credible_set_id,
             study_types,
             sort,
             search: search.and_then(Search::normalise),
@@ -161,9 +161,9 @@ impl QueryParams {
         // The first filter is pushed down to a key lookup on `colocalisation`.
         let mut filters = vec![
             Filter::new(
-                CredibleSetColocalisationCol::StudyLocusId,
+                CredibleSetColocalisationCol::CredibleSetId,
                 Op::Eq,
-                Value::Str(self.study_locus_id.clone()),
+                Value::Str(self.credible_set_id.clone()),
             )
             .map_err(Error::new)?,
             Filter::in_str(CredibleSetColocalisationCol::StudyType, study_types)

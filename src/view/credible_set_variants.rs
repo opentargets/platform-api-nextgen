@@ -32,8 +32,8 @@ use crate::{
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct CredibleSetVariant {
-    /// Identifier of the credible set (`StudyLocus`).
-    study_locus_id: String,
+    /// Identifier of the credible set.
+    credible_set_id: String,
     /// Variant identifier (`chromosome_position_ref_alt`).
     variant_id: String,
     /// Chromosome of the variant.
@@ -45,21 +45,19 @@ pub struct CredibleSetVariant {
     /// Alternate allele of the variant.
     alternate_allele: String,
     /// Posterior inclusion probability for the variant within this credible set.
-    posterior_probability: f64,
-    /// Log (natural) Bayes factor for the variant from fine-mapping.
-    #[graphql(name = "logBF")]
-    #[serde(rename = "logBF")]
-    log_bf: Option<f64>,
+    posterior_probability: f32,
+    /// Natural log Bayes factor for the variant from fine-mapping.
+    log_bayes_factor: Option<f32>,
     /// Mantissa of the P-value for this variant in the credible set.
-    p_value_mantissa: Option<f64>,
+    p_value_mantissa: Option<f32>,
     /// Exponent of the P-value for this variant in the credible set.
     p_value_exponent: Option<i32>,
-    /// Beta coefficient of this variant in the credible set.
-    beta: Option<f64>,
-    /// Standard error of this variant in the credible set.
-    standard_error: Option<f64>,
+    /// Beta coefficient of this variant, as reported by the source. Not comparable across studies.
+    reported_beta: Option<f64>,
+    /// Standard error of the reported beta.
+    reported_standard_error: Option<f64>,
     /// R-squared (LD) between this credible set variant and the lead variant.
-    r2_overall: Option<f64>,
+    r2_overall: Option<f32>,
     /// Sequence Ontology id of the variant's most severe consequence (e.g. `SO:0001583`).
     most_severe_consequence_id: Option<String>,
     /// Sequence Ontology label of the variant's most severe consequence (e.g. missense variant).
@@ -74,18 +72,18 @@ impl Table for CredibleSetVariant {
 }
 
 columns!(CredibleSetVariantCol {
-    StudyLocusId               => "studyLocusId"               : Str,
+    CredibleSetId              => "credibleSetId"              : Str,
     VariantId                  => "variantId"                  : Str,
     Chromosome                 => "chromosome"                 : I64,
     Position                   => "position"                   : I64,
     ReferenceAllele            => "referenceAllele"            : Str,
     AlternateAllele            => "alternateAllele"            : Str,
     PosteriorProbability       => "posteriorProbability"       : F64,
-    LogBf                      => "logBF"                      : F64,
+    LogBayesFactor             => "logBayesFactor"             : F64,
     PValueMantissa             => "pValueMantissa"             : F64,
     PValueExponent             => "pValueExponent"             : I64,
-    Beta                       => "beta"                       : F64,
-    StandardError              => "standardError"              : F64,
+    ReportedBeta               => "reportedBeta"               : F64,
+    ReportedStandardError      => "reportedStandardError"      : F64,
     R2Overall                  => "r2Overall"                  : F64,
     MostSevereConsequenceLabel => "mostSevereConsequenceLabel" : Str,
 });
@@ -94,7 +92,7 @@ columns!(CredibleSetVariantCol {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct QueryParams {
-    study_locus_id: String,
+    credible_set_id: String,
     sort: Vec<Sort<SortField>>,
     search: Option<Search>,
     index: u32,
@@ -104,14 +102,14 @@ pub struct QueryParams {
 impl QueryParams {
     #[must_use]
     pub fn new(
-        study_locus_id: String,
+        credible_set_id: String,
         sort: Vec<Sort<SortField>>,
         search: Option<Search>,
         index: u32,
         size: u32,
     ) -> Self {
         Self {
-            study_locus_id,
+            credible_set_id,
             sort,
             search: search.and_then(Search::normalise),
             index,
@@ -123,9 +121,9 @@ impl QueryParams {
         // Pushed down to a key lookup on `credible_sets_locus`.
         let mut filters = vec![
             Filter::new(
-                CredibleSetVariantCol::StudyLocusId,
+                CredibleSetVariantCol::CredibleSetId,
                 Op::Eq,
-                Value::Str(self.study_locus_id.clone()),
+                Value::Str(self.credible_set_id.clone()),
             )
             .map_err(Error::new)?,
         ];
@@ -153,14 +151,13 @@ pub enum SortField {
     Variant,
     /// By exponent, then mantissa.
     PValue,
-    Beta,
-    StandardError,
+    ReportedBeta,
+    ReportedStandardError,
     /// R-squared (LD) with the lead variant.
     #[graphql(name = "R2_OVERALL")]
     R2Overall,
     PosteriorProbability,
-    #[graphql(name = "LOG_BF")]
-    LogBf,
+    LogBayesFactor,
 }
 
 const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
@@ -181,11 +178,11 @@ impl SortField {
                 C::AlternateAllele,
             ],
             Self::PValue => &[C::PValueExponent, C::PValueMantissa],
-            Self::Beta => &[C::Beta],
-            Self::StandardError => &[C::StandardError],
+            Self::ReportedBeta => &[C::ReportedBeta],
+            Self::ReportedStandardError => &[C::ReportedStandardError],
             Self::R2Overall => &[C::R2Overall],
             Self::PosteriorProbability => &[C::PosteriorProbability],
-            Self::LogBf => &[C::LogBf],
+            Self::LogBayesFactor => &[C::LogBayesFactor],
         };
         OrderBy::each(cols, dir)
     }
