@@ -261,7 +261,7 @@ impl CredibleSet {
         #[graphql(default, desc = "Pagination for the variants.")] page: Page,
     ) -> async_graphql::Result<Paged<csv::CredibleSetVariant>> {
         let query_params = csv::QueryParams::new(
-            self.study_locus_id.clone(),
+            self.credible_set_id.clone(),
             sort,
             search,
             page.index,
@@ -294,7 +294,7 @@ impl CredibleSet {
         #[graphql(default, desc = "Pagination for the colocalisations.")] page: Page,
     ) -> async_graphql::Result<Paged<csc::CredibleSetColocalisation>> {
         let query_params = csc::QueryParams::new(
-            self.study_locus_id.clone(),
+            self.credible_set_id.clone(),
             study_types,
             sort,
             search,
