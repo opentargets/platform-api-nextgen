@@ -56,6 +56,7 @@ pub struct EvidenceGenomicsEnglandPanelApp {
     #[allow(dead_code, reason = "read only to keep the column order")]
     #[graphql(skip)]
     confidence_rank: u64,
+    literature: Vec<String>,
 }
 
 impl Table for EvidenceGenomicsEnglandPanelApp {

@@ -10,6 +10,7 @@
     e.studyId AS panelId,
     e.studyOverview AS panelName,
     e.confidence AS confidence,
+    e.literature AS literature,
     -- Ascending rating order, so `DESC` puts green first. Unknown and NULL ratings get 0.
     toUInt64(indexOf(['red', 'amber', 'green'], ifNull(e.confidence, ''))) AS confidenceRank
   FROM evidence AS e
