@@ -5719,6 +5719,20 @@ type Query {
 	List of molecular interaction resources and their versions.
 	"""
 	interactionResources: [InteractionResource!]!
+	region(
+		"""
+		Chromosome the region is contained in.
+		"""
+		chromosome: Chromosome!,
+		"""
+		Start position.
+		"""
+		start: Int!,
+		"""
+		End position.
+		"""
+		end: Int!
+	): Region!
 	studies(
 		"""
 		List of Study IDs to fetch. If both `studyIds` and `diseaseIds` are provided,
@@ -5858,6 +5872,30 @@ type Reference {
 	List of URLs linking to the reference.
 	"""
 	urls: [String!]!
+}
+
+"""
+Region with chromosome, start and end positions.
+"""
+type Region {
+	"""
+	Chromosome the region is contained in.
+	"""
+	chromosome: Chromosome!
+	"""
+	Start position.
+	"""
+	start: Int!
+	"""
+	End position.
+	"""
+	end: Int!
+	targets(
+		"""
+		Pagination for the targets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): TargetPage!
 }
 
 """
