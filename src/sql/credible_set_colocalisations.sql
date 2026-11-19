@@ -1,7 +1,7 @@
 (
   SELECT
-    c.studyLocusId AS studyLocusId,
-    x.otherStudyLocusId AS otherStudyLocusId,
+    c.credibleSetId AS credibleSetId,
+    x.otherCredibleSetId AS otherCredibleSetId,
     x.rightStudyType AS studyType,
     cs.studyId AS studyId,
     s.projectId AS projectId,
@@ -17,11 +17,11 @@
     nullIf(b.biosampleName, '') AS biosampleName,
     b.description AS biosampleDescription,
     cs.isTransQtl AS isTransQtl,
-    cs.variantId AS leadVariantId,
+    cs.leadVariantId AS leadVariantId,
     cs.chromosome AS leadChromosome,
-    cs.position AS leadPosition,
-    cs.pValueMantissa AS pValueMantissa,
-    cs.pValueExponent AS pValueExponent,
+    cs.leadPosition AS leadPosition,
+    cs.leadPValueMantissa AS pValueMantissa,
+    cs.leadPValueExponent AS pValueExponent,
     x.colocalisationMethod AS colocalisationMethod,
     x.numberColocalisingVariants AS numberColocalisingVariants,
     x.h3 AS h3,
@@ -32,7 +32,7 @@
     colocalisation AS c
     ARRAY JOIN c.colocalisation AS x
     -- All three joins are key lookups on EmbeddedRocksDB tables.
-    LEFT JOIN credible_sets AS cs ON cs.studyLocusId = x.otherStudyLocusId
+    LEFT JOIN credible_sets AS cs ON cs.credibleSetId = x.otherCredibleSetId
     LEFT JOIN studies AS s ON s.studyId = cs.studyId
     LEFT JOIN biosample AS b ON b.biosampleId = s.biosampleFromSourceId
 )
