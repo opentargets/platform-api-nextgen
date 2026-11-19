@@ -16,6 +16,7 @@ use crate::{
             eva::SortField as EvidenceEvaSortField,
             gene_burden::SortField as EvidenceGeneBurdenSortField,
             gene2phenotype::SortField as EvidenceGene2PhenotypeSortField,
+            genomics_england_panel_app::SortField as EvidenceGenomicsEnglandPanelAppSortField,
             gwas_credible_sets::SortField as EvidenceGwasCredibleSetsSortField,
             uniprot_literature::SortField as EvidenceUniprotLiteratureSortField,
         },
@@ -72,6 +73,10 @@ impl SortDirection {
     params(EvidenceUniprotLiteratureSortField)
 ))]
 #[graphql(concrete(name = "EvidenceGeneBurdenSort", params(EvidenceGeneBurdenSortField)))]
+#[graphql(concrete(
+    name = "EvidenceGenomicsEnglandPanelAppSort",
+    params(EvidenceGenomicsEnglandPanelAppSortField)
+))]
 #[graphql(concrete(
     name = "VariantTranscriptConsequencesSort",
     params(VariantTranscriptConsequencesSortField)

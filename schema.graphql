@@ -3314,6 +3314,119 @@ enum EvidenceGeneBurdenSortField {
 }
 
 """
+A Genomics England `PanelApp` evidence, as shown in the evidence page's `PanelApp` table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/genomics_england_panel_app.sql`. Update both together.
+"""
+type EvidenceGenomicsEnglandPanelApp {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Identifier of the disease for which the target is associated in this evidence.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Identifier of the target for which the disease is associated in this evidence.
+	"""
+	targetId: String!
+	"""
+	Approved symbol of the target, used to link to `PanelApp`. Empty if the target isn't found.
+	"""
+	targetApprovedSymbol: String!
+	"""
+	Allelic requirements of the gene-disease relationship.
+	"""
+	allelicRequirements: [String!]!
+	"""
+	Identifier of the Genomics England panel, used to link to `PanelApp`.
+	"""
+	panelId: String
+	"""
+	Name of the Genomics England panel.
+	"""
+	panelName: String
+	"""
+	`PanelApp` gene rating: green, amber or red.
+	"""
+	confidence: String
+	"""
+	List of PubMed or preprint reference identifiers.
+	"""
+	literature: [String!]!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceGenomicsEnglandPanelAppPage {
+	count: Int!
+	rows: [EvidenceGenomicsEnglandPanelApp!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input EvidenceGenomicsEnglandPanelAppSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [EvidenceGenomicsEnglandPanelAppSearchField!]! = [DISEASE_NAME, TARGET_APPROVED_SYMBOL, ALLELIC_REQUIREMENTS, PANEL_NAME]
+}
+
+"""
+Text fields that `search` can match against: the text shown in the table.
+"""
+enum EvidenceGenomicsEnglandPanelAppSearchField {
+	DISEASE_NAME
+	TARGET_APPROVED_SYMBOL
+	ALLELIC_REQUIREMENTS
+	PANEL_NAME
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input EvidenceGenomicsEnglandPanelAppSort {
+	"""
+	The field to sort by.
+	"""
+	key: EvidenceGenomicsEnglandPanelAppSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum EvidenceGenomicsEnglandPanelAppSortField {
+	"""
+	Evidence score.
+	"""
+	SCORE
+	"""
+	Gene rating, from red up to green.
+	"""
+	CONFIDENCE
+}
+
+"""
 A GWAS credible sets evidence, as shown in the evidence page's GWAS associations table.
 
 Rows are decoded by position, so field order must match the column order of
@@ -3767,6 +3880,24 @@ type EvidenceViews {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): EvidenceUniprotLiteraturePage!
+	"""
+	Genomics England `PanelApp` evidence: gene-disease relationships from expert-reviewed gene
+	panels.
+	"""
+	genomicsEnglandPanelApp(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EvidenceGenomicsEnglandPanelAppSort!]! = [{key: SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the evidences' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: EvidenceGenomicsEnglandPanelAppSearch,
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceGenomicsEnglandPanelAppPage!
 	"""
 	`ClinVar` (EVA) evidence: germline variants in the target with a clinical significance
 	for the disease. Sorted by score only, with no search, so it's paged from the evidence
