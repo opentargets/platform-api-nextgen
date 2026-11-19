@@ -1043,6 +1043,47 @@ type CredibleSet {
 		page: Page! = {index: 0, size: 10}
 	): LocusPage!
 	"""
+	Flat, sortable and searchable list of the credible set's variants, for tables. Use `locus`
+	for the full variants or to filter by variant IDs.
+	"""
+	locusView(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [CredibleSetVariantsSort!]! = [{key: POSTERIOR_PROBABILITY, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the variants' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: CredibleSetVariantsSearch,
+		"""
+		Pagination for the variants.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): CredibleSetVariantPage!
+	"""
+	Flat, sortable and searchable list of this credible set's colocalisations with other
+	credible sets, for the GWAS and molQTL colocalisation tables. Use `colocalisation` for the
+	full colocalisations with the other credible set.
+	"""
+	colocalisationView(
+		"""
+		Study types of the other credible set to include, e.g. `[gwas]` or `[eqtl, pqtl, ...]`.
+		"""
+		studyTypes: [StudyType!]!,
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [CredibleSetColocalisationsSort!]! = [{key: H4, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the colocalisations' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: CredibleSetColocalisationsSearch,
+		"""
+		Pagination for the colocalisations.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): CredibleSetColocalisationPage!
+	"""
 	GWAS-GWAS and GWAS-molQTL credible set colocalisation results. Dataset includes colocalising
 	pairs as well as the method and statistics used to estimate the colocalisation.
 	"""
@@ -1056,6 +1097,187 @@ type CredibleSet {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): ColocalisationPage!
+}
+
+"""
+A colocalisation of this credible set with another one, as shown in the credible set page's
+GWAS and molQTL colocalisation tables. Study, lead variant and P-value fields describe the
+**other** credible set.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/credible_set_colocalisations.sql`. Update both together.
+"""
+type CredibleSetColocalisation {
+	"""
+	This credible set (`StudyLocus`), on the left side of the colocalisation pair.
+	"""
+	studyLocusId: String!
+	"""
+	The other credible set (`StudyLocus`) in the colocalisation pair.
+	"""
+	otherStudyLocusId: String!
+	"""
+	Type of the other credible set's study (e.g. gwas, eqtl, pqtl).
+	"""
+	studyType: StudyType!
+	"""
+	Study of the other credible set.
+	"""
+	studyId: String!
+	"""
+	Source project of the other credible set's study.
+	"""
+	projectId: String!
+	"""
+	Trait, as reported by the source, of the other credible set's study.
+	"""
+	traitFromSource: String!
+	"""
+	First author of the publication of the other credible set's study.
+	"""
+	publicationFirstAuthor: String
+	"""
+	Condition of the other credible set's molQTL study (e.g. naive).
+	"""
+	condition: String
+	"""
+	Gene under study in the other credible set's molQTL study.
+	"""
+	targetId: String
+	"""
+	Approved symbol of `targetId`. Null when the target is unknown.
+	"""
+	targetApprovedSymbol: String
+	"""
+	Tissue or cell type of the other credible set's molQTL study.
+	"""
+	biosampleId: String
+	"""
+	Name of `biosampleId`. Null when the biosample isn't in the biosample index.
+	"""
+	biosampleName: String
+	"""
+	Description of `biosampleId`.
+	"""
+	biosampleDescription: String
+	"""
+	Whether the other credible set is a trans-QTL.
+	"""
+	isTransQtl: Boolean
+	"""
+	Lead variant of the other credible set.
+	"""
+	leadVariantId: String!
+	"""
+	Chromosome of the lead variant.
+	"""
+	leadChromosome: Chromosome!
+	"""
+	Position of the lead variant (`GRCh38`).
+	"""
+	leadPosition: Int!
+	"""
+	Mantissa of the other credible set's lead variant P-value.
+	"""
+	pValueMantissa: Float!
+	"""
+	Exponent of the other credible set's lead variant P-value.
+	"""
+	pValueExponent: Int!
+	"""
+	Method used to estimate colocalisation (e.g. coloc, eCAVIAR).
+	"""
+	colocalisationMethod: String!
+	"""
+	Number of variants intersecting between the two credible sets.
+	"""
+	numberColocalisingVariants: Int!
+	"""
+	Posterior probability that both traits are associated, but with different causal variants
+	(H3). Used in coloc method.
+	"""
+	h3: Float!
+	"""
+	Posterior probability that both traits are associated and share a causal variant (H4).
+	Used in coloc method.
+	"""
+	h4: Float!
+	"""
+	Colocalisation posterior probability (CLPP) score estimating the probability of shared
+	causal variants. Used in eCAVIAR method.
+	"""
+	clpp: Float!
+	"""
+	Average sign of the beta ratio between colocalised variants (directionality).
+	"""
+	betaRatioSignAverage: Float!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type CredibleSetColocalisationPage {
+	count: Int!
+	rows: [CredibleSetColocalisation!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input CredibleSetColocalisationsSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [CredibleSetColocalisationsSearchField!]! = [STUDY_ID, TRAIT_FROM_SOURCE, PUBLICATION_FIRST_AUTHOR, TARGET_APPROVED_SYMBOL, BIOSAMPLE_NAME, LEAD_VARIANT_ID]
+}
+
+"""
+Text fields that `search` can match against. The GWAS and molQTL tables each pass their
+own `fields`.
+"""
+enum CredibleSetColocalisationsSearchField {
+	STUDY_ID
+	TRAIT_FROM_SOURCE
+	PUBLICATION_FIRST_AUTHOR
+	TARGET_APPROVED_SYMBOL
+	BIOSAMPLE_NAME
+	LEAD_VARIANT_ID
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input CredibleSetColocalisationsSort {
+	"""
+	The field to sort by.
+	"""
+	key: CredibleSetColocalisationsSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum CredibleSetColocalisationsSortField {
+	"""
+	By chromosome, then position, then variant ID.
+	"""
+	LEAD_VARIANT
+	"""
+	By exponent, then mantissa.
+	"""
+	P_VALUE
+	NUMBER_COLOCALISING_VARIANTS
+	H3
+	H4
+	CLPP
 }
 
 """
@@ -1074,6 +1296,141 @@ The result of a paginated query, containing the total number of items and the it
 type CredibleSetPage {
 	count: Int!
 	rows: [CredibleSet!]!
+}
+
+"""
+A variant in a credible set, as shown in the credible set page's variants table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/credible_set_variants.sql`. Update both together.
+"""
+type CredibleSetVariant {
+	"""
+	Identifier of the credible set (`StudyLocus`).
+	"""
+	studyLocusId: String!
+	"""
+	Variant identifier (`chromosome_position_ref_alt`).
+	"""
+	variantId: String!
+	"""
+	Chromosome of the variant.
+	"""
+	chromosome: Chromosome!
+	"""
+	Position of the variant on the chromosome (`GRCh38`).
+	"""
+	position: Int!
+	"""
+	Reference allele of the variant.
+	"""
+	referenceAllele: String!
+	"""
+	Alternate allele of the variant.
+	"""
+	alternateAllele: String!
+	"""
+	Posterior inclusion probability for the variant within this credible set.
+	"""
+	posteriorProbability: Float!
+	"""
+	Log (natural) Bayes factor for the variant from fine-mapping.
+	"""
+	logBF: Float
+	"""
+	Mantissa of the P-value for this variant in the credible set.
+	"""
+	pValueMantissa: Float
+	"""
+	Exponent of the P-value for this variant in the credible set.
+	"""
+	pValueExponent: Int
+	"""
+	Beta coefficient of this variant in the credible set.
+	"""
+	beta: Float
+	"""
+	Standard error of this variant in the credible set.
+	"""
+	standardError: Float
+	"""
+	R-squared (LD) between this credible set variant and the lead variant.
+	"""
+	r2Overall: Float
+	"""
+	Sequence Ontology id of the variant's most severe consequence (e.g. `SO:0001583`).
+	"""
+	mostSevereConsequenceId: String
+	"""
+	Sequence Ontology label of the variant's most severe consequence (e.g. missense variant).
+	"""
+	mostSevereConsequenceLabel: String
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type CredibleSetVariantPage {
+	count: Int!
+	rows: [CredibleSetVariant!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input CredibleSetVariantsSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [CredibleSetVariantsSearchField!]! = [VARIANT_ID, MOST_SEVERE_CONSEQUENCE_LABEL]
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum CredibleSetVariantsSearchField {
+	VARIANT_ID
+	MOST_SEVERE_CONSEQUENCE_LABEL
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input CredibleSetVariantsSort {
+	"""
+	The field to sort by.
+	"""
+	key: CredibleSetVariantsSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum CredibleSetVariantsSortField {
+	"""
+	By chromosome, then position, then alleles.
+	"""
+	VARIANT
+	"""
+	By exponent, then mantissa.
+	"""
+	P_VALUE
+	BETA
+	STANDARD_ERROR
+	"""
+	R-squared (LD) with the lead variant.
+	"""
+	R2_OVERALL
+	POSTERIOR_PROBABILITY
+	LOG_BF
 }
 
 """
@@ -2135,10 +2492,6 @@ type EnhancerToGene {
 	Genomic end position of the regulatory region.
 	"""
 	end: Int!
-	"""
-	Name of the biosample where the interval was identified.
-	"""
-	biosampleName: String!
 	"""
 	Identifier of the biosample defined by the datasource provider.
 	"""

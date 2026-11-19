@@ -51,8 +51,6 @@ pub struct EnhancerToGene {
     // foreign keys
     #[graphql(skip)]
     gene_id: String,
-    /// Name of the biosample where the interval was identified.
-    biosample_name: String,
     #[graphql(skip)]
     biosample_id: String,
     /// Identifier of the biosample defined by the datasource provider.
