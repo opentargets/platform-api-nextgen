@@ -47,6 +47,7 @@ use crate::{
     },
     product::{Flavor, Product, loader},
     view::{
+        credible_set_colocalisations::CredibleSetColocalisationsLoader,
         credible_set_variants::CredibleSetVariantsLoader,
         disease_studies::DiseaseStudiesLoader,
         evidence::{
@@ -129,6 +130,7 @@ impl Product for Platform {
             .data(loader::<EvidenceUniprotLiteratureLoader>(ch))
             .data(loader::<StudyCredibleSetsLoader>(ch))
             .data(loader::<CredibleSetVariantsLoader>(ch))
+            .data(loader::<CredibleSetColocalisationsLoader>(ch))
             .data(loader::<TargetCredibleSetsLoader>(ch))
             .data(loader::<VariantCredibleSetsLoader>(ch))
             .data(loader::<VariantTranscriptConsequencesLoader>(ch))

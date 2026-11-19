@@ -1,3 +1,4 @@
+pub mod credible_set_colocalisations;
 pub mod credible_set_variants;
 pub mod disease_studies;
 pub mod evidence;

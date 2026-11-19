@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{colocalisation, l2g_predictions, locus, study, variant},
+    entity::{colocalisation, l2g_predictions, locus, study, study::StudyType, variant},
     query::{
         QueryExt,
         cache::{CachedLoader, entity_cache},
@@ -20,7 +20,7 @@ use crate::{
         paginate::{Page, Paged, page_complexity},
         sort::{Sort, UniqueSortKeys},
     },
-    view::credible_set_variants as csv,
+    view::{credible_set_colocalisations as csc, credible_set_variants as csv},
 };
 
 // --- models ---
@@ -272,6 +272,40 @@ impl CredibleSet {
             page.size,
         );
         csv::load_credible_set_variants(ctx, query_params).await
+    }
+    /// Flat, sortable and searchable list of this credible set's colocalisations with other
+    /// credible sets, for the GWAS and molQTL colocalisation tables. Use `colocalisation` for the
+    /// full colocalisations with the other credible set.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn colocalisation_view(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            validator(min_items = 1),
+            desc = "Study types of the other credible set to include, e.g. `[gwas]` or \
+                    `[eqtl, pqtl, ...]`."
+        )]
+        study_types: Vec<StudyType>,
+        #[graphql(
+            default_with = "csc::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<csc::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the colocalisations' text \
+                          fields. Searches all fields unless `fields` is given.")]
+        search: Option<csc::Search>,
+        #[graphql(default, desc = "Pagination for the colocalisations.")] page: Page,
+    ) -> async_graphql::Result<Paged<csc::CredibleSetColocalisation>> {
+        let query_params = csc::QueryParams::new(
+            self.study_locus_id.clone(),
+            study_types,
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        csc::load_credible_set_colocalisations(ctx, query_params).await
     }
     /// GWAS-GWAS and GWAS-molQTL credible set colocalisation results. Dataset includes colocalising
     /// pairs as well as the method and statistics used to estimate the colocalisation.

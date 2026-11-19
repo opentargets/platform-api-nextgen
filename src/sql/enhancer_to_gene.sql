@@ -6,7 +6,6 @@
     e.start AS start,
     e.`end` AS `end`,
     e.geneId AS geneId,
-    e.biosampleName AS biosampleName,
     e.biosampleId AS biosampleId,
     e.biosampleFromSourceId AS biosampleFromSourceId,
     e.intervalType AS intervalType,
