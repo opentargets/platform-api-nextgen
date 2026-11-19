@@ -59,6 +59,7 @@ use crate::{
             genomics_england_panel_app::EvidenceGenomicsEnglandPanelAppLoader,
             gwas_credible_sets::EvidenceGwasCredibleSetsLoader,
             uniprot_literature::EvidenceUniprotLiteratureLoader,
+            uniprot_variants::EvidenceUniprotVariantsLoader,
         },
         study_credible_sets::StudyCredibleSetsLoader,
         target_credible_sets::TargetCredibleSetsLoader,
@@ -136,6 +137,7 @@ impl Product for Ppp {
             .data(loader::<EvidenceEvaLoader>(ch))
             .data(loader::<EvidenceGene2PhenotypeLoader>(ch))
             .data(loader::<EvidenceUniprotLiteratureLoader>(ch))
+            .data(loader::<EvidenceUniprotVariantsLoader>(ch))
             .data(loader::<EvidenceGenomicsEnglandPanelAppLoader>(ch))
             .data(loader::<StudyCredibleSetsLoader>(ch))
             .data(loader::<CredibleSetVariantsLoader>(ch))
