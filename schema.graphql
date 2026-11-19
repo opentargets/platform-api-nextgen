@@ -1225,13 +1225,13 @@ Rows are decoded by position, so field order must match the column order of
 """
 type CredibleSetColocalisation {
 	"""
-	This credible set (`StudyLocus`), on the left side of the colocalisation pair.
+	This credible set, on the left side of the colocalisation pair.
 	"""
-	studyLocusId: String!
+	credibleSetId: String!
 	"""
-	The other credible set (`StudyLocus`) in the colocalisation pair.
+	The other credible set in the colocalisation pair.
 	"""
-	otherStudyLocusId: String!
+	otherCredibleSetId: String!
 	"""
 	Type of the other credible set's study (e.g. gwas, eqtl, pqtl).
 	"""
@@ -1279,7 +1279,7 @@ type CredibleSetColocalisation {
 	"""
 	Whether the other credible set is a trans-QTL.
 	"""
-	isTransQtl: Boolean
+	isTransQtl: Boolean!
 	"""
 	Lead variant of the other credible set.
 	"""
@@ -1295,11 +1295,11 @@ type CredibleSetColocalisation {
 	"""
 	Mantissa of the other credible set's lead variant P-value.
 	"""
-	pValueMantissa: Float!
+	pValueMantissa: Float
 	"""
 	Exponent of the other credible set's lead variant P-value.
 	"""
-	pValueExponent: Int!
+	pValueExponent: Int
 	"""
 	Method used to estimate colocalisation (e.g. coloc, eCAVIAR).
 	"""
@@ -1326,7 +1326,7 @@ type CredibleSetColocalisation {
 	"""
 	Average sign of the beta ratio between colocalised variants (directionality).
 	"""
-	betaRatioSignAverage: Float!
+	betaRatioSignAverage: Float
 }
 
 """
@@ -1422,9 +1422,9 @@ Rows are decoded by position, so field order must match the column order of
 """
 type CredibleSetVariant {
 	"""
-	Identifier of the credible set (`StudyLocus`).
+	Identifier of the credible set.
 	"""
-	studyLocusId: String!
+	credibleSetId: String!
 	"""
 	Variant identifier (`chromosome_position_ref_alt`).
 	"""
@@ -1450,9 +1450,9 @@ type CredibleSetVariant {
 	"""
 	posteriorProbability: Float!
 	"""
-	Log (natural) Bayes factor for the variant from fine-mapping.
+	Natural log Bayes factor for the variant from fine-mapping.
 	"""
-	logBF: Float
+	logBayesFactor: Float
 	"""
 	Mantissa of the P-value for this variant in the credible set.
 	"""
@@ -1462,13 +1462,13 @@ type CredibleSetVariant {
 	"""
 	pValueExponent: Int
 	"""
-	Beta coefficient of this variant in the credible set.
+	Beta coefficient of this variant, as reported by the source. Not comparable across studies.
 	"""
-	beta: Float
+	reportedBeta: Float
 	"""
-	Standard error of this variant in the credible set.
+	Standard error of the reported beta.
 	"""
-	standardError: Float
+	reportedStandardError: Float
 	"""
 	R-squared (LD) between this credible set variant and the lead variant.
 	"""
@@ -1539,14 +1539,14 @@ enum CredibleSetVariantsSortField {
 	By exponent, then mantissa.
 	"""
 	P_VALUE
-	BETA
-	STANDARD_ERROR
+	REPORTED_BETA
+	REPORTED_STANDARD_ERROR
 	"""
 	R-squared (LD) with the lead variant.
 	"""
 	R2_OVERALL
 	POSTERIOR_PROBABILITY
-	LOG_BF
+	LOG_BAYES_FACTOR
 }
 
 """
@@ -9720,6 +9720,7 @@ input VariantCredibleSetsSearch {
 	Fields to search in. Defaults to all of them.
 	"""
 <<<<<<< HEAD
+<<<<<<< HEAD
 	fields: [VariantCredibleSetsSearchField!]! = [STUDY_ID, LEAD_VARIANT_ID, FINEMAPPING_METHOD, TRAIT_FROM_SOURCE, CONDITION, STUDY_TARGET_ID, STUDY_TARGET_APPROVED_SYMBOL, BIOSAMPLE_ID, BIOSAMPLE_NAME, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
 =======
 <<<<<<< HEAD
@@ -9728,6 +9729,9 @@ input VariantCredibleSetsSearch {
 	fields: [VariantCredibleSetsSearchField!]! = [CREDIBLE_SET_ID, STUDY_ID, LEAD_VARIANT_ID, FINE_MAPPING_METHOD, TRAIT_FROM_SOURCE, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
 >>>>>>> 4f47a58 (updated for schema changes)
 >>>>>>> 8d59d36 (updated for schema changes)
+=======
+	fields: [VariantCredibleSetsSearchField!]! = [CREDIBLE_SET_ID, STUDY_ID, LEAD_VARIANT_ID, FINE_MAPPING_METHOD, TRAIT_FROM_SOURCE, CONDITION, STUDY_TARGET_APPROVED_SYMBOL, BIOSAMPLE_NAME, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
+>>>>>>> 697112c (update views to new schema)
 }
 
 """
