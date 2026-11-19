@@ -48,6 +48,7 @@ pub struct VariantCredibleSet {
     fine_mapping_method: FineMappingMethod,
     /// Confidence level, from 0 (unknown) to 4 (highest).
     confidence: u8,
+    is_trans_qtl: bool,
     lead_variant_id: String,
     lead_chromosome: Chromosome,
     lead_position: u32,
