@@ -7293,12 +7293,18 @@ type VariantCredibleSet {
 	beta: Float
 	finemappingMethod: String!
 	confidence: String!
+	isTransQtl: Boolean
 	leadVariantId: String!
 	leadChromosome: Chromosome!
 	leadPosition: Int!
 	leadReferenceAllele: String!
 	leadAlternateAllele: String!
 	studyId: String!
+	condition: String
+	studyTargetId: String
+	studyTargetApprovedSymbol: String
+	biosampleId: String
+	biosampleName: String
 	traitFromSource: String!
 	diseases: [VariantCredibleSetDisease!]!
 	diseaseTherapeuticAreas: [VariantCredibleSetDisease!]!
@@ -7334,7 +7340,7 @@ input VariantCredibleSetsSearch {
 	"""
 	Fields to search in. Defaults to all of them.
 	"""
-	fields: [VariantCredibleSetsSearchField!]! = [STUDY_ID, LEAD_VARIANT_ID, FINEMAPPING_METHOD, TRAIT_FROM_SOURCE, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
+	fields: [VariantCredibleSetsSearchField!]! = [STUDY_ID, LEAD_VARIANT_ID, FINEMAPPING_METHOD, TRAIT_FROM_SOURCE, CONDITION, STUDY_TARGET_APPROVED_SYMBOL, BIOSAMPLE_NAME, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
 }
 
 """
@@ -7348,6 +7354,9 @@ enum VariantCredibleSetsSearchField {
 	LEAD_VARIANT_ID
 	FINEMAPPING_METHOD
 	TRAIT_FROM_SOURCE
+	CONDITION
+	STUDY_TARGET_APPROVED_SYMBOL
+	BIOSAMPLE_NAME
 	TOP_L2G_APPROVED_SYMBOL
 	DISEASE_IDS
 	DISEASE_NAMES
