@@ -53,10 +53,11 @@ pub struct EvidenceGenomicsEnglandPanelApp {
     panel_name: Option<String>,
     /// `PanelApp` gene rating: green, amber or red.
     confidence: Option<String>,
+    /// List of PubMed or preprint reference identifiers.
+    literature: Vec<String>,
     #[allow(dead_code, reason = "read only to keep the column order")]
     #[graphql(skip)]
     confidence_rank: u64,
-    literature: Vec<String>,
 }
 
 impl Table for EvidenceGenomicsEnglandPanelApp {
