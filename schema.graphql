@@ -1043,6 +1043,24 @@ type CredibleSet {
 		page: Page! = {index: 0, size: 10}
 	): LocusPage!
 	"""
+	Flat, sortable and searchable list of the credible set's variants, for tables. Use `locus`
+	for the full variants or to filter by variant IDs.
+	"""
+	locusView(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [CredibleSetVariantsSort!]! = [{key: POSTERIOR_PROBABILITY, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the variants' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: CredibleSetVariantsSearch,
+		"""
+		Pagination for the variants.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): CredibleSetVariantPage!
+	"""
 	GWAS-GWAS and GWAS-molQTL credible set colocalisation results. Dataset includes colocalising
 	pairs as well as the method and statistics used to estimate the colocalisation.
 	"""
@@ -1074,6 +1092,141 @@ The result of a paginated query, containing the total number of items and the it
 type CredibleSetPage {
 	count: Int!
 	rows: [CredibleSet!]!
+}
+
+"""
+A variant in a credible set, as shown in the credible set page's variants table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/credible_set_variants.sql`. Update both together.
+"""
+type CredibleSetVariant {
+	"""
+	Identifier of the credible set (`StudyLocus`).
+	"""
+	studyLocusId: String!
+	"""
+	Variant identifier (`chromosome_position_ref_alt`).
+	"""
+	variantId: String!
+	"""
+	Chromosome of the variant.
+	"""
+	chromosome: Chromosome!
+	"""
+	Position of the variant on the chromosome (`GRCh38`).
+	"""
+	position: Int!
+	"""
+	Reference allele of the variant.
+	"""
+	referenceAllele: String!
+	"""
+	Alternate allele of the variant.
+	"""
+	alternateAllele: String!
+	"""
+	Posterior inclusion probability for the variant within this credible set.
+	"""
+	posteriorProbability: Float!
+	"""
+	Log (natural) Bayes factor for the variant from fine-mapping.
+	"""
+	logBF: Float
+	"""
+	Mantissa of the P-value for this variant in the credible set.
+	"""
+	pValueMantissa: Float
+	"""
+	Exponent of the P-value for this variant in the credible set.
+	"""
+	pValueExponent: Int
+	"""
+	Beta coefficient of this variant in the credible set.
+	"""
+	beta: Float
+	"""
+	Standard error of this variant in the credible set.
+	"""
+	standardError: Float
+	"""
+	R-squared (LD) between this credible set variant and the lead variant.
+	"""
+	r2Overall: Float
+	"""
+	Sequence Ontology id of the variant's most severe consequence (e.g. `SO:0001583`).
+	"""
+	mostSevereConsequenceId: String
+	"""
+	Sequence Ontology label of the variant's most severe consequence (e.g. missense variant).
+	"""
+	mostSevereConsequenceLabel: String
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type CredibleSetVariantPage {
+	count: Int!
+	rows: [CredibleSetVariant!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input CredibleSetVariantsSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [CredibleSetVariantsSearchField!]! = [VARIANT_ID, MOST_SEVERE_CONSEQUENCE_LABEL]
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum CredibleSetVariantsSearchField {
+	VARIANT_ID
+	MOST_SEVERE_CONSEQUENCE_LABEL
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input CredibleSetVariantsSort {
+	"""
+	The field to sort by.
+	"""
+	key: CredibleSetVariantsSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum CredibleSetVariantsSortField {
+	"""
+	By chromosome, then position, then alleles.
+	"""
+	VARIANT
+	"""
+	By exponent, then mantissa.
+	"""
+	P_VALUE
+	BETA
+	STANDARD_ERROR
+	"""
+	R-squared (LD) with the lead variant.
+	"""
+	R2_OVERALL
+	POSTERIOR_PROBABILITY
+	LOG_BF
 }
 
 """

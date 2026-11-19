@@ -18,7 +18,9 @@ use crate::{
         filter::Filter,
         load_ordered,
         paginate::{Page, Paged, page_complexity},
+        sort::{Sort, UniqueSortKeys},
     },
+    view::credible_set_variants as csv,
 };
 
 // --- models ---
@@ -244,6 +246,32 @@ impl CredibleSet {
             .query()
             .filter(filter.as_ref())
             .paginate(page))
+    }
+    /// Flat, sortable and searchable list of the credible set's variants, for tables. Use `locus`
+    /// for the full variants or to filter by variant IDs.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn locus_view(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "csv::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<csv::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the variants' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<csv::Search>,
+        #[graphql(default, desc = "Pagination for the variants.")] page: Page,
+    ) -> async_graphql::Result<Paged<csv::CredibleSetVariant>> {
+        let query_params = csv::QueryParams::new(
+            self.study_locus_id.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        csv::load_credible_set_variants(ctx, query_params).await
     }
     /// GWAS-GWAS and GWAS-molQTL credible set colocalisation results. Dataset includes colocalising
     /// pairs as well as the method and statistics used to estimate the colocalisation.

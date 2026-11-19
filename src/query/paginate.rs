@@ -34,6 +34,7 @@ use crate::{
     },
     query::stats::HasStats,
     view::{
+        credible_set_variants::CredibleSetVariant,
         disease_studies::DiseaseStudy,
         evidence::{
             clinical_precedence::EvidenceClinicalPrecedence, eva::EvidenceEva,
@@ -111,6 +112,7 @@ pub fn page_complexity(page: Page, child_complexity: usize) -> usize {
 #[graphql(concrete(name = "VariantCredibleSetPage", params(VariantCredibleSet)))]
 #[graphql(concrete(name = "DiseaseStudyPage", params(DiseaseStudy)))]
 #[graphql(concrete(name = "StudyCredibleSetPage", params(StudyCredibleSet)))]
+#[graphql(concrete(name = "CredibleSetVariantPage", params(CredibleSetVariant)))]
 #[graphql(concrete(name = "TargetCredibleSetPage", params(TargetCredibleSet)))]
 #[graphql(concrete(name = "EvidenceClinicalPrecedencePage", params(EvidenceClinicalPrecedence)))]
 #[graphql(concrete(name = "EvidenceGwasCredibleSetsPage", params(EvidenceGwasCredibleSets)))]
