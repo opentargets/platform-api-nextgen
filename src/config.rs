@@ -84,6 +84,26 @@ pub struct Config {
 }
 
 impl Config {
+    /// Creates a configuration for integration tests.
+    #[must_use]
+    pub fn for_tests(data_release: &str, clickhouse_url: &str, opensearch_url: &str) -> Self {
+        Self {
+            data_release: data_release.to_string(),
+            log_level: "error".to_string(),
+            bind_address: "127.0.0.1:0".to_string(),
+            cert_file: None,
+            key_file: None,
+            metrics_bind_address: "127.0.0.1:0".to_string(),
+            clickhouse_url: clickhouse_url.to_string(),
+            clickhouse_max_execution_time: Duration::ZERO,
+            opensearch_url: opensearch_url.to_string(),
+            opensearch_timeout: Duration::from_secs(30),
+            max_depth: 20,
+            max_complexity: 100_000,
+            plugins: Vec::new(),
+        }
+    }
+
     /// Loads the configuration from environment variables and the config file.
     ///
     /// # Panics

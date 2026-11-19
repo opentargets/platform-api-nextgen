@@ -169,6 +169,28 @@ jobs:
         with:
           command: check
 
+  # Integration tests: they start real ClickHouse and OpenSearch containers with
+  # testcontainers, so they need Docker (preinstalled on GitHub-hosted runners).
+  integration-tests:
+    name: integration tests (${{ matrix.product }})
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        product: [platform, ppp]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install stable toolchain
+        run: |
+          rustup toolchain install "$RUST_STABLE" --profile minimal
+          rustup default "$RUST_STABLE"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.product }}-integration
+      - name: Run integration tests
+        run: cargo test --locked --features product-${{ matrix.product }} --test graphql_integration
+
   # Scans the Docker image's OS packages for CVEs. cargo-deny covers the Rust
   # dependencies. Runs on the weekly schedule too, since base-image CVEs appear
   # without any code change.
