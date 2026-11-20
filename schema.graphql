@@ -3961,6 +3961,83 @@ enum EvidenceGwasCredibleSetsSortField {
 }
 
 """
+An IMPC evidence, as shown in the evidence page's IMPC table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/impc.sql`. Update both together.
+"""
+type EvidenceImpc {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Identifier of the disease for which the target is associated in this evidence.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Disease label from the original source.
+	"""
+	diseaseFromSource: String
+	"""
+	Identifier of the target for which the disease is associated in this evidence.
+	"""
+	targetId: String!
+	"""
+	Approved symbol of the target. Empty if the target isn't found.
+	"""
+	targetApprovedSymbol: String!
+	"""
+	Symbol of the target orthologue in the animal model.
+	"""
+	targetInModel: String
+	"""
+	Gain or loss of function effect of the evidence on the target.
+	"""
+	directionOnTarget: String
+	"""
+	Predicted direction of effect on the trait.
+	"""
+	directionOnTrait: String
+	"""
+	Identifier of the animal model (e.g. an MGI model ID).
+	"""
+	biologicalModelId: String
+	"""
+	Genetic background of the animal model (e.g. a mouse strain).
+	"""
+	biologicalModelGeneticBackground: String
+	"""
+	Allelic composition of the animal model.
+	"""
+	biologicalModelAllelicComposition: String
+	"""
+	Phenotypes observed in the animal model.
+	"""
+	diseaseModelAssociatedModelPhenotypes: [LabelledElement!]!
+	"""
+	Human phenotypes of the disease that match the animal model's phenotypes.
+	"""
+	diseaseModelAssociatedHumanPhenotypes: [LabelledElement!]!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceImpcPage {
+	count: Int!
+	rows: [EvidenceImpc!]!
+}
+
+"""
 The result of a paginated query, containing the total number of items and the items.
 """
 type EvidencePage {
@@ -4422,6 +4499,17 @@ type EvidenceViews {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): EvidenceEvaPage!
+	"""
+	IMPC evidence: mouse models with a disrupted orthologue of the target whose phenotypes
+	match the disease. Always sorted by score, highest first, with no search, so it's paged
+	from the evidence index and only the page's rows are read in full.
+	"""
+	impc(
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceImpcPage!
 }
 
 """

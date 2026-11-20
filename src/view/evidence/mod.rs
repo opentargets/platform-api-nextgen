@@ -20,6 +20,7 @@ pub mod gene2phenotype;
 pub mod gene_burden;
 pub mod genomics_england_panel_app;
 pub mod gwas_credible_sets;
+pub mod impc;
 pub mod uniprot_literature;
 pub mod uniprot_variants;
 
@@ -339,6 +340,19 @@ impl EvidenceViews {
     ) -> Result<Paged<eva::EvidenceEva>> {
         let key = eva::QueryParams::new(self.scope.clone(), sort, page.index, page.size);
         eva::load_evidence_eva(ctx, key).await
+    }
+
+    /// IMPC evidence: mouse models with a disrupted orthologue of the target whose phenotypes
+    /// match the disease. Always sorted by score, highest first, with no search, so it's paged
+    /// from the evidence index and only the page's rows are read in full.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn impc(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<impc::EvidenceImpc>> {
+        let key = impc::QueryParams::new(self.scope.clone(), page.index, page.size);
+        impc::load_evidence_impc(ctx, key).await
     }
 }
 
