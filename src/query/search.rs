@@ -22,6 +22,7 @@ use crate::{
         credible_set_variants::SearchField as CredibleSetVariantsSearchField,
         disease_studies::SearchField as DiseaseStudiesSearchField,
         evidence::{
+            cancer_gene_census::SearchField as EvidenceCancerGeneCensusSearchField,
             clingen::SearchField as EvidenceClinGenSearchField,
             clinical_precedence::SearchField as EvidenceClinicalPrecedenceSearchField,
             gene_burden::SearchField as EvidenceGeneBurdenSearchField,
@@ -90,6 +91,10 @@ pub fn contains(haystack: &str, needle: &str) -> bool { haystack.to_lowercase().
 #[graphql(concrete(name = "EvidenceGeneBurdenSearch", params(EvidenceGeneBurdenSearchField)))]
 #[graphql(concrete(name = "EvidenceOrphanetSearch", params(EvidenceOrphanetSearchField)))]
 #[graphql(concrete(name = "EvidenceClinGenSearch", params(EvidenceClinGenSearchField)))]
+#[graphql(concrete(
+    name = "EvidenceCancerGeneCensusSearch",
+    params(EvidenceCancerGeneCensusSearchField)
+))]
 #[graphql(concrete(
     name = "EvidenceGenomicsEnglandPanelAppSearch",
     params(EvidenceGenomicsEnglandPanelAppSearchField)
