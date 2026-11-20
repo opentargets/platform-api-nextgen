@@ -4,9 +4,11 @@ use async_graphql::{CustomValidator, Enum, InputObject, InputType, InputValueErr
 
 use crate::{
     entity::{
-        disease::DiseaseSortField, enhancer_to_gene::SortField as EnhancerToGeneSortField,
-        hpo::HpoSortField, pharmacogenomics::SortField as PharmacogenomicsSortField,
-        study::StudySortField, variant::TranscriptConsequenceSortField,
+        clinical_indication::SortField as ClinicalIndicationSortField,
+        clinical_target::SortField as ClinicalTargetSortField, disease::DiseaseSortField,
+        enhancer_to_gene::SortField as EnhancerToGeneSortField, hpo::HpoSortField,
+        pharmacogenomics::SortField as PharmacogenomicsSortField, study::StudySortField,
+        variant::TranscriptConsequenceSortField,
     },
     query::Entity,
     view::{
@@ -52,6 +54,8 @@ impl SortDirection {
 /// Sort types. Contain the sort field and direction.
 #[derive(Debug, Clone, Copy, InputObject, Default, Eq, PartialEq, Hash)]
 #[graphql(concrete(name = "DiseaseSort", params(DiseaseSortField)))]
+#[graphql(concrete(name = "ClinicalIndicationSort", params(ClinicalIndicationSortField)))]
+#[graphql(concrete(name = "ClinicalTargetSort", params(ClinicalTargetSortField)))]
 #[graphql(concrete(name = "HpoSort", params(HpoSortField)))]
 #[graphql(concrete(name = "StudySort", params(StudySortField)))]
 #[graphql(concrete(name = "TranscriptConsequenceSort", params(TranscriptConsequenceSortField)))]

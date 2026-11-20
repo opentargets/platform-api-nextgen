@@ -6,7 +6,9 @@ use strum::IntoEnumIterator;
 
 use crate::{
     entity::{
-        disease::DiseaseSearchField, enhancer_to_gene::SearchField as EnhancerToGeneSearchField,
+        clinical_indication::SearchField as ClinicalIndicationSearchField,
+        clinical_target::SearchField as ClinicalTargetSearchField, disease::DiseaseSearchField,
+        enhancer_to_gene::SearchField as EnhancerToGeneSearchField,
         pharmacogenomics::SearchField as PharmacogenomicsSearchField, study::StudySearchField,
     },
     query::sql::{Column, Filter},
@@ -52,6 +54,8 @@ pub fn contains(haystack: &str, needle: &str) -> bool { haystack.to_lowercase().
 /// Case-insensitive text search.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, InputObject)]
 #[graphql(concrete(name = "DiseasesSearch", params(DiseaseSearchField)))]
+#[graphql(concrete(name = "ClinicalIndicationSearch", params(ClinicalIndicationSearchField)))]
+#[graphql(concrete(name = "ClinicalTargetSearch", params(ClinicalTargetSearchField)))]
 #[graphql(concrete(name = "StudiesSearch", params(StudySearchField)))]
 #[graphql(concrete(name = "PharmacogenomicsSearch", params(PharmacogenomicsSearchField)))]
 #[graphql(concrete(name = "EnhancerToGeneSearch", params(EnhancerToGeneSearchField)))]
