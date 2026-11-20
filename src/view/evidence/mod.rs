@@ -14,6 +14,7 @@ use crate::query::{
     sql::{Column, Filter, Op, Value},
 };
 
+pub mod clingen;
 pub mod clinical_precedence;
 pub mod eva;
 pub mod gene2phenotype;
@@ -343,6 +344,27 @@ impl EvidenceViews {
         let key =
             orphanet::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
         orphanet::load_evidence_orphanet(ctx, key).await
+    }
+
+    /// ClinGen evidence: gene-disease validity classifications curated by ClinGen.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn clingen(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "clingen::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<clingen::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<clingen::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<clingen::EvidenceClinGen>> {
+        let key =
+            clingen::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
+        clingen::load_evidence_clingen(ctx, key).await
     }
 
     /// `ClinVar` (EVA) evidence: germline variants in the target with a clinical significance

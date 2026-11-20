@@ -3235,6 +3235,103 @@ type Evidence {
 }
 
 """
+An ClinGen evidence, as shown in the evidence page's ClinGen table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/clingen.sql`. Update both together.
+"""
+type EvidenceClinGen {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Identifier of the disease for which the target is associated in this evidence.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Disease/phenotype label from ClinGen.
+	"""
+	diseaseFromSource: String
+	"""
+	Identifier of the target for which the disease is associated in this evidence.
+	"""
+	targetId: String!
+	"""
+	Allelic requirements, e.g. AD (autosomal dominant) or AR (autosomal recessive).
+	"""
+	allelicRequirements: [String!]!
+	"""
+	ClinGen classification of the gene-disease validity, e.g. Definitive or Limited.
+	"""
+	confidence: String
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceClinGenPage {
+	count: Int!
+	rows: [EvidenceClinGen!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input EvidenceClinGenSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [EvidenceClinGenSearchField!]! = [DISEASE_FROM_SOURCE, ALLELIC_REQUIREMENTS, CONFIDENCE]
+}
+
+"""
+Text fields that `search` can match against: the disease/phenotype, allelic requirement
+and classification columns of the table.
+"""
+enum EvidenceClinGenSearchField {
+	DISEASE_FROM_SOURCE
+	ALLELIC_REQUIREMENTS
+	CONFIDENCE
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input EvidenceClinGenSort {
+	"""
+	The field to sort by.
+	"""
+	key: EvidenceClinGenSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting. The table isn't sortable in the UI, so only the score.
+"""
+enum EvidenceClinGenSortField {
+	"""
+	Evidence score.
+	"""
+	SCORE
+}
+
+"""
 A clinical precedence evidence, as shown in the evidence page's clinical precedence table.
 
 Rows are decoded by position, so field order must match the column order of
@@ -4829,6 +4926,23 @@ type EvidenceViews {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): EvidenceOrphanetPage!
+	"""
+	ClinGen evidence: gene-disease validity classifications curated by ClinGen.
+	"""
+	clingen(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EvidenceClinGenSort!]! = [{key: SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the evidences' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: EvidenceClinGenSearch,
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceClinGenPage!
 	"""
 	`ClinVar` (EVA) evidence: germline variants in the target with a clinical significance
 	for the disease. Sorted by score only, with no search, so it's paged from the evidence
