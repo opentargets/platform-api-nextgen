@@ -21,6 +21,7 @@ pub mod gene_burden;
 pub mod genomics_england_panel_app;
 pub mod gwas_credible_sets;
 pub mod uniprot_literature;
+pub mod uniprot_variants;
 
 /// Evidence ids for the scope's targets and diseases, read from the index table so `evidence` is
 /// looked up by key. Binds: datasource, disease ids (expanded to their ontology descendants),
@@ -266,6 +267,32 @@ impl EvidenceViews {
             page.size,
         );
         uniprot_literature::load_evidence_uniprot_literature(ctx, key).await
+    }
+
+    /// `UniProt` curated variants evidence: disease-causing variants curated by `UniProt`.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn uniprot_variants(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "uniprot_variants::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<uniprot_variants::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<uniprot_variants::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<uniprot_variants::EvidenceUniprotVariants>> {
+        let key = uniprot_variants::QueryParams::new(
+            self.scope.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        uniprot_variants::load_evidence_uniprot_variants(ctx, key).await
     }
 
     /// Genomics England `PanelApp` evidence: gene-disease relationships from expert-reviewed gene
