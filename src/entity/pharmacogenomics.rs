@@ -249,21 +249,14 @@ column_subset! {
     #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Enum, EnumIter)]
     #[graphql(name = "PharmacogenomicsSearchField")]
     pub enum SearchField => PgxCol {
-        VariantRsId,
         GenotypeId,
-        HaplotypeId,
-        HaplotypeFromSourceId,
-        TargetFromSourceId,
         TargetApprovedSymbol,
-        VariantFunctionalConsequenceLabel,
         DrugIds,
         DrugFromSources,
-        PhenotypeFromSourceId,
         GenotypeAnnotationText,
         PhenotypeText,
         PgxCategory,
         EvidenceLevel,
-        StudyId,
     }
 }
 
