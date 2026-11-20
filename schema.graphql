@@ -3222,6 +3222,161 @@ type Evidence {
 }
 
 """
+A cancer biomarkers evidence, as shown in the evidence page's cancer biomarkers table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/cancer_biomarkers.sql`. Update both together.
+"""
+type EvidenceCancerBiomarkers {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Identifier of the disease for which the target is associated in this evidence.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Disease label from the original source.
+	"""
+	diseaseFromSource: String
+	"""
+	Identifier of the target for which the disease is associated in this evidence.
+	"""
+	targetId: String!
+	"""
+	Approved symbol of the target. Empty if the target isn't found.
+	"""
+	targetApprovedSymbol: String!
+	"""
+	Name of the biomarker, e.g. `BRCA1 oncogenic mutation`.
+	"""
+	biomarkerName: String
+	"""
+	Genetic variation biomarkers.
+	"""
+	biomarkerGeneticVariations: [EvidenceCancerBiomarkersGeneticVariation!]!
+	"""
+	Gene expression biomarkers.
+	"""
+	biomarkerGeneExpressions: [EvidenceCancerBiomarkersGeneExpression!]!
+	"""
+	Identifier of the drug. Null if the source's drug isn't mapped.
+	"""
+	drugId: String
+	"""
+	Name of the drug. Null if the drug isn't found.
+	"""
+	drugName: String
+	"""
+	Reported drug: the drug label from the original source.
+	"""
+	drugFromSource: String
+	"""
+	Identifier of the drug response term (a disease or Gene Ontology term).
+	"""
+	drugResponseId: String
+	"""
+	Name of the drug response, e.g. `drug resistance`. Null if the term isn't found.
+	"""
+	drugResponseName: String
+	"""
+	Source: the level of evidence, e.g. `FDA guidelines` or `Early trials`.
+	"""
+	confidence: String
+	"""
+	List of PubMed or preprint reference identifiers.
+	"""
+	literature: [String!]!
+	"""
+	Links to external resources, e.g. conference abstracts.
+	"""
+	urls: [LabelledUri!]!
+}
+
+"""
+A gene expression biomarker.
+"""
+type EvidenceCancerBiomarkersGeneExpression {
+	"""
+	Raw gene expression annotation from the source, e.g. `ESR1:over`.
+	"""
+	name: String
+	"""
+	Gene Ontology identifier of the expression process.
+	"""
+	id: String
+	"""
+	Gene Ontology label of the expression process.
+	"""
+	label: String
+}
+
+"""
+A genetic variation biomarker.
+"""
+type EvidenceCancerBiomarkersGeneticVariation {
+	"""
+	Variant identifier.
+	"""
+	id: String
+	"""
+	Name of the variant biomarker, e.g. `NF1:D1644A`.
+	"""
+	name: String
+	"""
+	Sequence Ontology identifier of the functional consequence.
+	"""
+	functionalConsequenceId: String
+	"""
+	Sequence Ontology label of the functional consequence, e.g. `somatic_variant`.
+	"""
+	functionalConsequenceLabel: String
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceCancerBiomarkersPage {
+	count: Int!
+	rows: [EvidenceCancerBiomarkers!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input EvidenceCancerBiomarkersSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [EvidenceCancerBiomarkersSearchField!]! = [DISEASE_NAME, BIOMARKER_NAME, DRUG_NAME, DRUG_FROM_SOURCE, DRUG_RESPONSE_NAME, CONFIDENCE]
+}
+
+"""
+Text fields that `search` can match against: the text shown in the table.
+"""
+enum EvidenceCancerBiomarkersSearchField {
+	DISEASE_NAME
+	BIOMARKER_NAME
+	DRUG_NAME
+	DRUG_FROM_SOURCE
+	DRUG_RESPONSE_NAME
+	CONFIDENCE
+}
+
+"""
 An ClinGen evidence, as shown in the evidence page's ClinGen table.
 
 Rows are decoded by position, so field order must match the column order of
@@ -5445,6 +5600,20 @@ type EvidenceViews {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): EvidenceCrisprPage!
+	"""
+	Cancer biomarkers evidence: genomic biomarkers of drug response in cancer, from the
+	Cancer Genome Interpreter. Always sorted by score, highest first.
+	"""
+	cancerBiomarkers(
+		"""
+		Case-insensitive text search across the evidences' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: EvidenceCancerBiomarkersSearch,
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceCancerBiomarkersPage!
 	"""
 	CRISPR screen evidence: genes whose perturbation changes a disease-relevant phenotype in
 	CRISPR screens (e.g. `CRISPRBrain`).

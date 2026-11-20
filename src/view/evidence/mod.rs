@@ -14,6 +14,7 @@ use crate::query::{
     sql::{Column, Filter, Op, Value},
 };
 
+pub mod cancer_biomarkers;
 pub mod clingen;
 pub mod clinical_precedence;
 pub mod crispr;
@@ -375,6 +376,22 @@ impl EvidenceViews {
     ) -> Result<Paged<crispr::EvidenceCrispr>> {
         let key = crispr::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
         crispr::load_evidence_crispr(ctx, key).await
+    }
+
+    /// Cancer biomarkers evidence: genomic biomarkers of drug response in cancer, from the
+    /// Cancer Genome Interpreter. Always sorted by score, highest first.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn cancer_biomarkers(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<cancer_biomarkers::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<cancer_biomarkers::EvidenceCancerBiomarkers>> {
+        let key =
+            cancer_biomarkers::QueryParams::new(self.scope.clone(), search, page.index, page.size);
+        cancer_biomarkers::load_evidence_cancer_biomarkers(ctx, key).await
     }
 
     /// CRISPR screen evidence: genes whose perturbation changes a disease-relevant phenotype in

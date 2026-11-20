@@ -174,7 +174,7 @@ pub struct LabelledElement {
 /// etc.).
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-struct LabelledUri {
+pub struct LabelledUri {
     /// URL to remote resource.
     url: Option<String>,
     /// Human readable label of the remote reference.
