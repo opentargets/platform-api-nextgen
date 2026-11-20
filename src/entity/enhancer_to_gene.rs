@@ -108,6 +108,7 @@ columns!(E2gCol {
     // Backticks because `end` is an SQL keyword.
     End                  => "`end`"                : I64,
     TargetApprovedSymbol => "targetApprovedSymbol" : Str,
+    BiosampleId          => "biosampleId"          : Str,
     BiosampleName        => "biosampleDisplayName" : Str,
     IntervalType         => "intervalType"         : Str,
     StudyId              => "studyId"              : Str,
@@ -202,6 +203,7 @@ column_subset! {
     #[graphql(name = "EnhancerToGeneSearchField")]
     pub enum SearchField => E2gCol {
         TargetApprovedSymbol,
+        BiosampleId,
         BiosampleName,
         IntervalType,
         StudyId,

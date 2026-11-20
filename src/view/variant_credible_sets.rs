@@ -87,7 +87,9 @@ columns!(VariantCredibleSetCol {
     LeadAlternateAllele         => "leadAlternateAllele"         : Str,
     StudyId                     => "studyId"                     : Str,
     Condition                   => "condition"                   : Str,
+    StudyTargetId               => "studyTargetId"               : Str,
     StudyTargetApprovedSymbol   => "studyTargetApprovedSymbol"   : Str,
+    BiosampleId                 => "biosampleId"                 : Str,
     BiosampleName               => "biosampleName"               : Str,
     // Enum8 in ClickHouse, compared against its names, e.g. 'gwas'.
     StudyType                   => "studyType"                   : Str,
@@ -182,7 +184,7 @@ pub enum SortField {
     PValue,
     LeadVariant,
     Beta,
-    PosteriorProbablity,
+    PosteriorProbability,
     CredibleSetSize,
 }
 
@@ -209,7 +211,7 @@ impl SortField {
                 dir,
             ),
             Self::Beta => OrderBy::each(&[C::Beta], dir),
-            Self::PosteriorProbablity => OrderBy::each(&[C::PosteriorProbability], dir),
+            Self::PosteriorProbability => OrderBy::each(&[C::PosteriorProbability], dir),
             Self::CredibleSetSize => OrderBy::each(&[C::CredibleSetSize], dir),
         }
     }
@@ -230,7 +232,9 @@ column_subset! {
         FinemappingMethod,
         TraitFromSource,
         Condition,
+        StudyTargetId,
         StudyTargetApprovedSymbol,
+        BiosampleId,
         BiosampleName,
         #[graphql(name = "TOP_L2G_APPROVED_SYMBOL")]
         TopL2gApprovedSymbol,
