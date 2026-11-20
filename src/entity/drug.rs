@@ -13,7 +13,7 @@ use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         adverse_event::{AdverseEvent, load_adverse_events},
-        clinical_indication::{ClinicalIndication, load_clinical_indications_from_drug},
+        clinical_indication::{ClinicalIndication, by_drug, load_clinical_indications_from_drug},
         drug_warning::{DrugWarning, load_drug_warnings},
         mechanisms_of_action::{MechanismsOfAction, load_mechanisms_of_action},
         pharmacogenomics::{
@@ -235,10 +235,19 @@ impl Drug {
     async fn indications(
         &self,
         ctx: &Context<'_>,
+        #[graphql(
+            default_with = "by_drug::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<by_drug::SortField>>,
+        #[graphql(desc = "Case-insensitive text search on the disease name.")] search: Option<
+            by_drug::Search,
+        >,
         #[graphql(default, desc = "Pagination for the clinical indications.")] page: Page,
     ) -> async_graphql::Result<Paged<ClinicalIndication>> {
-        let items = load_clinical_indications_from_drug(ctx, self.id.clone()).await?;
-        Ok(items.query().paginate(page))
+        let key = by_drug::QueryParams::new(self.id.clone(), sort, search, page.index, page.size);
+        load_clinical_indications_from_drug(ctx, key).await
     }
 
     /// Mechanisms of action to produce intended pharmacological effects. Curated from scientific

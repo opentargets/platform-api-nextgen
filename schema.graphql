@@ -540,6 +540,10 @@ type ClinicalIndication {
 	"""
 	drugName: String
 	"""
+	Name of the disease. Null if the disease isn't found.
+	"""
+	diseaseName: String
+	"""
 	Number of clinical reports for the drug-disease pair.
 	"""
 	clinicalReportCount: Int!
@@ -2398,6 +2402,14 @@ type Drug {
 	"""
 	indications(
 		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [DrugIndicationSort!]! = [{key: MAX_CLINICAL_STAGE, direction: DESCENDING}, {key: CLINICAL_REPORT_COUNT, direction: DESCENDING}],
+		"""
+		Case-insensitive text search on the disease name.
+		"""
+		search: DrugIndicationSearch,
+		"""
 		Pagination for the clinical indications.
 		"""
 		page: Page! = {index: 0, size: 10}
@@ -2489,6 +2501,59 @@ type Drug {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): AdverseEventPage
+}
+
+"""
+Case-insensitive text search.
+"""
+input DrugIndicationSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [DrugIndicationSearchField!]! = [DISEASE_NAME]
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum DrugIndicationSearchField {
+	DISEASE_NAME
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input DrugIndicationSort {
+	"""
+	The field to sort by.
+	"""
+	key: DrugIndicationSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum DrugIndicationSortField {
+	"""
+	By stage, from unknown and withdrawn up to approved and phase IV.
+	"""
+	MAX_CLINICAL_STAGE
+	"""
+	Number of clinical reports.
+	"""
+	CLINICAL_REPORT_COUNT
+	"""
+	Alphabetically by disease name.
+	"""
+	DISEASE_NAME
 }
 
 """
