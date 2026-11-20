@@ -21,6 +21,7 @@ pub mod gene_burden;
 pub mod genomics_england_panel_app;
 pub mod gwas_credible_sets;
 pub mod impc;
+pub mod orphanet;
 pub mod uniprot_literature;
 pub mod uniprot_variants;
 
@@ -321,6 +322,27 @@ impl EvidenceViews {
             page.size,
         );
         genomics_england_panel_app::load_evidence_genomics_england_panel_app(ctx, key).await
+    }
+
+    /// Orphanet evidence: rare-disease gene associations curated by Orphanet.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn orphanet(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "orphanet::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<orphanet::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<orphanet::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<orphanet::EvidenceOrphanet>> {
+        let key =
+            orphanet::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
+        orphanet::load_evidence_orphanet(ctx, key).await
     }
 
     /// `ClinVar` (EVA) evidence: germline variants in the target with a clinical significance

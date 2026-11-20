@@ -54,7 +54,7 @@ use crate::{
             clinical_precedence::EvidenceClinicalPrecedenceLoader, eva::EvidenceEvaLoader,
             gene_burden::EvidenceGeneBurdenLoader, gene2phenotype::EvidenceGene2PhenotypeLoader,
             genomics_england_panel_app::EvidenceGenomicsEnglandPanelAppLoader,
-            gwas_credible_sets::EvidenceGwasCredibleSetsLoader, impc::EvidenceImpcLoader,
+            gwas_credible_sets::EvidenceGwasCredibleSetsLoader, impc::EvidenceImpcLoader, orphanet::EvidenceOrphanetLoader,
             uniprot_literature::EvidenceUniprotLiteratureLoader,
             uniprot_variants::EvidenceUniprotVariantsLoader,
         },
@@ -127,6 +127,7 @@ impl Product for Platform {
             .data(loader::<EvidenceClinicalPrecedenceLoader>(ch))
             .data(loader::<EvidenceGwasCredibleSetsLoader>(ch))
             .data(loader::<EvidenceGeneBurdenLoader>(ch))
+            .data(loader::<EvidenceOrphanetLoader>(ch))
             .data(loader::<EvidenceEvaLoader>(ch))
             .data(loader::<EvidenceImpcLoader>(ch))
             .data(loader::<EvidenceGene2PhenotypeLoader>(ch))

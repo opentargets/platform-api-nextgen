@@ -4240,6 +4240,132 @@ type EvidenceImpcPage {
 }
 
 """
+An Orphanet evidence, as shown in the evidence page's Orphanet table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/orphanet.sql`. Update both together.
+"""
+type EvidenceOrphanet {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Identifier of the disease for which the target is associated in this evidence.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Disease/phenotype label from Orphanet.
+	"""
+	diseaseFromSource: String
+	"""
+	Identifier of the target for which the disease is associated in this evidence.
+	"""
+	targetId: String!
+	"""
+	Approved symbol of the target. Empty if the target isn't found.
+	"""
+	targetApprovedSymbol: String!
+	"""
+	Approved name of the target, the reported protein. Empty if the target isn't found.
+	"""
+	targetApprovedName: String!
+	"""
+	Sequence Ontology identifier of the variant functional consequence.
+	"""
+	variantFunctionalConsequenceId: String
+	"""
+	Label of the variant functional consequence.
+	"""
+	variantFunctionalConsequenceLabel: String
+	"""
+	Gain or loss of function effect of the evidence on the target.
+	"""
+	directionOnTarget: String
+	"""
+	Predicted direction of effect on the trait.
+	"""
+	directionOnTrait: String
+	"""
+	Allele origins, e.g. germline or somatic.
+	"""
+	alleleOrigins: [String!]!
+	"""
+	Whether Orphanet has assessed the association.
+	"""
+	confidence: String
+	"""
+	List of PubMed or preprint reference identifiers.
+	"""
+	literature: [String!]!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceOrphanetPage {
+	count: Int!
+	rows: [EvidenceOrphanet!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input EvidenceOrphanetSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [EvidenceOrphanetSearchField!]! = [DISEASE_FROM_SOURCE, TARGET_APPROVED_NAME, VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL, ALLELE_ORIGINS]
+}
+
+"""
+Text fields that `search` can match against: the disease/phenotype, reported protein,
+functional consequence and allele origin columns of the table.
+"""
+enum EvidenceOrphanetSearchField {
+	DISEASE_FROM_SOURCE
+	TARGET_APPROVED_NAME
+	VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL
+	ALLELE_ORIGINS
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input EvidenceOrphanetSort {
+	"""
+	The field to sort by.
+	"""
+	key: EvidenceOrphanetSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting. The table isn't sortable in the UI, so only the score.
+"""
+enum EvidenceOrphanetSortField {
+	"""
+	Evidence score.
+	"""
+	SCORE
+}
+
+"""
 The result of a paginated query, containing the total number of items and the items.
 """
 type EvidencePage {
@@ -4686,6 +4812,23 @@ type EvidenceViews {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): EvidenceGenomicsEnglandPanelAppPage!
+	"""
+	Orphanet evidence: rare-disease gene associations curated by Orphanet.
+	"""
+	orphanet(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EvidenceOrphanetSort!]! = [{key: SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the evidences' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: EvidenceOrphanetSearch,
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceOrphanetPage!
 	"""
 	`ClinVar` (EVA) evidence: germline variants in the target with a clinical significance
 	for the disease. Sorted by score only, with no search, so it's paged from the evidence
