@@ -17,6 +17,7 @@ use crate::query::{
 pub mod clingen;
 pub mod clinical_precedence;
 pub mod eva;
+pub mod expression_atlas;
 pub mod gene2phenotype;
 pub mod gene_burden;
 pub mod genomics_england_panel_app;
@@ -323,6 +324,33 @@ impl EvidenceViews {
             page.size,
         );
         genomics_england_panel_app::load_evidence_genomics_england_panel_app(ctx, key).await
+    }
+
+    /// Expression Atlas evidence: genes differentially expressed between disease and normal
+    /// samples in Expression Atlas experiments.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn expression_atlas(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "expression_atlas::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<expression_atlas::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<expression_atlas::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<expression_atlas::EvidenceExpressionAtlas>> {
+        let key = expression_atlas::QueryParams::new(
+            self.scope.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        expression_atlas::load_evidence_expression_atlas(ctx, key).await
     }
 
     /// Orphanet evidence: rare-disease gene associations curated by Orphanet.

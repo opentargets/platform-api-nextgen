@@ -3608,6 +3608,139 @@ enum EvidenceEvaSortField {
 }
 
 """
+An Expression Atlas evidence, as shown in the evidence page's Expression Atlas table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/expression_atlas.sql`. Update both together.
+"""
+type EvidenceExpressionAtlas {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Identifier of the disease for which the target is associated in this evidence.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Disease label from the original source.
+	"""
+	diseaseFromSource: String
+	"""
+	Identifier of the target for which the disease is associated in this evidence.
+	"""
+	targetId: String!
+	"""
+	Approved symbol of the target. Empty if the target isn't found.
+	"""
+	targetApprovedSymbol: String!
+	"""
+	Identifier of the Expression Atlas experiment.
+	"""
+	studyId: String
+	"""
+	Description of the experiment.
+	"""
+	studyOverview: String
+	"""
+	Experiment details: the conditions compared, e.g. `'disease' vs 'normal' in 'tissue'`.
+	"""
+	contrast: String
+	"""
+	Experiment confidence: low, medium or high.
+	"""
+	confidence: String
+	"""
+	Log2 fold change of the target's expression between the compared conditions.
+	"""
+	log2FoldChangeValue: Float
+	"""
+	Percentile rank of the fold change among the experiment's genes.
+	"""
+	log2FoldChangePercentileRank: Int
+	"""
+	P-value of the differential expression.
+	"""
+	resourceScore: Float
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceExpressionAtlasPage {
+	count: Int!
+	rows: [EvidenceExpressionAtlas!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input EvidenceExpressionAtlasSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [EvidenceExpressionAtlasSearchField!]! = [DISEASE_NAME, STUDY_ID, CONTRAST, CONFIDENCE]
+}
+
+"""
+Text fields that `search` can match against: the text shown in the table.
+"""
+enum EvidenceExpressionAtlasSearchField {
+	DISEASE_NAME
+	STUDY_ID
+	CONTRAST
+	CONFIDENCE
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input EvidenceExpressionAtlasSort {
+	"""
+	The field to sort by.
+	"""
+	key: EvidenceExpressionAtlasSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum EvidenceExpressionAtlasSortField {
+	"""
+	Evidence score.
+	"""
+	SCORE
+	"""
+	Log2 fold change.
+	"""
+	LOG2_FOLD_CHANGE
+	"""
+	Percentile rank of the fold change.
+	"""
+	PERCENTILE
+	"""
+	P-value.
+	"""
+	P_VALUE
+}
+
+"""
 A Gene2Phenotype evidence, as shown in the evidence page's Gene2Phenotype table.
 
 Rows are decoded by position, so field order must match the column order of
@@ -4909,6 +5042,24 @@ type EvidenceViews {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): EvidenceGenomicsEnglandPanelAppPage!
+	"""
+	Expression Atlas evidence: genes differentially expressed between disease and normal
+	samples in Expression Atlas experiments.
+	"""
+	expressionAtlas(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EvidenceExpressionAtlasSort!]! = [{key: SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the evidences' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: EvidenceExpressionAtlasSearch,
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceExpressionAtlasPage!
 	"""
 	Orphanet evidence: rare-disease gene associations curated by Orphanet.
 	"""
