@@ -9708,9 +9708,12 @@ type VariantCredibleSet {
 	pValueMantissa: Float
 	pValueExponent: Int
 	beta: Float
-	finemappingMethod: String!
-	confidence: String!
-	isTransQtl: Boolean
+	fineMappingMethod: FineMappingMethod!
+	"""
+	Confidence level, from 0 (unknown) to 4 (highest).
+	"""
+	confidence: Int!
+	isTransQtl: Boolean!
 	leadVariantId: String!
 	leadChromosome: Chromosome!
 	leadPosition: Int!
@@ -9757,19 +9760,7 @@ input VariantCredibleSetsSearch {
 	"""
 	Fields to search in. Defaults to all of them.
 	"""
-<<<<<<< HEAD
-<<<<<<< HEAD
-	fields: [VariantCredibleSetsSearchField!]! = [STUDY_ID, LEAD_VARIANT_ID, FINEMAPPING_METHOD, TRAIT_FROM_SOURCE, CONDITION, STUDY_TARGET_ID, STUDY_TARGET_APPROVED_SYMBOL, BIOSAMPLE_ID, BIOSAMPLE_NAME, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
-=======
-<<<<<<< HEAD
-	fields: [VariantCredibleSetsSearchField!]! = [STUDY_ID, LEAD_VARIANT_ID, FINEMAPPING_METHOD, TRAIT_FROM_SOURCE, CONDITION, STUDY_TARGET_APPROVED_SYMBOL, BIOSAMPLE_NAME, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
-=======
-	fields: [VariantCredibleSetsSearchField!]! = [CREDIBLE_SET_ID, STUDY_ID, LEAD_VARIANT_ID, FINE_MAPPING_METHOD, TRAIT_FROM_SOURCE, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
->>>>>>> 4f47a58 (updated for schema changes)
->>>>>>> 8d59d36 (updated for schema changes)
-=======
-	fields: [VariantCredibleSetsSearchField!]! = [CREDIBLE_SET_ID, STUDY_ID, LEAD_VARIANT_ID, FINE_MAPPING_METHOD, TRAIT_FROM_SOURCE, CONDITION, STUDY_TARGET_APPROVED_SYMBOL, BIOSAMPLE_NAME, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
->>>>>>> 697112c (update views to new schema)
+	fields: [VariantCredibleSetsSearchField!]! = [CREDIBLE_SET_ID, STUDY_ID, LEAD_VARIANT_ID, FINE_MAPPING_METHOD, TRAIT_FROM_SOURCE, CONDITION, STUDY_TARGET_ID, STUDY_TARGET_APPROVED_SYMBOL, BIOSAMPLE_ID, BIOSAMPLE_NAME, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
 }
 
 """
