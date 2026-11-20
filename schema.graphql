@@ -3235,6 +3235,133 @@ type Evidence {
 }
 
 """
+A Cancer Gene Census evidence, as shown in the evidence page's Cancer Gene Census table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/cancer_gene_census.sql`. Update both together.
+"""
+type EvidenceCancerGeneCensus {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Identifier of the disease for which the target is associated in this evidence.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Identifier of the target for which the disease is associated in this evidence.
+	"""
+	targetId: String!
+	"""
+	Approved symbol of the target. Empty if the target isn't found.
+	"""
+	targetApprovedSymbol: String!
+	"""
+	Mutation types with their sample counts.
+	"""
+	mutatedSamples: [EvidenceCancerGeneCensusMutation!]!
+	"""
+	Fraction of tested samples that are mutated, 0 to 1. 0 if the totals are unknown.
+	"""
+	mutatedSamplesRatio: Float!
+	"""
+	List of PubMed or preprint reference identifiers.
+	"""
+	literature: [String!]!
+}
+
+"""
+One mutation type observed for a disease/target pair, with its sample counts.
+"""
+type EvidenceCancerGeneCensusMutation {
+	"""
+	Sequence Ontology identifier of the functional consequence.
+	"""
+	functionalConsequenceId: String
+	"""
+	Label of the functional consequence, the mutation type.
+	"""
+	functionalConsequenceLabel: String
+	"""
+	Number of samples with a mutation in the target.
+	"""
+	numberMutatedSamples: Int
+	"""
+	Number of samples tested.
+	"""
+	numberSamplesTested: Int
+	"""
+	Number of mutated samples with this mutation type.
+	"""
+	numberSamplesWithMutationType: Int
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceCancerGeneCensusPage {
+	count: Int!
+	rows: [EvidenceCancerGeneCensus!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input EvidenceCancerGeneCensusSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [EvidenceCancerGeneCensusSearchField!]! = [DISEASE_NAME, MUTATION_TYPES, LITERATURE]
+}
+
+"""
+Text fields that `search` can match against: the disease/phenotype, mutation type and
+literature columns of the table.
+"""
+enum EvidenceCancerGeneCensusSearchField {
+	DISEASE_NAME
+	MUTATION_TYPES
+	LITERATURE
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input EvidenceCancerGeneCensusSort {
+	"""
+	The field to sort by.
+	"""
+	key: EvidenceCancerGeneCensusSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting. The table only sorts by the mutated over total samples.
+"""
+enum EvidenceCancerGeneCensusSortField {
+	"""
+	Mutated over total samples.
+	"""
+	MUTATED_SAMPLES
+}
+
+"""
 An ClinGen evidence, as shown in the evidence page's ClinGen table.
 
 Rows are decoded by position, so field order must match the column order of
@@ -4926,6 +5053,24 @@ type EvidenceViews {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): EvidenceOrphanetPage!
+	"""
+	Cancer Gene Census evidence: somatic mutations in cancer genes, with the mutated and
+	tested sample counts per mutation type.
+	"""
+	cancerGeneCensus(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EvidenceCancerGeneCensusSort!]! = [{key: MUTATED_SAMPLES, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the evidences' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: EvidenceCancerGeneCensusSearch,
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceCancerGeneCensusPage!
 	"""
 	ClinGen evidence: gene-disease validity classifications curated by ClinGen.
 	"""
