@@ -16,6 +16,7 @@ use crate::query::{
 
 pub mod clingen;
 pub mod clinical_precedence;
+pub mod crispr;
 pub mod eva;
 pub mod expression_atlas;
 pub mod gene2phenotype;
@@ -352,6 +353,27 @@ impl EvidenceViews {
             page.size,
         );
         expression_atlas::load_evidence_expression_atlas(ctx, key).await
+    }
+
+    /// Project Score (CRISPR screen) evidence: cancer dependency genes prioritised from CRISPR
+    /// knockout screens of cancer cell lines.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn crispr(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "crispr::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<crispr::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<crispr::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<crispr::EvidenceCrispr>> {
+        let key = crispr::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
+        crispr::load_evidence_crispr(ctx, key).await
     }
 
     /// Reactome evidence: reactions and pathways disrupted by variants in the target, linked to

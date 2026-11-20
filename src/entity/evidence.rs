@@ -100,7 +100,7 @@ impl GeneticVariation {
 /// Cancer cell lines used to generate evidence.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-struct DiseaseCellLine {
+pub struct DiseaseCellLine {
     /// Cell type identifier in cell ontology or in cell model database.
     id: Option<String>,
     /// Name of the cell model.
