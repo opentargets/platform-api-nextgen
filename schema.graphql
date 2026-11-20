@@ -4250,25 +4250,18 @@ input EvidenceOrphanetSearch {
 	"""
 	Fields to search in. Defaults to all of them.
 	"""
-	fields: [EvidenceOrphanetSearchField!]! = [DISEASE_NAME, DISEASE_FROM_SOURCE, TARGET_APPROVED_SYMBOL, TARGET_APPROVED_NAME, VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL, DIRECTION_ON_TARGET, DIRECTION_ON_TRAIT, ALLELE_ORIGINS, CONFIDENCE, LITERATURE]
+	fields: [EvidenceOrphanetSearchField!]! = [DISEASE_FROM_SOURCE, TARGET_APPROVED_NAME, VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL, ALLELE_ORIGINS]
 }
 
 """
 Text fields that `search` can match against: the disease/phenotype, reported protein,
-functional consequence, direction of effect, allele origin, confidence and literature
-columns of the table.
+functional consequence and allele origin columns of the table.
 """
 enum EvidenceOrphanetSearchField {
-	DISEASE_NAME
 	DISEASE_FROM_SOURCE
-	TARGET_APPROVED_SYMBOL
 	TARGET_APPROVED_NAME
 	VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL
-	DIRECTION_ON_TARGET
-	DIRECTION_ON_TRAIT
 	ALLELE_ORIGINS
-	CONFIDENCE
-	LITERATURE
 }
 
 """

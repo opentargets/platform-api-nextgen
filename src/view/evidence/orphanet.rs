@@ -73,16 +73,10 @@ impl Table for EvidenceOrphanet {
 columns!(EvidenceOrphanetCol {
     Id                                => "id"                                : Str,
     Score                             => "score"                             : F64,
-    DiseaseName                       => "diseaseName"                       : Str,
     DiseaseFromSource                 => "diseaseFromSource"                 : Str,
-    TargetApprovedSymbol              => "targetApprovedSymbol"              : Str,
     TargetApprovedName                => "targetApprovedName"                : Str,
     VariantFunctionalConsequenceLabel => "variantFunctionalConsequenceLabel" : Str,
-    DirectionOnTarget                 => "directionOnTarget"                 : Str,
-    DirectionOnTrait                  => "directionOnTrait"                  : Str,
     AlleleOrigins                     => "alleleOrigins"                     : StrArray,
-    Confidence                        => "confidence"                        : Str,
-    Literature                        => "literature"                        : StrArray,
 });
 
 // ---- query params ----
@@ -164,21 +158,14 @@ impl SortField {
 
 column_subset! {
     /// Text fields that `search` can match against: the disease/phenotype, reported protein,
-    /// functional consequence, direction of effect, allele origin, confidence and literature
-    /// columns of the table.
+    /// functional consequence and allele origin columns of the table.
     #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Enum, EnumIter)]
     #[graphql(name = "EvidenceOrphanetSearchField")]
     pub enum SearchField => EvidenceOrphanetCol {
-        DiseaseName,
         DiseaseFromSource,
-        TargetApprovedSymbol,
         TargetApprovedName,
         VariantFunctionalConsequenceLabel,
-        DirectionOnTarget,
-        DirectionOnTrait,
         AlleleOrigins,
-        Confidence,
-        Literature,
     }
 }
 
