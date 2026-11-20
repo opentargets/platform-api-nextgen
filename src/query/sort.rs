@@ -24,12 +24,17 @@ use crate::{
             cancer_gene_census::SortField as EvidenceCancerGeneCensusSortField,
             clingen::SortField as EvidenceClinGenSortField,
             clinical_precedence::SortField as EvidenceClinicalPrecedenceSortField,
+            crispr::SortField as EvidenceCrisprSortField,
+            crispr_screen::SortField as EvidenceCrisprScreenSortField,
             eva::SortField as EvidenceEvaSortField,
+            expression_atlas::SortField as EvidenceExpressionAtlasSortField,
             gene_burden::SortField as EvidenceGeneBurdenSortField,
             gene2phenotype::SortField as EvidenceGene2PhenotypeSortField,
             genomics_england_panel_app::SortField as EvidenceGenomicsEnglandPanelAppSortField,
             gwas_credible_sets::SortField as EvidenceGwasCredibleSetsSortField,
+            intogen::SortField as EvidenceIntogenSortField,
             orphanet::SortField as EvidenceOrphanetSortField,
+            reactome::SortField as EvidenceReactomeSortField,
             uniprot_literature::SortField as EvidenceUniprotLiteratureSortField,
             uniprot_variants::SortField as EvidenceUniprotVariantsSortField,
         },
@@ -99,10 +104,18 @@ impl SortDirection {
 ))]
 #[graphql(concrete(name = "EvidenceGeneBurdenSort", params(EvidenceGeneBurdenSortField)))]
 #[graphql(concrete(name = "EvidenceOrphanetSort", params(EvidenceOrphanetSortField)))]
+#[graphql(concrete(name = "EvidenceReactomeSort", params(EvidenceReactomeSortField)))]
+#[graphql(concrete(name = "EvidenceCrisprSort", params(EvidenceCrisprSortField)))]
+#[graphql(concrete(name = "EvidenceCrisprScreenSort", params(EvidenceCrisprScreenSortField)))]
+#[graphql(concrete(name = "EvidenceIntogenSort", params(EvidenceIntogenSortField)))]
 #[graphql(concrete(name = "EvidenceClinGenSort", params(EvidenceClinGenSortField)))]
 #[graphql(concrete(
     name = "EvidenceCancerGeneCensusSort",
     params(EvidenceCancerGeneCensusSortField)
+))]
+#[graphql(concrete(
+    name = "EvidenceExpressionAtlasSort",
+    params(EvidenceExpressionAtlasSortField)
 ))]
 #[graphql(concrete(
     name = "EvidenceGenomicsEnglandPanelAppSort",

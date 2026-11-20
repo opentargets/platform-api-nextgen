@@ -199,12 +199,8 @@ impl QueryParams {
 pub enum SortField {
     /// Number of samples tested.
     NSamples,
-    /// Number of credible sets identified in the study.
-    CredibleSetsCount,
     /// By publication date.
     PublicationDate,
-    /// Alphabetically.
-    TraitFromSource,
 }
 
 const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
@@ -219,9 +215,7 @@ impl SortField {
         use DiseaseStudyCol as C;
         let cols: &[C] = match self {
             Self::NSamples => &[C::NSamples],
-            Self::CredibleSetsCount => &[C::CredibleSetsCount],
             Self::PublicationDate => &[C::PublicationDate],
-            Self::TraitFromSource => &[C::TraitFromSource],
         };
         OrderBy::each(cols, dir)
     }
@@ -235,15 +229,10 @@ column_subset! {
     #[graphql(name = "DiseaseStudiesSearchField")]
     pub enum SearchField => DiseaseStudyCol {
         StudyId,
-        ProjectId,
         TraitFromSource,
         PublicationFirstAuthor,
         PublicationDate,
         PublicationJournal,
-        Cohorts,
-        PubmedId,
-        DiseaseIds,
-        DiseaseNames,
     }
 }
 

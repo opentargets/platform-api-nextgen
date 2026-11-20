@@ -22,14 +22,20 @@ use crate::{
         credible_set_variants::SearchField as CredibleSetVariantsSearchField,
         disease_studies::SearchField as DiseaseStudiesSearchField,
         evidence::{
+            cancer_biomarkers::SearchField as EvidenceCancerBiomarkersSearchField,
             cancer_gene_census::SearchField as EvidenceCancerGeneCensusSearchField,
             clingen::SearchField as EvidenceClinGenSearchField,
             clinical_precedence::SearchField as EvidenceClinicalPrecedenceSearchField,
+            crispr::SearchField as EvidenceCrisprSearchField,
+            crispr_screen::SearchField as EvidenceCrisprScreenSearchField,
+            expression_atlas::SearchField as EvidenceExpressionAtlasSearchField,
             gene_burden::SearchField as EvidenceGeneBurdenSearchField,
             gene2phenotype::SearchField as EvidenceGene2PhenotypeSearchField,
             genomics_england_panel_app::SearchField as EvidenceGenomicsEnglandPanelAppSearchField,
             gwas_credible_sets::SearchField as EvidenceGwasCredibleSetsSearchField,
+            intogen::SearchField as EvidenceIntogenSearchField,
             orphanet::SearchField as EvidenceOrphanetSearchField,
+            reactome::SearchField as EvidenceReactomeSearchField,
             uniprot_literature::SearchField as EvidenceUniprotLiteratureSearchField,
             uniprot_variants::SearchField as EvidenceUniprotVariantsSearchField,
         },
@@ -90,10 +96,22 @@ pub fn contains(haystack: &str, needle: &str) -> bool { haystack.to_lowercase().
 ))]
 #[graphql(concrete(name = "EvidenceGeneBurdenSearch", params(EvidenceGeneBurdenSearchField)))]
 #[graphql(concrete(name = "EvidenceOrphanetSearch", params(EvidenceOrphanetSearchField)))]
+#[graphql(concrete(name = "EvidenceReactomeSearch", params(EvidenceReactomeSearchField)))]
+#[graphql(concrete(name = "EvidenceCrisprSearch", params(EvidenceCrisprSearchField)))]
+#[graphql(concrete(name = "EvidenceCrisprScreenSearch", params(EvidenceCrisprScreenSearchField)))]
+#[graphql(concrete(name = "EvidenceIntogenSearch", params(EvidenceIntogenSearchField)))]
+#[graphql(concrete(
+    name = "EvidenceCancerBiomarkersSearch",
+    params(EvidenceCancerBiomarkersSearchField)
+))]
 #[graphql(concrete(name = "EvidenceClinGenSearch", params(EvidenceClinGenSearchField)))]
 #[graphql(concrete(
     name = "EvidenceCancerGeneCensusSearch",
     params(EvidenceCancerGeneCensusSearchField)
+))]
+#[graphql(concrete(
+    name = "EvidenceExpressionAtlasSearch",
+    params(EvidenceExpressionAtlasSearchField)
 ))]
 #[graphql(concrete(
     name = "EvidenceGenomicsEnglandPanelAppSearch",
