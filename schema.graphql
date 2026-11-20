@@ -4604,6 +4604,128 @@ type EvidencePage {
 }
 
 """
+A Reactome evidence, as shown in the evidence page's Reactome table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/reactome.sql`. Update both together.
+"""
+type EvidenceReactome {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Identifier of the disease for which the target is associated in this evidence.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Disease label from the original source.
+	"""
+	diseaseFromSource: String
+	"""
+	Identifier of the target for which the disease is associated in this evidence.
+	"""
+	targetId: String!
+	"""
+	Approved symbol of the target. Empty if the target isn't found.
+	"""
+	targetApprovedSymbol: String!
+	"""
+	Reported target: the `UniProt` accession from the source.
+	"""
+	targetFromSourceId: String
+	"""
+	Reactome pathways the reaction belongs to.
+	"""
+	pathways: [Pathway!]!
+	"""
+	Identifier of the Reactome reaction.
+	"""
+	reactionId: String
+	"""
+	Name of the Reactome reaction.
+	"""
+	reactionName: String
+	"""
+	Effect of the variants on the target, e.g. `loss_of_function`.
+	"""
+	targetModulation: String
+	"""
+	Amino acid changes of the variants.
+	"""
+	variantAminoacidDescriptions: [String!]!
+	"""
+	List of PubMed or preprint reference identifiers.
+	"""
+	literature: [String!]!
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceReactomePage {
+	count: Int!
+	rows: [EvidenceReactome!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input EvidenceReactomeSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [EvidenceReactomeSearchField!]! = [DISEASE_NAME, PATHWAY_NAMES, REACTION_NAME, TARGET_FROM_SOURCE_ID, TARGET_MODULATION]
+}
+
+"""
+Text fields that `search` can match against: the text shown in the table.
+"""
+enum EvidenceReactomeSearchField {
+	DISEASE_NAME
+	PATHWAY_NAMES
+	REACTION_NAME
+	TARGET_FROM_SOURCE_ID
+	TARGET_MODULATION
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input EvidenceReactomeSort {
+	"""
+	The field to sort by.
+	"""
+	key: EvidenceReactomeSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum EvidenceReactomeSortField {
+	"""
+	Evidence score.
+	"""
+	SCORE
+}
+
+"""
 List of available evidence datasources and their datatypes.
 """
 type EvidenceSource {
@@ -5060,6 +5182,24 @@ type EvidenceViews {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): EvidenceExpressionAtlasPage!
+	"""
+	Reactome evidence: reactions and pathways disrupted by variants in the target, linked to
+	the disease.
+	"""
+	reactome(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [EvidenceReactomeSort!]! = [{key: SCORE, direction: DESCENDING}],
+		"""
+		Case-insensitive text search across the evidences' text fields. Searches all fields unless `fields` is given.
+		"""
+		search: EvidenceReactomeSearch,
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceReactomePage!
 	"""
 	Orphanet evidence: rare-disease gene associations curated by Orphanet.
 	"""
@@ -6037,11 +6177,11 @@ Pathway annotations for a target.
 """
 type Pathway {
 	"""
-	Name of the pathway.
+	Unique identifier for the pathway.
 	"""
 	id: String
 	"""
-	Unique identifier for the pathway.
+	Name of the pathway.
 	"""
 	name: String
 }

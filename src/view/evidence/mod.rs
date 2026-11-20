@@ -24,6 +24,7 @@ pub mod genomics_england_panel_app;
 pub mod gwas_credible_sets;
 pub mod impc;
 pub mod orphanet;
+pub mod reactome;
 pub mod uniprot_literature;
 pub mod uniprot_variants;
 
@@ -351,6 +352,28 @@ impl EvidenceViews {
             page.size,
         );
         expression_atlas::load_evidence_expression_atlas(ctx, key).await
+    }
+
+    /// Reactome evidence: reactions and pathways disrupted by variants in the target, linked to
+    /// the disease.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn reactome(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "reactome::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<reactome::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<reactome::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<reactome::EvidenceReactome>> {
+        let key =
+            reactome::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
+        reactome::load_evidence_reactome(ctx, key).await
     }
 
     /// Orphanet evidence: rare-disease gene associations curated by Orphanet.

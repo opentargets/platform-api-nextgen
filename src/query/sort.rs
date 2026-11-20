@@ -30,6 +30,7 @@ use crate::{
             genomics_england_panel_app::SortField as EvidenceGenomicsEnglandPanelAppSortField,
             gwas_credible_sets::SortField as EvidenceGwasCredibleSetsSortField,
             orphanet::SortField as EvidenceOrphanetSortField,
+            reactome::SortField as EvidenceReactomeSortField,
             uniprot_literature::SortField as EvidenceUniprotLiteratureSortField,
             uniprot_variants::SortField as EvidenceUniprotVariantsSortField,
         },
@@ -99,6 +100,7 @@ impl SortDirection {
 ))]
 #[graphql(concrete(name = "EvidenceGeneBurdenSort", params(EvidenceGeneBurdenSortField)))]
 #[graphql(concrete(name = "EvidenceOrphanetSort", params(EvidenceOrphanetSortField)))]
+#[graphql(concrete(name = "EvidenceReactomeSort", params(EvidenceReactomeSortField)))]
 #[graphql(concrete(name = "EvidenceClinGenSort", params(EvidenceClinGenSortField)))]
 #[graphql(concrete(
     name = "EvidenceExpressionAtlasSort",

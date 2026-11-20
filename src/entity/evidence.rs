@@ -194,10 +194,10 @@ struct NameDescription {
 /// Pathway annotations for a target.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-struct Pathway {
-    /// Name of the pathway.
-    id: Option<String>,
+pub struct Pathway {
     /// Unique identifier for the pathway.
+    id: Option<String>,
+    /// Name of the pathway.
     name: Option<String>,
 }
 
