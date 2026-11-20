@@ -14,6 +14,7 @@ use crate::query::{
     sql::{Column, Filter, Op, Value},
 };
 
+pub mod cancer_gene_census;
 pub mod clingen;
 pub mod clinical_precedence;
 pub mod eva;
@@ -344,6 +345,33 @@ impl EvidenceViews {
         let key =
             orphanet::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
         orphanet::load_evidence_orphanet(ctx, key).await
+    }
+
+    /// Cancer Gene Census evidence: somatic mutations in cancer genes, with the mutated and
+    /// tested sample counts per mutation type.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn cancer_gene_census(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "cancer_gene_census::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<cancer_gene_census::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<cancer_gene_census::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<cancer_gene_census::EvidenceCancerGeneCensus>> {
+        let key = cancer_gene_census::QueryParams::new(
+            self.scope.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        cancer_gene_census::load_evidence_cancer_gene_census(ctx, key).await
     }
 
     /// ClinGen evidence: gene-disease validity classifications curated by ClinGen.
