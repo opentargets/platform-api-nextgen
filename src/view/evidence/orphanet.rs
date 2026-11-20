@@ -62,9 +62,6 @@ pub struct EvidenceOrphanet {
     confidence: Option<String>,
     /// List of PubMed or preprint reference identifiers.
     literature: Vec<String>,
-    #[allow(dead_code, reason = "read only to keep the column order")]
-    #[graphql(skip)]
-    confidence_rank: u64,
 }
 
 impl Table for EvidenceOrphanet {
@@ -85,7 +82,6 @@ columns!(EvidenceOrphanetCol {
     DirectionOnTrait                  => "directionOnTrait"                  : Str,
     AlleleOrigins                     => "alleleOrigins"                     : StrArray,
     Confidence                        => "confidence"                        : Str,
-    ConfidenceRank                    => "confidenceRank"                    : U64,
     Literature                        => "literature"                        : StrArray,
 });
 
@@ -139,22 +135,12 @@ impl QueryParams {
 
 // ---- sort ----
 
-/// Fields available for sorting.
+/// Fields available for sorting. The table isn't sortable in the UI, so only the score.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Hash)]
 #[graphql(name = "EvidenceOrphanetSortField")]
 pub enum SortField {
     /// Evidence score.
     Score,
-    /// Disease/phenotype label.
-    Disease,
-    /// Approved name of the reported protein.
-    ReportedProtein,
-    /// Label of the variant functional consequence.
-    FunctionalConsequence,
-    /// Direction of effect, on the target then on the trait.
-    DirectionOfEffect,
-    /// Confidence, with assessed above not yet assessed.
-    Confidence,
 }
 
 const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
@@ -169,11 +155,6 @@ impl SortField {
         use EvidenceOrphanetCol as C;
         let cols: &[C] = match self {
             Self::Score => &[C::Score],
-            Self::Disease => &[C::DiseaseFromSource],
-            Self::ReportedProtein => &[C::TargetApprovedName],
-            Self::FunctionalConsequence => &[C::VariantFunctionalConsequenceLabel],
-            Self::DirectionOfEffect => &[C::DirectionOnTarget, C::DirectionOnTrait],
-            Self::Confidence => &[C::ConfidenceRank],
         };
         OrderBy::each(cols, dir)
     }

@@ -4286,33 +4286,13 @@ input EvidenceOrphanetSort {
 }
 
 """
-Fields available for sorting.
+Fields available for sorting. The table isn't sortable in the UI, so only the score.
 """
 enum EvidenceOrphanetSortField {
 	"""
 	Evidence score.
 	"""
 	SCORE
-	"""
-	Disease/phenotype label.
-	"""
-	DISEASE
-	"""
-	Approved name of the reported protein.
-	"""
-	REPORTED_PROTEIN
-	"""
-	Label of the variant functional consequence.
-	"""
-	FUNCTIONAL_CONSEQUENCE
-	"""
-	Direction of effect, on the target then on the trait.
-	"""
-	DIRECTION_OF_EFFECT
-	"""
-	Confidence, with assessed above not yet assessed.
-	"""
-	CONFIDENCE
 }
 
 """

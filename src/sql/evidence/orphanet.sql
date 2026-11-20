@@ -21,9 +21,7 @@
     e.directionOnTrait AS directionOnTrait,
     e.alleleOrigins AS alleleOrigins,
     e.confidence AS confidence,
-    e.literature AS literature,
-    -- Ascending order, so `DESC` puts assessed first. Unknown and NULL confidences get 0.
-    toUInt64(indexOf(['Not yet assessed', 'Assessed'], ifNull(e.confidence, ''))) AS confidenceRank
+    e.literature AS literature
   FROM evidence AS e
   LEFT JOIN targets AS t ON t.id = e.targetId
 )
