@@ -2187,7 +2187,7 @@ input DiseaseStudiesSearch {
 	"""
 	Fields to search in. Defaults to all of them.
 	"""
-	fields: [DiseaseStudiesSearchField!]! = [STUDY_ID, PROJECT_ID, TRAIT_FROM_SOURCE, PUBLICATION_FIRST_AUTHOR, PUBLICATION_DATE, PUBLICATION_JOURNAL, COHORTS, PUBMED_ID, DISEASE_IDS, DISEASE_NAMES]
+	fields: [DiseaseStudiesSearchField!]! = [STUDY_ID, TRAIT_FROM_SOURCE, PUBLICATION_FIRST_AUTHOR, PUBLICATION_DATE, PUBLICATION_JOURNAL]
 }
 
 """
@@ -2195,15 +2195,10 @@ Text fields that `search` can match against.
 """
 enum DiseaseStudiesSearchField {
 	STUDY_ID
-	PROJECT_ID
 	TRAIT_FROM_SOURCE
 	PUBLICATION_FIRST_AUTHOR
 	PUBLICATION_DATE
 	PUBLICATION_JOURNAL
-	COHORTS
-	PUBMED_ID
-	DISEASE_IDS
-	DISEASE_NAMES
 }
 
 """
@@ -2229,17 +2224,9 @@ enum DiseaseStudiesSortField {
 	"""
 	N_SAMPLES
 	"""
-	Number of credible sets identified in the study.
-	"""
-	CREDIBLE_SETS_COUNT
-	"""
 	By publication date.
 	"""
 	PUBLICATION_DATE
-	"""
-	Alphabetically.
-	"""
-	TRAIT_FROM_SOURCE
 }
 
 """
