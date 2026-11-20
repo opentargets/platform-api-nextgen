@@ -17,6 +17,7 @@ use crate::query::{
 pub mod clingen;
 pub mod clinical_precedence;
 pub mod crispr;
+pub mod crispr_screen;
 pub mod eva;
 pub mod expression_atlas;
 pub mod gene2phenotype;
@@ -374,6 +375,33 @@ impl EvidenceViews {
     ) -> Result<Paged<crispr::EvidenceCrispr>> {
         let key = crispr::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
         crispr::load_evidence_crispr(ctx, key).await
+    }
+
+    /// CRISPR screen evidence: genes whose perturbation changes a disease-relevant phenotype in
+    /// CRISPR screens (e.g. `CRISPRBrain`).
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn crispr_screen(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "crispr_screen::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<crispr_screen::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<crispr_screen::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<crispr_screen::EvidenceCrisprScreen>> {
+        let key = crispr_screen::QueryParams::new(
+            self.scope.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        crispr_screen::load_evidence_crispr_screen(ctx, key).await
     }
 
     /// Reactome evidence: reactions and pathways disrupted by variants in the target, linked to

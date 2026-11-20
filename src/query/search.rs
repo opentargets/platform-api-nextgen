@@ -25,6 +25,7 @@ use crate::{
             clingen::SearchField as EvidenceClinGenSearchField,
             clinical_precedence::SearchField as EvidenceClinicalPrecedenceSearchField,
             crispr::SearchField as EvidenceCrisprSearchField,
+            crispr_screen::SearchField as EvidenceCrisprScreenSearchField,
             expression_atlas::SearchField as EvidenceExpressionAtlasSearchField,
             gene_burden::SearchField as EvidenceGeneBurdenSearchField,
             gene2phenotype::SearchField as EvidenceGene2PhenotypeSearchField,
@@ -94,6 +95,7 @@ pub fn contains(haystack: &str, needle: &str) -> bool { haystack.to_lowercase().
 #[graphql(concrete(name = "EvidenceOrphanetSearch", params(EvidenceOrphanetSearchField)))]
 #[graphql(concrete(name = "EvidenceReactomeSearch", params(EvidenceReactomeSearchField)))]
 #[graphql(concrete(name = "EvidenceCrisprSearch", params(EvidenceCrisprSearchField)))]
+#[graphql(concrete(name = "EvidenceCrisprScreenSearch", params(EvidenceCrisprScreenSearchField)))]
 #[graphql(concrete(name = "EvidenceClinGenSearch", params(EvidenceClinGenSearchField)))]
 #[graphql(concrete(
     name = "EvidenceExpressionAtlasSearch",
