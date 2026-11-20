@@ -38,12 +38,15 @@ use crate::{
         credible_set_variants::CredibleSetVariant,
         disease_studies::DiseaseStudy,
         evidence::{
-            clingen::EvidenceClinGen, clinical_precedence::EvidenceClinicalPrecedence,
-            eva::EvidenceEva, gene_burden::EvidenceGeneBurden,
+            cancer_biomarkers::EvidenceCancerBiomarkers, clingen::EvidenceClinGen,
+            clinical_precedence::EvidenceClinicalPrecedence, crispr::EvidenceCrispr,
+            crispr_screen::EvidenceCrisprScreen, eva::EvidenceEva,
+            expression_atlas::EvidenceExpressionAtlas, gene_burden::EvidenceGeneBurden,
             gene2phenotype::EvidenceGene2Phenotype,
             genomics_england_panel_app::EvidenceGenomicsEnglandPanelApp,
             gwas_credible_sets::EvidenceGwasCredibleSets, impc::EvidenceImpc,
-            orphanet::EvidenceOrphanet, uniprot_literature::EvidenceUniprotLiterature,
+            orphanet::EvidenceOrphanet, reactome::EvidenceReactome,
+            uniprot_literature::EvidenceUniprotLiterature,
             uniprot_variants::EvidenceUniprotVariants,
         },
         study_credible_sets::StudyCredibleSet,
@@ -122,12 +125,17 @@ pub fn page_complexity(page: Page, child_complexity: usize) -> usize {
 #[graphql(concrete(name = "EvidenceClinicalPrecedencePage", params(EvidenceClinicalPrecedence)))]
 #[graphql(concrete(name = "EvidenceGwasCredibleSetsPage", params(EvidenceGwasCredibleSets)))]
 #[graphql(concrete(name = "EvidenceEvaPage", params(EvidenceEva)))]
+#[graphql(concrete(name = "EvidenceExpressionAtlasPage", params(EvidenceExpressionAtlas)))]
 #[graphql(concrete(name = "EvidenceImpcPage", params(EvidenceImpc)))]
 #[graphql(concrete(name = "EvidenceGene2PhenotypePage", params(EvidenceGene2Phenotype)))]
 #[graphql(concrete(name = "EvidenceUniprotLiteraturePage", params(EvidenceUniprotLiterature)))]
 #[graphql(concrete(name = "EvidenceUniprotVariantsPage", params(EvidenceUniprotVariants)))]
 #[graphql(concrete(name = "EvidenceGeneBurdenPage", params(EvidenceGeneBurden)))]
 #[graphql(concrete(name = "EvidenceOrphanetPage", params(EvidenceOrphanet)))]
+#[graphql(concrete(name = "EvidenceReactomePage", params(EvidenceReactome)))]
+#[graphql(concrete(name = "EvidenceCrisprPage", params(EvidenceCrispr)))]
+#[graphql(concrete(name = "EvidenceCrisprScreenPage", params(EvidenceCrisprScreen)))]
+#[graphql(concrete(name = "EvidenceCancerBiomarkersPage", params(EvidenceCancerBiomarkers)))]
 #[graphql(concrete(name = "EvidenceClinGenPage", params(EvidenceClinGen)))]
 #[graphql(concrete(
     name = "EvidenceGenomicsEnglandPanelAppPage",
