@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<!--
+    The ClickHouse user configuration of the integration test container.
+
+    This is a verbatim copy of the production configuration, in
+    `platform-output-support`, at `config/clickhouse/users.d/users.xml`. The
+    `default` user has an empty password and is reachable from any address,
+    which is how the API connects to ClickHouse: the API does not authenticate.
+
+    The file is copied into the container because the ClickHouse entrypoint
+    only writes its own user configuration when the user has not already been
+    set through `users.d`. Copying this file in leaves the entrypoint alone, so
+    the container ends up with exactly the configuration the production
+    deployment uses.
+
+    Keep this file in sync with the production one.
+-->
+<yandex>
+    <profiles>
+        <default>
+            <max_memory_usage>0</max_memory_usage>
+            <max_bytes_before_external_sort>20000000000</max_bytes_before_external_sort>
+            <max_bytes_before_external_group_by>20000000000</max_bytes_before_external_group_by>
+            <use_uncompressed_cache>1</use_uncompressed_cache>
+            <load_balancing>random</load_balancing>
+            <max_query_size>1048576</max_query_size>
+            <date_time_overflow_behavior>saturate</date_time_overflow_behavior>
+        </default>
+        <readonly>
+            <max_memory_usage>30000000000</max_memory_usage>
+            <max_bytes_before_external_sort>20000000000</max_bytes_before_external_sort>
+            <max_bytes_before_external_group_by>20000000000</max_bytes_before_external_group_by>
+            <use_uncompressed_cache>1</use_uncompressed_cache>
+            <load_balancing>random</load_balancing>
+            <readonly>128</readonly>
+            <max_query_size>1048576</max_query_size>
+        </readonly>
+    </profiles>
+    <users>
+        <default>
+            <password />
+            <networks incl="networks" replace="replace">
+                <ip>::/0</ip>
+                <ip>0.0.0.0</ip>
+            </networks>
+            <profile>default</profile>
+            <quota>default</quota>
+        </default>
+        <readonly>
+            <password />
+            <networks incl="networks" replace="replace">
+                <ip>::/0</ip>
+                <ip>0.0.0.0</ip>
+            </networks>
+            <profile>default</profile>
+            <quota>default</quota>
+        </readonly>
+    </users>
+    <quotas>
+        <default>
+            <interval>
+                <duration>3600</duration>
+                <queries>0</queries>
+                <errors>0</errors>
+                <result_rows>0</result_rows>
+                <read_rows>0</read_rows>
+                <execution_time>0</execution_time>
+            </interval>
+        </default>
+    </quotas>
+</yandex>

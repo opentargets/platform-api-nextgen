@@ -49,5 +49,9 @@ cast_precision_loss = "allow"
 debug = true
 
 [dev-dependencies]
+bytes = "1.10"
+# The `arrow` feature is not needed: the record API reads the sample Parquet
+# fixtures (nested structs and lists included) without it.
+parquet = { version = "60", default-features = false, features = ["snap"] }
 testcontainers = "0.27.3"
 testcontainers-modules = { version = "0.15.0", features = ["clickhouse"] }

@@ -1,25 +1,41 @@
-use std::sync::Arc;
+pub mod sample_data;
 
+use std::{fmt::Write, sync::Arc};
+
+use bytes::Bytes;
 use clickhouse::Client;
 use platform_api::{AppState, config::Config, server::http};
 use reqwest::Response;
 use serde_json::{Value, json};
 use testcontainers::{
-    ContainerAsync, GenericImage, ImageExt,
+    ContainerAsync, CopyDataSource, CopyTargetOptions, GenericImage, ImageExt,
     core::{ContainerPort, IntoContainerPort, WaitFor, wait::HttpWaitStrategy},
     runners::AsyncRunner,
 };
 use tokio::{net::TcpListener, sync::OnceCell};
 
-pub const DATA_RELEASE: &str = "26.09";
-pub const TARGET_ID: &str = "ENSG00000139618";
-pub const TARGET_SYMBOL: &str = "BRCA2";
-pub const TARGET_NAME: &str = "Breast cancer type 2 susceptibility protein";
-pub const OTHER_TARGET_ID: &str = "ENSG00000141510";
-pub const OTHER_TARGET_SYMBOL: &str = "TP53";
+/// The data release the sample data belongs to.
+///
+/// The fixtures under `tests/fixtures/data` are a subset of the `platform-2612-3`
+/// release, so the namespace the API derives from it is `platform2612`.
+pub const DATA_RELEASE: &str = "26.12";
 
-const CLICKHOUSE_IMAGE: (&str, &str) = ("clickhouse/clickhouse-server", "23.3.8.21-alpine");
+/// The schema of the `targets` ClickHouse table.
+const TARGETS_SCHEMA: &str = include_str!("schema/targets.sql");
+
+/// The mappings and settings of the search indices.
+///
+/// These are the production mappings, taken from `platform-output-support`, so the
+/// tests exercise the same analysis chain as the deployed API.
+const SEARCH_INDEX_SCHEMA: &str = include_str!("schema/search_index.json");
+
+const CLICKHOUSE_IMAGE: (&str, &str) = ("clickhouse/clickhouse-server", "26.8.2.7");
 const OPENSEARCH_IMAGE: (&str, &str) = ("opensearchproject/opensearch", "2.19.1");
+
+/// The user configuration of the ClickHouse container.
+///
+/// This is the production configuration, copied from `platform-output-support`.
+const CLICKHOUSE_USERS_XML: &str = include_str!("schema/users.xml");
 
 /// A running API backed by real ClickHouse and OpenSearch containers.
 ///
@@ -71,6 +87,16 @@ impl TestEnvironment {
                     .with_port(8123_u16.tcp())
                     .with_expected_status_code(200_u16),
             ))
+            // The container is given the production user configuration. The
+            // ClickHouse entrypoint only writes its own user configuration when
+            // the user has not already been set through `users.d`, so copying
+            // the file in leaves the entrypoint alone and the container ends up
+            // with the same setup as the deployed one: a passwordless
+            // `default` user reachable from anywhere.
+            .with_copy_to(
+                CopyTargetOptions::new("/etc/clickhouse-server/users.d/users.xml"),
+                CopyDataSource::Data(CLICKHOUSE_USERS_XML.as_bytes().to_vec()),
+            )
             .start()
             .await
             .expect("start ClickHouse container");
@@ -149,6 +175,7 @@ async fn response_json(response: Response) -> Value {
         .unwrap_or_else(|error| panic!("invalid GraphQL response: {error}: {body}"))
 }
 
+/// Creates the ClickHouse database and loads the sample targets into it.
 async fn seed_clickhouse(url: &str, namespace: &str) {
     let client = Client::default().with_url(url);
     client
@@ -157,111 +184,32 @@ async fn seed_clickhouse(url: &str, namespace: &str) {
         .await
         .expect("create test ClickHouse database");
     client
-        .query(&format!(
-            r"
-            CREATE TABLE {namespace}.targets (
-                `id` String,
-                `alternativeGenes` Array(String),
-                `approvedSymbol` String,
-                `approvedName` String,
-                `biotype` String,
-                `canonicalTranscript` Tuple(String, String, Int32, Int32, Int8),
-                `chemicalProbes` Array(Tuple(
-                    String, Nullable(String), Nullable(String), Nullable(String),
-                    Array(String), Bool, Array(String), Nullable(Float64),
-                    Nullable(Float64), Nullable(Float64), String,
-                    Array(Tuple(String, Nullable(String)))
-                )),
-                `dbXrefs` Array(Tuple(String, String)),
-                `functionDescriptions` Array(String),
-                `constraint` Array(Tuple(
-                    String, Nullable(Float64), Nullable(UInt32), Nullable(Float64),
-                    Nullable(Float64), Nullable(Float64), Nullable(Float64),
-                    Nullable(UInt32), Nullable(UInt32), Nullable(UInt32)
-                )),
-                `genomicLocation` Tuple(String, UInt32, UInt32, Int8),
-                `go` Array(Tuple(String, String, String, String, String)),
-                `hallmarks` Tuple(
-                    Array(Tuple(String, Nullable(String), String, UInt32)),
-                    Array(Tuple(String, String, Nullable(UInt32)))
-                ),
-                `homologues` Array(Tuple(
-                    String, Float64, String, String, String, String, Float64, Nullable(String)
-                )),
-                `pathways` Array(Tuple(String, String, String)),
-                `proteinIds` Array(Tuple(String, String)),
-                `safetyLiabilities` Array(Tuple(
-                    Array(Tuple(Nullable(String), Nullable(String), Nullable(String), Nullable(String), Nullable(String))),
-                    String,
-                    Array(Tuple(String, String)),
-                    Nullable(String), Nullable(String), Nullable(String), Nullable(String),
-                    Array(Tuple(Nullable(String), Nullable(String), Nullable(String)))
-                )),
-                `studyLocusIds` Array(String),
-                `pharmacogenomicsIds` Array(UInt64),
-                `subcellularLocations` Array(Tuple(
-                    String, String, Nullable(String), Nullable(String), Nullable(String)
-                )),
-                `synonyms` Array(Tuple(String, String)),
-                `symbolSynonyms` Array(Tuple(String, String)),
-                `nameSynonyms` Array(Tuple(String, String)),
-                `obsoleteSymbols` Array(Tuple(String, String)),
-                `obsoleteNames` Array(Tuple(String, String)),
-                `targetClass` Array(Tuple(UInt32, String, String)),
-                `tractability` Array(Tuple(String, String, Bool)),
-                `transcriptIds` Array(String),
-                `transcripts` Array(Tuple(
-                    String, String, Bool, Nullable(String), Bool,
-                    Nullable(String), Nullable(String), Nullable(String)
-                ))
-            ) ENGINE = Memory
-            "
-        ))
+        .query(&TARGETS_SCHEMA.replace("{namespace}", namespace))
         .execute()
         .await
         .expect("create targets fixture table");
-    for (id, symbol, name, transcript, chromosome, start, end, strand) in [
-        (
-            TARGET_ID,
-            TARGET_SYMBOL,
-            TARGET_NAME,
-            "ENST00000380152",
-            "13",
-            32_315_474_i32,
-            32_398_710_i32,
-            1_i8,
-        ),
-        (
-            OTHER_TARGET_ID,
-            OTHER_TARGET_SYMBOL,
-            "Cellular tumor antigen p53",
-            "ENST00000269305",
-            "17",
-            7_668_402_i32,
-            7_687_550_i32,
-            -1_i8,
-        ),
-    ] {
-        client
-            .query(&format!(
-                r"
-                INSERT INTO {namespace}.targets
-                    (`id`, `alternativeGenes`, `approvedSymbol`, `approvedName`, `biotype`,
-                     `canonicalTranscript`, `chemicalProbes`, `dbXrefs`, `functionDescriptions`,
-                     `constraint`, `genomicLocation`, `go`, `hallmarks`, `homologues`, `pathways`,
-                     `proteinIds`, `safetyLiabilities`, `studyLocusIds`, `pharmacogenomicsIds`,
-                     `subcellularLocations`, `synonyms`, `symbolSynonyms`, `nameSynonyms`,
-                     `obsoleteSymbols`, `obsoleteNames`, `targetClass`, `tractability`,
-                     `transcriptIds`, `transcripts`)
-                VALUES ('{id}', [], '{symbol}', '{name}', 'protein_coding', ('{transcript}', '{chromosome}', {start}, {end}, {strand}), [], [], [], [], ('{chromosome}', {start}, {end}, {strand}), [], ([], []), [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [('{transcript}', 'protein_coding', true, 'P00000', true, 'ENSP00000000000', 'AF-P00000-F1', CAST(NULL AS Nullable(String)))])
-                "
-            ))
-            .execute()
-            .await
-            .expect("seed targets fixture table");
-    }
+
+    // The sample data is loaded as JSON: the Parquet format of the fixtures uses
+    // `large_list` and `large_string` types that the ClickHouse version used
+    // here cannot read, and its JSON reader does not support the tuple shapes
+    // the API expects.
+    let targets = sample_data::targets();
+    let body = targets
+        .iter()
+        .map(|target| serde_json::to_string(target).expect("serialize target"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let mut insert = client.insert_formatted_with(format!(
+        "INSERT INTO {namespace}.targets FORMAT JSONEachRow"
+    ));
+    insert
+        .send(Bytes::from(body))
+        .await
+        .expect("seed targets fixture table");
+    insert.end().await.expect("finish seeding targets");
 }
 
+/// Creates the search indices and loads the sample search documents into them.
 async fn seed_opensearch(url: &str, namespace: &str) {
     let client = reqwest::Client::new();
     let indices = [
@@ -274,53 +222,8 @@ async fn seed_opensearch(url: &str, namespace: &str) {
     for index in indices {
         let response = client
             .put(format!("{url}/{namespace}_{index}"))
-            .json(&json!({
-                "settings": {
-                    "number_of_shards": 1,
-                    "number_of_replicas": 0,
-                    "analysis": {
-                        "normalizer": {
-                            "custom": {
-                                "type": "custom",
-                                "filter": ["lowercase"]
-                            }
-                        },
-                        "char_filter": {
-                            "normalize_delimiters": {
-                                "type": "pattern_replace",
-                                "pattern": "[:\\-/]",
-                                "replacement": "_"
-                            }
-                        },
-                        "analyzer": {
-                            "token": {
-                                "type": "custom",
-                                "tokenizer": "keyword",
-                                "char_filter": ["normalize_delimiters"],
-                                "filter": ["lowercase", "trim"]
-                            }
-                        }
-                    }
-                },
-                "mappings": {
-                    "dynamic_templates": [{
-                        "strings": {
-                            "match_mapping_type": "string",
-                            "mapping": {
-                                "type": "text",
-                                "term_vector": "with_positions_offsets",
-                                "fields": {
-                                    "raw": {
-                                        "type": "keyword",
-                                        "ignore_above": 1024,
-                                        "normalizer": "custom"
-                                    }
-                                }
-                            }
-                        }
-                    }]
-                }
-            }))
+            .header("Content-Type", "application/json")
+            .body(SEARCH_INDEX_SCHEMA)
             .send()
             .await
             .expect("create OpenSearch fixture index");
@@ -331,22 +234,57 @@ async fn seed_opensearch(url: &str, namespace: &str) {
         );
     }
 
+    // The search documents of the sample data.
+    let mut bulk = String::new();
+    for document in sample_data::search_targets() {
+        let id = document["id"].as_str().expect("search document has an id");
+        writeln!(
+            bulk,
+            r#"{{"index":{{"_index":"{namespace}_search_target","_id":"{id}"}}}}"#
+        )
+        .expect("write search document action");
+        bulk.push_str(&serde_json::to_string(&document).expect("serialize search document"));
+        bulk.push('\n');
+    }
+    let response = client
+        .post(format!("{url}/_bulk"))
+        .header("Content-Type", "application/x-ndjson")
+        .body(bulk)
+        .send()
+        .await
+        .expect("index OpenSearch target fixtures");
+    assert!(
+        response.status().is_success(),
+        "index OpenSearch target fixtures failed: {}",
+        response.text().await.unwrap_or_default()
+    );
+
+    // The sample search documents and the sample targets are disjoint, so a
+    // document is synthesised for one of the targets. This is what lets the
+    // tests check that a search hit resolves to the target stored in
+    // ClickHouse.
+    let target_id = sample_data::first_target_id();
+    let symbol = sample_data::first_target_symbol();
+    let name = sample_data::first_target_name();
     let document = json!({
-        "id": TARGET_ID,
-        "name": TARGET_NAME,
+        "id": target_id,
+        "name": name,
         "entity": "target",
         "category": ["Protein kinase"],
-        "description": "Homolog of the breast cancer type 2 susceptibility protein",
-        "keywords": [TARGET_SYMBOL, "BRCA"],
-        "prefixes": ["BRCA2"],
-        "ngrams": ["B", "BR", "BRA", "BRCA", "BRCA2"],
-        "terms": ["breast cancer type 2 susceptibility protein"],
-        "terms5": ["breast cancer type 2 susceptibility protein"],
-        "terms25": ["breast cancer type 2 susceptibility protein"],
+        "description": "Synthesised from the target view of the sample data",
+        "keywords": [symbol, name],
+        "prefixes": [symbol],
+        "ngrams": symbol.chars().scan(String::new(), |acc, character| {
+            acc.push(character);
+            Some(acc.clone())
+        }).collect::<Vec<_>>(),
+        "terms": [name],
+        "terms5": [name],
+        "terms25": [name],
         "multiplier": 1.0
     });
     let response = client
-        .post(format!("{url}/{namespace}_search_target/_doc/{TARGET_ID}"))
+        .post(format!("{url}/{namespace}_search_target/_doc/{target_id}"))
         .json(&document)
         .send()
         .await
@@ -356,12 +294,17 @@ async fn seed_opensearch(url: &str, namespace: &str) {
         "index OpenSearch target fixture failed: {}",
         response.text().await.unwrap_or_default()
     );
-    let response = client
-        .post(format!("{url}/{namespace}_search_target/_refresh"))
-        .send()
-        .await
-        .expect("refresh OpenSearch target fixture");
-    assert!(response.status().is_success());
+
+    // The production mappings disable the automatic refresh, so the indices are
+    // refreshed explicitly.
+    for index in indices {
+        let response = client
+            .post(format!("{url}/{namespace}_{index}/_refresh"))
+            .send()
+            .await
+            .expect("refresh OpenSearch fixture index");
+        assert!(response.status().is_success());
+    }
 }
 
 /// Returns the GraphQL errors of a response, panicking with the payload when there are any.
