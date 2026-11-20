@@ -163,7 +163,7 @@ struct EvidenceTextMiningSentence {
 /// An element with a label.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-struct LabelledElement {
+pub struct LabelledElement {
     /// The unique identifier of the element.
     id: String,
     /// The human-readable label of the element.
