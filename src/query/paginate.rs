@@ -41,7 +41,7 @@ use crate::{
             clinical_precedence::EvidenceClinicalPrecedence, eva::EvidenceEva,
             gene_burden::EvidenceGeneBurden, gene2phenotype::EvidenceGene2Phenotype,
             genomics_england_panel_app::EvidenceGenomicsEnglandPanelApp,
-            gwas_credible_sets::EvidenceGwasCredibleSets, impc::EvidenceImpc,
+            gwas_credible_sets::EvidenceGwasCredibleSets, impc::EvidenceImpc, orphanet::EvidenceOrphanet,
             uniprot_literature::EvidenceUniprotLiterature,
             uniprot_variants::EvidenceUniprotVariants,
         },
@@ -126,6 +126,7 @@ pub fn page_complexity(page: Page, child_complexity: usize) -> usize {
 #[graphql(concrete(name = "EvidenceUniprotLiteraturePage", params(EvidenceUniprotLiterature)))]
 #[graphql(concrete(name = "EvidenceUniprotVariantsPage", params(EvidenceUniprotVariants)))]
 #[graphql(concrete(name = "EvidenceGeneBurdenPage", params(EvidenceGeneBurden)))]
+#[graphql(concrete(name = "EvidenceOrphanetPage", params(EvidenceOrphanet)))]
 #[graphql(concrete(
     name = "EvidenceGenomicsEnglandPanelAppPage",
     params(EvidenceGenomicsEnglandPanelApp)
