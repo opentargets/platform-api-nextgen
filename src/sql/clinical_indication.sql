@@ -6,6 +6,7 @@
     ci.maxClinicalStage AS maxClinicalStage,
     ci.clinicalReportIds AS clinicalReportIds,
     nullIf(d.name, '') AS drugName,
+    nullIf(dictGet('disease_names', 'name', ci.diseaseId), '') AS diseaseName,
     toUInt32(length(ci.clinicalReportIds)) AS clinicalReportCount,
     -- Ascending stage order, so `DESC` puts approved drugs first. Unknown stages get 0.
     -- Same order as the clinical precedence evidence view.
