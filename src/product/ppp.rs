@@ -37,7 +37,7 @@ use crate::{
         pharmacogenomics::PharmacogenomicsLoader,
         protein_coding_coordinates::ProteinCodingCoordinateVariantLoader,
         publication::PublicationLoader,
-        region_ppp::{RegionQuery, TargetsByRegionLoader},
+        region::{RegionQuery, TargetsByRegionLoader},
         search::SearchQuery,
         search_facet::FacetQuery,
         sequence_ontology::SequenceOntologyTermLoader,

@@ -919,13 +919,13 @@ pairs as well as the method and statistics used to estimate the colocalisation.
 """
 type Colocalisation {
 	"""
-	Credible set (study-locus) on the left side of the colocalisation pair.
+	Identifier of the credible set on this side of the colocalisation pair.
 	"""
-	studyLocusId: String!
+	credibleSetId: String!
 	"""
-	The other credible set (study-locus) in the colocalisation pair.
+	Identifier of the other credible set in the colocalisation pair.
 	"""
-	otherStudyLocusId: String!
+	otherCredibleSetId: String!
 	"""
 	Type of the right-side study (e.g., gwas, eqtl, pqtl).
 	"""
@@ -960,11 +960,11 @@ type Colocalisation {
 	"""
 	Average sign of the beta ratio between colocalised variants.
 	"""
-	betaRatioSignAverage: Float!
+	betaRatioSignAverage: Float
 	"""
-	The other credible set (study-locus) in the colocalisation pair.
+	The other credible set in the colocalisation pair.
 	"""
-	otherStudyLocus: CredibleSet
+	otherCredibleSet: CredibleSet
 }
 
 """
@@ -1040,69 +1040,78 @@ credible set (locus) as well as the fine-mapping method and derived statistics.
 """
 type CredibleSet {
 	"""
-	Identifier of the credible set (`StudyLocus`).
+	Identifier of the credible set.
 	"""
-	studyLocusId: String!
-	"""
-	Chromosome which the credible set is located.
-	"""
-	chromosome: Chromosome!
-	"""
-	Position of the lead variant for the credible set (`GRCh38`).
-	"""
-	position: Int!
-	"""
-	Start and end positions of the region used for fine-mapping.
-	"""
-	region: String
+	credibleSetId: String!
 	"""
 	Identifier of the GWAS or molQTL study in which the credible set was identified.
 	"""
 	studyId: String!
 	"""
-	Beta coefficient of the lead variant.
+	Descriptor for whether the credible set is derived from GWAS or molecular QTL.
 	"""
-	beta: Float
+	studyType: StudyType!
 	"""
-	Z-score of the lead variant from the GWAS.
+	Chromosome which the credible set is located.
 	"""
-	zScore: Float
+	chromosome: Chromosome!
+	"""
+	Identifier of the lead variant of the credible set.
+	"""
+	leadVariantId: String!
+	"""
+	Position of the lead variant for the credible set (`GRCh38`).
+	"""
+	leadPosition: Int!
 	"""
 	Mantissa value of the lead variant P-value.
 	"""
-	pValueMantissa: Float!
+	leadPValueMantissa: Float
 	"""
 	Exponent value of the lead variant P-value.
 	"""
-	pValueExponent: Int!
+	leadPValueExponent: Int
 	"""
-	Allele frequency of the lead variant from the GWAS.
+	Beta coefficient of the lead variant, as reported by the source.
 	"""
-	effectAlleleFrequencyFromSource: Float
+	leadBeta: Float
 	"""
-	Standard error of the lead variant.
+	Standard error of the lead variant, as reported by the source.
 	"""
-	standardError: Float
+	leadStandardError: Float
 	"""
-	[Deprecated]
+	Effect allele frequency of the lead variant.
 	"""
-	subStudyDescription: String
+	leadEffectAlleleFrequency: Float
 	"""
-	Quality control flags for this credible set.
+	Sample size for the lead variant.
 	"""
-	qualityControls: [String!]!
+	leadSampleSize: Int
+	"""
+	Start position of the region that was fine-mapped for this credible set.
+	"""
+	locusStart: Int!
+	"""
+	End position of the region that was fine-mapped for this credible set.
+	"""
+	locusEnd: Int!
+	"""
+	Number of variants in the credible set.
+	"""
+	locusSize: Int!
 	"""
 	Method used for fine-mapping of credible set.
 	"""
-	finemappingMethod: String!
+	fineMappingMethod: FineMappingMethod!
 	"""
-	Integer label for the order of credible sets from study-region.
+	Natural log Bayes factor for the entire credible set.
 	"""
-	credibleSetIndex: Int
+	logBayesFactor: Float
 	"""
-	Log10 Bayes factor for the entire credible set.
+	Confidence level of the credible set, from 1 (PICS on a reported top hit) to 4 (`SuSiE`
+	with in-sample LD); 0 means unknown.
 	"""
-	credibleSetlog10BF: Float
+	confidence: Int!
 	"""
 	Mean R-squared linkage disequilibrium for variants in the credible set.
 	"""
@@ -1112,42 +1121,17 @@ type CredibleSet {
 	"""
 	purityMinR2: Float
 	"""
-	Start position of the region that was fine-mapped for this credible set.
+	Quality control flags for this credible set.
 	"""
-	locusStart: Int
+	qualityControls: [String!]!
 	"""
-	End position of the region that was fine-mapped for this credible set.
+	Whether this credible set is a trans-QTL.
 	"""
-	locusEnd: Int
+	isTransQtl: Boolean!
 	"""
-	Sample size of the study which this credible set is derived.
+	The lead variant for the credible set.
 	"""
-	sampleSize: Int
-	"""
-	Array of structs which denote the variants in LD with the credible set lead variant.
-	"""
-	ldSet: [Ldset!]!
-	"""
-	Descriptor for whether the credible set is derived from GWAS or molecular QTL.
-	"""
-	studyType: StudyType!
-	"""
-	Ensembl identifier of the gene representing a specific gene whose molecular is being
-	analysed in molQTL study.
-	"""
-	qtlGeneId: String
-	"""
-	Description of how this credible set was derived in terms of data and fine-mapping method.
-	"""
-	confidence: String!
-	"""
-	Boolean for whether this credible set is a trans-pQTL or not.
-	"""
-	isTransQtl: Boolean
-	"""
-	The lead variant for the credible set, by posterior probability.
-	"""
-	variant: Variant
+	leadVariant: Variant
 	"""
 	GWAS or molQTL study in which the credible set was identified.
 	"""
@@ -1162,7 +1146,7 @@ type CredibleSet {
 		page: Page! = {index: 0, size: 10}
 	): L2GPredictionPage!
 	"""
-	Locus information for all variants in the credible set.
+	Variants in the credible set, with their fine-mapping statistics.
 	"""
 	locus(
 		"""
@@ -1241,13 +1225,13 @@ Rows are decoded by position, so field order must match the column order of
 """
 type CredibleSetColocalisation {
 	"""
-	This credible set (`StudyLocus`), on the left side of the colocalisation pair.
+	This credible set, on the left side of the colocalisation pair.
 	"""
-	studyLocusId: String!
+	credibleSetId: String!
 	"""
-	The other credible set (`StudyLocus`) in the colocalisation pair.
+	The other credible set in the colocalisation pair.
 	"""
-	otherStudyLocusId: String!
+	otherCredibleSetId: String!
 	"""
 	Type of the other credible set's study (e.g. gwas, eqtl, pqtl).
 	"""
@@ -1295,7 +1279,7 @@ type CredibleSetColocalisation {
 	"""
 	Whether the other credible set is a trans-QTL.
 	"""
-	isTransQtl: Boolean
+	isTransQtl: Boolean!
 	"""
 	Lead variant of the other credible set.
 	"""
@@ -1311,11 +1295,11 @@ type CredibleSetColocalisation {
 	"""
 	Mantissa of the other credible set's lead variant P-value.
 	"""
-	pValueMantissa: Float!
+	pValueMantissa: Float
 	"""
 	Exponent of the other credible set's lead variant P-value.
 	"""
-	pValueExponent: Int!
+	pValueExponent: Int
 	"""
 	Method used to estimate colocalisation (e.g. coloc, eCAVIAR).
 	"""
@@ -1342,7 +1326,7 @@ type CredibleSetColocalisation {
 	"""
 	Average sign of the beta ratio between colocalised variants (directionality).
 	"""
-	betaRatioSignAverage: Float!
+	betaRatioSignAverage: Float
 }
 
 """
@@ -1438,9 +1422,9 @@ Rows are decoded by position, so field order must match the column order of
 """
 type CredibleSetVariant {
 	"""
-	Identifier of the credible set (`StudyLocus`).
+	Identifier of the credible set.
 	"""
-	studyLocusId: String!
+	credibleSetId: String!
 	"""
 	Variant identifier (`chromosome_position_ref_alt`).
 	"""
@@ -1466,9 +1450,9 @@ type CredibleSetVariant {
 	"""
 	posteriorProbability: Float!
 	"""
-	Log (natural) Bayes factor for the variant from fine-mapping.
+	Natural log Bayes factor for the variant from fine-mapping.
 	"""
-	logBF: Float
+	logBayesFactor: Float
 	"""
 	Mantissa of the P-value for this variant in the credible set.
 	"""
@@ -1478,13 +1462,13 @@ type CredibleSetVariant {
 	"""
 	pValueExponent: Int
 	"""
-	Beta coefficient of this variant in the credible set.
+	Beta coefficient of this variant, as reported by the source. Not comparable across studies.
 	"""
-	beta: Float
+	reportedBeta: Float
 	"""
-	Standard error of this variant in the credible set.
+	Standard error of the reported beta.
 	"""
-	standardError: Float
+	reportedStandardError: Float
 	"""
 	R-squared (LD) between this credible set variant and the lead variant.
 	"""
@@ -1555,14 +1539,14 @@ enum CredibleSetVariantsSortField {
 	By exponent, then mantissa.
 	"""
 	P_VALUE
-	BETA
-	STANDARD_ERROR
+	REPORTED_BETA
+	REPORTED_STANDARD_ERROR
 	"""
 	R-squared (LD) with the lead variant.
 	"""
 	R2_OVERALL
 	POSTERIOR_PROBABILITY
-	LOG_BF
+	LOG_BAYES_FACTOR
 }
 
 """
@@ -3016,10 +3000,6 @@ type Evidence {
 	"""
 	log2FoldChangePercentileRank: Int
 	"""
-	Log 2 fold expression change in contrast experiment.
-	"""
-	log2FoldChangeValue: Float
-	"""
 	Samples with a given mutation tested.
 	"""
 	mutatedSamples: [EvidenceVariation!]!
@@ -3055,6 +3035,10 @@ type Evidence {
 	P-value of the the cell survival test.
 	"""
 	phenotypicConsequencePValue: Float
+	"""
+	Score of the phenotypic consequence of the target perturbation in the CRISPR screen.
+	"""
+	phenotypicConsequenceScore: Float
 	"""
 	If a given target was found to be a hit in the primary project.
 	"""
@@ -3204,7 +3188,7 @@ type Evidence {
 	"""
 	disease: Disease
 	"""
-	Credible set (`StudyLocus`) supporting this evidence
+	Credible set supporting this evidence.
 	"""
 	credibleSet: CredibleSet
 	"""
@@ -4009,9 +3993,9 @@ type EvidenceGwasCredibleSets {
 	"""
 	targetId: String!
 	"""
-	Identifier of the credible set (`StudyLocus`) supporting this evidence.
+	Identifier of the credible set supporting this evidence.
 	"""
-	studyLocusId: String
+	credibleSetId: String
 	"""
 	Identifier of the credible set's lead variant.
 	"""
@@ -4035,11 +4019,11 @@ type EvidenceGwasCredibleSets {
 	"""
 	Mantissa of the lead variant's p-value.
 	"""
-	pValueMantissa: Float!
+	pValueMantissa: Float
 	"""
 	Exponent of the lead variant's p-value.
 	"""
-	pValueExponent: Int!
+	pValueExponent: Int
 	"""
 	Effect size of the lead variant.
 	"""
@@ -4047,11 +4031,12 @@ type EvidenceGwasCredibleSets {
 	"""
 	Fine-mapping method used to derive the credible set.
 	"""
-	finemappingMethod: String!
+	fineMappingMethod: FineMappingMethod!
 	"""
-	Fine-mapping confidence of the credible set.
+	Confidence level of the credible set, from 1 (PICS on a reported top hit) to 4 (`SuSiE`
+	with in-sample LD); 0 means unknown.
 	"""
-	confidence: String!
+	confidence: Int!
 	"""
 	Identifier of the GWAS study.
 	"""
@@ -4101,7 +4086,7 @@ input EvidenceGwasCredibleSetsSearch {
 	"""
 	Fields to search in. Defaults to all of them.
 	"""
-	fields: [EvidenceGwasCredibleSetsSearchField!]! = [LEAD_VARIANT_ID, TRAIT_FROM_SOURCE, DISEASE_NAME, STUDY_ID, FINEMAPPING_METHOD, CONFIDENCE, PUBLICATION_FIRST_AUTHOR, PUBLICATION_DATE]
+	fields: [EvidenceGwasCredibleSetsSearchField!]! = [LEAD_VARIANT_ID, TRAIT_FROM_SOURCE, DISEASE_NAME, STUDY_ID, FINE_MAPPING_METHOD, PUBLICATION_FIRST_AUTHOR, PUBLICATION_DATE]
 }
 
 """
@@ -4112,8 +4097,7 @@ enum EvidenceGwasCredibleSetsSearchField {
 	TRAIT_FROM_SOURCE
 	DISEASE_NAME
 	STUDY_ID
-	FINEMAPPING_METHOD
-	CONFIDENCE
+	FINE_MAPPING_METHOD
 	PUBLICATION_FIRST_AUTHOR
 	PUBLICATION_DATE
 }
@@ -4157,9 +4141,9 @@ enum EvidenceGwasCredibleSetsSortField {
 	"""
 	BETA
 	"""
-	Fine-mapping confidence, from PICS on a reported top hit up to `SuSiE` with in-sample LD.
+	By confidence level, from PICS on a reported top hit up to `SuSiE` with in-sample LD.
 	"""
-	FINEMAPPING_CONFIDENCE
+	CONFIDENCE
 }
 
 """
@@ -4723,6 +4707,24 @@ enum FacetEntity {
 }
 
 """
+Fine-mapping method used to derive a credible set.
+"""
+enum FineMappingMethod {
+	"""
+	Probabilistic Identification of Causal SNPs, from summary statistics or a reported top hit.
+	"""
+	PICS
+	"""
+	Sum of Single Effects regression (`SuSiE`).
+	"""
+	SUSIE
+	"""
+	`SuSiE` with an infinitesimal effects component.
+	"""
+	SUSIE_INF
+}
+
+"""
 The different product flavors served by the API (platform/ppp).
 """
 enum Flavor {
@@ -5187,9 +5189,9 @@ model interpretation of the predictions.
 """
 type L2Gprediction {
 	"""
-	Study-locus identifier for the credible set.
+	Identifier of the credible set.
 	"""
-	studyLocusId: String!
+	credibleSetId: String!
 	"""
 	Locus2gene prediction score for the gene assignment. Higher scores indicate a stronger
 	association between the credible set and the gene. Scores range from 0 to 1.
@@ -5268,20 +5270,6 @@ type LdPopulationStructure {
 }
 
 """
-Variants in linkage disequilibrium (LD) with the credible set lead variant.
-"""
-type Ldset {
-	"""
-	The variant ID for tag variants in LD with the credible set lead variant.
-	"""
-	tagVariantId: String!
-	"""
-	The R-squared value for the tag variants with the credible set lead variant.
-	"""
-	r2Overall: Float!
-}
-
-"""
 Subcellular location information with source.
 """
 type LocationAndSource {
@@ -5308,25 +5296,19 @@ type LocationAndSource {
 }
 
 """
-List of variants within the credible set.
+A variant in a credible set, with its fine-mapping statistics.
+
+Decoded by position from the `locus` tuple, so field order must match its element order.
 """
 type Locus {
-	"""
-	Boolean for if the variant is part of the 95% credible set.
-	"""
-	is95CredibleSet: Boolean!
-	"""
-	Boolean for if the variant is part of the 99% credible set.
-	"""
-	is99CredibleSet: Boolean!
-	"""
-	Log (natural) Bayes factor for the variant from fine-mapping.
-	"""
-	logBF: Float
 	"""
 	Posterior inclusion probability for the variant within this credible set.
 	"""
 	posteriorProbability: Float!
+	"""
+	Natural log Bayes factor for the variant from fine-mapping.
+	"""
+	logBayesFactor: Float
 	"""
 	Mantissa of the P-value for this variant in the credible set.
 	"""
@@ -5336,17 +5318,49 @@ type Locus {
 	"""
 	pValueExponent: Int
 	"""
-	Beta coefficient of this variant in the credible set.
+	Effect allele frequency of this variant.
 	"""
-	beta: Float
+	effectAlleleFrequency: Float
 	"""
-	Standard error of this variant in the credible set.
+	Sample size for this variant.
 	"""
-	standardError: Float
+	sampleSize: Int
+	"""
+	Beta coefficient of this variant, as reported by the source. Not comparable across studies.
+	"""
+	reportedBeta: Float
+	"""
+	Standard error of the reported beta.
+	"""
+	reportedStandardError: Float
 	"""
 	R-squared (LD) between this credible set variant and the lead variant.
 	"""
 	r2Overall: Float
+	"""
+	Effect of this variant from fine-mapping, conditional on the other signals in the locus.
+	"""
+	conditionalBeta: Float
+	"""
+	Standard error of the conditional beta.
+	"""
+	conditionalStandardError: Float
+	"""
+	Absolute effect rescaled to be comparable across studies.
+	"""
+	rescaledAbsBeta: Float
+	"""
+	Standard error of the rescaled effect.
+	"""
+	rescaledStandardError: Float
+	"""
+	Direction of the rescaled effect (1 or -1).
+	"""
+	rescaledDirection: Int
+	"""
+	Quality control flags for this variant in the credible set.
+	"""
+	qualityControls: [String!]!
 	"""
 	Variant in the credible set.
 	"""
@@ -5419,6 +5433,11 @@ type MechanismOfActionRow {
 	Name of the target molecule.
 	"""
 	targetName: String
+	"""
+	How the mechanism was curated, e.g. whether it was inferred from trial text or the
+	literature.
+	"""
+	curation: String!
 	"""
 	Reference information supporting the mechanism of action.
 	"""
@@ -6087,9 +6106,9 @@ type Query {
 	"""
 	credibleSets(
 		"""
-		List of study locus IDs to fetch.
+		List of credible set IDs to fetch.
 		"""
-		studyLocusIds: [String!]!,
+		credibleSetIds: [String!]!,
 		"""
 		Pagination for the credible sets.
 		"""
@@ -6100,9 +6119,9 @@ type Query {
 	"""
 	credibleSet(
 		"""
-		Study locus ID to fetch.
+		Credible set ID to fetch.
 		"""
-		studyLocusId: String!
+		credibleSetId: String!
 	): CredibleSet
 	"""
 	Fetch diseases by EFO ID.
@@ -6139,6 +6158,20 @@ type Query {
 	List of molecular interaction resources and their versions.
 	"""
 	interactionResources: [InteractionResource!]!
+	region(
+		"""
+		Chromosome the region is contained in.
+		"""
+		chromosome: Chromosome!,
+		"""
+		Start position.
+		"""
+		start: Int!,
+		"""
+		End position.
+		"""
+		end: Int!
+	): Region!
 	studies(
 		"""
 		List of Study IDs to fetch. If both `studyIds` and `diseaseIds` are provided,
@@ -6278,6 +6311,30 @@ type Reference {
 	List of URLs linking to the reference.
 	"""
 	urls: [String!]!
+}
+
+"""
+Region with chromosome, start and end positions.
+"""
+type Region {
+	"""
+	Chromosome the region is contained in.
+	"""
+	chromosome: Chromosome!
+	"""
+	Start position.
+	"""
+	start: Int!
+	"""
+	End position.
+	"""
+	end: Int!
+	targets(
+		"""
+		Pagination for the targets.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): TargetPage!
 }
 
 """
@@ -6876,17 +6933,20 @@ Rows are decoded by position, so field order must match the column order of the
 """
 type StudyCredibleSet {
 	studyId: String!
-	studyLocusId: String!
+	credibleSetId: String!
 	leadVariantId: String!
 	leadChromosome: Chromosome!
 	leadPosition: Int!
 	leadReferenceAllele: String!
 	leadAlternateAllele: String!
-	pValueMantissa: Float!
-	pValueExponent: Int!
+	pValueMantissa: Float
+	pValueExponent: Int
 	beta: Float
-	finemappingMethod: String!
-	confidence: String!
+	fineMappingMethod: FineMappingMethod!
+	"""
+	Confidence level, from 0 (unknown) to 4 (highest).
+	"""
+	confidence: Int!
 	"""
 	Number of variants in the credible set.
 	"""
@@ -6918,7 +6978,7 @@ input StudyCredibleSetsSearch {
 	"""
 	Fields to search in. Defaults to all of them.
 	"""
-	fields: [StudyCredibleSetsSearchField!]! = [LEAD_VARIANT_ID, FINEMAPPING_METHOD, TOP_L2G_APPROVED_SYMBOL]
+	fields: [StudyCredibleSetsSearchField!]! = [LEAD_VARIANT_ID, FINE_MAPPING_METHOD, TOP_L2G_APPROVED_SYMBOL]
 }
 
 """
@@ -6926,7 +6986,7 @@ Text fields that `search` can match against.
 """
 enum StudyCredibleSetsSearchField {
 	LEAD_VARIANT_ID
-	FINEMAPPING_METHOD
+	FINE_MAPPING_METHOD
 	TOP_L2G_APPROVED_SYMBOL
 }
 
@@ -6958,7 +7018,7 @@ enum StudyCredibleSetsSortField {
 	P_VALUE
 	BETA
 	"""
-	Alphabetically.
+	By confidence level.
 	"""
 	CONFIDENCE
 	"""
@@ -7626,13 +7686,16 @@ Rows are decoded by position, so field order must match the column order of the
 """
 type TargetCredibleSet {
 	targetId: String!
-	studyLocusId: String!
-	pValueMantissa: Float!
-	pValueExponent: Int!
+	credibleSetId: String!
+	pValueMantissa: Float
+	pValueExponent: Int
 	beta: Float
-	finemappingMethod: String!
-	confidence: String!
-	isTransQtl: Boolean
+	fineMappingMethod: FineMappingMethod!
+	"""
+	Confidence level, from 0 (unknown) to 4 (highest).
+	"""
+	confidence: Int!
+	isTransQtl: Boolean!
 	leadVariantId: String!
 	leadChromosome: Chromosome!
 	leadPosition: Int!
@@ -7671,7 +7734,7 @@ input TargetCredibleSetsSearch {
 	"""
 	Fields to search in. Defaults to all of them.
 	"""
-	fields: [TargetCredibleSetsSearchField!]! = [LEAD_VARIANT_ID, STUDY_ID, STUDY_TYPE, BIOSAMPLE_NAME, CONDITION, FINEMAPPING_METHOD]
+	fields: [TargetCredibleSetsSearchField!]! = [LEAD_VARIANT_ID, STUDY_ID, STUDY_TYPE, BIOSAMPLE_NAME, CONDITION, FINE_MAPPING_METHOD]
 }
 
 """
@@ -7683,7 +7746,7 @@ enum TargetCredibleSetsSearchField {
 	STUDY_TYPE
 	BIOSAMPLE_NAME
 	CONDITION
-	FINEMAPPING_METHOD
+	FINE_MAPPING_METHOD
 }
 
 """
@@ -7730,13 +7793,13 @@ enum TargetCredibleSetsSortField {
 	P_VALUE
 	BETA
 	"""
-	Alphabetically.
+	By confidence level.
 	"""
 	CONFIDENCE
 	"""
-	Alphabetically.
+	By fine-mapping method.
 	"""
-	FINEMAPPING_METHOD
+	FINE_MAPPING_METHOD
 	"""
 	Number of variants in the credible set.
 	"""
@@ -7871,14 +7934,6 @@ type TranscriptConsequence {
 	Loss-of-function prediction based on LOFTEE.
 	"""
 	lofteePrediction: String
-	"""
-	SIFT prediction of the variant impact on the transcript.
-	"""
-	siftPrediction: Float
-	"""
-	Polyphen prediction of the variant impact on the transcript.
-	"""
-	polyphenPrediction: Float
 	"""
 	Index of the transcript in the list of transcripts around the gene.
 	"""
@@ -8216,15 +8271,18 @@ Rows are decoded by position, so field order must match the column order of the
 type VariantCredibleSet {
 	studyType: StudyType!
 	variantId: String!
-	studyLocusId: String!
+	credibleSetId: String!
 	posteriorProbability: Float!
 	locusSize: Int!
-	pValueMantissa: Float!
-	pValueExponent: Int!
+	pValueMantissa: Float
+	pValueExponent: Int
 	beta: Float
-	finemappingMethod: String!
-	confidence: String!
-	isTransQtl: Boolean
+	fineMappingMethod: FineMappingMethod!
+	"""
+	Confidence level, from 0 (unknown) to 4 (highest).
+	"""
+	confidence: Int!
+	isTransQtl: Boolean!
 	leadVariantId: String!
 	leadChromosome: Chromosome!
 	leadPosition: Int!
@@ -8271,7 +8329,7 @@ input VariantCredibleSetsSearch {
 	"""
 	Fields to search in. Defaults to all of them.
 	"""
-	fields: [VariantCredibleSetsSearchField!]! = [STUDY_ID, LEAD_VARIANT_ID, FINEMAPPING_METHOD, TRAIT_FROM_SOURCE, CONDITION, STUDY_TARGET_ID, STUDY_TARGET_APPROVED_SYMBOL, BIOSAMPLE_ID, BIOSAMPLE_NAME, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
+	fields: [VariantCredibleSetsSearchField!]! = [CREDIBLE_SET_ID, STUDY_ID, LEAD_VARIANT_ID, FINE_MAPPING_METHOD, TRAIT_FROM_SOURCE, CONDITION, STUDY_TARGET_ID, STUDY_TARGET_APPROVED_SYMBOL, BIOSAMPLE_ID, BIOSAMPLE_NAME, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]
 }
 
 """
@@ -8281,9 +8339,10 @@ Leaves out `variantId` (the same on every row) and the alleles (single letters
 that would match almost every search).
 """
 enum VariantCredibleSetsSearchField {
+	CREDIBLE_SET_ID
 	STUDY_ID
 	LEAD_VARIANT_ID
-	FINEMAPPING_METHOD
+	FINE_MAPPING_METHOD
 	TRAIT_FROM_SOURCE
 	CONDITION
 	STUDY_TARGET_ID
@@ -8405,14 +8464,6 @@ type VariantTranscriptConsequence {
 	Loss-of-function prediction based on LOFTEE.
 	"""
 	lofteePrediction: String
-	"""
-	SIFT prediction of the variant impact on the transcript.
-	"""
-	siftPrediction: Float
-	"""
-	Polyphen prediction of the variant impact on the transcript.
-	"""
-	polyphenPrediction: Float
 	"""
 	Index of the transcript in the list of transcripts around the gene.
 	"""

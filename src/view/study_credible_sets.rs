@@ -11,7 +11,7 @@ use strum::EnumIter;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::variant::Chromosome,
+    entity::{credible_set::FineMappingMethod, variant::Chromosome},
     query::{
         paginate::Paged,
         sort::{Sort, SortDirection},
@@ -32,19 +32,20 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct StudyCredibleSet {
     study_id: String,
-    study_locus_id: String,
+    credible_set_id: String,
     lead_variant_id: String,
     lead_chromosome: Chromosome,
     lead_position: u32,
     lead_reference_allele: String,
     lead_alternate_allele: String,
-    p_value_mantissa: f64,
-    p_value_exponent: i32,
+    p_value_mantissa: Option<f32>,
+    p_value_exponent: Option<i32>,
     beta: Option<f64>,
-    finemapping_method: String,
-    confidence: String,
+    fine_mapping_method: FineMappingMethod,
+    /// Confidence level, from 0 (unknown) to 4 (highest).
+    confidence: u8,
     /// Number of variants in the credible set.
-    locus_size: u64,
+    locus_size: u32,
     /// Null when the credible set has no L2G predictions.
     top_l2_g_gene_id: Option<String>,
     top_l2_g_approved_symbol: Option<String>,
@@ -54,7 +55,7 @@ pub struct StudyCredibleSet {
 impl Table for StudyCredibleSet {
     type Col = StudyCredibleSetCol;
     const NAME: &'static str = "study_credible_sets";
-    const TIE_BREAKER: &'static str = "studyLocusId";
+    const TIE_BREAKER: &'static str = "credibleSetId";
 }
 
 columns!(StudyCredibleSetCol {
@@ -67,8 +68,8 @@ columns!(StudyCredibleSetCol {
     PValueMantissa       => "pValueMantissa"       : F64,
     PValueExponent       => "pValueExponent"       : I64,
     Beta                 => "beta"                 : F64,
-    FinemappingMethod    => "finemappingMethod"    : Str,
-    Confidence           => "confidence"           : Str,
+    FineMappingMethod    => "fineMappingMethod"    : Str,
+    Confidence           => "confidence"           : I64,
     LocusSize            => "locusSize"            : I64,
     TopL2gApprovedSymbol => "topL2GApprovedSymbol" : Str,
     TopL2gScore          => "topL2GScore"          : F64,
@@ -138,7 +139,7 @@ pub enum SortField {
     /// By exponent, then mantissa.
     PValue,
     Beta,
-    /// Alphabetically.
+    /// By confidence level.
     Confidence,
     /// By the top L2G gene's symbol.
     // Default naming would give `TOP_L_2G_...`.
@@ -186,7 +187,7 @@ column_subset! {
     #[graphql(name = "StudyCredibleSetsSearchField")]
     pub enum SearchField => StudyCredibleSetCol {
         LeadVariantId,
-        FinemappingMethod,
+        FineMappingMethod,
         // Default naming would give `TOP_L_2G_...`.
         #[graphql(name = "TOP_L2G_APPROVED_SYMBOL")]
         TopL2gApprovedSymbol,

@@ -16,38 +16,52 @@ use crate::{
 
 // --- models ---
 
-/// List of variants within the credible set.
+/// A variant in a credible set, with its fine-mapping statistics.
+///
+/// Decoded by position from the `locus` tuple, so field order must match its element order.
 #[allow(clippy::struct_field_names)]
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 pub struct Locus {
-    /// Boolean for if the variant is part of the 95% credible set.
-    is_95_credible_set: bool,
-    /// Boolean for if the variant is part of the 99% credible set.
-    is_99_credible_set: bool,
-    /// Log (natural) Bayes factor for the variant from fine-mapping.
-    log_b_f: Option<f64>,
-    /// Posterior inclusion probability for the variant within this credible set.
-    posterior_probability: f64,
     #[graphql(skip)]
     variant_id: String,
+    /// Posterior inclusion probability for the variant within this credible set.
+    posterior_probability: f32,
+    /// Natural log Bayes factor for the variant from fine-mapping.
+    log_bayes_factor: Option<f32>,
     /// Mantissa of the P-value for this variant in the credible set.
-    p_value_mantissa: Option<f64>,
+    p_value_mantissa: Option<f32>,
     /// Exponent of the P-value for this variant in the credible set.
     p_value_exponent: Option<i32>,
-    /// Beta coefficient of this variant in the credible set.
-    beta: Option<f64>,
-    /// Standard error of this variant in the credible set.
-    standard_error: Option<f64>,
+    /// Effect allele frequency of this variant.
+    effect_allele_frequency: Option<f32>,
+    /// Sample size for this variant.
+    sample_size: Option<u32>,
+    /// Beta coefficient of this variant, as reported by the source. Not comparable across studies.
+    reported_beta: Option<f64>,
+    /// Standard error of the reported beta.
+    reported_standard_error: Option<f64>,
     /// R-squared (LD) between this credible set variant and the lead variant.
-    r2_overall: Option<f64>,
+    r2_overall: Option<f32>,
+    /// Effect of this variant from fine-mapping, conditional on the other signals in the locus.
+    conditional_beta: Option<f32>,
+    /// Standard error of the conditional beta.
+    conditional_standard_error: Option<f32>,
+    /// Absolute effect rescaled to be comparable across studies.
+    rescaled_abs_beta: Option<f32>,
+    /// Standard error of the rescaled effect.
+    rescaled_standard_error: Option<f32>,
+    /// Direction of the rescaled effect (1 or -1).
+    rescaled_direction: Option<i8>,
+    /// Quality control flags for this variant in the credible set.
+    quality_controls: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, SimpleObject, Row, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct LocusRow {
-    study_locus_id: String,
+    credible_set_id: String,
     locus: Vec<Locus>,
 }
 
@@ -82,13 +96,13 @@ impl Loader<String> for LocusLoader {
     async fn load(&self, key: &[String]) -> Result<HashMap<String, Self::Value>, Self::Error> {
         let rows: Vec<LocusRow> = self
             .ch
-            .query("SELECT ?fields FROM credible_sets_locus WHERE studyLocusId IN ?")
+            .query("SELECT ?fields FROM credible_sets_locus WHERE credibleSetId IN ?")
             .bind(key)
             .fetch_all()
             .await?;
         let mut results: HashMap<String, Vec<Locus>> = HashMap::new();
         for row in rows {
-            let id = row.study_locus_id.clone();
+            let id = row.credible_set_id.clone();
             results.entry(id).or_insert(row.locus);
         }
         Ok(results)

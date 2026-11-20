@@ -35,6 +35,7 @@ use crate::{
         pharmacogenomics::PharmacogenomicsLoader,
         protein_coding_coordinates::ProteinCodingCoordinateVariantLoader,
         publication::PublicationLoader,
+        region::{RegionQuery, TargetsByRegionLoader},
         search::SearchQuery,
         search_facet::FacetQuery,
         sequence_ontology::SequenceOntologyTermLoader,
@@ -77,6 +78,7 @@ pub struct Query(
     DiseaseQuery,             // Diseases
     EvidenceSourceQuery,      // Evidence source
     InteractionResourceQuery, // Interaction resources
+    RegionQuery,              // Region
     StudyQuery,               // Studies
     DrugQuery,                // Drugs
     VariantQuery,             // Variants
@@ -120,6 +122,7 @@ impl Product for Platform {
             .data(loader::<SimilarEntityLoader>(ch))
             .data(loader::<StudyLoader>(ch))
             .data(loader::<TargetLoader>(ch))
+            .data(loader::<TargetsByRegionLoader>(ch))
             .data(loader::<TargetEssentialityLoader>(ch))
             .data(loader::<TargetPrioritisationsLoader>(ch))
             .data(loader::<VariantLoader>(ch))
