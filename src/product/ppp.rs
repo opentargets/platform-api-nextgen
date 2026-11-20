@@ -54,11 +54,12 @@ use crate::{
         credible_set_variants::CredibleSetVariantsLoader,
         disease_studies::DiseaseStudiesLoader,
         evidence::{
-            clinical_precedence::EvidenceClinicalPrecedenceLoader, eva::EvidenceEvaLoader,
-            gene_burden::EvidenceGeneBurdenLoader, gene2phenotype::EvidenceGene2PhenotypeLoader,
+            clingen::EvidenceClinGenLoader, clinical_precedence::EvidenceClinicalPrecedenceLoader,
+            eva::EvidenceEvaLoader, gene_burden::EvidenceGeneBurdenLoader,
+            gene2phenotype::EvidenceGene2PhenotypeLoader,
             genomics_england_panel_app::EvidenceGenomicsEnglandPanelAppLoader,
-            gwas_credible_sets::EvidenceGwasCredibleSetsLoader, impc::EvidenceImpcLoader, orphanet::EvidenceOrphanetLoader,
-            uniprot_literature::EvidenceUniprotLiteratureLoader,
+            gwas_credible_sets::EvidenceGwasCredibleSetsLoader, impc::EvidenceImpcLoader,
+            orphanet::EvidenceOrphanetLoader, uniprot_literature::EvidenceUniprotLiteratureLoader,
             uniprot_variants::EvidenceUniprotVariantsLoader,
         },
         study_credible_sets::StudyCredibleSetsLoader,
@@ -135,6 +136,7 @@ impl Product for Ppp {
             .data(loader::<EvidenceGwasCredibleSetsLoader>(ch))
             .data(loader::<EvidenceGeneBurdenLoader>(ch))
             .data(loader::<EvidenceOrphanetLoader>(ch))
+            .data(loader::<EvidenceClinGenLoader>(ch))
             .data(loader::<EvidenceEvaLoader>(ch))
             .data(loader::<EvidenceImpcLoader>(ch))
             .data(loader::<EvidenceGene2PhenotypeLoader>(ch))
