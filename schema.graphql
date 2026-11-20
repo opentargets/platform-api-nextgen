@@ -522,6 +522,9 @@ type ClinicalDiseaseListItem {
 
 """
 A drug-disease pair as reported by clinical trial records.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/clinical_indication.sql`. Update both together.
 """
 type ClinicalIndication {
 	"""
@@ -532,6 +535,14 @@ type ClinicalIndication {
 	Maximum Clinical Development Status for the association.
 	"""
 	maxClinicalStage: String!
+	"""
+	Name of the drug. Null if the drug isn't found.
+	"""
+	drugName: String
+	"""
+	Number of clinical reports for the drug-disease pair.
+	"""
+	clinicalReportCount: Int!
 	"""
 	The molecule entity related to this clinical indication.
 	"""
@@ -549,6 +560,59 @@ The result of a paginated query, containing the total number of items and the it
 type ClinicalIndicationPage {
 	count: Int!
 	rows: [ClinicalIndication!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input ClinicalIndicationSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [ClinicalIndicationSearchField!]! = [DRUG_NAME]
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum ClinicalIndicationSearchField {
+	DRUG_NAME
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input ClinicalIndicationSort {
+	"""
+	The field to sort by.
+	"""
+	key: ClinicalIndicationSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum ClinicalIndicationSortField {
+	"""
+	By stage, from unknown and withdrawn up to approved and phase IV.
+	"""
+	MAX_CLINICAL_STAGE
+	"""
+	Number of clinical reports.
+	"""
+	CLINICAL_REPORT_COUNT
+	"""
+	Alphabetically by drug name.
+	"""
+	DRUG_NAME
 }
 
 """
@@ -752,6 +816,9 @@ enum ClinicalStage {
 """
 Target-drug associations derived from clinical reports, capturing the maximum clinical stage and
 associated diseases for each target-drug pair.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/clinical_target.sql`. Update both together.
 """
 type ClinicalTargetFromTarget {
 	"""
@@ -763,6 +830,14 @@ type ClinicalTargetFromTarget {
 	"""
 	diseases: [ClinicalDiseaseListItem!]!
 	maxClinicalStage: String!
+	"""
+	Name of the drug. Null if the drug isn't found.
+	"""
+	drugName: String
+	"""
+	Number of clinical reports for the target-drug pair.
+	"""
+	clinicalReportCount: Int!
 	"""
 	Drug or clinical candidate entity.
 	"""
@@ -779,6 +854,59 @@ The result of a paginated query, containing the total number of items and the it
 type ClinicalTargetPage {
 	count: Int!
 	rows: [ClinicalTargetFromTarget!]!
+}
+
+"""
+Case-insensitive text search.
+"""
+input ClinicalTargetSearch {
+	"""
+	Text to look for. Matches if any of `fields` contains it.
+	"""
+	text: String!
+	"""
+	Fields to search in. Defaults to all of them.
+	"""
+	fields: [ClinicalTargetSearchField!]! = [DRUG_NAME]
+}
+
+"""
+Text fields that `search` can match against.
+"""
+enum ClinicalTargetSearchField {
+	DRUG_NAME
+}
+
+"""
+Sort types. Contain the sort field and direction.
+"""
+input ClinicalTargetSort {
+	"""
+	The field to sort by.
+	"""
+	key: ClinicalTargetSortField!
+	"""
+	The direction to sort in.
+	"""
+	direction: SortDirection! = ASCENDING
+}
+
+"""
+Fields available for sorting.
+"""
+enum ClinicalTargetSortField {
+	"""
+	By stage, from unknown and withdrawn up to approved and phase IV.
+	"""
+	MAX_CLINICAL_STAGE
+	"""
+	Number of clinical reports.
+	"""
+	CLINICAL_REPORT_COUNT
+	"""
+	Alphabetically by drug name.
+	"""
+	DRUG_NAME
 }
 
 """
@@ -1694,6 +1822,14 @@ type Disease {
 	Clinical indications for this disease as reported by clinical trial records.
 	"""
 	drugAndClinicalCandidates(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [ClinicalIndicationSort!]! = [{key: MAX_CLINICAL_STAGE, direction: DESCENDING}, {key: CLINICAL_REPORT_COUNT, direction: DESCENDING}],
+		"""
+		Case-insensitive text search on the drug name.
+		"""
+		search: ClinicalIndicationSearch,
 		"""
 		Pagination for the drug and clinical candidates.
 		"""
@@ -7010,6 +7146,14 @@ type Target {
 	Target-drug associations derived from clinical reports for this target.
 	"""
 	drugAndClinicalCandidates(
+		"""
+		List of sort statements. Each field can be used at most once.
+		"""
+		sort: [ClinicalTargetSort!]! = [{key: MAX_CLINICAL_STAGE, direction: DESCENDING}, {key: CLINICAL_REPORT_COUNT, direction: DESCENDING}],
+		"""
+		Case-insensitive text search on the drug name.
+		"""
+		search: ClinicalTargetSearch,
 		"""
 		Pagination for the drug and clinical candidates.
 		"""

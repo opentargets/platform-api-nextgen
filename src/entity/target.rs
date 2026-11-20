@@ -22,7 +22,7 @@ use crate::{
             load_association_timeseries,
         },
         baseline_expression::{BaselineExpression, load_baseline_expression_by_target},
-        clinical_target::{ClinicalTarget, load_clinical_targets_from_target},
+        clinical_target::{self, ClinicalTarget, load_clinical_targets_from_target},
         credible_set,
         disease::Disease,
         evidence::{Evidence, EvidenceKey, load_evidences},
@@ -759,10 +759,20 @@ impl Target {
     async fn drug_and_clinical_candidates(
         &self,
         ctx: &Context<'_>,
+        #[graphql(
+            default_with = "clinical_target::SortField::default_sort()",
+            validator(custom = "crate::query::sort::UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<crate::query::sort::Sort<clinical_target::SortField>>,
+        #[graphql(desc = "Case-insensitive text search on the drug name.")] search: Option<
+            clinical_target::Search,
+        >,
         #[graphql(default, desc = "Pagination for the drug and clinical candidates.")] page: Page,
     ) -> async_graphql::Result<Paged<ClinicalTarget>> {
-        let items = load_clinical_targets_from_target(ctx, self.id.clone()).await?;
-        Ok(items.query().paginate(page))
+        let key =
+            clinical_target::QueryParams::new(self.id.clone(), sort, search, page.index, page.size);
+        load_clinical_targets_from_target(ctx, key).await
     }
 
     /// Baseline expression

@@ -23,7 +23,7 @@ use crate::{
             AggregationType, AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
             load_association_timeseries,
         },
-        clinical_indication::{ClinicalIndication, load_clinical_indications_from_disease},
+        clinical_indication::{self, ClinicalIndication, load_clinical_indications_from_disease},
         disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
         evidence::{Evidence, EvidenceKey, load_evidences},
         publication::{Publication, PublicationArguments, load_publications},
@@ -376,10 +376,25 @@ impl Disease {
     async fn drug_and_clinical_candidates(
         &self,
         ctx: &Context<'_>,
+        #[graphql(
+            default_with = "clinical_indication::SortField::default_sort()",
+            validator(custom = "crate::query::sort::UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<crate::query::sort::Sort<clinical_indication::SortField>>,
+        #[graphql(desc = "Case-insensitive text search on the drug name.")] search: Option<
+            clinical_indication::Search,
+        >,
         #[graphql(default, desc = "Pagination for the drug and clinical candidates.")] page: Page,
     ) -> async_graphql::Result<Paged<ClinicalIndication>> {
-        let items = load_clinical_indications_from_disease(ctx, self.id.clone()).await?;
-        Ok(items.query().paginate(page))
+        let key = clinical_indication::QueryParams::new(
+            self.id.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        load_clinical_indications_from_disease(ctx, key).await
     }
 
     /// Direct parent terms in the disease ontology.
