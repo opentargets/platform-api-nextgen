@@ -78,17 +78,17 @@ Attributes of the hallmark annotation.
 """
 type Attributes {
 	"""
-	Name of the hallmark attribute.
+	PubMed ID of the supporting literature for the hallmark attribute [bioregistry:pubmed].
 	"""
-	name: String!
+	pmid: Int
 	"""
 	Description of the hallmark attribute.
 	"""
 	description: String!
 	"""
-	PubMed ID of the supporting literature for the hallmark attribute [bioregistry:pubmed].
+	Name of the hallmark attribute.
 	"""
-	pmid: Int
+	name: String!
 }
 
 """
@@ -274,6 +274,10 @@ Cancer hallmarks associated with the target gene.
 """
 type CancerHallmarks {
 	"""
+	PubMed ID of the supporting literature for the cancer hallmark [bioregistry:pubmed].
+	"""
+	pmid: Int!
+	"""
 	Description of the cancer hallmark.
 	"""
 	description: String!
@@ -285,10 +289,6 @@ type CancerHallmarks {
 	Label associated with the cancer hallmark.
 	"""
 	label: String!
-	"""
-	PubMed ID of the supporting literature for the cancer hallmark [bioregistry:pubmed].
-	"""
-	pmid: Int!
 }
 
 """
@@ -302,7 +302,7 @@ type CanonicalTranscript {
 	"""
 	Chromosome location of the canonical transcript.
 	"""
-	chromosome: String!
+	chromosome: Chromosome!
 	"""
 	Genomic start position of the canonical transcript.
 	"""
@@ -341,37 +341,41 @@ be used to modulate and study the function of proteins.
 """
 type ChemicalProbe {
 	"""
+	Ensembl gene ID of the target for the chemical probe.
+	"""
+	targetFromSourceId: String!
+	"""
 	Unique identifier for the chemical probe.
 	"""
 	id: String!
 	"""
-	Whether the chemical probe serves as a control.
+	Probe identifier from the source, used to cross-reference drug information.
 	"""
-	control: String
+	drugFromSourceId: String!
 	"""
 	Drug ID associated with the chemical probe.
 	"""
 	drugId: String
 	"""
-	Probe identifier from the source, used to cross-reference drug information.
-	"""
-	drugFromSourceId: String
-	"""
 	Mechanism of action of the chemical probe.
 	"""
 	mechanismOfAction: [String!]!
-	"""
-	Indicates if the chemical probe is high quality.
-	"""
-	isHighQuality: Boolean!
 	"""
 	Origin of the chemical probe.
 	"""
 	origin: [String!]!
 	"""
+	Whether the chemical probe serves as a control.
+	"""
+	control: String
+	"""
+	Indicates if the chemical probe is high quality.
+	"""
+	isHighQuality: Boolean!
+	"""
 	Score for chemical probes related to druggability.
 	"""
-	probesDrugsScore: Float
+	probesDrugsScore: Float!
 	"""
 	Score indicating chemical probe activity in cells.
 	"""
@@ -380,10 +384,6 @@ type ChemicalProbe {
 	Score indicating chemical probe activity in organisms.
 	"""
 	scoreInOrganisms: Float
-	"""
-	Ensembl gene ID of the target for the chemical probe.
-	"""
-	targetFromSourceId: String!
 	"""
 	URLs linking to more information about the chemical probe.
 	"""
@@ -908,7 +908,11 @@ type Constraint {
 	"""
 	Type of constraint applied to the target.
 	"""
-	constraintType: String!
+	constraintType: ConstraintType!
+	"""
+	Constraint score indicating gene intolerance.
+	"""
+	score: Float
 	"""
 	Expected constraint score.
 	"""
@@ -930,9 +934,10 @@ type Constraint {
 	"""
 	oeUpper: Float
 	"""
-	Constraint score indicating gene intolerance.
+	Upper rank classification for every coding gene assessed by GnomAD going from more
+	constrained to less constrained.
 	"""
-	score: Float
+	upperRank: Int
 	"""
 	Upper bin classification going from more constrained to less constrained.
 	"""
@@ -942,11 +947,24 @@ type Constraint {
 	1: `high`, 2: `medium`, 3: `low`, 4: `very low`, 5: `very low`].
 	"""
 	upperBin6: Int
+}
+
+"""
+Type of GnomAD constraint.
+"""
+enum ConstraintType {
 	"""
-	Upper rank classification for every coding gene assessed by GnomAD going from more
-	constrained to less constrained.
+	Loss-of-function variants.
 	"""
-	upperRank: Int
+	lof
+	"""
+	Missense variants.
+	"""
+	mis
+	"""
+	Synonymous variants.
+	"""
+	syn
 }
 
 """
@@ -1691,17 +1709,17 @@ type DbXref {
 
 type DepMapEssentiality {
 	"""
-	List of CRISPR screening experiments supporting the essentiality assessment.
-	"""
-	screens: [GeneEssentialityScreen!]!
-	"""
 	Identifier of the tissue from where the cells were sampled for assay [bioregistry:uberon].
 	"""
 	tissueId: String
 	"""
 	Name of the tissue from where the cells were sampled for assay.
 	"""
-	tissueName: String
+	tissueName: String!
+	"""
+	List of CRISPR screening experiments supporting the essentiality assessment.
+	"""
+	screens: [GeneEssentialityScreen!]!
 }
 
 """
@@ -6111,33 +6129,33 @@ enum Flavor {
 
 type GeneEssentialityScreen {
 	"""
-	Name of the cancer cell line in which the gene essentiality was assessed.
-	"""
-	cellLineName: String
-	"""
 	Unique identifier of the assay in DepMap.
 	"""
-	depmapId: String
+	depmapId: String!
+	"""
+	Name of the cancer cell line in which the gene essentiality was assessed.
+	"""
+	cellLineName: String!
+	"""
+	Disease associated with the cell line as reported in the source data.
+	"""
+	diseaseFromSource: String!
 	"""
 	Cell model passport identifier of a cell line modelling a disease.
 	"""
 	diseaseCellLineId: String
 	"""
-	Disease associated with the cell line as reported in the source data.
+	Background mutation in the tested cell line.
 	"""
-	diseaseFromSource: String
+	mutation: String
+	"""
+	Gene effect score indicating the impact of gene knockout.
+	"""
+	geneEffect: Float!
 	"""
 	Gene expression level in the corresponding cell line.
 	"""
 	expression: Float
-	"""
-	Gene effect score indicating the impact of gene knockout.
-	"""
-	geneEffect: Float
-	"""
-	Background mutation in the tested cell line.
-	"""
-	mutation: String
 }
 
 """
@@ -6163,22 +6181,22 @@ type GeneOntologyAnnotation {
 	"""
 	id: String!
 	"""
-	Type of the GO annotation: molecular function (F), biological process (P) and cellular
-	localisation (C).
+	Source database and identifier where the ontology term was sourced from.
 	"""
-	aspect: String!
+	source: String!
 	"""
 	Evidence supporting the GO annotation.
 	"""
-	evidence: String!
+	evidence: GoEvidenceCode!
+	"""
+	Type of the GO annotation: molecular function (F), biological process (P) and cellular
+	localisation (C).
+	"""
+	aspect: GoAspect!
 	"""
 	Gene product associated with the GO annotation [bioregistry:uniprot].
 	"""
 	geneProduct: String!
-	"""
-	Source database and identifier where the ontology term was sourced from.
-	"""
-	source: String!
 	"""
 	Gene ontology term
 	"""
@@ -6207,7 +6225,7 @@ type GenomicLocation {
 	"""
 	Chromosome on which the target is located.
 	"""
-	chromosome: String!
+	chromosome: Chromosome!
 	"""
 	Genomic start position of the target gene.
 	"""
@@ -6223,31 +6241,151 @@ type GenomicLocation {
 }
 
 """
+Gene Ontology aspect.
+"""
+enum GoAspect {
+	"""
+	Biological process.
+	"""
+	P
+	"""
+	Molecular function.
+	"""
+	F
+	"""
+	Cellular component.
+	"""
+	C
+}
+
+"""
+Gene Ontology evidence code.
+"""
+enum GoEvidenceCode {
+	"""
+	Inferred from Experiment.
+	"""
+	EXP
+	"""
+	Inferred from Direct Assay.
+	"""
+	IDA
+	"""
+	Inferred from Physical Interaction.
+	"""
+	IPI
+	"""
+	Inferred from Mutant Phenotype.
+	"""
+	IMP
+	"""
+	Inferred from Genetic Interaction.
+	"""
+	IGI
+	"""
+	Inferred from Expression Pattern.
+	"""
+	IEP
+	"""
+	Inferred from High Throughput Experiment.
+	"""
+	HTP
+	"""
+	Inferred from High Throughput Direct Assay.
+	"""
+	HDA
+	"""
+	Inferred from High Throughput Mutant Phenotype.
+	"""
+	HMP
+	"""
+	Inferred from High Throughput Genetic Interaction.
+	"""
+	HGI
+	"""
+	Inferred from High Throughput Expression Pattern.
+	"""
+	HEP
+	"""
+	Inferred from Biological aspect of Ancestor.
+	"""
+	IBA
+	"""
+	Inferred from Biological aspect of Descendant.
+	"""
+	IBD
+	"""
+	Inferred from Key Residues.
+	"""
+	IKR
+	"""
+	Inferred from Rapid Divergence.
+	"""
+	IRD
+	"""
+	Inferred from Sequence or structural Similarity.
+	"""
+	ISS
+	"""
+	Inferred from Sequence Orthology.
+	"""
+	ISO
+	"""
+	Inferred from Sequence Alignment.
+	"""
+	ISA
+	"""
+	Inferred from Sequence Model.
+	"""
+	ISM
+	"""
+	Inferred from Genomic Context.
+	"""
+	IGC
+	"""
+	Inferred from Reviewed Computational Analysis.
+	"""
+	RCA
+	"""
+	Traceable Author Statement.
+	"""
+	TAS
+	"""
+	Non-traceable Author Statement.
+	"""
+	NAS
+	"""
+	Inferred by Curator.
+	"""
+	IC
+	"""
+	No biological Data available.
+	"""
+	ND
+	"""
+	Inferred from Electronic Annotation.
+	"""
+	IEA
+}
+
+"""
 Hallmarks related to the target gene sourced from COSMIC.
 """
 type Hallmark {
 	"""
-	Cancer hallmarks associated with the target gene.
-	"""
-	cancerHallmarks: [CancerHallmarks!]!
-	"""
 	Attributes of the hallmark annotation.
 	"""
 	attributes: [Attributes!]!
+	"""
+	Cancer hallmarks associated with the target gene.
+	"""
+	cancerHallmarks: [CancerHallmarks!]!
 }
 
 """
 Homologues of the target gene in other species according to Ensembl Compara.
 """
 type Homologue {
-	"""
-	Type of homology relationship.
-	"""
-	homologyType: String!
-	"""
-	Percentage identity of the query gene in the homologue.
-	"""
-	queryPercentageIdentity: Float!
 	"""
 	Species ID for the homologue.
 	"""
@@ -6257,21 +6395,79 @@ type Homologue {
 	"""
 	speciesName: String!
 	"""
+	Type of homology relationship.
+	"""
+	homologyType: HomologyType!
+	"""
 	Gene ID of the homologue.
 	"""
 	targetGeneId: String!
+	"""
+	Indicates if the homology is high confidence according to Ensembl Compara.
+	"""
+	isHighConfidence: Boolean
 	"""
 	Gene symbol of the homologous target.
 	"""
 	targetGeneSymbol: String!
 	"""
+	Percentage identity of the query gene in the homologue.
+	"""
+	queryPercentageIdentity: Float!
+	"""
 	Percentage identity of the homologue in the query gene.
 	"""
 	targetPercentageIdentity: Float!
+}
+
+"""
+Ensembl Compara homology type.
+"""
+enum HomologyType {
 	"""
-	Indicates if the homology is high confidence according to Ensembl Compara.
+	One-to-one ortholog.
 	"""
-	isHighConfidence: String
+	ortholog_one2one
+	"""
+	One-to-many ortholog.
+	"""
+	ortholog_one2many
+	"""
+	Many-to-many ortholog.
+	"""
+	ortholog_many2many
+	"""
+	Paralog within the same species.
+	"""
+	within_species_paralog
+	"""
+	Other paralog.
+	"""
+	other_paralog
+	"""
+	Gene split.
+	"""
+	gene_split
+	"""
+	Paralog between species.
+	"""
+	between_species_paralog
+	"""
+	Alternative allele.
+	"""
+	alt_allele
+	"""
+	One-to-one homoeolog.
+	"""
+	homoeolog_one2one
+	"""
+	One-to-many homoeolog.
+	"""
+	homoeolog_one2many
+	"""
+	Many-to-many homoeolog.
+	"""
+	homoeolog_many2many
 }
 
 """
@@ -7642,13 +7838,13 @@ Pathway metadata from Reactome pathway database.
 """
 type ReactomePathway {
 	"""
-	Reactome pathway name.
-	"""
-	pathway: String!
-	"""
 	Reactome pathway identifier [bioregistry:reactome].
 	"""
 	pathwayId: String!
+	"""
+	Reactome pathway name.
+	"""
+	pathway: String!
 	topLevelTerm: String!
 }
 
@@ -7753,6 +7949,18 @@ Safety liabilities associated with the target.
 """
 type SafetyLiability {
 	"""
+	Safety event associated with the target.
+	"""
+	event: String!
+	"""
+	Unique identifier for the safety event.
+	"""
+	eventId: String
+	"""
+	Effects reported for the safety event.
+	"""
+	effects: [SafetyEffects!]!
+	"""
 	Biosamples used in safety assessments.
 	"""
 	biosamples: [SafetyBiosamples!]!
@@ -7760,18 +7968,6 @@ type SafetyLiability {
 	Data source reporting the safety liability.
 	"""
 	datasource: String!
-	"""
-	Effects reported for the safety event.
-	"""
-	effects: [SafetyEffects!]!
-	"""
-	Safety event associated with the target.
-	"""
-	event: String
-	"""
-	Unique identifier for the safety event.
-	"""
-	eventId: String
 	"""
 	Literature references for the safety liability.
 	"""
@@ -7791,17 +7987,39 @@ Studies related to safety assessments.
 """
 type SafetyStudies {
 	"""
-	Name of the safety study.
-	"""
-	name: String
-	"""
 	Description of the safety study.
 	"""
 	description: String
 	"""
+	Name of the safety study.
+	"""
+	name: String
+	"""
 	Type of safety study.
 	"""
-	type: String
+	type: SafetyStudyType
+}
+
+"""
+Type of safety study.
+"""
+enum SafetyStudyType {
+	"""
+	Biochemical assay.
+	"""
+	biochemical
+	"""
+	Cell-based assay.
+	"""
+	cell_based
+	"""
+	Clinical study.
+	"""
+	clinical
+	"""
+	Preclinical study.
+	"""
+	preclinical
 }
 
 """
@@ -9171,17 +9389,39 @@ with different therapeutic modalities.
 """
 type Tractability {
 	"""
+	Modality of the tractability assessment.
+	"""
+	modality: TractabilityModality!
+	"""
 	Tractability category label.
 	"""
 	label: String!
 	"""
-	Modality of the tractability assessment.
-	"""
-	modality: String!
-	"""
 	Tractability value assigned to the target (true indicates tractable).
 	"""
 	value: Boolean!
+}
+
+"""
+Therapeutic modality of a tractability assessment.
+"""
+enum TractabilityModality {
+	"""
+	Small molecule.
+	"""
+	SM
+	"""
+	Antibody.
+	"""
+	AB
+	"""
+	PROTAC.
+	"""
+	PR
+	"""
+	Other clinical modality.
+	"""
+	OC
 }
 
 """
@@ -9196,10 +9436,6 @@ type Transcript {
 	Biotype classification of the transcript.
 	"""
 	biotype: String!
-	"""
-	Whether this is the Ensembl canonical transcript.
-	"""
-	isEnsemblCanonical: Boolean
 	"""
 	UniProt accession mapped to the transcript.
 	"""
@@ -9220,6 +9456,10 @@ type Transcript {
 	UniProt isoform identifier.
 	"""
 	uniprotIsoformId: String
+	"""
+	Whether this is the Ensembl canonical transcript.
+	"""
+	isEnsemblCanonical: Boolean!
 }
 
 """

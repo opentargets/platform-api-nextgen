@@ -14,17 +14,17 @@ query LiveTarget($target: String!, $disease: String!) {
       strand
     }
     chemicalProbes {
+      targetFromSourceId
       id
-      control
-      drugId
       drugFromSourceId
+      drugId
       mechanismOfAction
-      isHighQuality
       origin
+      control
+      isHighQuality
       probesDrugsScore
       scoreInCells
       scoreInOrganisms
-      targetFromSourceId
       urls {
         niceName
         url
@@ -37,15 +37,15 @@ query LiveTarget($target: String!, $disease: String!) {
     functionDescriptions
     geneticConstraint {
       constraintType
+      score
       exp
       obs
       oe
       oeLower
       oeUpper
-      score
+      upperRank
       upperBin
       upperBin6
-      upperRank
     }
     genomicLocation {
       chromosome
@@ -55,41 +55,41 @@ query LiveTarget($target: String!, $disease: String!) {
     }
     geneOntology {
       id
-      aspect
-      evidence
-      geneProduct
       source
+      evidence
+      aspect
+      geneProduct
       term {
         id
         label
       }
     }
     hallmarks {
+      attributes {
+        pmid
+        description
+        name
+      }
       cancerHallmarks {
+        pmid
         description
         impact
         label
-        pmid
-      }
-      attributes {
-        name
-        description
-        pmid
       }
     }
     homologues {
-      homologyType
-      queryPercentageIdentity
       speciesId
       speciesName
+      homologyType
       targetGeneId
-      targetGeneSymbol
-      targetPercentageIdentity
       isHighConfidence
+      targetGeneSymbol
+      queryPercentageIdentity
+      targetPercentageIdentity
     }
     pathways {
-      pathway
       pathwayId
+      pathway
       topLevelTerm
     }
     proteinIds {
@@ -97,6 +97,12 @@ query LiveTarget($target: String!, $disease: String!) {
       source
     }
     safetyLiabilities {
+      event
+      eventId
+      effects {
+        direction
+        dosing
+      }
       biosamples {
         tissueLabel
         tissueId
@@ -105,17 +111,11 @@ query LiveTarget($target: String!, $disease: String!) {
         cellId
       }
       datasource
-      effects {
-        direction
-        dosing
-      }
-      event
-      eventId
       literature
       url
       studies {
-        name
         description
+        name
         type
       }
     }
@@ -152,20 +152,20 @@ query LiveTarget($target: String!, $disease: String!) {
       level
     }
     tractability {
-      label
       modality
+      label
       value
     }
     transcriptIds
     transcripts {
       transcriptId
       biotype
-      isEnsemblCanonical
       uniprotId
       isUniprotReviewed
       translationId
       alphafoldId
       uniprotIsoformId
+      isEnsemblCanonical
     }
     mousePhenotypes {
       count
@@ -260,17 +260,17 @@ query LiveTarget($target: String!, $disease: String!) {
     depMapEssentiality {
       count
       rows {
-        screens {
-          cellLineName
-          depmapId
-          diseaseCellLineId
-          diseaseFromSource
-          expression
-          geneEffect
-          mutation
-        }
         tissueId
         tissueName
+        screens {
+          depmapId
+          cellLineName
+          diseaseFromSource
+          diseaseCellLineId
+          mutation
+          geneEffect
+          expression
+        }
       }
     }
     isEssential
@@ -669,17 +669,17 @@ query LiveTarget($target: String!, $disease: String!) {
           strand
         }
         chemicalProbes {
+          targetFromSourceId
           id
-          control
-          drugId
           drugFromSourceId
+          drugId
           mechanismOfAction
-          isHighQuality
           origin
+          control
+          isHighQuality
           probesDrugsScore
           scoreInCells
           scoreInOrganisms
-          targetFromSourceId
           urls {
             niceName
             url
@@ -692,15 +692,15 @@ query LiveTarget($target: String!, $disease: String!) {
         functionDescriptions
         geneticConstraint {
           constraintType
+          score
           exp
           obs
           oe
           oeLower
           oeUpper
-          score
+          upperRank
           upperBin
           upperBin6
-          upperRank
         }
         genomicLocation {
           chromosome
@@ -710,41 +710,41 @@ query LiveTarget($target: String!, $disease: String!) {
         }
         geneOntology {
           id
-          aspect
-          evidence
-          geneProduct
           source
+          evidence
+          aspect
+          geneProduct
           term {
             id
             label
           }
         }
         hallmarks {
+          attributes {
+            pmid
+            description
+            name
+          }
           cancerHallmarks {
+            pmid
             description
             impact
             label
-            pmid
-          }
-          attributes {
-            name
-            description
-            pmid
           }
         }
         homologues {
-          homologyType
-          queryPercentageIdentity
           speciesId
           speciesName
+          homologyType
           targetGeneId
-          targetGeneSymbol
-          targetPercentageIdentity
           isHighConfidence
+          targetGeneSymbol
+          queryPercentageIdentity
+          targetPercentageIdentity
         }
         pathways {
-          pathway
           pathwayId
+          pathway
           topLevelTerm
         }
         proteinIds {
@@ -752,6 +752,12 @@ query LiveTarget($target: String!, $disease: String!) {
           source
         }
         safetyLiabilities {
+          event
+          eventId
+          effects {
+            direction
+            dosing
+          }
           biosamples {
             tissueLabel
             tissueId
@@ -760,17 +766,11 @@ query LiveTarget($target: String!, $disease: String!) {
             cellId
           }
           datasource
-          effects {
-            direction
-            dosing
-          }
-          event
-          eventId
           literature
           url
           studies {
-            name
             description
+            name
             type
           }
         }
@@ -807,20 +807,20 @@ query LiveTarget($target: String!, $disease: String!) {
           level
         }
         tractability {
-          label
           modality
+          label
           value
         }
         transcriptIds
         transcripts {
           transcriptId
           biotype
-          isEnsemblCanonical
           uniprotId
           isUniprotReviewed
           translationId
           alphafoldId
           uniprotIsoformId
+          isEnsemblCanonical
         }
         associatedDiseases {
           count
@@ -1838,17 +1838,17 @@ query LiveTarget($target: String!, $disease: String!) {
         depMapEssentiality {
           count
           rows {
-            screens {
-              cellLineName
-              depmapId
-              diseaseCellLineId
-              diseaseFromSource
-              expression
-              geneEffect
-              mutation
-            }
             tissueId
             tissueName
+            screens {
+              depmapId
+              cellLineName
+              diseaseFromSource
+              diseaseCellLineId
+              mutation
+              geneEffect
+              expression
+            }
           }
         }
         isEssential

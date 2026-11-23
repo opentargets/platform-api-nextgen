@@ -734,3 +734,242 @@ async fn association_fixtures_decode_to_inserted_values() {
         );
     }
 }
+
+// ---- target fixtures decode to the inserted values ----
+
+const TARGET_FIELDS: &str = "fragment T on Target {
+    id approvedSymbol approvedName biotype alternativeGenes functionDescriptions transcriptIds
+    canonicalTranscript { id chromosome start end strand }
+    genomicLocation { chromosome start end strand }
+    chemicalProbes { id control drugId drugFromSourceId mechanismOfAction isHighQuality origin
+        probesDrugsScore scoreInCells scoreInOrganisms targetFromSourceId urls { niceName url } }
+    dbXrefs { id source }
+    geneticConstraint { constraintType exp obs oe oeLower oeUpper score upperBin upperBin6
+        upperRank }
+    geneOntology { aspect evidence geneProduct source }
+    hallmarks { cancerHallmarks { description impact label pmid }
+        attributes { name description pmid } }
+    homologues { homologyType queryPercentageIdentity speciesId speciesName targetGeneId
+        targetGeneSymbol targetPercentageIdentity isHighConfidence }
+    pathways { pathway pathwayId topLevelTerm }
+    proteinIds { id source }
+    safetyLiabilities { biosamples { tissueLabel tissueId cellLabel cellFormat cellId }
+        datasource effects { direction dosing } event eventId literature url
+        studies { name description type } }
+    subcellularLocations { location source termSL labelSL targetModifier }
+    synonyms { label source } symbolSynonyms { label source } nameSynonyms { label source }
+    obsoleteSymbols { label source } obsoleteNames { label source }
+    targetClass { id label level }
+    tractability { label modality value }
+    transcripts { transcriptId biotype isEnsemblCanonical uniprotId isUniprotReviewed
+        translationId alphafoldId uniprotIsoformId }
+    isEssential
+    depMapEssentiality { count rows { tissueId tissueName screens { cellLineName depmapId
+        diseaseCellLineId diseaseFromSource expression geneEffect mutation } } }
+}";
+
+/// `tests/live/fixtures/targets.jsonl` and `target_essentiality.jsonl` as the API serves them.
+#[allow(clippy::too_many_lines)]
+fn expected_target() -> serde_json::Value {
+    let label = |label: &str, source: &str| json!([{"label": label, "source": source}]);
+    let chemical_probes = json!([
+        {
+            "id": "PLX4720", "control": "PLX-control", "drugId": "CHEMBL1230020",
+            "drugFromSourceId": "PD-PLX4720", "mechanismOfAction": ["inhibitor"],
+            "isHighQuality": true, "origin": ["calculated"], "probesDrugsScore": 0.75,
+            "scoreInCells": 0.5, "scoreInOrganisms": 0.25, "targetFromSourceId": "P15056",
+            "urls": [
+                {"niceName": "Probes&Drugs",
+                 "url": "https://www.probes-drugs.org/compound/PD000001"},
+                {"niceName": "SGC", "url": null},
+            ],
+        },
+        {
+            "id": "GDC-0879", "control": null, "drugId": null,
+            "drugFromSourceId": "PD-GDC0879", "mechanismOfAction": [],
+            "isHighQuality": false, "origin": [], "probesDrugsScore": 0.125,
+            "scoreInCells": null, "scoreInOrganisms": null, "targetFromSourceId": "BRAF",
+            "urls": [],
+        },
+    ]);
+    let constraint = json!([
+        {
+            "constraintType": "mis", "exp": 2.5, "obs": 3, "oe": 0.375, "oeLower": 0.25,
+            "oeUpper": 0.5, "score": 0.125, "upperBin": 8, "upperBin6": 4, "upperRank": 7,
+        },
+        {
+            "constraintType": "syn", "exp": null, "obs": null, "oe": null, "oeLower": null,
+            "oeUpper": null, "score": null, "upperBin": null, "upperBin6": null,
+            "upperRank": null,
+        },
+    ]);
+    let go = json!([
+        {"aspect": "F", "evidence": "IDA", "geneProduct": "P15056",
+         "source": "GO_REF:0000024"},
+        {"aspect": "C", "evidence": "IEA", "geneProduct": "P15057",
+         "source": "PMID:12068308"},
+    ]);
+    let hallmarks = json!({
+        "cancerHallmarks": [
+            {"description": "hallmark description", "impact": "promotes",
+             "label": "hallmark label", "pmid": 22222},
+            {"description": "hallmark description 2", "impact": null,
+             "label": "hallmark label 2", "pmid": 22223},
+        ],
+        "attributes": [
+            {"name": "attribute name", "description": "attribute description",
+             "pmid": 11111},
+            {"name": "attribute name 2", "description": "attribute description 2",
+             "pmid": null},
+        ],
+    });
+    let homologues = json!([
+        {
+            "homologyType": "ortholog_one2many", "queryPercentageIdentity": 96.5,
+            "speciesId": "10090", "speciesName": "Mouse",
+            "targetGeneId": "ENSMUSG00000002413", "targetGeneSymbol": "Braf",
+            "targetPercentageIdentity": 97.25, "isHighConfidence": true,
+        },
+        {
+            "homologyType": "within_species_paralog", "queryPercentageIdentity": 80.5,
+            "speciesId": "10116", "speciesName": "Rat",
+            "targetGeneId": "ENSRNOG00000010957", "targetGeneSymbol": "Braf2",
+            "targetPercentageIdentity": 81.25, "isHighConfidence": null,
+        },
+    ]);
+    let safety_liabilities = json!([
+        {
+            "biosamples": [
+                {"tissueLabel": "heart", "tissueId": "UBERON_0000948",
+                 "cellLabel": "cardiomyocyte", "cellFormat": "cell line",
+                 "cellId": "CL_0000746"},
+                {"tissueLabel": null, "tissueId": null, "cellLabel": null,
+                 "cellFormat": null, "cellId": null},
+            ],
+            "datasource": "ToxCast",
+            "effects": [
+                {"direction": "Activation/Increase/Upregulation", "dosing": "acute"},
+                {"direction": "Inhibition/Decrease/Downregulation", "dosing": null},
+            ],
+            "event": "cardiac arrhythmia", "eventId": "EFO_0004269",
+            "literature": "12345678", "url": "https://example.org/safety",
+            "studies": [
+                {"name": "study name", "description": "study description",
+                 "type": "cell_based"},
+                {"name": null, "description": null, "type": null},
+            ],
+        },
+        {
+            "biosamples": [], "datasource": "AOP-Wiki", "effects": [],
+            "event": "hepatotoxicity", "eventId": null, "literature": null, "url": null,
+            "studies": [],
+        },
+    ]);
+    let transcripts = json!([
+        {
+            "transcriptId": "ENST99999999991", "biotype": "protein_coding",
+            "isEnsemblCanonical": true, "uniprotId": "P15056", "isUniprotReviewed": true,
+            "translationId": "ENSP99999999991", "alphafoldId": "AF-P15056-F1",
+            "uniprotIsoformId": "P15056-1",
+        },
+        {
+            "transcriptId": "ENST99999999992", "biotype": "nonsense_mediated_decay",
+            "isEnsemblCanonical": false, "uniprotId": null, "isUniprotReviewed": null,
+            "translationId": null, "alphafoldId": null, "uniprotIsoformId": null,
+        },
+    ]);
+    let essentiality = json!({"count": 2, "rows": [
+        {
+            "tissueId": "UBERON_0002097", "tissueName": "skin",
+            "screens": [
+                {"cellLineName": "A375", "depmapId": "ACH-000001",
+                 "diseaseCellLineId": "SIDM00001", "diseaseFromSource": "Melanoma",
+                 "expression": 4.25, "geneEffect": -1.5, "mutation": "BRAF V600E"},
+                {"cellLineName": "SK-MEL-28", "depmapId": "ACH-000002",
+                 "diseaseCellLineId": null, "diseaseFromSource": "Skin Melanoma",
+                 "expression": null, "geneEffect": -0.5, "mutation": null},
+            ],
+        },
+        {"tissueId": null, "tissueName": "unspecified tissue", "screens": []},
+    ]});
+    json!({
+        "id": FIXTURE_TARGET,
+        "approvedSymbol": "LTGENE1",
+        "approvedName": "live test gene 1",
+        "biotype": "protein_coding",
+        "alternativeGenes": ["ENSG99999999990"],
+        "functionDescriptions": ["function description"],
+        "transcriptIds": ["ENST99999999991", "ENST99999999992"],
+        "canonicalTranscript": {
+            "id": "ENST99999999991", "chromosome": "chr7", "start": 140_000_020,
+            "end": 140_000_080, "strand": "POSITIVE",
+        },
+        "genomicLocation": {
+            "chromosome": "chr7", "start": 140_000_010, "end": 140_000_090, "strand": "NEGATIVE",
+        },
+        "chemicalProbes": chemical_probes,
+        "dbXrefs": [{"id": "HGNC:1097", "source": "HGNC"}],
+        "geneticConstraint": constraint,
+        "geneOntology": go,
+        "hallmarks": hallmarks,
+        "homologues": homologues,
+        "pathways": [{
+            "pathway": "RAF/MAP kinase cascade", "pathwayId": "R-HSA-5673001",
+            "topLevelTerm": "Signal Transduction",
+        }],
+        "proteinIds": [{"id": "P15056", "source": "uniprot_swissprot"}],
+        "safetyLiabilities": safety_liabilities,
+        "subcellularLocations": [
+            {"location": "Nucleus", "source": "HPA_main", "termSL": "SL-0191",
+             "labelSL": "Nucleus label", "targetModifier": "isoform 2"},
+            {"location": "Cytosol", "source": "HPA_additional", "termSL": null,
+             "labelSL": null, "targetModifier": null},
+        ],
+        "synonyms": label("synonym label", "synonym source"),
+        "symbolSynonyms": label("symbol synonym label", "symbol synonym source"),
+        "nameSynonyms": label("name synonym label", "name synonym source"),
+        "obsoleteSymbols": label("obsolete symbol label", "obsolete symbol source"),
+        "obsoleteNames": label("obsolete name label", "obsolete name source"),
+        "targetClass": [{"id": 5, "label": "Kinase", "level": "l2"}],
+        "tractability": [{"label": "UniProt loc high conf", "modality": "AB", "value": true}],
+        "transcripts": transcripts,
+        "isEssential": true,
+        "depMapEssentiality": essentiality,
+    })
+}
+
+#[tokio::test]
+#[ignore = "needs a ClickHouse database: set LIVE_CLICKHOUSE_URL and LIVE_FIXTURES=1"]
+async fn target_fixtures_decode_to_inserted_values() {
+    let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
+    assert!(with_fixtures(), "set LIVE_FIXTURES=1");
+    let config = config(&url);
+    load_fixtures(&ClickHouse::new(&config)).await;
+
+    let state = AppState::new(config);
+    let query = format!(
+        "{{ target(ensemblId: \"{FIXTURE_TARGET}\") {{ ...T }}
+            targets(ensemblIds: [\"{FIXTURE_TARGET}\"]) {{ count rows {{ ...T }} }}
+            region(chromosome: chr7, start: 140000000, end: 140000200) {{
+                targets {{ count rows {{ ...T }} }}
+            }}
+            outside: region(chromosome: chr7, start: 140000101, end: 140000200) {{
+                targets {{ count rows {{ id }} }}
+            }}
+        }}
+        {TARGET_FIELDS}"
+    );
+    let response = state.api.execute(Request::new(query)).await;
+    assert!(response.errors.is_empty(), "{:#?}", response.errors);
+    let data = response.data.into_json().expect("json");
+
+    let expected = expected_target();
+    let target = &data["target"];
+    for (field, value) in expected.as_object().expect("object") {
+        assert_eq!(&target[field], value, "target: {field}");
+    }
+    assert_eq!(target, &expected);
+    assert_eq!(data["targets"], json!({"count": 1, "rows": [expected]}));
+    assert_eq!(data["region"]["targets"], data["targets"]);
+    assert_eq!(data["outside"]["targets"], json!({"count": 0, "rows": []}));
+}

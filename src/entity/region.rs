@@ -10,7 +10,10 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{target::Target, variant::Chromosome},
+    entity::{
+        target::{Target, load_targets},
+        variant::Chromosome,
+    },
     query::paginate::{Page, Paged, page_complexity},
 };
 
@@ -73,11 +76,18 @@ impl Key {
     }
 }
 
-#[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
-#[serde(rename_all = "camelCase")]
-pub struct TargetsByRegionRow {
-    key: usize,
-    targets: Paged<Target>,
+/// One page of the target ids in a region, and the number of targets in the region.
+#[derive(Debug, Clone, Default)]
+pub struct TargetIdsPage {
+    count: u64,
+    ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Row, Deserialize)]
+struct TargetIdsByRegionRow {
+    key: u64,
+    count: u64,
+    ids: Vec<String>,
 }
 
 // --- loaders ---
@@ -88,7 +98,7 @@ pub struct TargetsByRegionLoader {
 }
 
 impl Loader<Key> for TargetsByRegionLoader {
-    type Value = Paged<Target>;
+    type Value = TargetIdsPage;
     type Error = async_graphql::Error;
 
     async fn load(&self, keys: &[Key]) -> Result<HashMap<Key, Self::Value>, Self::Error> {
@@ -99,34 +109,25 @@ impl Loader<Key> for TargetsByRegionLoader {
                 ? AS q_end,
                 ? AS q_offset,
                 ? AS q_limit,
-                CAST(? AS UInt64) AS query_id,
                 filtered AS
                 (
-                    SELECT *
+                    SELECT start, end, tupleElement(target, 'id') AS id
                     FROM targets_by_region
                     WHERE chromosome = q_chromosome
                       AND start <= q_end
                       AND end >= q_start
                 ),
-                (
-                    SELECT count()
-                    FROM filtered
-                ) as count,
                 paged AS
                 (
-                    SELECT *
+                    SELECT id
                     FROM filtered
-                    ORDER BY start, end
+                    ORDER BY start, end, id
                     LIMIT q_limit OFFSET q_offset
                 )
             SELECT
-                query_id,
-                tuple(
-                        CAST(count AS UInt64),
-                        groupArray(target) as rows
-                    )
-            FROM paged
-            GROUP BY query_id
+                CAST(? AS UInt64) AS key,
+                ifNull((SELECT count() FROM filtered), 0) AS count,
+                (SELECT groupArray(id) FROM paged) AS ids
             ";
         let queries: Vec<String> = keys.iter().map(|_| base_query.to_string()).collect();
         let full_query = keys.iter().enumerate().fold(
@@ -141,26 +142,41 @@ impl Loader<Key> for TargetsByRegionLoader {
             },
         );
         tracing::trace!("query is {}", full_query.sql_display());
-        let result = full_query.fetch_all::<TargetsByRegionRow>().await?;
-        let results_with_keys = result
-            .iter()
-            .map(|res| (keys[res.key].clone(), res.targets.clone()))
-            .collect();
-
-        Ok(results_with_keys)
+        let rows = full_query.fetch_all::<TargetIdsByRegionRow>().await?;
+        rows.into_iter()
+            .map(|row| {
+                let key = usize::try_from(row.key)
+                    .ok()
+                    .and_then(|i| keys.get(i))
+                    .ok_or_else(|| format!("unknown region query id {}", row.key))?;
+                Ok((
+                    key.clone(),
+                    TargetIdsPage {
+                        count: row.count,
+                        ids: row.ids,
+                    },
+                ))
+            })
+            .collect()
     }
 }
 
+/// Loads one page of the targets in a region: their ids from `targets_by_region`, then the
+/// targets themselves through [`load_targets`].
 #[allow(clippy::missing_errors_doc)]
 pub async fn load_targets_by_region(
     ctx: &async_graphql::Context<'_>,
     key: Key,
 ) -> async_graphql::Result<Paged<Target>> {
-    Ok(ctx
+    let page = ctx
         .data_unchecked::<DataLoader<TargetsByRegionLoader>>()
         .load_one(key)
         .await?
-        .unwrap_or_default())
+        .unwrap_or_default();
+    Ok(Paged {
+        count: page.count,
+        rows: load_targets(ctx, &page.ids).await?,
+    })
 }
 
 #[ComplexObject]

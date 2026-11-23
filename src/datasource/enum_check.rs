@@ -16,6 +16,10 @@ use crate::entity::{
     },
     interaction::InteractionSourceDatabase,
     study::StudyType,
+    target::{
+        ConstraintType, GoAspect, GoEvidenceCode, HomologyType, SafetyStudyType,
+        TractabilityModality,
+    },
     variant::Chromosome,
 };
 
@@ -145,6 +149,42 @@ pub fn bindings() -> Vec<EnumBinding> {
             EuropePmcSection,
             "evidence",
             "tupleElement(arrayJoin(textMiningSentences), 'section')"
+        ),
+        binding!(
+            Chromosome,
+            "targets",
+            "tupleElement(genomicLocation, 'chromosome')"
+        ),
+        binding!(
+            Chromosome,
+            "targets",
+            "tupleElement(canonicalTranscript, 'chromosome')"
+        ),
+        binding!(
+            GoEvidenceCode,
+            "targets",
+            "tupleElement(arrayJoin(go), 'evidence')"
+        ),
+        binding!(GoAspect, "targets", "tupleElement(arrayJoin(go), 'aspect')"),
+        binding!(
+            ConstraintType,
+            "targets",
+            "tupleElement(arrayJoin(constraint), 'constraintType')"
+        ),
+        binding!(
+            HomologyType,
+            "targets",
+            "tupleElement(arrayJoin(homologues), 'homologyType')"
+        ),
+        binding!(
+            TractabilityModality,
+            "targets",
+            "tupleElement(arrayJoin(tractability), 'modality')"
+        ),
+        binding!(
+            SafetyStudyType,
+            "targets",
+            "tupleElement(arrayJoin(tupleElement(arrayJoin(safetyLiabilities), 'studies')), 'type')"
         ),
     ]
 }
