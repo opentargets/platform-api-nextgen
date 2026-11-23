@@ -49,7 +49,7 @@ use platform_api::{
     view::evidence::{EvidenceScope, EvidenceViews},
 };
 use serde_json::json;
-use tokio::sync::OnceCell;
+use tokio::sync::{Mutex, MutexGuard, OnceCell};
 
 const LIVE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/live");
 
@@ -98,6 +98,12 @@ async fn insert_rows(ch: &ClickHouse, table: &str, rows: impl Into<Bytes>) {
         .unwrap_or_else(|e| panic!("insert {table}: {e}"));
 }
 
+/// Held by every test: they share one database, and some replace or append rows.
+async fn serial() -> MutexGuard<'static, ()> {
+    static SERIAL: Mutex<()> = Mutex::const_new(());
+    SERIAL.lock().await
+}
+
 fn with_fixtures() -> bool { std::env::var("LIVE_FIXTURES").is_ok_and(|v| v == "1") }
 
 /// Inserts every fixture once per test binary, so tests running in parallel see the same rows.
@@ -109,6 +115,12 @@ async fn load_fixtures(ch: &ClickHouse) {
                 let table = path.file_stem().and_then(|s| s.to_str()).expect("table");
                 insert_fixture(ch, table, &path).await;
             }
+            // Dictionaries (`disease_names`, `target_symbols`, ...) load once: reread the rows.
+            ch.client()
+                .query("SYSTEM RELOAD DICTIONARIES")
+                .execute()
+                .await
+                .expect("reload dictionaries");
         })
         .await;
 }
@@ -147,6 +159,7 @@ fn request(path: &Path) -> Request {
 #[tokio::test]
 #[ignore = "needs a ClickHouse database: set LIVE_CLICKHOUSE_URL"]
 async fn live_queries_return_no_errors() {
+    let _serial = serial().await;
     let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
     let config = config(&url);
     let ch = ClickHouse::new(&config);
@@ -273,6 +286,7 @@ fn assert_fields(what: &str, row: &serde_json::Value, expected: &serde_json::Val
 #[tokio::test]
 #[ignore = "needs a ClickHouse database: set LIVE_CLICKHOUSE_URL and LIVE_FIXTURES=1"]
 async fn evidence_fixtures_decode_to_inserted_values() {
+    let _serial = serial().await;
     let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
     assert!(with_fixtures(), "set LIVE_FIXTURES=1");
     let ch = ClickHouse::new(&config(&url));
@@ -618,6 +632,7 @@ async fn insert_ppp_association_rows(ch: &ClickHouse) {
 #[tokio::test]
 #[ignore = "needs a ClickHouse database: set LIVE_CLICKHOUSE_URL and LIVE_FIXTURES=1"]
 async fn association_fixtures_decode_to_inserted_values() {
+    let _serial = serial().await;
     let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
     assert!(with_fixtures(), "set LIVE_FIXTURES=1");
     let config = config(&url);
@@ -941,6 +956,7 @@ fn expected_target() -> serde_json::Value {
 #[tokio::test]
 #[ignore = "needs a ClickHouse database: set LIVE_CLICKHOUSE_URL and LIVE_FIXTURES=1"]
 async fn target_fixtures_decode_to_inserted_values() {
+    let _serial = serial().await;
     let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
     assert!(with_fixtures(), "set LIVE_FIXTURES=1");
     let config = config(&url);
@@ -1085,12 +1101,18 @@ fn expected_drug() -> serde_json::Value {
         "molblock": "molblock text", "parentMolecule": parent, "childMolecules": [],
         "mechanismsOfAction": mechanisms,
         "drugWarnings": warnings,
-        "indications": {"count": 1, "rows": [{
+        // `diseaseName` is the `disease_names` entry, null when empty: the second disease has no name.
+        "indications": {"count": 2, "rows": [{
             "id": "live-test-ci", "maxClinicalStage": "PHASE_1_2", "drugName": "LIVE TEST DRUG",
-            "diseaseName": null, "clinicalReportCount": 2, "drug": {"id": "CHEMBL9999999"},
+            "diseaseName": "live test disease", "clinicalReportCount": 2,
+            "drug": {"id": "CHEMBL9999999"},
             "clinicalReports": [
                 {"id": "live-test-clinical-report"}, {"id": "live-test-clinical-report-null"},
             ],
+        }, {
+            "id": "live-test-ci-unnamed", "maxClinicalStage": "PHASE_1", "drugName": "LIVE TEST DRUG",
+            "diseaseName": null, "clinicalReportCount": 0, "drug": {"id": "CHEMBL9999999"},
+            "clinicalReports": [],
         }]},
     })
 }
@@ -1098,6 +1120,7 @@ fn expected_drug() -> serde_json::Value {
 #[tokio::test]
 #[ignore = "needs a ClickHouse database: set LIVE_CLICKHOUSE_URL and LIVE_FIXTURES=1"]
 async fn clinical_fixtures_decode_to_inserted_values() {
+    let _serial = serial().await;
     let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
     assert!(with_fixtures(), "set LIVE_FIXTURES=1");
     let config = config(&url);
@@ -1441,6 +1464,7 @@ fn expected_target_extras() -> serde_json::Value {
 #[tokio::test]
 #[ignore = "needs a ClickHouse database: set LIVE_CLICKHOUSE_URL and LIVE_FIXTURES=1"]
 async fn other_fixtures_decode_to_inserted_values() {
+    let _serial = serial().await;
     let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
     assert!(with_fixtures(), "set LIVE_FIXTURES=1");
     let config = config(&url);
