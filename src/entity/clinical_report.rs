@@ -428,7 +428,7 @@ pub struct ClinicalReportDrugListItem {
 
 #[ComplexObject]
 impl ClinicalReportDrugListItem {
-    /// Drug in the clinical report. Null if the source drug isn't mapped.
+    /// Drug in the clinical report. Null if the source drug isn't mapped or isn't found.
     async fn drug(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Drug>> {
         match &self.drug_id {
             Some(drug_id) => load_drug(ctx, drug_id.clone()).await,
@@ -473,7 +473,7 @@ pub struct ClinicalDiseaseListItem {
 
 #[ComplexObject]
 impl ClinicalDiseaseListItem {
-    /// Disease in the clinical report. Null if the source disease isn't mapped.
+    /// Disease in the clinical report. Null if the source disease isn't mapped or isn't found.
     async fn disease(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Disease>> {
         match &self.disease_id {
             Some(disease_id) => load_disease(ctx, disease_id.clone()).await,

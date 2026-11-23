@@ -119,7 +119,7 @@ impl Loader<Key> for TargetsByRegionLoader {
                 ),
                 paged AS
                 (
-                    SELECT id
+                    SELECT start, end, id
                     FROM filtered
                     ORDER BY start, end, id
                     LIMIT q_limit OFFSET q_offset
@@ -127,7 +127,7 @@ impl Loader<Key> for TargetsByRegionLoader {
             SELECT
                 CAST(? AS UInt64) AS key,
                 ifNull((SELECT count() FROM filtered), 0) AS count,
-                (SELECT groupArray(id) FROM paged) AS ids
+                (SELECT arrayMap(t -> t.3, arraySort(groupArray((start, end, id)))) FROM paged) AS ids
             ";
         let queries: Vec<String> = keys.iter().map(|_| base_query.to_string()).collect();
         let full_query = keys.iter().enumerate().fold(

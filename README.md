@@ -4,7 +4,7 @@ Rust GraphQL API for Open Targets Platform and Partner Preview Platform.
 
 ## Compatibility
 
-This branch reads only ClickHouse databases loaded by `pos` from the [`opentargets/pipeline`](https://github.com/opentargets/pipeline) monorepo at **`pos@v26.12.0rc17` or later**. It does not work with databases loaded by `platform-output-support` or by earlier pos release candidates: rows would be misread silently. `scripts/clickhouse-from-pos.sh` builds an empty database for tests; `examples/check-clickhouse-enums.rs` checks the Rust enums against a database.
+This API version reads only ClickHouse databases loaded by `pos` from the [`opentargets/pipeline`](https://github.com/opentargets/pipeline) monorepo at **`pos@v26.12.0rc17` or later**. It does not work with databases loaded by `platform-output-support` or by earlier pos release candidates: rows would be misread silently. `scripts/clickhouse-from-pos.sh` builds an empty database for tests; `examples/check-clickhouse-enums.rs` checks the Rust enums against a database.
 
 ## Testing against ClickHouse
 
@@ -19,7 +19,12 @@ LIVE_CLICKHOUSE_URL=http://localhost:8123 cargo test --features product-platform
 
 `scripts/generate-live-queries.py` regenerates the query files from a product's schema.
 `LIVE_FIXTURES=1` first replaces the rows of each table named by a `tests/live/fixtures/<table>.jsonl`
-(scratch databases only).
+(scratch databases only: the tests refuse to TRUNCATE a database without the `_live_test_marker` table that
+`scripts/clickhouse-from-pos.sh` creates). Without `LIVE_FIXTURES=1` the fixture tests skip with a message and
+only `live_queries_return_no_errors` runs; add `LIVE_FIXTURES=1` to run them all.
+`LIVE_IDS=tests/live/ids-2612.json` runs the queries against real ids (a real database, not with `LIVE_FIXTURES`).
+Known pre-existing limit (BUG 1): an entity with enough evidence rows, such as ENSG00000149311 with
+MONDO_0015356, makes the evidence `IN` list exceed ClickHouse `max_query_size`; that id set is kept out of the default run.
 
 ## Development
 

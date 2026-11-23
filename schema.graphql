@@ -558,7 +558,7 @@ type ClinicalDiseaseListItem {
 	"""
 	diseaseFromSource: String!
 	"""
-	Disease in the clinical report. Null if the source disease isn't mapped.
+	Disease in the clinical report. Null if the source disease isn't mapped or isn't found.
 	"""
 	disease: Disease
 }
@@ -783,7 +783,7 @@ type ClinicalReportDrugListItem {
 	"""
 	drugFromSource: String!
 	"""
-	Drug in the clinical report. Null if the source drug isn't mapped.
+	Drug in the clinical report. Null if the source drug isn't mapped or isn't found.
 	"""
 	drug: Drug
 }
@@ -883,7 +883,7 @@ type ClinicalTargetDiseaseListItem {
 	"""
 	diseaseFromSource: String
 	"""
-	Disease in the clinical reports. Null if the source disease isn't mapped.
+	Disease in the clinical reports. Null if the source disease isn't mapped or isn't found.
 	"""
 	disease: Disease
 }

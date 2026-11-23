@@ -6,7 +6,7 @@
 # Creates database <product><YYMM> (YYMM from <pos-version>, e.g. 26.12.0rc17 -> platform2612)
 # from the pos image: the landing tables pos generates from the data models (`pos-ddl`), member
 # inserts and drops, and the serving scripts, run in the load step's `requires:` order as
-# pos/tests/test_serving_sql.py does. Every table is empty.
+# pos/tests/test_serving_sql.py does. Every table is empty, plus the marker table _live_test_marker that the fixture tests require.
 # Without a URL, starts clickhouse/clickhouse-server in docker (container clickhouse-pos-test,
 # http://localhost:8123) and replaces the database; with a URL, refuses an existing database.
 set -euo pipefail
@@ -65,6 +65,8 @@ if [[ $exists != 0* ]]; then
 fi
 run_sql "CREATE DATABASE $database" >/dev/null
 url="${url}?database=$database"
+# The live fixture tests refuse to TRUNCATE a database without this table.
+run_sql "CREATE TABLE _live_test_marker (x UInt8) ENGINE = Memory" >/dev/null
 
 # Prints the statements, NUL-separated.
 generate=$(

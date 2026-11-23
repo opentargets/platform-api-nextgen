@@ -67,11 +67,34 @@ fn config(clickhouse_url: &str) -> Config {
         .expect("live test config")
 }
 
+/// Table `scripts/clickhouse-from-pos.sh` creates in every database it builds.
+const SCRATCH_MARKER: &str = "_live_test_marker";
+
+/// Refuses to go on unless the database was built by `scripts/clickhouse-from-pos.sh`.
+///
+/// # Panics
+/// Panics unless the marker table exists: the fixture tests TRUNCATE tables.
+async fn assert_scratch(ch: &ClickHouse) {
+    let found: u64 = ch
+        .client()
+        .query("SELECT count() FROM system.tables WHERE database = currentDatabase() AND name = ?")
+        .bind(SCRATCH_MARKER)
+        .fetch_one()
+        .await
+        .unwrap_or_else(|e| panic!("marker check: {e}"));
+    assert!(
+        found > 0,
+        "refusing to TRUNCATE: table {SCRATCH_MARKER} is missing, so this database was not built by \
+         scripts/clickhouse-from-pos.sh"
+    );
+}
+
 /// Replaces the rows of `table` with the `JSONEachRow` lines of `jsonl_path`.
 ///
 /// # Panics
 /// Panics if the file cannot be read or ClickHouse rejects the rows.
 pub async fn insert_fixture(ch: &ClickHouse, table: &str, jsonl_path: &Path) {
+    assert_scratch(ch).await;
     let rows = fs::read(jsonl_path).unwrap_or_else(|e| panic!("{}: {e}", jsonl_path.display()));
     ch.client()
         .query(&format!("TRUNCATE TABLE `{table}`"))
@@ -328,7 +351,10 @@ fn assert_fields(what: &str, row: &serde_json::Value, expected: &serde_json::Val
 async fn evidence_fixtures_decode_to_inserted_values() {
     let _serial = serial().await;
     let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
-    assert!(with_fixtures(), "set LIVE_FIXTURES=1");
+    if !with_fixtures() {
+        eprintln!("skipped: set LIVE_FIXTURES=1");
+        return;
+    }
     let ch = ClickHouse::new(&config(&url));
     load_fixtures(&ch).await;
 
@@ -640,6 +666,7 @@ const PPP_ASSOCIATIONS_QUERY: &str = "";
 /// PPP-only rows: the PPP datasources, and the time series (a PPP-only table).
 #[cfg(feature = "product-ppp")]
 async fn insert_ppp_association_rows(ch: &ClickHouse) {
+    assert_scratch(ch).await;
     let row = |id: &str, ds: &str, score: f64| {
         format!(
             "{{\"rowId\":\"{id}\",\"A\":\"ENSG99999999990\",\"B\":\"EFO_9999999\",\
@@ -674,7 +701,10 @@ async fn insert_ppp_association_rows(ch: &ClickHouse) {
 async fn association_fixtures_decode_to_inserted_values() {
     let _serial = serial().await;
     let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
-    assert!(with_fixtures(), "set LIVE_FIXTURES=1");
+    if !with_fixtures() {
+        eprintln!("skipped: set LIVE_FIXTURES=1");
+        return;
+    }
     let config = config(&url);
     let ch = ClickHouse::new(&config);
     load_fixtures(&ch).await;
@@ -761,7 +791,12 @@ async fn association_fixtures_decode_to_inserted_values() {
             [vec!["ot_crispr_validation", "encore", "ot_crispr"]]
         );
         let mut direct = data["direct"]["rows"].as_array().expect("rows").clone();
-        direct.sort_by_key(|r| r["aggregationType"].to_string());
+        direct.sort_by_key(|r| {
+            (
+                r["aggregationType"].to_string(),
+                r["aggregationValue"].to_string(),
+            )
+        });
         assert_eq!(
             serde_json::Value::Array(direct),
             json!([
@@ -998,7 +1033,10 @@ fn expected_target() -> serde_json::Value {
 async fn target_fixtures_decode_to_inserted_values() {
     let _serial = serial().await;
     let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
-    assert!(with_fixtures(), "set LIVE_FIXTURES=1");
+    if !with_fixtures() {
+        eprintln!("skipped: set LIVE_FIXTURES=1");
+        return;
+    }
     let config = config(&url);
     load_fixtures(&ClickHouse::new(&config)).await;
 
@@ -1162,7 +1200,10 @@ fn expected_drug() -> serde_json::Value {
 async fn clinical_fixtures_decode_to_inserted_values() {
     let _serial = serial().await;
     let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
-    assert!(with_fixtures(), "set LIVE_FIXTURES=1");
+    if !with_fixtures() {
+        eprintln!("skipped: set LIVE_FIXTURES=1");
+        return;
+    }
     let config = config(&url);
     load_fixtures(&ClickHouse::new(&config)).await;
 
@@ -1506,7 +1547,10 @@ fn expected_target_extras() -> serde_json::Value {
 async fn other_fixtures_decode_to_inserted_values() {
     let _serial = serial().await;
     let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
-    assert!(with_fixtures(), "set LIVE_FIXTURES=1");
+    if !with_fixtures() {
+        eprintln!("skipped: set LIVE_FIXTURES=1");
+        return;
+    }
     let config = config(&url);
     load_fixtures(&ClickHouse::new(&config)).await;
 
