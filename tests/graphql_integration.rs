@@ -1,7 +1,7 @@
 mod common;
 
 use common::{environment, graphql_errors, sample_data};
-use serde_json::json;
+use serde_json::{Value, json};
 
 /// The query the frontend runs to render a target page.
 ///
@@ -231,5 +231,12 @@ async fn unknown_target_is_null() {
     let response = environment.graphql(UNKNOWN_TARGET_QUERY).await;
 
     assert!(graphql_errors(&response).is_empty());
-    assert!(response["data"]["target"].is_null());
+    // The field has to be there, and explicitly null: indexing the response
+    // would also return null for a missing field, which would hide a server
+    // that does not return the target at all.
+    assert_eq!(
+        response.pointer("/data/target"),
+        Some(&Value::Null),
+        "the target of an unknown id should be explicitly null"
+    );
 }

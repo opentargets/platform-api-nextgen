@@ -50,8 +50,11 @@ debug = true
 
 [dev-dependencies]
 bytes = "1.10"
+# Used to register an exit handler that removes the test containers.
+libc = "0.2"
 # The `arrow` feature is not needed: the record API reads the sample Parquet
 # fixtures (nested structs and lists included) without it.
 parquet = { version = "60", default-features = false, features = ["snap"] }
-testcontainers = "0.27.3"
+# The `watchdog` feature removes the containers when the test run is interrupted.
+testcontainers = { version = "0.27.3", features = ["watchdog"] }
 testcontainers-modules = { version = "0.15.0", features = ["clickhouse"] }

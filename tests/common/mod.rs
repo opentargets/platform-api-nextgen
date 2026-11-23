@@ -1,6 +1,13 @@
 pub mod sample_data;
 
-use std::{fmt::Write, sync::Arc};
+use std::{
+    fmt::Write,
+    sync::{
+        Arc, Mutex, OnceLock,
+        atomic::{AtomicBool, Ordering},
+        mpsc,
+    },
+};
 
 use bytes::Bytes;
 use clickhouse::Client;
@@ -9,6 +16,7 @@ use reqwest::Response;
 use serde_json::{Value, json};
 use testcontainers::{
     ContainerAsync, CopyDataSource, CopyTargetOptions, GenericImage, ImageExt,
+    bollard::models::HostConfig,
     core::{ContainerPort, IntoContainerPort, WaitFor, wait::HttpWaitStrategy},
     runners::AsyncRunner,
 };
@@ -37,17 +45,101 @@ const OPENSEARCH_IMAGE: (&str, &str) = ("opensearchproject/opensearch", "2.19.1"
 /// This is the production configuration, copied from `platform-output-support`.
 const CLICKHOUSE_USERS_XML: &str = include_str!("schema/users.xml");
 
+/// Publishes the container ports on the loopback interface only.
+///
+/// Docker publishes the ports of a container on every interface of the host by
+/// default. The containers hold an unauthenticated ClickHouse and an OpenSearch
+/// with its security plugin disabled, so they must not be reachable from other
+/// hosts.
+fn publish_on_loopback_only(host_config: &mut HostConfig) {
+    let Some(bindings) = host_config.port_bindings.as_mut() else {
+        return;
+    };
+    for hosts in bindings.values_mut().flatten() {
+        for host in hosts.iter_mut() {
+            host.host_ip = Some("127.0.0.1".to_string());
+        }
+    }
+}
+
 /// A running API backed by real ClickHouse and OpenSearch containers.
 ///
-/// The whole suite shares one environment: `axum-prometheus` installs a global metrics
-/// recorder, which can only be set once per process.
+/// The whole suite shares one environment: starting the containers takes about
+/// twenty seconds, and every test needs the same data.
 pub struct TestEnvironment {
     pub graphql_url: String,
-    _clickhouse: ContainerAsync<GenericImage>,
-    _opensearch: ContainerAsync<GenericImage>,
+}
+
+/// The containers of the shared environment.
+///
+/// They are owned by the environment thread rather than by [`TestEnvironment`],
+/// so that the thread can remove them explicitly when the process exits: the
+/// environment is kept in a `static`, and Rust does not run destructors for
+/// statics, so dropping it would never remove the containers.
+struct Containers {
+    clickhouse: ContainerAsync<GenericImage>,
+    opensearch: ContainerAsync<GenericImage>,
+}
+
+impl Containers {
+    /// Removes the containers.
+    async fn remove(self) {
+        let Self {
+            clickhouse,
+            opensearch,
+        } = self;
+        clickhouse
+            .rm()
+            .await
+            .expect("remove the ClickHouse container");
+        opensearch
+            .rm()
+            .await
+            .expect("remove the OpenSearch container");
+    }
 }
 
 static ENVIRONMENT: OnceCell<Arc<TestEnvironment>> = OnceCell::const_new();
+
+/// The messages the environment thread receives.
+enum Message {
+    /// The process is exiting and the containers have to be removed.
+    Shutdown,
+}
+
+/// The channel the environment thread listens on.
+static ENVIRONMENT_CHANNEL: OnceLock<mpsc::Sender<Message>> = OnceLock::new();
+
+/// The thread the environment runs on, so that the exit handler can wait for it.
+static ENVIRONMENT_THREAD: OnceLock<Mutex<Option<std::thread::JoinHandle<()>>>> = OnceLock::new();
+
+/// Whether the exit handler has already run.
+static SHUTDOWN_DONE: AtomicBool = AtomicBool::new(false);
+
+/// Removes the containers when the test binary exits.
+///
+/// The containers are owned by a value that is never dropped on its own: the
+/// environment is kept in a `static`, and Rust does not run destructors for
+/// statics. Without this handler the containers would outlive every test run.
+///
+/// The handler runs as the process exits, which is after all the tests have
+/// finished. It has to wait for the environment thread to remove the
+/// containers, because the process terminates as soon as it returns.
+extern "C" fn remove_containers_on_exit() {
+    if SHUTDOWN_DONE.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    if let Some(sender) = ENVIRONMENT_CHANNEL.get() {
+        let _ = sender.send(Message::Shutdown);
+    }
+    if let Some(thread) = ENVIRONMENT_THREAD
+        .get()
+        .and_then(|slot| slot.lock().ok())
+        .and_then(|mut slot| slot.take())
+    {
+        let _ = thread.join();
+    }
+}
 
 /// Returns the shared test environment, starting it on first use.
 ///
@@ -57,21 +149,32 @@ static ENVIRONMENT: OnceCell<Arc<TestEnvironment>> = OnceCell::const_new();
 pub async fn environment() -> Arc<TestEnvironment> {
     ENVIRONMENT
         .get_or_init(|| async {
-            let (sender, receiver) = tokio::sync::oneshot::channel();
-            std::thread::spawn(move || {
+            let (shutdown_sender, shutdown_receiver) = mpsc::channel();
+            let (ready_sender, ready_receiver) = mpsc::channel();
+            let _ = ENVIRONMENT_CHANNEL.set(shutdown_sender);
+            let thread = std::thread::spawn(move || {
                 let runtime = tokio::runtime::Builder::new_multi_thread()
                     .enable_all()
                     .build()
                     .expect("build shared test runtime");
                 runtime.block_on(async move {
-                    let environment = Arc::new(TestEnvironment::start().await);
-                    let _ = sender.send(environment);
-                    // Keep the runtime alive so the server keeps serving.
-                    std::future::pending::<()>().await;
+                    let (environment, containers) = TestEnvironment::start().await;
+                    let _ = ready_sender.send(environment);
+                    // Keep serving until the exit handler asks for the teardown.
+                    if let Ok(Message::Shutdown) = shutdown_receiver.recv() {
+                        // The containers are removed explicitly: they cannot be
+                        // removed by being dropped, because the environment they
+                        // belong to is kept in a `static`.
+                        containers.remove().await;
+                    }
                 });
             });
-            receiver
-                .await
+            let _ = ENVIRONMENT_THREAD.set(Mutex::new(Some(thread)));
+            // SAFETY: the handler only sends a message to the environment thread and
+            // joins it, both of which are safe to do while the process exits.
+            unsafe { libc::atexit(remove_containers_on_exit) };
+            ready_receiver
+                .recv()
                 .expect("shared test environment failed to start")
         })
         .await
@@ -79,14 +182,22 @@ pub async fn environment() -> Arc<TestEnvironment> {
 }
 
 impl TestEnvironment {
-    async fn start() -> Self {
+    /// Starts the containers, loads the sample data and serves the GraphQL API.
+    ///
+    /// Returns the environment the tests use, and the containers, which the
+    /// environment thread keeps so that it can remove them when the process
+    /// exits.
+    async fn start() -> (Arc<Self>, Containers) {
         let clickhouse = GenericImage::new(CLICKHOUSE_IMAGE.0, CLICKHOUSE_IMAGE.1)
-            .with_exposed_port(8123_u16.tcp())
             .with_wait_for(WaitFor::http(
                 HttpWaitStrategy::new("/ping")
                     .with_port(8123_u16.tcp())
                     .with_expected_status_code(200_u16),
             ))
+            // The port is mapped explicitly, rather than exposed, so that it can be
+            // published on the loopback interface only.
+            .with_mapped_port(0, 8123_u16.tcp())
+            .with_host_config_modifier(publish_on_loopback_only)
             // The container is given the production user configuration. The
             // ClickHouse entrypoint only writes its own user configuration when
             // the user has not already been set through `users.d`, so copying
@@ -103,12 +214,15 @@ impl TestEnvironment {
         let clickhouse_url = container_url(&clickhouse, 8123).await;
 
         let opensearch = GenericImage::new(OPENSEARCH_IMAGE.0, OPENSEARCH_IMAGE.1)
-            .with_exposed_port(9200_u16.tcp())
             .with_wait_for(WaitFor::http(
                 HttpWaitStrategy::new("/")
                     .with_port(9200_u16.tcp())
                     .with_expected_status_code(200_u16),
             ))
+            // The port is mapped explicitly, rather than exposed, so that it can be
+            // published on the loopback interface only.
+            .with_mapped_port(0, 9200_u16.tcp())
+            .with_host_config_modifier(publish_on_loopback_only)
             .with_env_var("discovery.type", "single-node")
             .with_env_var("DISABLE_SECURITY_PLUGIN", "true")
             .start()
@@ -134,11 +248,15 @@ impl TestEnvironment {
                 .expect("serve GraphQL test server");
         });
 
-        Self {
-            graphql_url: format!("http://{address}/latest/graphql"),
-            _clickhouse: clickhouse,
-            _opensearch: opensearch,
-        }
+        (
+            Arc::new(Self {
+                graphql_url: format!("http://{address}/latest/graphql"),
+            }),
+            Containers {
+                clickhouse,
+                opensearch,
+            },
+        )
     }
 
     pub async fn graphql(&self, query: &str) -> Value {
@@ -257,6 +375,27 @@ async fn seed_opensearch(url: &str, namespace: &str) {
         response.status().is_success(),
         "index OpenSearch target fixtures failed: {}",
         response.text().await.unwrap_or_default()
+    );
+    // The bulk endpoint answers with a success status even when some of the
+    // documents are rejected, so the response body has to be checked as well.
+    // Otherwise the index would be incomplete and the tests would still pass.
+    let result: Value = response
+        .json()
+        .await
+        .expect("read the OpenSearch bulk response");
+    let failures: Vec<&Value> = result["items"]
+        .as_array()
+        .expect("OpenSearch bulk items")
+        .iter()
+        .filter(|item| {
+            item.as_object()
+                .and_then(|operation| operation.values().next())
+                .is_some_and(|result| result["status"].as_u64().is_none_or(|status| status >= 300))
+        })
+        .collect();
+    assert!(
+        failures.is_empty(),
+        "indexing {failures:?} of the OpenSearch target fixtures failed"
     );
 
     // The sample search documents and the sample targets are disjoint, so a
