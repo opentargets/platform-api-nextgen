@@ -69,8 +69,8 @@ pub struct EvidenceCrisprScreen {
     crispr_screen_library: Option<String>,
     /// Tail of the statistical test, e.g. `lower tail`.
     statistical_test_tail: Option<String>,
-    /// Log2 fold change of the phenotype when the target is perturbed.
-    log2_fold_change_value: Option<f64>,
+    /// Score of the phenotypic consequence of the target perturbation in the CRISPR screen.
+    phenotypic_consequence_score: Option<f64>,
     /// Significance: the screen's p-value or FDR for the target.
     resource_score: Option<f64>,
     /// List of PubMed or preprint reference identifiers.

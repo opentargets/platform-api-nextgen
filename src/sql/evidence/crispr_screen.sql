@@ -18,7 +18,7 @@
     e.cellType AS cellType,
     e.crisprScreenLibrary AS crisprScreenLibrary,
     e.statisticalTestTail AS statisticalTestTail,
-    e.log2FoldChangeValue AS log2FoldChangeValue,
+    e.phenotypicConsequenceScore AS phenotypicConsequenceScore,
     e.resourceScore AS resourceScore,
     e.literature AS literature
   FROM evidence AS e
