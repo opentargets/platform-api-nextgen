@@ -8,6 +8,7 @@ use clickhouse::Row;
 use derive_more::From;
 use serde::Deserialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
@@ -21,10 +22,23 @@ use crate::{
 
 /// Source database reporting the molecular interaction.
 #[derive(
-    Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr, Serialize_repr,
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    Serialize_repr,
+    IntoStaticStr,
+    EnumIter,
 )]
 #[repr(i8)]
 #[graphql(rename_items = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum InteractionSourceDatabase {
     /// IntAct: <https://www.ebi.ac.uk/intact/>.
     Intact = 1,

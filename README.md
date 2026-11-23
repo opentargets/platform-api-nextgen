@@ -2,6 +2,25 @@
 
 Rust GraphQL API for Open Targets Platform and Partner Preview Platform.
 
+## Compatibility
+
+This branch reads only ClickHouse databases loaded by `pos` from the [`opentargets/pipeline`](https://github.com/opentargets/pipeline) monorepo at **`pos@v26.12.0rc17` or later**. It does not work with databases loaded by `platform-output-support` or by earlier pos release candidates: rows would be misread silently. `scripts/clickhouse-from-pos.sh` builds an empty database for tests; `examples/check-clickhouse-enums.rs` checks the Rust enums against a database.
+
+## Testing against ClickHouse
+
+Build an empty database from a pos image (starts ClickHouse in docker when no URL is given),
+check the enums, then run the live queries in `tests/live/<product>/`:
+
+```bash
+scripts/clickhouse-from-pos.sh 26.12.0rc17 platform
+cargo run --example check-clickhouse-enums --features product-platform -- http://localhost:8123
+LIVE_CLICKHOUSE_URL=http://localhost:8123 cargo test --features product-platform --test live_clickhouse -- --ignored
+```
+
+`scripts/generate-live-queries.py` regenerates the query files from a product's schema.
+`LIVE_FIXTURES=1` first replaces the rows of each table named by a `tests/live/fixtures/<table>.jsonl`
+(scratch databases only).
+
 ## Development
 
 The repository pins Rust 1.99.0 in `rust-toolchain.toml`, matching the minimum Rust

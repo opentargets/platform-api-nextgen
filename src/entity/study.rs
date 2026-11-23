@@ -45,7 +45,18 @@ use crate::{
 
 /// Field specifying if study contains phenotype/disease or molecular genetic associations.
 #[derive(
-    Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr, IntoStaticStr,
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
 )]
 #[repr(i8)]
 #[graphql(rename_items = "lowercase")]

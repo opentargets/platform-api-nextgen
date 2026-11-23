@@ -1,0 +1,473 @@
+# variables: {"target": "ENSG99999999999", "disease": "EFO_9999999", "drug": "CHEMBL9999999", "clinicalReport": "live-test-clinical-report"}
+query LiveClinical($target: String!, $disease: String!, $drug: String!, $clinicalReport: String!) {
+  clinicalReport(clinicalReportId: $clinicalReport) {
+    id
+    source
+    clinicalStage
+    phaseFromSource
+    evidenceType
+    title
+    trialStudyType
+    trialDescription
+    trialNumberOfArms
+    trialStartDate
+    trialLiterature {
+      id
+      referenceType
+    }
+    trialOverallStatus
+    trialWhyStopped
+    trialPrimaryPurpose
+    trialPhase
+    trialStopReasonCategories
+    trialSponsor {
+      agencyClass
+      name
+    }
+    qualityControls
+    diseases {
+      diseaseFromSource
+      disease {
+        id
+      }
+    }
+    drugs {
+      drugFromSource
+      drug {
+        id
+      }
+    }
+    countries
+    year
+    sideEffects {
+      diseaseFromSource
+      disease {
+        id
+      }
+    }
+    trialOfficialTitle
+    url
+    origin
+    provider
+  }
+  clinicalReports(clinicalReportsIds: [$clinicalReport]) {
+    id
+    source
+    clinicalStage
+    phaseFromSource
+    evidenceType
+    title
+    trialStudyType
+    trialDescription
+    trialNumberOfArms
+    trialStartDate
+    trialOverallStatus
+    trialWhyStopped
+    trialPrimaryPurpose
+    trialPhase
+    trialStopReasonCategories
+    qualityControls
+    countries
+    year
+    trialOfficialTitle
+    url
+    origin
+    provider
+  }
+  drug(chemblId: $drug) {
+    id
+    name
+    synonyms {
+      label
+      source
+    }
+    tradeNames {
+      label
+      source
+    }
+    drugType
+    crossReferences {
+      source
+      ids
+    }
+    maximumClinicalStage
+    description
+    molblock
+    parentMolecule {
+      id
+    }
+    childMolecules {
+      id
+    }
+    drugWarnings {
+      count
+      rows {
+        toxicityClass
+        chemblIds
+        country
+        description
+        id
+        references {
+          id
+          source
+          url
+        }
+        warningType
+        year
+        efoTerm
+        efoId
+        efoIdForWarningClass
+      }
+    }
+    indications {
+      count
+      rows {
+        id
+        maxClinicalStage
+        drugName
+        diseaseName
+        clinicalReportCount
+        drug {
+          id
+        }
+        disease {
+          id
+        }
+        clinicalReports {
+          id
+        }
+      }
+    }
+    indications_sort: indications(sort: [{key: MAX_CLINICAL_STAGE, direction: ASCENDING}, {key: CLINICAL_REPORT_COUNT, direction: ASCENDING}, {key: DISEASE_NAME, direction: ASCENDING}]) {
+      count
+      rows {
+        id
+        maxClinicalStage
+        drugName
+        diseaseName
+        clinicalReportCount
+      }
+    }
+    indications_search: indications(search: {text: "a", fields: [DISEASE_NAME]}) {
+      count
+      rows {
+        id
+        maxClinicalStage
+        drugName
+        diseaseName
+        clinicalReportCount
+      }
+    }
+    mechanismsOfAction {
+      rows {
+        mechanismOfAction
+        actionType
+        targetName
+        curation
+        references {
+          ids
+          source
+          urls
+        }
+        targets {
+          id
+        }
+      }
+      uniqueActionTypes
+      uniqueTargetTypes
+    }
+    literatureOcurrences {
+      count
+      rows {
+        pmid
+        pmcid
+        relevances {
+          id
+          relevance
+        }
+        publicationDate
+      }
+      stats {
+        earliestPubDate
+      }
+    }
+    literatureOcurrences_additionalIds: literatureOcurrences(additionalIds: [$disease]) {
+      count
+      rows {
+        pmid
+        pmcid
+        publicationDate
+      }
+    }
+    literatureOcurrences_startYear: literatureOcurrences(startYear: 1) {
+      count
+      rows {
+        pmid
+        pmcid
+        publicationDate
+      }
+    }
+    literatureOcurrences_startMonth: literatureOcurrences(startMonth: 1) {
+      count
+      rows {
+        pmid
+        pmcid
+        publicationDate
+      }
+    }
+    literatureOcurrences_endYear: literatureOcurrences(endYear: 1) {
+      count
+      rows {
+        pmid
+        pmcid
+        publicationDate
+      }
+    }
+    literatureOcurrences_endMonth: literatureOcurrences(endMonth: 1) {
+      count
+      rows {
+        pmid
+        pmcid
+        publicationDate
+      }
+    }
+    pharmacogenomics {
+      count
+      rows {
+        datasourceId
+        datatypeId
+        drugs {
+          drugId
+          drugFromSource
+          drug {
+            id
+          }
+        }
+        evidenceLevel
+        genotype
+        genotypeAnnotationText
+        genotypeId
+        haplotypeFromSourceId
+        haplotypeId
+        literature
+        pgxCategory
+        phenotypeFromSourceId
+        phenotypeText
+        variantAnnotation {
+          baseAlleleOrGenotype
+          comparisonAlleleOrGenotype
+          directionality
+          effect
+          effectDescription
+          effectType
+          entity
+          literature
+        }
+        studyId
+        targetFromSourceId
+        variantFunctionalConsequenceId
+        variantRsId
+        variantId
+        isDirectTarget
+        target {
+          id
+        }
+        variantFunctionalConsequence {
+          id
+          label
+        }
+      }
+    }
+    pharmacogenomics_sort: pharmacogenomics(sort: [{key: EVIDENCE_LEVEL, direction: ASCENDING}]) {
+      count
+      rows {
+        datasourceId
+        datatypeId
+        evidenceLevel
+        genotype
+        genotypeAnnotationText
+        genotypeId
+        haplotypeFromSourceId
+        haplotypeId
+        literature
+        pgxCategory
+        phenotypeFromSourceId
+        phenotypeText
+        studyId
+        targetFromSourceId
+        variantFunctionalConsequenceId
+        variantRsId
+        variantId
+        isDirectTarget
+      }
+    }
+    pharmacogenomics_search: pharmacogenomics(search: {text: "a", fields: [GENOTYPE_ID, TARGET_APPROVED_SYMBOL, DRUG_IDS, DRUG_FROM_SOURCES, GENOTYPE_ANNOTATION_TEXT, PHENOTYPE_TEXT, PGX_CATEGORY, EVIDENCE_LEVEL]}) {
+      count
+      rows {
+        datasourceId
+        datatypeId
+        evidenceLevel
+        genotype
+        genotypeAnnotationText
+        genotypeId
+        haplotypeFromSourceId
+        haplotypeId
+        literature
+        pgxCategory
+        phenotypeFromSourceId
+        phenotypeText
+        studyId
+        targetFromSourceId
+        variantFunctionalConsequenceId
+        variantRsId
+        variantId
+        isDirectTarget
+      }
+    }
+    similarEntities {
+      count
+      rows {
+        category
+        id
+        score
+        object {
+          __typename
+          ... on Target { id }
+          ... on Drug { id }
+          ... on Disease { id }
+        }
+      }
+    }
+    similarEntities_additionalIds: similarEntities(additionalIds: [$disease]) {
+      count
+      rows {
+        category
+        id
+        score
+      }
+    }
+    similarEntities_entityNames: similarEntities(entityNames: ["a"]) {
+      count
+      rows {
+        category
+        id
+        score
+      }
+    }
+    similarEntities_threshold: similarEntities(threshold: 0.5) {
+      count
+      rows {
+        category
+        id
+        score
+      }
+    }
+    adverseEvents {
+      count
+      rows {
+        count
+        name
+        logLR
+        meddraCode
+      }
+      stats {
+        criticalValue
+      }
+    }
+  }
+  drugs(chemblIds: [$drug]) {
+    count
+    rows {
+      id
+      name
+      drugType
+      maximumClinicalStage
+      description
+      molblock
+    }
+  }
+  target(ensemblId: $target) {
+    id
+    drugAndClinicalCandidates {
+      count
+      rows {
+        id
+        diseases {
+          diseaseFromSource
+          disease {
+            id
+          }
+        }
+        maxClinicalStage
+        drugName
+        clinicalReportCount
+        drug {
+          id
+        }
+        clinicalReports {
+          id
+        }
+      }
+    }
+    drugAndClinicalCandidates_sort: drugAndClinicalCandidates(sort: [{key: MAX_CLINICAL_STAGE, direction: ASCENDING}, {key: CLINICAL_REPORT_COUNT, direction: ASCENDING}, {key: DRUG_NAME, direction: ASCENDING}]) {
+      count
+      rows {
+        id
+        maxClinicalStage
+        drugName
+        clinicalReportCount
+      }
+    }
+    drugAndClinicalCandidates_search: drugAndClinicalCandidates(search: {text: "a", fields: [DRUG_NAME]}) {
+      count
+      rows {
+        id
+        maxClinicalStage
+        drugName
+        clinicalReportCount
+      }
+    }
+  }
+  disease(efoId: $disease) {
+    id
+    drugAndClinicalCandidates {
+      count
+      rows {
+        id
+        maxClinicalStage
+        drugName
+        diseaseName
+        clinicalReportCount
+        drug {
+          id
+        }
+        disease {
+          id
+        }
+        clinicalReports {
+          id
+        }
+      }
+    }
+    drugAndClinicalCandidates_sort: drugAndClinicalCandidates(sort: [{key: MAX_CLINICAL_STAGE, direction: ASCENDING}, {key: CLINICAL_REPORT_COUNT, direction: ASCENDING}, {key: DRUG_NAME, direction: ASCENDING}]) {
+      count
+      rows {
+        id
+        maxClinicalStage
+        drugName
+        diseaseName
+        clinicalReportCount
+      }
+    }
+    drugAndClinicalCandidates_search: drugAndClinicalCandidates(search: {text: "a", fields: [DRUG_NAME]}) {
+      count
+      rows {
+        id
+        maxClinicalStage
+        drugName
+        diseaseName
+        clinicalReportCount
+      }
+    }
+  }
+}

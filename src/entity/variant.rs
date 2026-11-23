@@ -9,6 +9,7 @@ use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
@@ -41,35 +42,72 @@ use crate::{
 // ---- models ----
 /// Chromosome type.
 #[derive(
-    Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr, Serialize_repr,
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    Serialize_repr,
+    IntoStaticStr,
+    EnumIter,
 )]
 #[repr(i8)]
 #[graphql(rename_items = "lowercase")]
 pub enum Chromosome {
+    #[strum(serialize = "1")]
     Chr1 = 1,
+    #[strum(serialize = "2")]
     Chr2 = 2,
+    #[strum(serialize = "3")]
     Chr3 = 3,
+    #[strum(serialize = "4")]
     Chr4 = 4,
+    #[strum(serialize = "5")]
     Chr5 = 5,
+    #[strum(serialize = "6")]
     Chr6 = 6,
+    #[strum(serialize = "7")]
     Chr7 = 7,
+    #[strum(serialize = "8")]
     Chr8 = 8,
+    #[strum(serialize = "9")]
     Chr9 = 9,
+    #[strum(serialize = "10")]
     Chr10 = 10,
+    #[strum(serialize = "11")]
     Chr11 = 11,
+    #[strum(serialize = "12")]
     Chr12 = 12,
+    #[strum(serialize = "13")]
     Chr13 = 13,
+    #[strum(serialize = "14")]
     Chr14 = 14,
+    #[strum(serialize = "15")]
     Chr15 = 15,
+    #[strum(serialize = "16")]
     Chr16 = 16,
+    #[strum(serialize = "17")]
     Chr17 = 17,
+    #[strum(serialize = "18")]
     Chr18 = 18,
+    #[strum(serialize = "19")]
     Chr19 = 19,
+    #[strum(serialize = "20")]
     Chr20 = 20,
+    #[strum(serialize = "21")]
     Chr21 = 21,
+    #[strum(serialize = "22")]
     Chr22 = 22,
+    #[strum(serialize = "X")]
     ChrX = 23,
+    #[strum(serialize = "Y")]
     ChrY = 24,
+    #[strum(serialize = "MT")]
     ChrMT = 25,
 }
 

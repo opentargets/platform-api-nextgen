@@ -1,0 +1,1423 @@
+# variables: {"disease": "EFO_9999999", "variant": "7_140000050_A_T", "study": "GCST99999999", "credibleSet": "live-test-credible-set"}
+query LiveOthers($disease: String!, $variant: String!, $study: String!, $credibleSet: String!) {
+  meta {
+    name
+    product
+    apiVersion {
+      year
+      month
+      revision
+    }
+    dataVersion {
+      year
+      month
+      revision
+    }
+    dataNamespace
+  }
+  interactionResources {
+    databaseVersion
+    sourceDatabase
+  }
+  disease(efoId: $disease) {
+    id
+    name
+    description
+    isTherapeuticArea
+    ancestors
+    descendants
+    synonyms {
+      relation
+      terms
+    }
+    obsoleteTerms
+    dbXRefs
+    directLocationIds
+    indirectLocationIds
+    studyIds
+    indirectStudyIds
+    parents {
+      id
+    }
+    children {
+      id
+    }
+    resolvedAncestors {
+      id
+    }
+    phenotypes {
+      count
+      rows {
+        evidence {
+          aspect
+          bioCuration
+          diseaseFromSourceId
+          diseaseFromSource
+          diseaseName
+          evidenceType
+          frequency
+          qualifierNot
+          references
+          sex
+          resource
+          modifiers {
+            id
+            name
+            description
+            namespace
+          }
+          onset {
+            id
+            name
+            description
+            namespace
+          }
+          frequencyHPO {
+            id
+            name
+            description
+            namespace
+          }
+        }
+        phenotypeHPO {
+          id
+          name
+          description
+          namespace
+        }
+        phenotypeEFO {
+          id
+        }
+      }
+    }
+    literatureOcurrences {
+      count
+      rows {
+        pmid
+        pmcid
+        relevances {
+          id
+          relevance
+        }
+        publicationDate
+      }
+      stats {
+        earliestPubDate
+      }
+    }
+    literatureOcurrences_additionalIds: literatureOcurrences(additionalIds: [$disease]) {
+      count
+      rows {
+        pmid
+        pmcid
+        publicationDate
+      }
+    }
+    literatureOcurrences_startYear: literatureOcurrences(startYear: 1) {
+      count
+      rows {
+        pmid
+        pmcid
+        publicationDate
+      }
+    }
+    literatureOcurrences_startMonth: literatureOcurrences(startMonth: 1) {
+      count
+      rows {
+        pmid
+        pmcid
+        publicationDate
+      }
+    }
+    literatureOcurrences_endYear: literatureOcurrences(endYear: 1) {
+      count
+      rows {
+        pmid
+        pmcid
+        publicationDate
+      }
+    }
+    literatureOcurrences_endMonth: literatureOcurrences(endMonth: 1) {
+      count
+      rows {
+        pmid
+        pmcid
+        publicationDate
+      }
+    }
+    similarEntities {
+      count
+      rows {
+        category
+        id
+        score
+        object {
+          __typename
+          ... on Target { id }
+          ... on Drug { id }
+          ... on Disease { id }
+        }
+      }
+    }
+    similarEntities_additionalIds: similarEntities(additionalIds: [$disease]) {
+      count
+      rows {
+        category
+        id
+        score
+      }
+    }
+    similarEntities_entityNames: similarEntities(entityNames: ["a"]) {
+      count
+      rows {
+        category
+        id
+        score
+      }
+    }
+    similarEntities_threshold: similarEntities(threshold: 0.5) {
+      count
+      rows {
+        category
+        id
+        score
+      }
+    }
+    otarProjects {
+      count
+      rows {
+        otarCode
+        status
+        projectName
+        reference
+        integratesInPPP
+      }
+    }
+    therapeuticAreas {
+      id
+    }
+  }
+  diseases(efoIds: [$disease]) {
+    count
+    rows {
+      id
+      name
+      description
+      isTherapeuticArea
+      ancestors
+      descendants
+      obsoleteTerms
+      dbXRefs
+      directLocationIds
+      indirectLocationIds
+      studyIds
+      indirectStudyIds
+    }
+  }
+  diseases_search: diseases(efoIds: [$disease], search: {text: "a", fields: [ID, NAME, DESCRIPTION, SYNONYMS]}) {
+    count
+    rows {
+      id
+      name
+      description
+      isTherapeuticArea
+      ancestors
+      descendants
+      obsoleteTerms
+      dbXRefs
+      directLocationIds
+      indirectLocationIds
+      studyIds
+      indirectStudyIds
+    }
+  }
+  diseases_sort: diseases(efoIds: [$disease], sort: [{key: ID, direction: ASCENDING}, {key: NAME, direction: ASCENDING}, {key: IS_THERAPEUTIC_AREA, direction: ASCENDING}]) {
+    count
+    rows {
+      id
+      name
+      description
+      isTherapeuticArea
+      ancestors
+      descendants
+      obsoleteTerms
+      dbXRefs
+      directLocationIds
+      indirectLocationIds
+      studyIds
+      indirectStudyIds
+    }
+  }
+  study(studyId: $study) {
+    id
+    projectId
+    studyType
+    traitFromSource
+    traitFromSourceMappedIds
+    condition
+    initialSampleSize
+    nSamples
+    nCases
+    nControls
+    cohorts
+    discoverySamples {
+      ancestry
+      sampleSize
+    }
+    replicationSamples {
+      ancestry
+      sampleSize
+    }
+    ldPopulationStructure {
+      ldPopulation
+      relativeSampleSize
+    }
+    hasSumstats
+    summarystatsLocation
+    analysisFlags
+    qualityControls
+    SumstatQCValues {
+      QCCheckName
+      QCCheckValue
+    }
+    pubmedId
+    publicationFirstAuthor
+    publicationTitle
+    publicationJournal
+    publicationDate
+    diseases {
+      id
+    }
+    publicationAuthorDate
+    credibleSets {
+      count
+      rows {
+        credibleSetId
+      }
+    }
+    credibleSetsView {
+      count
+      rows {
+        studyId
+        credibleSetId
+        leadVariantId
+        leadChromosome
+        leadPosition
+        leadReferenceAllele
+        leadAlternateAllele
+        pValueMantissa
+        pValueExponent
+        beta
+        fineMappingMethod
+        confidence
+        locusSize
+        topL2GGeneId
+        topL2GApprovedSymbol
+        topL2GScore
+      }
+    }
+    credibleSetsView_sort: credibleSetsView(sort: [{key: LEAD_VARIANT, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}, {key: BETA, direction: ASCENDING}, {key: CONFIDENCE, direction: ASCENDING}, {key: TOP_L2G_APPROVED_SYMBOL, direction: ASCENDING}, {key: TOP_L2G_SCORE, direction: ASCENDING}, {key: LOCUS_SIZE, direction: ASCENDING}]) {
+      count
+      rows {
+        studyId
+        credibleSetId
+        leadVariantId
+        leadChromosome
+        leadPosition
+        leadReferenceAllele
+        leadAlternateAllele
+        pValueMantissa
+        pValueExponent
+        beta
+        fineMappingMethod
+        confidence
+        locusSize
+        topL2GGeneId
+        topL2GApprovedSymbol
+        topL2GScore
+      }
+    }
+    credibleSetsView_search: credibleSetsView(search: {text: "a", fields: [LEAD_VARIANT_ID, FINE_MAPPING_METHOD, TOP_L2G_APPROVED_SYMBOL]}) {
+      count
+      rows {
+        studyId
+        credibleSetId
+        leadVariantId
+        leadChromosome
+        leadPosition
+        leadReferenceAllele
+        leadAlternateAllele
+        pValueMantissa
+        pValueExponent
+        beta
+        fineMappingMethod
+        confidence
+        locusSize
+        topL2GGeneId
+        topL2GApprovedSymbol
+        topL2GScore
+      }
+    }
+    target {
+      id
+    }
+    biosample {
+      biosampleId
+      biosampleName
+      description
+      xrefs
+      synonyms
+      parents
+      ancestors
+      children
+      descendants
+    }
+    backgroundTraits {
+      id
+    }
+  }
+  studies(studyIds: [$study]) {
+    count
+    rows {
+      id
+      projectId
+      studyType
+      traitFromSource
+      traitFromSourceMappedIds
+      condition
+      initialSampleSize
+      nSamples
+      nCases
+      nControls
+      cohorts
+      hasSumstats
+      summarystatsLocation
+      analysisFlags
+      qualityControls
+      pubmedId
+      publicationFirstAuthor
+      publicationTitle
+      publicationJournal
+      publicationDate
+      publicationAuthorDate
+    }
+  }
+  studies_diseaseIds: studies(studyIds: [$study], diseaseIds: [$disease]) {
+    count
+    rows {
+      id
+      projectId
+      studyType
+      traitFromSource
+      traitFromSourceMappedIds
+      condition
+      initialSampleSize
+      nSamples
+      nCases
+      nControls
+      cohorts
+      hasSumstats
+      summarystatsLocation
+      analysisFlags
+      qualityControls
+      pubmedId
+      publicationFirstAuthor
+      publicationTitle
+      publicationJournal
+      publicationDate
+      publicationAuthorDate
+    }
+  }
+  studies_enableIndirect: studies(studyIds: [$study], enableIndirect: true) {
+    count
+    rows {
+      id
+      projectId
+      studyType
+      traitFromSource
+      traitFromSourceMappedIds
+      condition
+      initialSampleSize
+      nSamples
+      nCases
+      nControls
+      cohorts
+      hasSumstats
+      summarystatsLocation
+      analysisFlags
+      qualityControls
+      pubmedId
+      publicationFirstAuthor
+      publicationTitle
+      publicationJournal
+      publicationDate
+      publicationAuthorDate
+    }
+  }
+  studies_search: studies(studyIds: [$study], search: {text: "a", fields: [STUDY_ID, TRAIT_FROM_SOURCE, PROJECT_ID]}) {
+    count
+    rows {
+      id
+      projectId
+      studyType
+      traitFromSource
+      traitFromSourceMappedIds
+      condition
+      initialSampleSize
+      nSamples
+      nCases
+      nControls
+      cohorts
+      hasSumstats
+      summarystatsLocation
+      analysisFlags
+      qualityControls
+      pubmedId
+      publicationFirstAuthor
+      publicationTitle
+      publicationJournal
+      publicationDate
+      publicationAuthorDate
+    }
+  }
+  studies_filter: studies(studyIds: [$study], filter: {studyType: [tuqtl, pqtl, eqtl, sqtl, sctuqtl, scpqtl, sceqtl, scsqtl, gwas], projectId: {eq: "a", ne: "a", contains: "a", notContains: "a", in: ["a"], isNull: true}, nSamples: {eq: 1, ne: 1, gt: 1, lt: 1, gte: 1, lte: 1, in: [1], isNull: true}}) {
+    count
+    rows {
+      id
+      projectId
+      studyType
+      traitFromSource
+      traitFromSourceMappedIds
+      condition
+      initialSampleSize
+      nSamples
+      nCases
+      nControls
+      cohorts
+      hasSumstats
+      summarystatsLocation
+      analysisFlags
+      qualityControls
+      pubmedId
+      publicationFirstAuthor
+      publicationTitle
+      publicationJournal
+      publicationDate
+      publicationAuthorDate
+    }
+  }
+  studies_sort: studies(studyIds: [$study], sort: [{key: STUDY_TYPE, direction: ASCENDING}, {key: TRAIT_FROM_SOURCE, direction: ASCENDING}, {key: N_SAMPLES, direction: ASCENDING}, {key: N_CASES, direction: ASCENDING}, {key: N_CONTROLS, direction: ASCENDING}, {key: PUBLICATION_AUTHOR_DATE, direction: ASCENDING}]) {
+    count
+    rows {
+      id
+      projectId
+      studyType
+      traitFromSource
+      traitFromSourceMappedIds
+      condition
+      initialSampleSize
+      nSamples
+      nCases
+      nControls
+      cohorts
+      hasSumstats
+      summarystatsLocation
+      analysisFlags
+      qualityControls
+      pubmedId
+      publicationFirstAuthor
+      publicationTitle
+      publicationJournal
+      publicationDate
+      publicationAuthorDate
+    }
+  }
+  studiesByDisease: studies(diseaseIds: [$disease], enableIndirect: true) {
+    count
+    rows {
+      id
+      projectId
+      studyType
+      traitFromSource
+      traitFromSourceMappedIds
+      condition
+      initialSampleSize
+      nSamples
+      nCases
+      nControls
+      cohorts
+      hasSumstats
+      summarystatsLocation
+      analysisFlags
+      qualityControls
+      pubmedId
+      publicationFirstAuthor
+      publicationTitle
+      publicationJournal
+      publicationDate
+      publicationAuthorDate
+    }
+  }
+  studiesByDisease_studyIds: studies(diseaseIds: [$disease], enableIndirect: true, studyIds: [$study]) {
+    count
+    rows {
+      id
+      projectId
+      studyType
+      traitFromSource
+      traitFromSourceMappedIds
+      condition
+      initialSampleSize
+      nSamples
+      nCases
+      nControls
+      cohorts
+      hasSumstats
+      summarystatsLocation
+      analysisFlags
+      qualityControls
+      pubmedId
+      publicationFirstAuthor
+      publicationTitle
+      publicationJournal
+      publicationDate
+      publicationAuthorDate
+    }
+  }
+  studiesByDisease_search: studies(diseaseIds: [$disease], enableIndirect: true, search: {text: "a", fields: [STUDY_ID, TRAIT_FROM_SOURCE, PROJECT_ID]}) {
+    count
+    rows {
+      id
+      projectId
+      studyType
+      traitFromSource
+      traitFromSourceMappedIds
+      condition
+      initialSampleSize
+      nSamples
+      nCases
+      nControls
+      cohorts
+      hasSumstats
+      summarystatsLocation
+      analysisFlags
+      qualityControls
+      pubmedId
+      publicationFirstAuthor
+      publicationTitle
+      publicationJournal
+      publicationDate
+      publicationAuthorDate
+    }
+  }
+  studiesByDisease_filter: studies(diseaseIds: [$disease], enableIndirect: true, filter: {studyType: [tuqtl, pqtl, eqtl, sqtl, sctuqtl, scpqtl, sceqtl, scsqtl, gwas], projectId: {eq: "a", ne: "a", contains: "a", notContains: "a", in: ["a"], isNull: true}, nSamples: {eq: 1, ne: 1, gt: 1, lt: 1, gte: 1, lte: 1, in: [1], isNull: true}}) {
+    count
+    rows {
+      id
+      projectId
+      studyType
+      traitFromSource
+      traitFromSourceMappedIds
+      condition
+      initialSampleSize
+      nSamples
+      nCases
+      nControls
+      cohorts
+      hasSumstats
+      summarystatsLocation
+      analysisFlags
+      qualityControls
+      pubmedId
+      publicationFirstAuthor
+      publicationTitle
+      publicationJournal
+      publicationDate
+      publicationAuthorDate
+    }
+  }
+  studiesByDisease_sort: studies(diseaseIds: [$disease], enableIndirect: true, sort: [{key: STUDY_TYPE, direction: ASCENDING}, {key: TRAIT_FROM_SOURCE, direction: ASCENDING}, {key: N_SAMPLES, direction: ASCENDING}, {key: N_CASES, direction: ASCENDING}, {key: N_CONTROLS, direction: ASCENDING}, {key: PUBLICATION_AUTHOR_DATE, direction: ASCENDING}]) {
+    count
+    rows {
+      id
+      projectId
+      studyType
+      traitFromSource
+      traitFromSourceMappedIds
+      condition
+      initialSampleSize
+      nSamples
+      nCases
+      nControls
+      cohorts
+      hasSumstats
+      summarystatsLocation
+      analysisFlags
+      qualityControls
+      pubmedId
+      publicationFirstAuthor
+      publicationTitle
+      publicationJournal
+      publicationDate
+      publicationAuthorDate
+    }
+  }
+  variant(variantId: $variant) {
+    variantId
+    chromosome
+    position
+    referenceAllele
+    alternateAllele
+    variantEffect {
+      method
+      assessment
+      score
+      assessmentFlag
+      normalisedScore
+      target {
+        id
+      }
+    }
+    rsIds
+    dbXrefs {
+      id
+      source
+    }
+    alleleFrequencies {
+      populationName
+      alleleFrequency
+    }
+    hgvsId
+    variantDescription
+    credibleSets {
+      count
+      rows {
+        credibleSetId
+      }
+    }
+    credibleSets_filter: credibleSets(filter: {studyTypes: [tuqtl, pqtl, eqtl, sqtl, sctuqtl, scpqtl, sceqtl, scsqtl, gwas]}) {
+      count
+      rows {
+        credibleSetId
+        studyId
+        studyType
+        chromosome
+        leadVariantId
+        leadPosition
+        leadPValueMantissa
+        leadPValueExponent
+        leadBeta
+        leadStandardError
+        leadEffectAlleleFrequency
+        leadSampleSize
+        locusStart
+        locusEnd
+        locusSize
+        fineMappingMethod
+        logBayesFactor
+        confidence
+        purityMeanR2
+        purityMinR2
+        qualityControls
+        isTransQtl
+      }
+    }
+    credibleSetsView(studyTypes: [tuqtl, pqtl, eqtl, sqtl, sctuqtl, scpqtl, sceqtl, scsqtl, gwas]) {
+      count
+      rows {
+        studyType
+        variantId
+        credibleSetId
+        posteriorProbability
+        locusSize
+        pValueMantissa
+        pValueExponent
+        beta
+        fineMappingMethod
+        confidence
+        isTransQtl
+        leadVariantId
+        leadChromosome
+        leadPosition
+        leadReferenceAllele
+        leadAlternateAllele
+        studyId
+        condition
+        studyTargetId
+        studyTargetApprovedSymbol
+        biosampleId
+        biosampleName
+        traitFromSource
+        diseases {
+          id
+          name
+        }
+        diseaseTherapeuticAreas {
+          id
+          name
+        }
+        topL2GGeneId
+        topL2GApprovedSymbol
+        topL2GScore
+      }
+    }
+    credibleSetsView_sort: credibleSetsView(studyTypes: [tuqtl, pqtl, eqtl, sqtl, sctuqtl, scpqtl, sceqtl, scsqtl, gwas], sort: [{key: TOP_L2G_SCORE, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}, {key: LEAD_VARIANT, direction: ASCENDING}, {key: BETA, direction: ASCENDING}, {key: POSTERIOR_PROBABILITY, direction: ASCENDING}, {key: CREDIBLE_SET_SIZE, direction: ASCENDING}]) {
+      count
+      rows {
+        studyType
+        variantId
+        credibleSetId
+        posteriorProbability
+        locusSize
+        pValueMantissa
+        pValueExponent
+        beta
+        fineMappingMethod
+        confidence
+        isTransQtl
+        leadVariantId
+        leadChromosome
+        leadPosition
+        leadReferenceAllele
+        leadAlternateAllele
+        studyId
+        condition
+        studyTargetId
+        studyTargetApprovedSymbol
+        biosampleId
+        biosampleName
+        traitFromSource
+        topL2GGeneId
+        topL2GApprovedSymbol
+        topL2GScore
+      }
+    }
+    credibleSetsView_search: credibleSetsView(studyTypes: [tuqtl, pqtl, eqtl, sqtl, sctuqtl, scpqtl, sceqtl, scsqtl, gwas], search: {text: "a", fields: [CREDIBLE_SET_ID, STUDY_ID, LEAD_VARIANT_ID, FINE_MAPPING_METHOD, TRAIT_FROM_SOURCE, CONDITION, STUDY_TARGET_ID, STUDY_TARGET_APPROVED_SYMBOL, BIOSAMPLE_ID, BIOSAMPLE_NAME, TOP_L2G_APPROVED_SYMBOL, DISEASE_IDS, DISEASE_NAMES]}) {
+      count
+      rows {
+        studyType
+        variantId
+        credibleSetId
+        posteriorProbability
+        locusSize
+        pValueMantissa
+        pValueExponent
+        beta
+        fineMappingMethod
+        confidence
+        isTransQtl
+        leadVariantId
+        leadChromosome
+        leadPosition
+        leadReferenceAllele
+        leadAlternateAllele
+        studyId
+        condition
+        studyTargetId
+        studyTargetApprovedSymbol
+        biosampleId
+        biosampleName
+        traitFromSource
+        topL2GGeneId
+        topL2GApprovedSymbol
+        topL2GScore
+      }
+    }
+    transcriptConsequences {
+      aminoAcidChange
+      uniprotAccessions
+      isEnsemblCanonical
+      codons
+      distanceFromFootprint
+      distanceFromTss
+      impact
+      transcriptId
+      lofteePrediction
+      transcriptIndex
+      consequenceScore
+      target {
+        id
+      }
+      variantConsequences {
+        id
+        label
+      }
+    }
+    transcriptConsequences_sort: transcriptConsequences(sort: [{key: TARGET_APPROVED_SYMBOL, direction: ASCENDING}, {key: DISTANCE_FROM_FOOTPRINT, direction: ASCENDING}, {key: DISTANCE_FROM_TSS, direction: ASCENDING}]) {
+      aminoAcidChange
+      uniprotAccessions
+      isEnsemblCanonical
+      codons
+      distanceFromFootprint
+      distanceFromTss
+      impact
+      transcriptId
+      lofteePrediction
+      transcriptIndex
+      consequenceScore
+    }
+    transcriptConsequencesView {
+      count
+      rows {
+        variantId
+        aminoAcidChange
+        uniprotAccessions
+        isEnsemblCanonical
+        codons
+        distanceFromFootprint
+        distanceFromTss
+        impact
+        transcriptId
+        lofteePrediction
+        transcriptIndex
+        consequenceScore
+        target {
+          id
+        }
+        variantConsequences {
+          id
+          label
+        }
+      }
+    }
+    transcriptConsequencesView_sort: transcriptConsequencesView(sort: [{key: TARGET_APPROVED_SYMBOL, direction: ASCENDING}, {key: DISTANCE_FROM_FOOTPRINT, direction: ASCENDING}, {key: DISTANCE_FROM_TSS, direction: ASCENDING}, {key: TRANSCRIPT_INDEX, direction: ASCENDING}]) {
+      count
+      rows {
+        variantId
+        aminoAcidChange
+        uniprotAccessions
+        isEnsemblCanonical
+        codons
+        distanceFromFootprint
+        distanceFromTss
+        impact
+        transcriptId
+        lofteePrediction
+        transcriptIndex
+        consequenceScore
+      }
+    }
+    transcriptConsequencesView_search: transcriptConsequencesView(search: {text: "a", fields: [TARGET_APPROVED_SYMBOL, VARIANT_CONSEQUENCE_LABELS, IMPACT]}) {
+      count
+      rows {
+        variantId
+        aminoAcidChange
+        uniprotAccessions
+        isEnsemblCanonical
+        codons
+        distanceFromFootprint
+        distanceFromTss
+        impact
+        transcriptId
+        lofteePrediction
+        transcriptIndex
+        consequenceScore
+      }
+    }
+    mostSevereConsequence {
+      id
+      label
+    }
+    proteinCodingCoordinates {
+      count
+      rows {
+        uniprotAccessions
+        aminoAcidPosition
+        alternateAminoAcid
+        referenceAminoAcid
+        variantFunctionalConsequenceIds
+        variantEffect
+        datasources {
+          datasourceCount
+          datasourceId
+          datasourceNiceName
+        }
+        therapeuticAreas
+        diseases {
+          id
+        }
+        target {
+          id
+        }
+        variant {
+          variantId
+        }
+        variantConsequences {
+          id
+          label
+        }
+      }
+    }
+    enhancerToGene {
+      count
+      rows {
+        chromosome
+        start
+        end
+        biosampleFromSourceId
+        intervalType
+        distanceToTss
+        score
+        resourceScore {
+          name
+          value
+        }
+        datasourceId
+        pmid
+        studyId
+        qualityControls
+        biosample {
+          biosampleId
+          biosampleName
+          description
+          xrefs
+          synonyms
+          parents
+          ancestors
+          children
+          descendants
+        }
+        target {
+          id
+        }
+      }
+    }
+    enhancerToGene_sort: enhancerToGene(sort: [{key: INTERVAL_TYPE, direction: ASCENDING}, {key: DISTANCE_TO_TSS, direction: ASCENDING}, {key: INTERVAL_SIZE, direction: ASCENDING}, {key: SCORE, direction: ASCENDING}]) {
+      count
+      rows {
+        chromosome
+        start
+        end
+        biosampleFromSourceId
+        intervalType
+        distanceToTss
+        score
+        datasourceId
+        pmid
+        studyId
+        qualityControls
+      }
+    }
+    enhancerToGene_search: enhancerToGene(search: {text: "a", fields: [TARGET_APPROVED_SYMBOL, BIOSAMPLE_ID, BIOSAMPLE_NAME, INTERVAL_TYPE, STUDY_ID]}) {
+      count
+      rows {
+        chromosome
+        start
+        end
+        biosampleFromSourceId
+        intervalType
+        distanceToTss
+        score
+        datasourceId
+        pmid
+        studyId
+        qualityControls
+      }
+    }
+    pharmacogenomics {
+      count
+      rows {
+        datasourceId
+        datatypeId
+        drugs {
+          drugId
+          drugFromSource
+          drug {
+            id
+          }
+        }
+        evidenceLevel
+        genotype
+        genotypeAnnotationText
+        genotypeId
+        haplotypeFromSourceId
+        haplotypeId
+        literature
+        pgxCategory
+        phenotypeFromSourceId
+        phenotypeText
+        variantAnnotation {
+          baseAlleleOrGenotype
+          comparisonAlleleOrGenotype
+          directionality
+          effect
+          effectDescription
+          effectType
+          entity
+          literature
+        }
+        studyId
+        targetFromSourceId
+        variantFunctionalConsequenceId
+        variantRsId
+        variantId
+        isDirectTarget
+        target {
+          id
+        }
+        variantFunctionalConsequence {
+          id
+          label
+        }
+      }
+    }
+    pharmacogenomics_sort: pharmacogenomics(sort: [{key: EVIDENCE_LEVEL, direction: ASCENDING}]) {
+      count
+      rows {
+        datasourceId
+        datatypeId
+        evidenceLevel
+        genotype
+        genotypeAnnotationText
+        genotypeId
+        haplotypeFromSourceId
+        haplotypeId
+        literature
+        pgxCategory
+        phenotypeFromSourceId
+        phenotypeText
+        studyId
+        targetFromSourceId
+        variantFunctionalConsequenceId
+        variantRsId
+        variantId
+        isDirectTarget
+      }
+    }
+    pharmacogenomics_search: pharmacogenomics(search: {text: "a", fields: [GENOTYPE_ID, TARGET_APPROVED_SYMBOL, DRUG_IDS, DRUG_FROM_SOURCES, GENOTYPE_ANNOTATION_TEXT, PHENOTYPE_TEXT, PGX_CATEGORY, EVIDENCE_LEVEL]}) {
+      count
+      rows {
+        datasourceId
+        datatypeId
+        evidenceLevel
+        genotype
+        genotypeAnnotationText
+        genotypeId
+        haplotypeFromSourceId
+        haplotypeId
+        literature
+        pgxCategory
+        phenotypeFromSourceId
+        phenotypeText
+        studyId
+        targetFromSourceId
+        variantFunctionalConsequenceId
+        variantRsId
+        variantId
+        isDirectTarget
+      }
+    }
+  }
+  variants(variantIds: [$variant]) {
+    count
+    rows {
+      variantId
+      chromosome
+      position
+      referenceAllele
+      alternateAllele
+      rsIds
+      hgvsId
+      variantDescription
+    }
+  }
+  credibleSet(credibleSetId: $credibleSet) {
+    credibleSetId
+    studyId
+    studyType
+    chromosome
+    leadVariantId
+    leadPosition
+    leadPValueMantissa
+    leadPValueExponent
+    leadBeta
+    leadStandardError
+    leadEffectAlleleFrequency
+    leadSampleSize
+    locusStart
+    locusEnd
+    locusSize
+    fineMappingMethod
+    logBayesFactor
+    confidence
+    purityMeanR2
+    purityMinR2
+    qualityControls
+    isTransQtl
+    leadVariant {
+      variantId
+    }
+    study {
+      id
+    }
+    l2GPredictions {
+      count
+      rows {
+        credibleSetId
+        score
+        features {
+          name
+          value
+          shapValue
+        }
+        shapBaseValue
+        target {
+          id
+        }
+      }
+    }
+    locus {
+      count
+      rows {
+        posteriorProbability
+        logBayesFactor
+        pValueMantissa
+        pValueExponent
+        effectAlleleFrequency
+        sampleSize
+        reportedBeta
+        reportedStandardError
+        r2Overall
+        conditionalBeta
+        conditionalStandardError
+        rescaledAbsBeta
+        rescaledStandardError
+        rescaledDirection
+        qualityControls
+        variant {
+          variantId
+        }
+      }
+    }
+    locus_filter: locus(filter: {variantIds: ["a"]}) {
+      count
+      rows {
+        posteriorProbability
+        logBayesFactor
+        pValueMantissa
+        pValueExponent
+        effectAlleleFrequency
+        sampleSize
+        reportedBeta
+        reportedStandardError
+        r2Overall
+        conditionalBeta
+        conditionalStandardError
+        rescaledAbsBeta
+        rescaledStandardError
+        rescaledDirection
+        qualityControls
+      }
+    }
+    locusView {
+      count
+      rows {
+        credibleSetId
+        variantId
+        chromosome
+        position
+        referenceAllele
+        alternateAllele
+        posteriorProbability
+        logBayesFactor
+        pValueMantissa
+        pValueExponent
+        reportedBeta
+        reportedStandardError
+        r2Overall
+        mostSevereConsequenceId
+        mostSevereConsequenceLabel
+      }
+    }
+    locusView_sort: locusView(sort: [{key: VARIANT, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}, {key: REPORTED_BETA, direction: ASCENDING}, {key: REPORTED_STANDARD_ERROR, direction: ASCENDING}, {key: R2_OVERALL, direction: ASCENDING}, {key: POSTERIOR_PROBABILITY, direction: ASCENDING}, {key: LOG_BAYES_FACTOR, direction: ASCENDING}]) {
+      count
+      rows {
+        credibleSetId
+        variantId
+        chromosome
+        position
+        referenceAllele
+        alternateAllele
+        posteriorProbability
+        logBayesFactor
+        pValueMantissa
+        pValueExponent
+        reportedBeta
+        reportedStandardError
+        r2Overall
+        mostSevereConsequenceId
+        mostSevereConsequenceLabel
+      }
+    }
+    locusView_search: locusView(search: {text: "a", fields: [VARIANT_ID, MOST_SEVERE_CONSEQUENCE_LABEL]}) {
+      count
+      rows {
+        credibleSetId
+        variantId
+        chromosome
+        position
+        referenceAllele
+        alternateAllele
+        posteriorProbability
+        logBayesFactor
+        pValueMantissa
+        pValueExponent
+        reportedBeta
+        reportedStandardError
+        r2Overall
+        mostSevereConsequenceId
+        mostSevereConsequenceLabel
+      }
+    }
+    colocalisationView(studyTypes: [tuqtl, pqtl, eqtl, sqtl, sctuqtl, scpqtl, sceqtl, scsqtl, gwas]) {
+      count
+      rows {
+        credibleSetId
+        otherCredibleSetId
+        studyType
+        studyId
+        projectId
+        traitFromSource
+        publicationFirstAuthor
+        condition
+        targetId
+        targetApprovedSymbol
+        biosampleId
+        biosampleName
+        biosampleDescription
+        isTransQtl
+        leadVariantId
+        leadChromosome
+        leadPosition
+        pValueMantissa
+        pValueExponent
+        colocalisationMethod
+        numberColocalisingVariants
+        h3
+        h4
+        clpp
+        betaRatioSignAverage
+      }
+    }
+    colocalisationView_sort: colocalisationView(studyTypes: [tuqtl, pqtl, eqtl, sqtl, sctuqtl, scpqtl, sceqtl, scsqtl, gwas], sort: [{key: LEAD_VARIANT, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}, {key: NUMBER_COLOCALISING_VARIANTS, direction: ASCENDING}, {key: H3, direction: ASCENDING}, {key: H4, direction: ASCENDING}, {key: CLPP, direction: ASCENDING}]) {
+      count
+      rows {
+        credibleSetId
+        otherCredibleSetId
+        studyType
+        studyId
+        projectId
+        traitFromSource
+        publicationFirstAuthor
+        condition
+        targetId
+        targetApprovedSymbol
+        biosampleId
+        biosampleName
+        biosampleDescription
+        isTransQtl
+        leadVariantId
+        leadChromosome
+        leadPosition
+        pValueMantissa
+        pValueExponent
+        colocalisationMethod
+        numberColocalisingVariants
+        h3
+        h4
+        clpp
+        betaRatioSignAverage
+      }
+    }
+    colocalisationView_search: colocalisationView(studyTypes: [tuqtl, pqtl, eqtl, sqtl, sctuqtl, scpqtl, sceqtl, scsqtl, gwas], search: {text: "a", fields: [STUDY_ID, TRAIT_FROM_SOURCE, PUBLICATION_FIRST_AUTHOR, TARGET_APPROVED_SYMBOL, BIOSAMPLE_NAME, LEAD_VARIANT_ID]}) {
+      count
+      rows {
+        credibleSetId
+        otherCredibleSetId
+        studyType
+        studyId
+        projectId
+        traitFromSource
+        publicationFirstAuthor
+        condition
+        targetId
+        targetApprovedSymbol
+        biosampleId
+        biosampleName
+        biosampleDescription
+        isTransQtl
+        leadVariantId
+        leadChromosome
+        leadPosition
+        pValueMantissa
+        pValueExponent
+        colocalisationMethod
+        numberColocalisingVariants
+        h3
+        h4
+        clpp
+        betaRatioSignAverage
+      }
+    }
+    colocalisation {
+      count
+      rows {
+        credibleSetId
+        otherCredibleSetId
+        rightStudyType
+        chromosome
+        colocalisationMethod
+        numberColocalisingVariants
+        h3
+        h4
+        clpp
+        betaRatioSignAverage
+        otherCredibleSet {
+          credibleSetId
+        }
+      }
+    }
+    colocalisation_filter: colocalisation(filter: {studyTypes: [tuqtl, pqtl, eqtl, sqtl, sctuqtl, scpqtl, sceqtl, scsqtl, gwas]}) {
+      count
+      rows {
+        credibleSetId
+        otherCredibleSetId
+        rightStudyType
+        chromosome
+        colocalisationMethod
+        numberColocalisingVariants
+        h3
+        h4
+        clpp
+        betaRatioSignAverage
+      }
+    }
+  }
+  credibleSets(credibleSetIds: [$credibleSet]) {
+    count
+    rows {
+      credibleSetId
+      studyId
+      studyType
+      chromosome
+      leadVariantId
+      leadPosition
+      leadPValueMantissa
+      leadPValueExponent
+      leadBeta
+      leadStandardError
+      leadEffectAlleleFrequency
+      leadSampleSize
+      locusStart
+      locusEnd
+      locusSize
+      fineMappingMethod
+      logBayesFactor
+      confidence
+      purityMeanR2
+      purityMinR2
+      qualityControls
+      isTransQtl
+    }
+  }
+}
