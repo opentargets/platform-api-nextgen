@@ -247,6 +247,514 @@ mod tests {
         Count => "count" : U64,
     });
 
+    fn int_filter() -> IntFilter {
+        IntFilter {
+            eq: None,
+            ne: None,
+            gt: None,
+            lt: None,
+            gte: None,
+            lte: None,
+            in_list: None,
+            is_null: None,
+        }
+    }
+
+    fn float_filter() -> FloatFilter {
+        FloatFilter {
+            eq: None,
+            ne: None,
+            gt: None,
+            lt: None,
+            gte: None,
+            lte: None,
+            in_list: None,
+            is_null: None,
+        }
+    }
+
+    #[test]
+    fn string_null_selection_does_not_override_comparisons() {
+        for (is_null, expected) in [
+            (None, [true, true]),
+            (Some(true), [true, false]),
+            (Some(false), [false, true]),
+        ] {
+            let filter = StringFilter {
+                is_null,
+                ..StringFilter::default()
+            };
+            assert_eq!(
+                [None, Some("x")].map(|value| filter.matches(value)),
+                expected,
+                "{filter:?}"
+            );
+        }
+
+        for mut filter in [
+            StringFilter {
+                eq: Some("x".into()),
+                ..StringFilter::default()
+            },
+            StringFilter {
+                ne: Some("y".into()),
+                ..StringFilter::default()
+            },
+            StringFilter {
+                contains: Some("x".into()),
+                ..StringFilter::default()
+            },
+            StringFilter {
+                not_contains: Some("y".into()),
+                ..StringFilter::default()
+            },
+            StringFilter {
+                in_list: Some(vec!["x".into()]),
+                ..StringFilter::default()
+            },
+        ] {
+            assert!(filter.matches(Some("x")), "{filter:?}");
+            assert!(!filter.matches(None), "{filter:?}");
+            filter.is_null = Some(true);
+            assert!(!filter.matches(None), "{filter:?}");
+            assert!(!filter.matches(Some("x")), "{filter:?}");
+        }
+    }
+
+    #[test]
+    fn string_equality_and_membership_are_case_sensitive() {
+        for (filter, expected) in [
+            (
+                StringFilter {
+                    eq: Some("Gene".into()),
+                    ..StringFilter::default()
+                },
+                [true, false, false],
+            ),
+            (
+                StringFilter {
+                    ne: Some("Gene".into()),
+                    ..StringFilter::default()
+                },
+                [false, true, true],
+            ),
+            (
+                StringFilter {
+                    in_list: Some(vec!["Gene".into(), "Disease".into()]),
+                    ..StringFilter::default()
+                },
+                [true, false, true],
+            ),
+            (
+                StringFilter {
+                    in_list: Some(vec![]),
+                    ..StringFilter::default()
+                },
+                [false, false, false],
+            ),
+        ] {
+            assert_eq!(
+                ["Gene", "gene", "Disease"].map(|value| filter.matches(Some(value))),
+                expected,
+                "{filter:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn string_substrings_ignore_case_and_all_conditions_must_match() {
+        let filter = StringFilter {
+            contains: Some("CAFÉ".into()),
+            not_contains: Some("ClOsEd".into()),
+            in_list: Some(vec![
+                "Café open".into(),
+                "cAFé closed".into(),
+                "Tea open".into(),
+            ]),
+            ..StringFilter::default()
+        };
+        for (value, expected) in [
+            ("Café open", true),
+            ("cAFé closed", false), // Fails only not_contains.
+            ("Tea open", false),    // Fails only contains.
+            ("café open", false),   // Fails only case-sensitive membership.
+        ] {
+            assert_eq!(filter.matches(Some(value)), expected, "{value}");
+        }
+
+        let contradictory = StringFilter {
+            eq: Some("Gene".into()),
+            ne: Some("Gene".into()),
+            ..StringFilter::default()
+        };
+        for value in ["Gene", "Other"] {
+            assert!(!contradictory.matches(Some(value)), "{value}");
+        }
+    }
+
+    #[test]
+    fn integer_null_selection_does_not_override_comparisons() {
+        for (is_null, expected) in [
+            (None, [true, true]),
+            (Some(true), [true, false]),
+            (Some(false), [false, true]),
+        ] {
+            let filter = IntFilter {
+                is_null,
+                ..int_filter()
+            };
+            assert_eq!(
+                [None, Some(0)].map(|value| filter.matches(value)),
+                expected,
+                "{filter:?}"
+            );
+        }
+
+        for mut filter in [
+            IntFilter {
+                eq: Some(0),
+                ..int_filter()
+            },
+            IntFilter {
+                ne: Some(1),
+                ..int_filter()
+            },
+            IntFilter {
+                gt: Some(-1),
+                ..int_filter()
+            },
+            IntFilter {
+                lt: Some(1),
+                ..int_filter()
+            },
+            IntFilter {
+                gte: Some(0),
+                ..int_filter()
+            },
+            IntFilter {
+                lte: Some(0),
+                ..int_filter()
+            },
+            IntFilter {
+                in_list: Some(vec![0]),
+                ..int_filter()
+            },
+        ] {
+            assert!(filter.matches(Some(0)), "{filter:?}");
+            assert!(!filter.matches(None), "{filter:?}");
+            filter.is_null = Some(true);
+            assert!(!filter.matches(None), "{filter:?}");
+            assert!(!filter.matches(Some(0)), "{filter:?}");
+        }
+    }
+
+    #[test]
+    fn integer_comparisons_distinguish_strict_and_inclusive_boundaries() {
+        for (filter, expected) in [
+            (
+                IntFilter {
+                    gt: Some(-2),
+                    ..int_filter()
+                },
+                [false, false, true],
+            ),
+            (
+                IntFilter {
+                    gte: Some(-2),
+                    ..int_filter()
+                },
+                [false, true, true],
+            ),
+            (
+                IntFilter {
+                    lt: Some(-2),
+                    ..int_filter()
+                },
+                [true, false, false],
+            ),
+            (
+                IntFilter {
+                    lte: Some(-2),
+                    ..int_filter()
+                },
+                [true, true, false],
+            ),
+            (
+                IntFilter {
+                    eq: Some(-2),
+                    ..int_filter()
+                },
+                [false, true, false],
+            ),
+            (
+                IntFilter {
+                    ne: Some(-2),
+                    ..int_filter()
+                },
+                [true, false, true],
+            ),
+        ] {
+            assert_eq!(
+                [-3, -2, -1].map(|value| filter.matches(Some(value))),
+                expected,
+                "{filter:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn integer_range_and_membership_must_both_match() {
+        let filter = IntFilter {
+            gte: Some(-2),
+            lt: Some(3),
+            in_list: Some(vec![-3, -2, 2, 3]),
+            ..int_filter()
+        };
+        for (value, expected) in [(-3, false), (-2, true), (0, false), (2, true), (3, false)] {
+            assert_eq!(filter.matches(Some(value)), expected, "{value}");
+        }
+        let empty = IntFilter {
+            in_list: Some(vec![]),
+            ..int_filter()
+        };
+        assert!(!empty.matches(Some(0)));
+        assert!(!empty.matches(None));
+    }
+
+    #[test]
+    fn float_null_selection_does_not_override_comparisons() {
+        for (is_null, expected) in [
+            (None, [true, true]),
+            (Some(true), [true, false]),
+            (Some(false), [false, true]),
+        ] {
+            let filter = FloatFilter {
+                is_null,
+                ..float_filter()
+            };
+            assert_eq!(
+                [None, Some(0.0)].map(|value| filter.matches(value)),
+                expected,
+                "{filter:?}"
+            );
+        }
+
+        for mut filter in [
+            FloatFilter {
+                eq: Some(0.0),
+                ..float_filter()
+            },
+            FloatFilter {
+                ne: Some(1.0),
+                ..float_filter()
+            },
+            FloatFilter {
+                gt: Some(-1.0),
+                ..float_filter()
+            },
+            FloatFilter {
+                lt: Some(1.0),
+                ..float_filter()
+            },
+            FloatFilter {
+                gte: Some(0.0),
+                ..float_filter()
+            },
+            FloatFilter {
+                lte: Some(0.0),
+                ..float_filter()
+            },
+            FloatFilter {
+                in_list: Some(vec![0.0]),
+                ..float_filter()
+            },
+        ] {
+            assert!(filter.matches(Some(0.0)), "{filter:?}");
+            assert!(!filter.matches(None), "{filter:?}");
+            filter.is_null = Some(true);
+            assert!(!filter.matches(None), "{filter:?}");
+            assert!(!filter.matches(Some(0.0)), "{filter:?}");
+        }
+    }
+
+    #[test]
+    fn float_comparisons_distinguish_strict_and_inclusive_boundaries() {
+        for (filter, expected) in [
+            (
+                FloatFilter {
+                    gt: Some(-1.5),
+                    ..float_filter()
+                },
+                [false, false, true],
+            ),
+            (
+                FloatFilter {
+                    gte: Some(-1.5),
+                    ..float_filter()
+                },
+                [false, true, true],
+            ),
+            (
+                FloatFilter {
+                    lt: Some(-1.5),
+                    ..float_filter()
+                },
+                [true, false, false],
+            ),
+            (
+                FloatFilter {
+                    lte: Some(-1.5),
+                    ..float_filter()
+                },
+                [true, true, false],
+            ),
+        ] {
+            assert_eq!(
+                [-2.0, -1.5, -1.0].map(|value| filter.matches(Some(value))),
+                expected,
+                "{filter:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn float_equality_tolerates_rounding_using_absolute_and_relative_error() {
+        for (expected, value, equal) in [
+            (0.3, 0.3, true),
+            (0.3, 0.1 + 0.2, true),
+            (0.3, 0.31, false),
+            (0.0, 5e-13, true),
+            (0.0, -5e-13, true),
+            (0.0, 2e-12, false),
+            (1_000_000.0, 1_000_000.000_5, true),
+            (1_000_000.0, 1_000_000.002, false),
+        ] {
+            let eq = FloatFilter {
+                eq: Some(expected),
+                ..float_filter()
+            };
+            let ne = FloatFilter {
+                ne: Some(expected),
+                ..float_filter()
+            };
+            assert_eq!(
+                eq.matches(Some(value)),
+                equal,
+                "eq {expected}, value {value}"
+            );
+            assert_eq!(
+                ne.matches(Some(value)),
+                !equal,
+                "ne {expected}, value {value}"
+            );
+        }
+    }
+
+    #[test]
+    fn float_ranges_and_membership_use_exact_comparisons() {
+        let filter = FloatFilter {
+            gte: Some(-1.5),
+            lt: Some(1.5),
+            in_list: Some(vec![-2.0, -1.5, 0.3, 1.5]),
+            ..float_filter()
+        };
+        for (value, expected) in [
+            (-2.0, false),
+            (-1.5, true),
+            (0.0, false),
+            (0.3, true),
+            (0.1 + 0.2, false),
+            (1.5, false),
+        ] {
+            assert_eq!(filter.matches(Some(value)), expected, "{value}");
+        }
+        let upper_bound = FloatFilter {
+            lte: Some(0.3),
+            ..float_filter()
+        };
+        assert!(!upper_bound.matches(Some(0.1 + 0.2)));
+        let lower_bound = FloatFilter {
+            gte: Some(0.1 + 0.2),
+            ..float_filter()
+        };
+        assert!(!lower_bound.matches(Some(0.3)));
+        let empty = FloatFilter {
+            in_list: Some(vec![]),
+            ..float_filter()
+        };
+        assert!(!empty.matches(Some(0.0)));
+        assert!(!empty.matches(None));
+    }
+
+    #[test]
+    fn boolean_equality_and_null_selection_distinguish_false_from_missing() {
+        for (eq, is_null, expected) in [
+            (None, None, [true, true, true]),
+            (None, Some(true), [true, false, false]),
+            (None, Some(false), [false, true, true]),
+            (Some(false), None, [false, true, false]),
+            (Some(true), None, [false, false, true]),
+            (Some(false), Some(false), [false, true, false]),
+            (Some(false), Some(true), [false, false, false]),
+        ] {
+            let filter = BoolFilter { eq, is_null };
+            assert_eq!(
+                [None, Some(false), Some(true)].map(|value| filter.matches(value)),
+                expected,
+                "{filter:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn array_any_and_all_require_exact_members_and_combine_with_and() {
+        let filter = ArrayFilter {
+            contains_any: Some(vec!["A".into(), "B".into()]),
+            contains_all: Some(vec!["C".into(), "D".into(), "C".into()]),
+            is_empty: Some(false),
+        };
+        for (values, expected) in [
+            (vec!["A", "C", "D"], true),
+            (vec!["B", "C", "D"], true),
+            (vec!["A", "C"], false),
+            (vec!["C", "D"], false),
+            (vec!["a", "C", "D"], false),
+            (vec!["A", "c", "D"], false),
+            (vec![], false),
+        ] {
+            let values: Vec<String> = values.into_iter().map(str::to_owned).collect();
+            assert_eq!(filter.matches(&values), expected, "{values:?}");
+        }
+        let contradictory = ArrayFilter {
+            is_empty: Some(true),
+            ..filter
+        };
+        assert!(!contradictory.matches(&[]));
+        assert!(!contradictory.matches(&["A".into(), "C".into(), "D".into()]));
+    }
+
+    #[test]
+    fn array_empty_criteria_distinguish_any_all_and_is_empty() {
+        for (contains_any, contains_all, is_empty, expected) in [
+            (None, None, None, [true, true]),
+            (Some(vec![]), None, None, [false, false]),
+            (None, Some(vec![]), None, [true, true]),
+            (None, Some(vec![]), Some(true), [true, false]),
+            (None, Some(vec![]), Some(false), [false, true]),
+        ] {
+            let filter = ArrayFilter {
+                contains_any,
+                contains_all,
+                is_empty,
+            };
+            assert_eq!(
+                [vec![], vec!["A".into()]].map(|values| filter.matches(&values)),
+                expected,
+                "{filter:?}"
+            );
+        }
+    }
+
     #[test]
     fn string_filter_ne_gives_one_condition() {
         let f = StringFilter {
