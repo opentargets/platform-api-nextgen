@@ -11,7 +11,6 @@
     e.studyOverview AS studyOverview,
     e.contrast AS contrast,
     e.confidence AS confidence,
-    e.log2FoldChangeValue AS log2FoldChangeValue,
     e.log2FoldChangePercentileRank AS log2FoldChangePercentileRank,
     e.resourceScore AS resourceScore
   FROM evidence AS e
