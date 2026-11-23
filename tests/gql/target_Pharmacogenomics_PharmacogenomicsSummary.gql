@@ -1,0 +1,7 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - pharmacogenomics
+# The original document is packages/sections/src/target/Pharmacogenomics/PharmacogenomicsSummary.gql.
+fragment TargetPharmacogenomicsSummaryFragment on Target {
+  id
+}

@@ -102,6 +102,30 @@ fn optional_f64(row: &Row, name: &str) -> Option<f64> {
     }
 }
 
+/// Reads an optional 32-bit unsigned integer column, mapping an absent value to
+/// `None`.
+fn optional_u32(row: &Row, name: &str) -> Option<u32> {
+    match column(row, name) {
+        Some(Field::Int(value)) => Some(u32::try_from(*value).unwrap_or_default()),
+        Some(Field::UInt(value)) => Some(*value),
+        Some(Field::Long(value)) => Some(u32::try_from(*value).unwrap_or_default()),
+        Some(Field::ULong(value)) => Some(u32::try_from(*value).unwrap_or_default()),
+        Some(Field::Null) | None => None,
+        Some(other) => panic!("column '{name}' is not an unsigned integer: {other:?}"),
+    }
+}
+
+/// Reads an optional 32-bit signed integer column, mapping an absent value to
+/// `None`.
+fn optional_i32(row: &Row, name: &str) -> Option<i32> {
+    match column(row, name) {
+        Some(Field::Int(value)) => Some(*value),
+        Some(Field::Short(value)) => Some(i32::from(*value)),
+        Some(Field::Null) | None => None,
+        Some(other) => panic!("column '{name}' is not an integer: {other:?}"),
+    }
+}
+
 /// Reads the elements of a list column, returning an empty list when absent.
 fn list<'a>(row: &'a Row, name: &str) -> &'a [Field] {
     match column(row, name) {
@@ -161,10 +185,47 @@ fn tuple(row: &Row, members: &[&str]) -> Value {
     )
 }
 
+/// Builds a ClickHouse tuple whose last member is a list of strings.
+///
+/// The cross references of a drug are a source and the identifiers the source
+/// gives it, so the identifiers are a list inside the tuple.
+fn tuple_with_string_list(row: &Row, members: &[&str]) -> Value {
+    let list_member = members.last().expect("the tuple has a member");
+    let values = members
+        .iter()
+        .map(|member| {
+            if *member == *list_member {
+                return match column(row, member) {
+                    Some(Field::ListInternal(list)) => Value::Array(
+                        list.elements()
+                            .iter()
+                            .map(|element| match element {
+                                Field::Str(text) => Value::String(text.clone()),
+                                other => {
+                                    panic!("column '{member}' has a non-string element: {other:?}")
+                                }
+                            })
+                            .collect(),
+                    ),
+                    Some(Field::Null) | None => Value::Array(Vec::new()),
+                    Some(other) => panic!("column '{member}' is not a list: {other:?}"),
+                };
+            }
+            column(row, member).map_or(Value::Null, |value| match value {
+                Field::Str(text) => Value::String(text.clone()),
+                Field::Null => Value::Null,
+                other => panic!("unsupported value in tuple member '{member}': {other:?}"),
+            })
+        })
+        .collect();
+    Value::Array(values)
+}
+
 /// Builds a ClickHouse array of tuples from a list of structs.
 fn tuple_list(rows: &[&Row], members: &[&str]) -> Value {
     Value::Array(rows.iter().map(|row| tuple(row, members)).collect())
 }
+
 /// Builds a ClickHouse array of strings from a list of scalars.
 fn string_list(row: &Row, name: &str) -> Value {
     Value::Array(
@@ -473,10 +534,500 @@ pub fn targets() -> Vec<Value> {
         .collect()
 }
 
+/// Converts a `drug_molecule` Parquet row into the shape of the `drug`
+/// ClickHouse table.
+///
+/// The Parquet dataset and the API's `Drug` type have the same shape, so the
+/// mapping is mechanical. The identifiers of the pharmacogenomics are not in
+/// the dataset, so they are empty.
+fn drug_row(row: &Row) -> Value {
+    let mut object = Map::new();
+
+    object.insert("id".to_string(), json!(string(row, "id")));
+    object.insert("name".to_string(), json!(string(row, "name")));
+    object.insert(
+        "synonyms".to_string(),
+        tuple_list(&group_list(row, "synonyms"), &["label", "source"]),
+    );
+    object.insert(
+        "tradeNames".to_string(),
+        tuple_list(&group_list(row, "tradeNames"), &["label", "source"]),
+    );
+    object.insert("drugType".to_string(), json!(string(row, "drugType")));
+    object.insert(
+        "crossReferences".to_string(),
+        Value::Array(
+            group_list(row, "crossReferences")
+                .iter()
+                .map(|reference| tuple_with_string_list(reference, &["source", "ids"]))
+                .collect(),
+        ),
+    );
+    object.insert(
+        "parentId".to_string(),
+        optional_string(row, "parentId").into(),
+    );
+    // The dataset leaves the list empty for the drugs without derivatives.
+    object.insert(
+        "childChemblIds".to_string(),
+        Value::Array(
+            list(row, "childChemblIds")
+                .iter()
+                .map(|element| match element {
+                    Field::Str(text) => json!(text),
+                    Field::Null => Value::Null,
+                    other => panic!("column 'childChemblIds' has a non-string element: {other:?}"),
+                })
+                .collect(),
+        ),
+    );
+    object.insert(
+        "maximumClinicalStage".to_string(),
+        json!(string(row, "maximumClinicalStage")),
+    );
+    object.insert(
+        "description".to_string(),
+        optional_string(row, "description").into(),
+    );
+    object.insert(
+        "molblock".to_string(),
+        optional_string(row, "molblock").into(),
+    );
+    object.insert("pharmacogenomicsIds".to_string(), Value::Array(Vec::new()));
+
+    Value::Object(object)
+}
+
+/// Returns the `drug` rows of the sample data, ready to be inserted into
+/// ClickHouse.
+pub fn drugs() -> Vec<Value> {
+    read_rows("output/drug_molecule/00000000.parquet")
+        .iter()
+        .map(drug_row)
+        .collect()
+}
+
+/// Converts a `disease` Parquet row into the shape of the `disease` ClickHouse
+/// table.
+///
+/// The Parquet dataset and the API's `Disease` type differ in two places:
+///
+/// - The synonyms are in four separate lists, one per relation, while the API expects a list of
+///   relations, each with its terms. The production pipeline makes the same transformation in SQL,
+///   with `tupleToNameValuePairs`.
+/// - The flag telling whether the disease is a therapeutic area is inside the `ontology` struct,
+///   while the API expects it on its own.
+///
+/// The identifiers of the studies and the locations of a disease come from
+/// joins with the studies in production, so they are empty here.
+fn disease_row(row: &Row) -> Value {
+    let mut object = Map::new();
+
+    object.insert("id".to_string(), json!(string(row, "id")));
+    object.insert("name".to_string(), json!(string(row, "name")));
+    object.insert(
+        "description".to_string(),
+        optional_string(row, "description").into(),
+    );
+    object.insert(
+        "isTherapeuticArea".to_string(),
+        json!(
+            group(row, "ontology")
+                .and_then(|ontology| optional_bool(ontology, "isTherapeuticArea"))
+                .unwrap_or_default()
+        ),
+    );
+    object.insert(
+        "therapeuticAreas".to_string(),
+        string_list(row, "therapeuticAreas"),
+    );
+    object.insert("parents".to_string(), string_list(row, "parents"));
+    object.insert("children".to_string(), string_list(row, "children"));
+    object.insert("ancestors".to_string(), string_list(row, "ancestors"));
+    object.insert("descendants".to_string(), string_list(row, "descendants"));
+
+    // The synonyms are in four lists, one per relation. The API expects a list
+    // of relations, each with the terms that have it.
+    let relations = [
+        ("hasExactSynonym", "exactSynonyms"),
+        ("hasRelatedSynonym", "relatedSynonyms"),
+        ("hasNarrowSynonym", "narrowSynonyms"),
+        ("hasBroadSynonym", "broadSynonyms"),
+    ];
+    object.insert(
+        "synonyms".to_string(),
+        Value::Array(
+            relations
+                .iter()
+                .filter_map(|(relation, column_name)| {
+                    let terms = list(row, column_name);
+                    (!terms.is_empty()).then(|| {
+                        json!([
+                            relation,
+                            Value::Array(
+                                terms
+                                    .iter()
+                                    .map(|term| match term {
+                                        Field::Str(text) => json!(text),
+                                        Field::Null => Value::Null,
+                                        other => panic!(
+                                            "column '{column_name}' has a non-string element: {other:?}"
+                                        ),
+                                    })
+                                    .collect(),
+                            ),
+                        ])
+                    })
+                })
+                .collect(),
+        ),
+    );
+
+    object.insert(
+        "obsoleteTerms".to_string(),
+        string_list(row, "obsoleteTerms"),
+    );
+    object.insert("dbXRefs".to_string(), string_list(row, "dbXRefs"));
+    object.insert("directLocationIds".to_string(), Value::Array(Vec::new()));
+    object.insert("indirectLocationIds".to_string(), Value::Array(Vec::new()));
+    // The studies of a disease come from the studies table in production, by
+    // joining the two on the diseases a study is about. The two subsets of the
+    // sample data are disjoint, so the first disease is given the first study
+    // of the sample data. This is what lets the tests check that the studies
+    // of a disease are found.
+    object.insert(
+        "studyIds".to_string(),
+        if string(row, "id") == first_disease_id() {
+            Value::Array(vec![json!(first_study_id())])
+        } else {
+            Value::Array(Vec::new())
+        },
+    );
+    object.insert("indirectStudyIds".to_string(), Value::Array(Vec::new()));
+
+    Value::Object(object)
+}
+
+/// Returns the `disease` rows of the sample data, ready to be inserted into
+/// ClickHouse.
+pub fn diseases() -> Vec<Value> {
+    read_rows("output/disease/00000000.parquet")
+        .iter()
+        .map(disease_row)
+        .collect()
+}
+
+/// Returns the number of a type of study.
+///
+/// The API decodes the type of a study as a number, while the dataset holds the
+/// name of it.
+fn study_type_code(name: &str) -> i8 {
+    match name {
+        "tuqtl" => 1,
+        "pqtl" => 2,
+        "eqtl" => 3,
+        "sqtl" => 4,
+        "sctuqtl" => 5,
+        "scpqtl" => 6,
+        "sceqtl" => 7,
+        "scsqtl" => 8,
+        "gwas" => 9,
+        other => panic!("unknown study type '{other}'"),
+    }
+}
+
+/// Converts a `study` Parquet row into the shape of the `study` ClickHouse
+/// table.
+///
+/// The members of the samples are in a different order than the API expects:
+/// the dataset has the size of the sample first, the API has the ancestry.
+fn study_row(row: &Row) -> Value {
+    let mut object = Map::new();
+
+    object.insert("studyId".to_string(), json!(string(row, "studyId")));
+    object.insert("projectId".to_string(), json!(string(row, "projectId")));
+    // The API decodes the type of a study as a number.
+    object.insert(
+        "studyType".to_string(),
+        json!(study_type_code(&string(row, "studyType"))),
+    );
+    object.insert(
+        "traitFromSource".to_string(),
+        json!(string(row, "traitFromSource")),
+    );
+    object.insert(
+        "traitFromSourceMappedIds".to_string(),
+        string_list(row, "traitFromSourceMappedIds"),
+    );
+    object.insert(
+        "condition".to_string(),
+        optional_string(row, "condition").into(),
+    );
+    object.insert(
+        "initialSampleSize".to_string(),
+        optional_string(row, "initialSampleSize").into(),
+    );
+    object.insert("nSamples".to_string(), optional_u32(row, "nSamples").into());
+    object.insert("nCases".to_string(), optional_u32(row, "nCases").into());
+    object.insert(
+        "nControls".to_string(),
+        optional_u32(row, "nControls").into(),
+    );
+    object.insert("cohorts".to_string(), string_list(row, "cohorts"));
+
+    // The samples hold the ancestry and the size of the sample, in that order.
+    let samples = |name: &str| {
+        Value::Array(
+            group_list(row, name)
+                .iter()
+                .map(|sample| {
+                    json!([
+                        string(sample, "ancestry"),
+                        optional_u32(sample, "sampleSize").unwrap_or_default(),
+                    ])
+                })
+                .collect(),
+        )
+    };
+    object.insert("discoverySamples".to_string(), samples("discoverySamples"));
+    object.insert(
+        "replicationSamples".to_string(),
+        samples("replicationSamples"),
+    );
+
+    object.insert(
+        "ldPopulationStructure".to_string(),
+        Value::Array(
+            group_list(row, "ldPopulationStructure")
+                .iter()
+                .map(|population| {
+                    json!([
+                        string(population, "ldPopulation"),
+                        optional_f64(population, "relativeSampleSize")
+                            .map_or(Value::Null, |value| json!(value)),
+                    ])
+                })
+                .collect(),
+        ),
+    );
+    object.insert(
+        "hasSumstats".to_string(),
+        optional_bool(row, "hasSumstats").into(),
+    );
+    object.insert(
+        "summarystatsLocation".to_string(),
+        optional_string(row, "summarystatsLocation").into(),
+    );
+    object.insert(
+        "analysisFlags".to_string(),
+        string_list(row, "analysisFlags"),
+    );
+    object.insert(
+        "qualityControls".to_string(),
+        string_list(row, "qualityControls"),
+    );
+    object.insert(
+        "sumstatQCValues".to_string(),
+        Value::Array(
+            group_list(row, "sumstatQCValues")
+                .iter()
+                .map(|value| {
+                    json!([
+                        string(value, "qcCheckName"),
+                        optional_f64(value, "qcCheckValue").unwrap_or_default(),
+                    ])
+                })
+                .collect(),
+        ),
+    );
+    object.insert(
+        "pubmedId".to_string(),
+        optional_string(row, "pubmedId").into(),
+    );
+    object.insert(
+        "publicationFirstAuthor".to_string(),
+        optional_string(row, "publicationFirstAuthor").into(),
+    );
+    object.insert(
+        "publicationTitle".to_string(),
+        optional_string(row, "publicationTitle").into(),
+    );
+    object.insert(
+        "publicationJournal".to_string(),
+        optional_string(row, "publicationJournal").into(),
+    );
+    object.insert(
+        "publicationDate".to_string(),
+        optional_string(row, "publicationDate").into(),
+    );
+    object.insert("diseaseIds".to_string(), string_list(row, "diseaseIds"));
+
+    // The credible sets of a study come from the credible sets table in
+    // production. The tests do not seed that table, so they are empty.
+    object.insert("studyLocusIds".to_string(), Value::Array(Vec::new()));
+    object.insert("geneId".to_string(), optional_string(row, "geneId").into());
+    object.insert(
+        "biosampleFromSourceId".to_string(),
+        optional_string(row, "biosampleFromSourceId").into(),
+    );
+    object.insert(
+        "backgroundTraitFromSourceMappedIds".to_string(),
+        string_list(row, "backgroundTraitFromSourceMappedIds"),
+    );
+
+    Value::Object(object)
+}
+
+/// Returns the `study` rows of the sample data, ready to be inserted into
+/// ClickHouse.
+pub fn studies() -> Vec<Value> {
+    read_rows("output/study/00000000.parquet")
+        .iter()
+        .map(study_row)
+        .collect()
+}
+
+/// Converts a `clinical_report` Parquet row into the shape of the
+/// `clinical_report` ClickHouse table.
+///
+/// The Parquet dataset and the API's `ClinicalReport` type have the same
+/// shape, so the mapping is mechanical.
+fn clinical_report_row(row: &Row) -> Value {
+    let mut object = Map::new();
+
+    object.insert("id".to_string(), json!(string(row, "id")));
+    object.insert("source".to_string(), json!(string(row, "source")));
+    object.insert(
+        "clinicalStage".to_string(),
+        json!(string(row, "clinicalStage")),
+    );
+    object.insert("origin".to_string(), json!(string(row, "origin")));
+    object.insert(
+        "phaseFromSource".to_string(),
+        optional_string(row, "phaseFromSource").into(),
+    );
+    object.insert("provider".to_string(), json!(string(row, "provider")));
+    object.insert("type".to_string(), optional_string(row, "type").into());
+    object.insert("title".to_string(), optional_string(row, "title").into());
+    object.insert(
+        "trialStudyType".to_string(),
+        optional_string(row, "trialStudyType").into(),
+    );
+    object.insert(
+        "trialDescription".to_string(),
+        optional_string(row, "trialDescription").into(),
+    );
+    object.insert(
+        "trialNumberOfArms".to_string(),
+        optional_i32(row, "trialNumberOfArms").into(),
+    );
+    object.insert(
+        "trialStartDate".to_string(),
+        optional_string(row, "trialStartDate").into(),
+    );
+    object.insert(
+        "trialLiterature".to_string(),
+        tuple_list(&group_list(row, "trialLiterature"), &["id", "type"]),
+    );
+    object.insert(
+        "trialOverallStatus".to_string(),
+        optional_string(row, "trialOverallStatus").into(),
+    );
+    object.insert(
+        "trialWhyStopped".to_string(),
+        optional_string(row, "trialWhyStopped").into(),
+    );
+    object.insert(
+        "trialPrimaryPurpose".to_string(),
+        optional_string(row, "trialPrimaryPurpose").into(),
+    );
+    object.insert(
+        "trialPhase".to_string(),
+        optional_string(row, "trialPhase").into(),
+    );
+    object.insert(
+        "trialStopReasonCategories".to_string(),
+        string_list(row, "trialStopReasonCategories"),
+    );
+    object.insert(
+        "trialSponsor".to_string(),
+        match group(row, "trialSponsor") {
+            Some(sponsor) => json!([
+                optional_string(sponsor, "agencyClass").map_or(Value::Null, |value| json!(value)),
+                optional_string(sponsor, "name").map_or(Value::Null, |value| json!(value)),
+            ]),
+            None => Value::Null,
+        },
+    );
+    object.insert(
+        "qualityControls".to_string(),
+        string_list(row, "qualityControls"),
+    );
+    object.insert(
+        "diseases".to_string(),
+        tuple_list(
+            &group_list(row, "diseases"),
+            &["diseaseFromSource", "diseaseId"],
+        ),
+    );
+    object.insert(
+        "drugs".to_string(),
+        tuple_list(&group_list(row, "drugs"), &["drugFromSource", "drugId"]),
+    );
+    object.insert("countries".to_string(), string_list(row, "countries"));
+    object.insert("year".to_string(), optional_i32(row, "year").into());
+    object.insert(
+        "sideEffects".to_string(),
+        Value::Array(
+            group_list(row, "sideEffects")
+                .iter()
+                .map(|effect| {
+                    json!([
+                        optional_string(effect, "diseaseId")
+                            .map_or(Value::Null, |value| json!(value)),
+                        optional_string(effect, "diseaseFromSource")
+                            .map_or(Value::Null, |value| json!(value)),
+                    ])
+                })
+                .collect(),
+        ),
+    );
+    object.insert(
+        "trialOfficialTitle".to_string(),
+        optional_string(row, "trialOfficialTitle").into(),
+    );
+    object.insert("url".to_string(), optional_string(row, "url").into());
+
+    Value::Object(object)
+}
+
+/// Returns the `clinical_report` rows of the sample data, ready to be inserted
+/// into ClickHouse.
+pub fn clinical_reports() -> Vec<Value> {
+    read_rows("output/clinical_report/00000000.parquet")
+        .iter()
+        .map(clinical_report_row)
+        .collect()
+}
+
 /// Returns the search documents of the sample data, ready to be indexed into
 /// OpenSearch.
-pub fn search_targets() -> Vec<Value> {
-    read_rows("view/search_target/00000000.parquet")
+pub fn search_targets() -> Vec<Value> { search_documents("view/search_target/00000000.parquet") }
+
+/// Returns the search documents of the drugs of the sample data, ready to be
+/// indexed into OpenSearch.
+pub fn search_drugs() -> Vec<Value> { search_documents("view/search_drug/00000000.parquet") }
+
+/// Returns the search documents of the diseases of the sample data, ready to be
+/// indexed into OpenSearch.
+pub fn search_diseases() -> Vec<Value> { search_documents("view/search_disease/00000000.parquet") }
+
+/// Converts the rows of a search view into search documents.
+///
+/// The search views of all the entity types have the same shape, so they are
+/// all read the same way.
+fn search_documents(relative_path: &str) -> Vec<Value> {
+    read_rows(relative_path)
         .iter()
         .map(|row| {
             let mut object = Map::new();
@@ -573,4 +1124,43 @@ pub fn first_search_target_name() -> String {
         rows.first().expect("sample data has no search targets"),
         "name",
     )
+}
+
+/// Returns the identifier of the first drug of the sample data.
+pub fn first_drug_id() -> String {
+    let rows = read_rows("output/drug_molecule/00000000.parquet");
+    string(rows.first().expect("sample data has no drugs"), "id")
+}
+
+/// Returns the name of the first drug of the sample data.
+pub fn first_drug_name() -> String {
+    let rows = read_rows("output/drug_molecule/00000000.parquet");
+    string(rows.first().expect("sample data has no drugs"), "name")
+}
+
+/// Returns the identifier of the first disease of the sample data.
+pub fn first_disease_id() -> String {
+    let rows = read_rows("output/disease/00000000.parquet");
+    string(rows.first().expect("sample data has no diseases"), "id")
+}
+
+/// Returns the identifier of the first study of the sample data.
+pub fn first_study_id() -> String {
+    let rows = read_rows("output/study/00000000.parquet");
+    string(rows.first().expect("sample data has no studies"), "studyId")
+}
+
+/// Returns the identifier of the first clinical report of the sample data.
+pub fn first_clinical_report_id() -> String {
+    let rows = read_rows("output/clinical_report/00000000.parquet");
+    string(
+        rows.first().expect("sample data has no clinical reports"),
+        "id",
+    )
+}
+
+/// Returns the name of the first disease of the sample data.
+pub fn first_disease_name() -> String {
+    let rows = read_rows("output/disease/00000000.parquet");
+    string(rows.first().expect("sample data has no diseases"), "name")
 }

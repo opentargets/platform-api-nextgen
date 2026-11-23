@@ -1,0 +1,19 @@
+query OntologyQuery($efoId: String!) {
+  disease(efoId: $efoId) {
+    id
+    name
+    isTherapeuticArea
+    ancestors
+    parents {
+      id
+    }
+    children {
+      id
+      name
+      isTherapeuticArea
+      parents {
+        id
+      }
+    }
+  }
+}

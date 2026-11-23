@@ -1,0 +1,7 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - literatureOcurrences
+# The original document is packages/sections/src/drug/Bibliography/BibliographySummaryFragment.gql.
+fragment DrugBibliography on Drug {
+  id
+}

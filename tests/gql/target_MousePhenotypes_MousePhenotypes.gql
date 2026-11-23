@@ -1,0 +1,10 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - mousePhenotypes
+# The original document is packages/sections/src/target/MousePhenotypes/MousePhenotypes.gql.
+query TargetMousePhenotypesQuery(
+  $ensemblId: String! ) {
+  target(ensemblId: $ensemblId) {
+    id
+  }
+}

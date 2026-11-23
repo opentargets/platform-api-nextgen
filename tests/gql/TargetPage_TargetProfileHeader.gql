@@ -1,0 +1,23 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - isEssential
+# The original document is apps/platform/src/pages/TargetPage/TargetProfileHeader.gql.
+fragment TargetProfileHeaderFragment on Target {
+  synonyms {
+    label
+    source
+  }
+  functionDescriptions
+  genomicLocation {
+    chromosome
+    start
+    end
+    strand
+  }
+  canonicalTranscript {
+    chromosome
+    start
+    end
+    strand
+  }
+}

@@ -1,0 +1,34 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - diseases
+#   - drugs
+#   - sideEffects
+# The original document is packages/ui/src/components/ClinicalReports/RecordDetailQuery.gql.
+query RecordDetailQuery($clinicalReportId: String!) {
+  clinicalReport(clinicalReportId: $clinicalReportId) {
+    clinicalStage
+    countries
+    id
+    phaseFromSource
+    source
+    trialDescription
+    trialLiterature {
+      id
+      type: referenceType
+    }
+    title
+    trialOverallStatus
+    trialPrimaryPurpose
+    trialSponsor {
+      agencyClass
+      name
+    }
+    trialStartDate
+    trialWhyStopped
+    trialStopReasonCategories
+    type: evidenceType
+    trialStudyType
+    url
+    year
+  }
+}

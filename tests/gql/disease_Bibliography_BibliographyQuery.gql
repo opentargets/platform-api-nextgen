@@ -1,0 +1,12 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - literatureOcurrences
+#   - similarEntities
+# The original document is packages/sections/src/disease/Bibliography/BibliographyQuery.gql.
+query DiseaseBibliographyQuery(
+  $id: String! ) {
+  disease(efoId: $id) {
+    id
+    name
+  }
+}

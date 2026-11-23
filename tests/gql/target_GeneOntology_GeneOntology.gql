@@ -1,0 +1,10 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - term
+# The original document is packages/sections/src/target/GeneOntology/GeneOntology.gql.
+query TargetGeneOntologyQuery($ensemblId: String!) {
+  target(ensemblId: $ensemblId) {
+    id
+    
+  }
+}

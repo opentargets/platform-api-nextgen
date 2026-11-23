@@ -1,0 +1,11 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - associatedTargets
+# The original document is apps/platform/src/components/GeneEnrichmentAnalysis/api/DiaseaseAssociationsQuery.gql.
+query GeneEnrichmentAnalysisDiseaseAssociationsQuery(
+  $efoId: String! ) {
+  disease(efoId: $efoId) {
+    id
+    name
+  }
+}

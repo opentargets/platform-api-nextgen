@@ -1,0 +1,7 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - credibleSets
+# The original document is packages/sections/src/target/QTLCredibleSets/QTLCredibleSetsSummaryFragment.gql.
+fragment TargetQTLCredibleSetsSummaryFragment on Target {
+  id
+}

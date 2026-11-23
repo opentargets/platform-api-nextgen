@@ -1,0 +1,12 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - interactions
+# The original document is apps/platform/src/components/AssociationsToolkit/components/Table/RowInteractors/InteractorsQuery.gql.
+query InteractionsSectionQuery(
+  $ensgId: String! ) {
+  target(ensemblId: $ensgId) {
+    id
+    approvedName
+    approvedSymbol
+  }
+}

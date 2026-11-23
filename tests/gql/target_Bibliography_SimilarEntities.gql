@@ -1,0 +1,12 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - literatureOcurrences
+#   - similarEntities
+# The original document is packages/sections/src/target/Bibliography/SimilarEntities.gql.
+query TargetBibliographyQuery(
+  $id: String! ) {
+  target(ensemblId: $id) {
+    id
+    approvedName
+  }
+}

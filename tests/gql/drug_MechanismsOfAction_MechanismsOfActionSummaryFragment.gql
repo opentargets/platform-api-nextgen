@@ -1,0 +1,14 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - mechanismsOfAction
+# The original document is packages/sections/src/drug/MechanismsOfAction/MechanismsOfActionSummaryFragment.gql.
+fragment MechanismsOfActionSummaryFragment on Drug {
+  parentMolecule {
+    id
+    name
+  }
+  childMolecules {
+    id
+    name
+  }
+}

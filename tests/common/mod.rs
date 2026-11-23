@@ -1,3 +1,4 @@
+pub mod frontend_queries;
 pub mod sample_data;
 
 use std::{
@@ -30,6 +31,18 @@ pub const DATA_RELEASE: &str = "26.12";
 
 /// The schema of the `targets` ClickHouse table.
 const TARGETS_SCHEMA: &str = include_str!("schema/targets.sql");
+
+/// The schema of the `drug` ClickHouse table.
+const DRUG_SCHEMA: &str = include_str!("schema/drug.sql");
+
+/// The schema of the `disease` ClickHouse table.
+const DISEASE_SCHEMA: &str = include_str!("schema/disease.sql");
+
+/// The schema of the `study` ClickHouse table.
+const STUDY_SCHEMA: &str = include_str!("schema/study.sql");
+
+/// The schema of the `clinical_report` ClickHouse table.
+const CLINICAL_REPORT_SCHEMA: &str = include_str!("schema/clinical_report.sql");
 
 /// The mappings and settings of the search indices.
 ///
@@ -293,7 +306,8 @@ async fn response_json(response: Response) -> Value {
         .unwrap_or_else(|error| panic!("invalid GraphQL response: {error}: {body}"))
 }
 
-/// Creates the ClickHouse database and loads the sample targets into it.
+/// Creates the ClickHouse database and loads the sample targets, drugs and
+/// diseases into it.
 async fn seed_clickhouse(url: &str, namespace: &str) {
     let client = Client::default().with_url(url);
     client
@@ -306,25 +320,59 @@ async fn seed_clickhouse(url: &str, namespace: &str) {
         .execute()
         .await
         .expect("create targets fixture table");
+    client
+        .query(&DRUG_SCHEMA.replace("{namespace}", namespace))
+        .execute()
+        .await
+        .expect("create drug fixture table");
+    client
+        .query(&DISEASE_SCHEMA.replace("{namespace}", namespace))
+        .execute()
+        .await
+        .expect("create disease fixture table");
+    client
+        .query(&STUDY_SCHEMA.replace("{namespace}", namespace))
+        .execute()
+        .await
+        .expect("create study fixture table");
+    client
+        .query(&CLINICAL_REPORT_SCHEMA.replace("{namespace}", namespace))
+        .execute()
+        .await
+        .expect("create clinical report fixture table");
 
     // The sample data is loaded as JSON: the Parquet format of the fixtures uses
     // `large_list` and `large_string` types that the ClickHouse version used
     // here cannot read, and its JSON reader does not support the tuple shapes
     // the API expects.
-    let targets = sample_data::targets();
-    let body = targets
+    insert_rows(&client, namespace, "targets", &sample_data::targets()).await;
+    insert_rows(&client, namespace, "drug", &sample_data::drugs()).await;
+    insert_rows(&client, namespace, "disease", &sample_data::diseases()).await;
+    insert_rows(&client, namespace, "studies", &sample_data::studies()).await;
+    insert_rows(
+        &client,
+        namespace,
+        "clinical_report",
+        &sample_data::clinical_reports(),
+    )
+    .await;
+}
+
+/// Inserts rows into a table of the test database.
+async fn insert_rows(client: &Client, namespace: &str, table: &str, rows: &[Value]) {
+    let body = rows
         .iter()
-        .map(|target| serde_json::to_string(target).expect("serialize target"))
+        .map(|row| serde_json::to_string(row).expect("serialize sample data row"))
         .collect::<Vec<_>>()
         .join("\n");
     let mut insert = client.insert_formatted_with(format!(
-        "INSERT INTO {namespace}.targets FORMAT JSONEachRow"
+        "INSERT INTO {namespace}.{table} FORMAT JSONEachRow"
     ));
     insert
         .send(Bytes::from(body))
         .await
-        .expect("seed targets fixture table");
-    insert.end().await.expect("finish seeding targets");
+        .expect("seed sample data table");
+    insert.end().await.expect("finish seeding sample data");
 }
 
 /// Creates the search indices and loads the sample search documents into them.
@@ -353,27 +401,161 @@ async fn seed_opensearch(url: &str, namespace: &str) {
     }
 
     // The search documents of the sample data.
+    index_search_documents(
+        &client,
+        url,
+        namespace,
+        "search_target",
+        &sample_data::search_targets(),
+    )
+    .await;
+    index_search_documents(
+        &client,
+        url,
+        namespace,
+        "search_drug",
+        &sample_data::search_drugs(),
+    )
+    .await;
+    index_search_documents(
+        &client,
+        url,
+        namespace,
+        "search_disease",
+        &sample_data::search_diseases(),
+    )
+    .await;
+
+    // The sample search documents and the sample entities are disjoint, so a
+    // document is synthesised for one of the targets, one of the drugs and one
+    // of the diseases. This is what lets the tests check that a search hit
+    // resolves to the entity stored in ClickHouse.
+    let target_id = sample_data::first_target_id();
+    let symbol = sample_data::first_target_symbol();
+    let name = sample_data::first_target_name();
+    let document = json!({
+        "id": target_id,
+        "name": name,
+        "entity": "target",
+        "category": ["Protein kinase"],
+        "description": "Synthesised from the target view of the sample data",
+        "keywords": [symbol, name],
+        "prefixes": [symbol],
+        "ngrams": ngrams(&symbol),
+        "terms": [name],
+        "terms5": [name],
+        "terms25": [name],
+        "multiplier": 1.0
+    });
+    index_search_document(
+        &client,
+        url,
+        namespace,
+        "search_target",
+        &target_id,
+        &document,
+    )
+    .await;
+
+    let drug_id = sample_data::first_drug_id();
+    let drug_name = sample_data::first_drug_name();
+    let document = json!({
+        "id": drug_id,
+        "name": drug_name,
+        "entity": "drug",
+        "category": ["Small molecule"],
+        "description": "Synthesised from the drug molecule dataset of the sample data",
+        "keywords": [drug_id, drug_name],
+        "prefixes": [drug_name],
+        "ngrams": ngrams(&drug_name),
+        "terms": [drug_name],
+        "terms5": [drug_name],
+        "terms25": [drug_name],
+        "multiplier": 1.0
+    });
+    index_search_document(&client, url, namespace, "search_drug", &drug_id, &document).await;
+
+    let disease_id = sample_data::first_disease_id();
+    let disease_name = sample_data::first_disease_name();
+    let document = json!({
+        "id": disease_id,
+        "name": disease_name,
+        "entity": "disease",
+        "category": ["disease"],
+        "description": "Synthesised from the disease dataset of the sample data",
+        "keywords": [disease_id, disease_name],
+        "prefixes": [disease_name],
+        "ngrams": ngrams(&disease_name),
+        "terms": [disease_name],
+        "terms5": [disease_name],
+        "terms25": [disease_name],
+        "multiplier": 1.0
+    });
+    index_search_document(
+        &client,
+        url,
+        namespace,
+        "search_disease",
+        &disease_id,
+        &document,
+    )
+    .await;
+
+    // The production mappings disable the automatic refresh, so the indices are
+    // refreshed explicitly.
+    for index in indices {
+        let response = client
+            .post(format!("{url}/{namespace}_{index}/_refresh"))
+            .send()
+            .await
+            .expect("refresh OpenSearch fixture index");
+        assert!(response.status().is_success());
+    }
+}
+
+/// Returns the prefixes of a string, one for each of its lengths.
+///
+/// The search views hold the prefixes of a name, so that a search matches a
+/// name that is only partially typed.
+fn ngrams(value: &str) -> Vec<String> {
+    value
+        .chars()
+        .scan(String::new(), |accumulator, character| {
+            accumulator.push(character);
+            Some(accumulator.clone())
+        })
+        .collect()
+}
+
+/// Indexes search documents into an index.
+async fn index_search_documents(
+    client: &reqwest::Client,
+    url: &str,
+    namespace: &str,
+    index: &str,
+    documents: &[Value],
+) {
     let mut bulk = String::new();
-    for document in sample_data::search_targets() {
+    for document in documents {
         let id = document["id"].as_str().expect("search document has an id");
         writeln!(
             bulk,
-            r#"{{"index":{{"_index":"{namespace}_search_target","_id":"{id}"}}}}"#
+            r#"{{"index":{{"_index":"{namespace}_{index}","_id":"{id}"}}}}"#
         )
         .expect("write search document action");
-        bulk.push_str(&serde_json::to_string(&document).expect("serialize search document"));
+        bulk.push_str(&serde_json::to_string(document).expect("serialize search document"));
         bulk.push('\n');
     }
     let response = client
-        .post(format!("{url}/_bulk"))
+        .post(format!("{url}/{namespace}_{index}/_bulk"))
         .header("Content-Type", "application/x-ndjson")
         .body(bulk)
         .send()
         .await
-        .expect("index OpenSearch target fixtures");
+        .expect("index OpenSearch fixtures");
     assert!(
         response.status().is_success(),
-        "index OpenSearch target fixtures failed: {}",
+        "index OpenSearch {index} fixtures failed: {}",
         response.text().await.unwrap_or_default()
     );
     // The bulk endpoint answers with a success status even when some of the
@@ -395,55 +577,30 @@ async fn seed_opensearch(url: &str, namespace: &str) {
         .collect();
     assert!(
         failures.is_empty(),
-        "indexing {failures:?} of the OpenSearch target fixtures failed"
+        "indexing {failures:?} of the OpenSearch {index} fixtures failed"
     );
+}
 
-    // The sample search documents and the sample targets are disjoint, so a
-    // document is synthesised for one of the targets. This is what lets the
-    // tests check that a search hit resolves to the target stored in
-    // ClickHouse.
-    let target_id = sample_data::first_target_id();
-    let symbol = sample_data::first_target_symbol();
-    let name = sample_data::first_target_name();
-    let document = json!({
-        "id": target_id,
-        "name": name,
-        "entity": "target",
-        "category": ["Protein kinase"],
-        "description": "Synthesised from the target view of the sample data",
-        "keywords": [symbol, name],
-        "prefixes": [symbol],
-        "ngrams": symbol.chars().scan(String::new(), |acc, character| {
-            acc.push(character);
-            Some(acc.clone())
-        }).collect::<Vec<_>>(),
-        "terms": [name],
-        "terms5": [name],
-        "terms25": [name],
-        "multiplier": 1.0
-    });
+/// Indexes a single search document into an index.
+async fn index_search_document(
+    client: &reqwest::Client,
+    url: &str,
+    namespace: &str,
+    index: &str,
+    id: &str,
+    document: &Value,
+) {
     let response = client
-        .post(format!("{url}/{namespace}_search_target/_doc/{target_id}"))
-        .json(&document)
+        .post(format!("{url}/{namespace}_{index}/_doc/{id}"))
+        .json(document)
         .send()
         .await
-        .expect("index OpenSearch target fixture");
+        .expect("index OpenSearch fixture");
     assert!(
         response.status().is_success(),
-        "index OpenSearch target fixture failed: {}",
+        "index OpenSearch {index} fixture failed: {}",
         response.text().await.unwrap_or_default()
     );
-
-    // The production mappings disable the automatic refresh, so the indices are
-    // refreshed explicitly.
-    for index in indices {
-        let response = client
-            .post(format!("{url}/{namespace}_{index}/_refresh"))
-            .send()
-            .await
-            .expect("refresh OpenSearch fixture index");
-        assert!(response.status().is_success());
-    }
 }
 
 /// Returns the GraphQL errors of a response, panicking with the payload when there are any.

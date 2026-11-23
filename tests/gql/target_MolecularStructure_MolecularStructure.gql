@@ -1,0 +1,8 @@
+query TargetMolecularStructureQuery($ensemblId: String!) {
+  target(ensemblId: $ensemblId) {
+    proteinIds {
+      id
+      source
+    }
+  }
+}

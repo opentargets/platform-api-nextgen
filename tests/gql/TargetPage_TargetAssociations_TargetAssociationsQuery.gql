@@ -1,0 +1,15 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - associatedDiseases
+# The original document is apps/platform/src/pages/TargetPage/TargetAssociations/TargetAssociationsQuery.gql.
+# TODO(ng-api): rows no longer select novelty nor the nested associationTimeSeries used by the
+# novelty sparkline. Row novelty is gone from the API and any associationTimeSeries request
+# drops the connection, which would take the whole table down.
+# docs/new-api-migration/PAIN_POINTS.md #10, #12.
+query TargetAssociationsQuery(
+  $id: String! ) {
+  target(ensemblId: $id) {
+    id
+    approvedSymbol
+  }
+}

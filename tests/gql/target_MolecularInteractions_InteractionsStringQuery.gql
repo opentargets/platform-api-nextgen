@@ -1,0 +1,10 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - interactions
+# The original document is packages/sections/src/target/MolecularInteractions/InteractionsStringQuery.gql.
+query TargetInteractionsStringQuery(
+  $ensgId: String! ) {
+  target(ensemblId: $ensgId) {
+    id
+  }
+}

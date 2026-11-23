@@ -1,0 +1,7 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - indications
+# The original document is packages/sections/src/drug/Indications/IndicationsSummaryFragment.gql.
+fragment IndicationsSummaryFragment on Drug {
+  id
+}
