@@ -1,1 +1,1 @@
-{"id":"live-test-ct","drugId":"CHEMBL9999999","targetId":"ENSG99999999999","diseases":[],"maxClinicalStage":"PHASE_1","clinicalReportIds":["live-test-clinical-report"]}
+{"id":"live-test-ct","drugId":"CHEMBL9999999","targetId":"ENSG99999999999","diseases":[{"diseaseFromSource":"target disease from source","diseaseId":"EFO_9999999"},{"diseaseFromSource":null,"diseaseId":null}],"maxClinicalStage":"PHASE_4","clinicalReportIds":["live-test-clinical-report","live-test-clinical-report-null"]}

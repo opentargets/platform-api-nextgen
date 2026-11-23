@@ -12,11 +12,12 @@ use serde_repr::Deserialize_repr;
 use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
-    datasource::clickhouse::{ClickHouse, from_nullable_string_opt, from_string},
+    datasource::clickhouse::ClickHouse,
     entity::{
         date::Date,
         disease::{Disease, load_disease},
         drug::{Drug, load_drug},
+        evidence::TrialStopReasonCategory,
     },
     query::{
         cache::{CachedLoader, entity_cache},
@@ -27,27 +28,57 @@ use crate::{
 // ---- models ----
 
 /// Kind of clinical evidence the report describes.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum ClinicalReportType {
     /// Clinical evidence informing about a drug/disease claim.
-    Indication,
+    Indication = 1,
     /// Clinical evidence informing about a drug's safety event.
-    Safety,
+    Safety = 2,
 }
 
 /// Nature of the record the report originates from.
-#[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq, Enum)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
 #[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum Origin {
-    /// TODO DESCRIPTION: Clinical trial record.
-    ClinicalTrial,
-    /// TODO DESCRIPTION: Drug label record.
-    DrugLabel,
-    /// TODO DESCRIPTION: Regulatory agency record.
-    RegulatoryAgency,
-    /// TODO DESCRIPTION: Curated resource record.
-    CuratedResource,
+    /// Clinical trial record.
+    ClinicalTrial = 1,
+    /// Drug label record.
+    DrugLabel = 2,
+    /// Regulatory agency record.
+    RegulatoryAgency = 3,
+    /// Curated resource record.
+    CuratedResource = 4,
 }
 
 /// Clinical stage of the report.
@@ -112,37 +143,276 @@ pub enum ClinicalStage {
 }
 
 /// Type of clinical study.
-#[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq, Enum)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
 #[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum TrialStudyType {
     /// Interventional.
-    Interventional,
+    Interventional = 1,
     /// Observational.
-    Observational,
+    Observational = 2,
     /// Expanded access.
-    ExpandedAccess,
+    ExpandedAccess = 3,
+}
+
+/// Overall recruitment status of the clinical trial.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
+pub enum TrialOverallStatus {
+    /// Active, not recruiting.
+    ActiveNotRecruiting = 1,
+    /// Completed.
+    Completed = 2,
+    /// Enrolling by invitation.
+    EnrollingByInvitation = 3,
+    /// Not yet recruiting.
+    NotYetRecruiting = 4,
+    /// Recruiting.
+    Recruiting = 5,
+    /// Suspended.
+    Suspended = 6,
+    /// Terminated.
+    Terminated = 7,
+    /// Withdrawn.
+    Withdrawn = 8,
+    /// Expanded access available.
+    Available = 9,
+    /// Expanded access no longer available.
+    NoLongerAvailable = 10,
+    /// Expanded access temporarily not available.
+    TemporarilyNotAvailable = 11,
+    /// Approved for marketing.
+    ApprovedForMarketing = 12,
+    /// Withheld.
+    Withheld = 13,
+    /// Unknown status.
+    Unknown = 14,
+}
+
+/// Phase of the clinical trial as registered.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+pub enum TrialPhase {
+    /// Early phase 1.
+    #[graphql(name = "EARLY_PHASE1")]
+    #[strum(serialize = "EARLY_PHASE1")]
+    EarlyPhase1 = 1,
+    /// Phase 1.
+    #[graphql(name = "PHASE1")]
+    #[strum(serialize = "PHASE1")]
+    Phase1 = 2,
+    /// Phase 1/phase 2.
+    #[graphql(name = "PHASE1_PHASE2")]
+    #[strum(serialize = "PHASE1/PHASE2")]
+    Phase1Phase2 = 3,
+    /// Phase 2.
+    #[graphql(name = "PHASE2")]
+    #[strum(serialize = "PHASE2")]
+    Phase2 = 4,
+    /// Phase 2/phase 3.
+    #[graphql(name = "PHASE2_PHASE3")]
+    #[strum(serialize = "PHASE2/PHASE3")]
+    Phase2Phase3 = 5,
+    /// Phase 3.
+    #[graphql(name = "PHASE3")]
+    #[strum(serialize = "PHASE3")]
+    Phase3 = 6,
+    /// Phase 4.
+    #[graphql(name = "PHASE4")]
+    #[strum(serialize = "PHASE4")]
+    Phase4 = 7,
+}
+
+/// Primary purpose of the clinical trial.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
+pub enum TrialPrimaryPurpose {
+    /// Treatment.
+    Treatment = 1,
+    /// Prevention.
+    Prevention = 2,
+    /// Diagnostic.
+    Diagnostic = 3,
+    /// Educational, counseling or training.
+    Ect = 4,
+    /// Supportive care.
+    SupportiveCare = 5,
+    /// Screening.
+    Screening = 6,
+    /// Health services research.
+    HealthServicesResearch = 7,
+    /// Basic science.
+    BasicScience = 8,
+    /// Device feasibility.
+    DeviceFeasibility = 9,
+    /// Other purpose.
+    Other = 10,
+}
+
+/// Classification of the lead trial sponsor.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
+pub enum AgencyClass {
+    /// National Institutes of Health.
+    Nih = 1,
+    /// Other US federal agency.
+    Fed = 2,
+    /// Other government agency.
+    OtherGov = 3,
+    /// Individual.
+    Indiv = 4,
+    /// Industry.
+    Industry = 5,
+    /// Network.
+    Network = 6,
+    /// Ambiguous.
+    Ambig = 7,
+    /// Other sponsor.
+    Other = 8,
+    /// Unknown sponsor.
+    Unknown = 9,
+}
+
+/// How a literature reference relates to the clinical trial.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
+pub enum TrialLiteratureType {
+    /// Literature the trial's authors cited.
+    Background = 1,
+    /// Reports the trial's outcome.
+    Result = 2,
+    /// Derived from the trial's outcome.
+    Derived = 3,
 }
 
 /// Source that provided the clinical report.
-#[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq, Enum)]
-#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
 pub enum Provider {
     /// ChEMBL.
-    #[serde(rename = "ChEMBL")]
-    Chembl,
+    #[graphql(name = "ChEMBL")]
+    #[strum(serialize = "ChEMBL")]
+    Chembl = 1,
     /// Therapeutic Target Database.
-    #[serde(rename = "TTD")]
-    Ttd,
+    #[graphql(name = "TTD")]
+    #[strum(serialize = "TTD")]
+    Ttd = 2,
     /// Aggregate Analysis of ClinicalTrials.gov.
-    #[serde(rename = "AACT")]
-    Aact,
+    #[graphql(name = "AACT")]
+    #[strum(serialize = "AACT")]
+    Aact = 3,
     /// European Medicines Agency.
-    #[serde(rename = "EMA")]
-    Ema,
+    #[graphql(name = "EMA")]
+    #[strum(serialize = "EMA")]
+    Ema = 4,
     /// Pharmaceuticals and Medical Devices Agency.
-    #[serde(rename = "PMDA")]
-    Pmda,
+    #[graphql(name = "PMDA")]
+    #[strum(serialize = "PMDA")]
+    Pmda = 5,
+    /// US Food and Drug Administration.
+    #[graphql(name = "FDA")]
+    #[strum(serialize = "FDA")]
+    Fda = 6,
 }
 
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
@@ -153,16 +423,17 @@ pub struct ClinicalReportDrugListItem {
     drug_from_source: String,
     /// Open Targets molecule identifier.
     #[graphql(skip)]
-    drug_id: String,
+    drug_id: Option<String>,
 }
 
 #[ComplexObject]
 impl ClinicalReportDrugListItem {
-    /// Drug in the clinical report.
-    async fn drug(&self, ctx: &Context<'_>) -> async_graphql::Result<Drug> {
-        load_drug(ctx, self.drug_id.clone())
-            .await?
-            .ok_or_else(|| async_graphql::Error::new("drug not found"))
+    /// Drug in the clinical report. Null if the source drug isn't mapped.
+    async fn drug(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Drug>> {
+        match &self.drug_id {
+            Some(drug_id) => load_drug(ctx, drug_id.clone()).await,
+            None => Ok(None),
+        }
     }
 }
 
@@ -171,7 +442,7 @@ impl ClinicalReportDrugListItem {
 #[serde(rename_all = "camelCase")]
 pub struct TrialSponsor {
     /// Classification of the lead trial sponsor (e.g. INDUSTRY, NIH, OTHER).
-    agency_class: Option<String>,
+    agency_class: Option<AgencyClass>,
     /// Name of the lead sponsor associated with the clinical trial.
     name: Option<String>,
 }
@@ -181,11 +452,11 @@ pub struct TrialSponsor {
 #[serde(rename_all = "camelCase")]
 pub struct TrialLiterature {
     /// PubMed identifier of the reference, when the source records one.
-    id: String,
+    id: Option<String>,
     /// How the reference relates to the trial: RESULT and DERIVED report its outcome, BACKGROUND
     /// is literature its authors cited.
     #[graphql(name = "referenceType")]
-    r#type: String,
+    r#type: TrialLiteratureType,
 }
 
 /// Diseases associated with the clinical report.
@@ -197,16 +468,17 @@ pub struct ClinicalDiseaseListItem {
     disease_from_source: String,
     /// Open Targets disease identifier.
     #[graphql(skip)]
-    disease_id: String,
+    disease_id: Option<String>,
 }
 
 #[ComplexObject]
 impl ClinicalDiseaseListItem {
-    /// Disease in the clinical report.
-    async fn disease(&self, ctx: &Context<'_>) -> async_graphql::Result<Disease> {
-        load_disease(ctx, self.disease_id.clone())
-            .await?
-            .ok_or_else(|| async_graphql::Error::new("disease not found"))
+    /// Disease in the clinical report. Null if the source disease isn't mapped.
+    async fn disease(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Disease>> {
+        match &self.disease_id {
+            Some(disease_id) => load_disease(ctx, disease_id.clone()).await,
+            None => Ok(None),
+        }
     }
 }
 
@@ -217,19 +489,16 @@ impl ClinicalDiseaseListItem {
 pub struct ClinicalSideEffectListItem {
     /// Open Targets disease identifier for the side effect.
     #[graphql(skip)]
-    disease_id: Option<String>,
+    disease_id: String,
     /// Side effect disease name as reported in the source.
-    disease_from_source: Option<String>,
+    disease_from_source: String,
 }
 
 #[ComplexObject]
 impl ClinicalSideEffectListItem {
     /// Disease for the reported side effect.
     async fn disease(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Disease>> {
-        match &self.disease_id {
-            Some(disease_id) => load_disease(ctx, disease_id.clone()).await,
-            None => Ok(None),
-        }
+        load_disease(ctx, self.disease_id.clone()).await
     }
 }
 
@@ -248,12 +517,10 @@ pub struct ClinicalReport {
     /// Kind of evidence the report describes: INDICATION for a drug/disease claim, SAFETY for a
     /// drug warning.
     #[graphql(name = "evidenceType")]
-    #[serde(deserialize_with = "from_nullable_string_opt")]
-    r#type: Option<String>,
+    r#type: ClinicalReportType,
     /// Title of the clinical report.
-    title: Option<String>,
+    title: String,
     /// Type of clinical study (e.g. Interventional, Observational).
-    #[serde(deserialize_with = "from_nullable_string_opt")]
     trial_study_type: Option<TrialStudyType>,
     /// Brief description of the clinical trial.
     trial_description: Option<String>,
@@ -264,15 +531,15 @@ pub struct ClinicalReport {
     /// Literature references associated with the clinical trial.
     trial_literature: Vec<TrialLiterature>,
     /// Overall status of the clinical trial (e.g. Completed, Terminated).
-    trial_overall_status: Option<String>,
+    trial_overall_status: Option<TrialOverallStatus>,
     /// Reason provided for stopping the clinical trial.
     trial_why_stopped: Option<String>,
     /// Primary purpose of the clinical trial (e.g. Treatment, Prevention).
-    trial_primary_purpose: Option<String>,
+    trial_primary_purpose: Option<TrialPrimaryPurpose>,
     /// Phase of the clinical trial.
-    trial_phase: Option<String>,
+    trial_phase: Option<TrialPhase>,
     /// Categories describing reasons why the trial was stopped.
-    trial_stop_reason_categories: Vec<String>,
+    trial_stop_reason_categories: Vec<TrialStopReasonCategory>,
     /// Lead sponsor associated with the clinical trial.
     trial_sponsor: TrialSponsor,
     /// Quality control flags or notes for the clinical report.
@@ -290,12 +557,10 @@ pub struct ClinicalReport {
     /// Official title of the clinical trial as registered.
     trial_official_title: Option<String>,
     /// URL linking to the source record.
-    url: Option<String>,
+    url: String,
     /// Nature of the record the report originates from.
-    #[serde(deserialize_with = "from_string")]
     origin: Origin,
     /// Resource or organisation that distributes the data fetched from the primary source.
-    #[serde(deserialize_with = "from_string")]
     provider: Provider,
 }
 

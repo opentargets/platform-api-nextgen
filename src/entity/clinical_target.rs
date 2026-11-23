@@ -12,7 +12,8 @@ use strum::EnumIter;
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
-        clinical_report::{ClinicalDiseaseListItem, ClinicalReport, load_clinical_reports},
+        clinical_report::{ClinicalReport, ClinicalStage, load_clinical_reports},
+        disease::{Disease, load_disease},
         drug::{Drug, load_drug},
     },
     query::{
@@ -26,6 +27,29 @@ use crate::{
 };
 
 // ---- models ----
+
+/// A disease of the clinical reports linked to a target-drug pair.
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
+#[serde(rename_all = "camelCase")]
+#[graphql(complex)]
+pub struct ClinicalTargetDiseaseListItem {
+    /// Disease name as reported in the source.
+    disease_from_source: Option<String>,
+    /// Open Targets disease identifier.
+    #[graphql(skip)]
+    disease_id: Option<String>,
+}
+
+#[ComplexObject]
+impl ClinicalTargetDiseaseListItem {
+    /// Disease in the clinical reports. Null if the source disease isn't mapped.
+    async fn disease(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Disease>> {
+        match &self.disease_id {
+            Some(disease_id) => load_disease(ctx, disease_id.clone()).await,
+            None => Ok(None),
+        }
+    }
+}
 
 /// Target-drug associations derived from clinical reports, capturing the maximum clinical stage and
 /// associated diseases for each target-drug pair.
@@ -44,8 +68,9 @@ pub struct ClinicalTarget {
     #[graphql(skip)]
     target_id: String,
     /// Diseases associated with the clinical reports linked to the drug in question.
-    diseases: Vec<ClinicalDiseaseListItem>,
-    max_clinical_stage: String,
+    diseases: Vec<ClinicalTargetDiseaseListItem>,
+    /// Maximum clinical stage reached by the drug for the target.
+    max_clinical_stage: ClinicalStage,
     #[graphql(skip)]
     clinical_report_ids: Vec<String>,
     /// Name of the drug. Null if the drug isn't found.

@@ -973,3 +973,196 @@ async fn target_fixtures_decode_to_inserted_values() {
     assert_eq!(data["region"]["targets"], data["targets"]);
     assert_eq!(data["outside"]["targets"], json!({"count": 0, "rows": []}));
 }
+
+// ---- clinical and drug fixtures decode to the inserted values ----
+
+const CLINICAL_FIELDS: &str = "fragment R on ClinicalReport {
+    id source clinicalStage phaseFromSource evidenceType title trialStudyType trialDescription
+    trialNumberOfArms trialStartDate trialLiterature { id referenceType } trialOverallStatus
+    trialWhyStopped trialPrimaryPurpose trialPhase trialStopReasonCategories
+    trialSponsor { agencyClass name } qualityControls diseases { diseaseFromSource }
+    drugs { drugFromSource drug { id } } countries year sideEffects { diseaseFromSource }
+    trialOfficialTitle url origin provider
+}
+fragment D on Drug {
+    id name synonyms { label source } tradeNames { label source } drugType
+    crossReferences { source ids } maximumClinicalStage description molblock
+}";
+
+/// `tests/live/fixtures/clinical_report.jsonl` as the API serves it.
+fn expected_clinical_reports() -> (serde_json::Value, serde_json::Value) {
+    let full = json!({
+        "id": "live-test-clinical-report", "source": "live source", "clinicalStage": "PHASE_2_3",
+        "phaseFromSource": "Phase 2/Phase 3", "evidenceType": "SAFETY", "title": "report title",
+        "trialStudyType": "EXPANDED_ACCESS", "trialDescription": "trial description",
+        "trialNumberOfArms": 2, "trialStartDate": "2020-01-15",
+        "trialLiterature": [
+            {"id": "12345678", "referenceType": "RESULT"},
+            {"id": null, "referenceType": "DERIVED"},
+        ],
+        "trialOverallStatus": "TERMINATED", "trialWhyStopped": "why stopped",
+        "trialPrimaryPurpose": "SUPPORTIVE_CARE", "trialPhase": "PHASE2_PHASE3",
+        "trialStopReasonCategories": ["Safety_Sideeffects", "Negative"],
+        "trialSponsor": {"agencyClass": "INDUSTRY", "name": "sponsor name"},
+        "qualityControls": ["quality control"],
+        "diseases": [
+            {"diseaseFromSource": "disease from source"},
+            {"diseaseFromSource": "unmapped disease"},
+        ],
+        "drugs": [
+            {"drugFromSource": "drug from source", "drug": {"id": "CHEMBL9999999"}},
+            {"drugFromSource": "unmapped drug", "drug": null},
+        ],
+        "countries": ["GB", "US"], "year": 2020,
+        "sideEffects": [{"diseaseFromSource": "side effect from source"}],
+        "trialOfficialTitle": "trial official title", "url": "https://example.org/report",
+        "origin": "REGULATORY_AGENCY", "provider": "FDA",
+    });
+    let null = json!({
+        "id": "live-test-clinical-report-null", "source": "null source", "clinicalStage": "UNKNOWN",
+        "phaseFromSource": null, "evidenceType": "INDICATION", "title": "null report title",
+        "trialStudyType": null, "trialDescription": null, "trialNumberOfArms": null,
+        "trialStartDate": null, "trialLiterature": [], "trialOverallStatus": null,
+        "trialWhyStopped": null, "trialPrimaryPurpose": null, "trialPhase": null,
+        "trialStopReasonCategories": [], "trialSponsor": {"agencyClass": null, "name": null},
+        "qualityControls": [],
+        "diseases": [{"diseaseFromSource": "only disease from source"}],
+        "drugs": [{"drugFromSource": "only drug from source", "drug": null}],
+        "countries": [], "year": null, "sideEffects": [], "trialOfficialTitle": null,
+        "url": "https://example.org/null-report", "origin": "CLINICAL_TRIAL", "provider": "ChEMBL",
+    });
+    (full, null)
+}
+
+/// `tests/live/fixtures/drug.jsonl`, `mechanism_of_action.jsonl`, `drug_warnings.jsonl` and
+/// `clinical_indication_disease.jsonl` as the API serves them.
+fn expected_drug() -> serde_json::Value {
+    let parent = json!({
+        "id": "CHEMBL9999998", "name": "LIVE TEST PARENT", "synonyms": [], "tradeNames": [],
+        "drugType": "Small_molecule", "crossReferences": [], "maximumClinicalStage": "WITHDRAWAL",
+        "description": "parent description", "molblock": null,
+        "childMolecules": [{"id": "CHEMBL9999999"}],
+    });
+    let mechanisms = json!({
+        "rows": [
+            {
+                "mechanismOfAction": "live test inhibitor", "actionType": "INHIBITOR",
+                "targetName": "LTGENE1", "targets": [{"id": FIXTURE_TARGET}],
+                "curation": "manual",
+                "references": [{"ids": ["PMID-1"], "source": "PubMed",
+                                "urls": ["https://example.org/moa"]}],
+            },
+            {
+                "mechanismOfAction": "live test mechanism", "actionType": null,
+                "targetName": null, "targets": [], "curation": "electronic", "references": [],
+            },
+        ],
+        "uniqueActionTypes": ["CROSS_LINKING_AGENT", "INHIBITOR"],
+        "uniqueTargetTypes": ["_3d_cell_culture", "single_protein"],
+    });
+    let warnings = json!({"count": 2, "rows": [
+        {
+            "toxicityClass": "hepatotoxicity", "chemblIds": ["CHEMBL9999999"], "country": "US",
+            "description": "warning description", "id": 42,
+            "references": [{"id": "warning-ref", "source": "FDA",
+                            "url": "https://example.org/warning"}],
+            "warningType": "Black Box Warning", "year": 2001, "efoTerm": "liver injury",
+            "efoId": "EFO_0000002", "efoIdForWarningClass": "EFO_0000003",
+        },
+        {
+            "toxicityClass": null, "chemblIds": [], "country": null, "description": null,
+            "id": null, "references": [], "warningType": "Withdrawn", "year": null,
+            "efoTerm": null, "efoId": null, "efoIdForWarningClass": null,
+        },
+    ]});
+    json!({
+        "id": "CHEMBL9999999", "name": "LIVE TEST DRUG",
+        "synonyms": [{"label": "synonym label", "source": "synonym source"}],
+        "tradeNames": [{"label": "trade name label", "source": "trade name source"}],
+        "drugType": "Antibody_drug_conjugate",
+        "crossReferences": [{"source": "DrugBank", "ids": ["DB00001", "DB00002"]}],
+        "maximumClinicalStage": "APPROVAL", "description": "drug description",
+        "molblock": "molblock text", "parentMolecule": parent, "childMolecules": [],
+        "mechanismsOfAction": mechanisms,
+        "drugWarnings": warnings,
+        "indications": {"count": 1, "rows": [{
+            "id": "live-test-ci", "maxClinicalStage": "PHASE_1_2", "drugName": "LIVE TEST DRUG",
+            "diseaseName": null, "clinicalReportCount": 2, "drug": {"id": "CHEMBL9999999"},
+            "clinicalReports": [
+                {"id": "live-test-clinical-report"}, {"id": "live-test-clinical-report-null"},
+            ],
+        }]},
+    })
+}
+
+#[tokio::test]
+#[ignore = "needs a ClickHouse database: set LIVE_CLICKHOUSE_URL and LIVE_FIXTURES=1"]
+async fn clinical_fixtures_decode_to_inserted_values() {
+    let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
+    assert!(with_fixtures(), "set LIVE_FIXTURES=1");
+    let config = config(&url);
+    load_fixtures(&ClickHouse::new(&config)).await;
+
+    let state = AppState::new(config);
+    let query = format!(
+        "{{ full: clinicalReport(clinicalReportId: \"live-test-clinical-report\") {{ ...R }}
+            null: clinicalReport(clinicalReportId: \"live-test-clinical-report-null\") {{ ...R }}
+            clinicalReports(clinicalReportsIds: [\"live-test-clinical-report-null\",
+                                                 \"live-test-clinical-report\"]) {{ id }}
+            drug(chemblId: \"CHEMBL9999999\") {{
+                ...D
+                parentMolecule {{ ...D childMolecules {{ id }} }}
+                childMolecules {{ id }}
+                mechanismsOfAction {{
+                    rows {{ mechanismOfAction actionType targetName targets {{ id }} curation
+                            references {{ ids source urls }} }}
+                    uniqueActionTypes uniqueTargetTypes
+                }}
+                drugWarnings {{ count rows {{ toxicityClass chemblIds country description id
+                    references {{ id source url }} warningType year efoTerm efoId
+                    efoIdForWarningClass }} }}
+                indications {{ count rows {{ id maxClinicalStage drugName diseaseName
+                    clinicalReportCount drug {{ id }} clinicalReports {{ id }} }} }}
+            }}
+            target(ensemblId: \"{FIXTURE_TARGET}\") {{
+                drugAndClinicalCandidates {{ count rows {{ id maxClinicalStage drugName
+                    clinicalReportCount diseases {{ diseaseFromSource }} drug {{ id }}
+                    clinicalReports {{ id }} }} }}
+            }}
+        }}
+        {CLINICAL_FIELDS}"
+    );
+    let response = state.api.execute(Request::new(query)).await;
+    assert!(response.errors.is_empty(), "{:#?}", response.errors);
+    let data = response.data.into_json().expect("json");
+
+    let (full, null) = expected_clinical_reports();
+    assert_fields("full", &data["full"], &full);
+    assert_eq!(data["full"], full);
+    assert_fields("null", &data["null"], &null);
+    assert_eq!(data["null"], null);
+    assert_eq!(
+        data["clinicalReports"],
+        json!([{"id": "live-test-clinical-report-null"}, {"id": "live-test-clinical-report"}])
+    );
+
+    let expected = expected_drug();
+    assert_fields("drug", &data["drug"], &expected);
+    assert_eq!(data["drug"], expected);
+
+    assert_eq!(
+        data["target"]["drugAndClinicalCandidates"],
+        json!({"count": 1, "rows": [{
+            "id": "live-test-ct", "maxClinicalStage": "PHASE_4", "drugName": "LIVE TEST DRUG",
+            "clinicalReportCount": 2,
+            "diseases": [
+                {"diseaseFromSource": "target disease from source"},
+                {"diseaseFromSource": null},
+            ],
+            "drug": {"id": "CHEMBL9999999"},
+            "clinicalReports": [
+                {"id": "live-test-clinical-report"}, {"id": "live-test-clinical-report-null"},
+            ],
+        }]})
+    );
+}

@@ -12,7 +12,7 @@ use strum::EnumIter;
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
-        clinical_report::{ClinicalReport, load_clinical_reports},
+        clinical_report::{ClinicalReport, ClinicalStage, load_clinical_reports},
         disease::{Disease, load_disease},
         drug::{Drug, load_drug},
     },
@@ -43,7 +43,7 @@ pub struct ClinicalIndication {
     #[graphql(skip)]
     disease_id: String,
     /// Maximum Clinical Development Status for the association.
-    max_clinical_stage: String,
+    max_clinical_stage: ClinicalStage,
     #[graphql(skip)]
     clinical_report_ids: Vec<String>,
     /// Name of the drug. Null if the drug isn't found.

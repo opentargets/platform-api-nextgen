@@ -45,6 +45,48 @@ type AdverseEventStats {
 }
 
 """
+Classification of the lead trial sponsor.
+"""
+enum AgencyClass {
+	"""
+	National Institutes of Health.
+	"""
+	NIH
+	"""
+	Other US federal agency.
+	"""
+	FED
+	"""
+	Other government agency.
+	"""
+	OTHER_GOV
+	"""
+	Individual.
+	"""
+	INDIV
+	"""
+	Industry.
+	"""
+	INDUSTRY
+	"""
+	Network.
+	"""
+	NETWORK
+	"""
+	Ambiguous.
+	"""
+	AMBIG
+	"""
+	Other sponsor.
+	"""
+	OTHER
+	"""
+	Unknown sponsor.
+	"""
+	UNKNOWN
+}
+
+"""
 Allele frequencies of the variant in different populations.
 """
 type AlleleFrequency {
@@ -430,9 +472,9 @@ type ClinicalDiseaseListItem {
 	"""
 	diseaseFromSource: String!
 	"""
-	Disease in the clinical report.
+	Disease in the clinical report. Null if the source disease isn't mapped.
 	"""
-	disease: Disease!
+	disease: Disease
 }
 
 """
@@ -449,7 +491,7 @@ type ClinicalIndication {
 	"""
 	Maximum Clinical Development Status for the association.
 	"""
-	maxClinicalStage: String!
+	maxClinicalStage: ClinicalStage!
 	"""
 	Name of the drug. Null if the drug isn't found.
 	"""
@@ -558,11 +600,11 @@ type ClinicalReport {
 	Kind of evidence the report describes: INDICATION for a drug/disease claim, SAFETY for a
 	drug warning.
 	"""
-	evidenceType: String
+	evidenceType: ClinicalReportType!
 	"""
 	Title of the clinical report.
 	"""
-	title: String
+	title: String!
 	"""
 	Type of clinical study (e.g. Interventional, Observational).
 	"""
@@ -586,7 +628,7 @@ type ClinicalReport {
 	"""
 	Overall status of the clinical trial (e.g. Completed, Terminated).
 	"""
-	trialOverallStatus: String
+	trialOverallStatus: TrialOverallStatus
 	"""
 	Reason provided for stopping the clinical trial.
 	"""
@@ -594,15 +636,15 @@ type ClinicalReport {
 	"""
 	Primary purpose of the clinical trial (e.g. Treatment, Prevention).
 	"""
-	trialPrimaryPurpose: String
+	trialPrimaryPurpose: TrialPrimaryPurpose
 	"""
 	Phase of the clinical trial.
 	"""
-	trialPhase: String
+	trialPhase: TrialPhase
 	"""
 	Categories describing reasons why the trial was stopped.
 	"""
-	trialStopReasonCategories: [String!]!
+	trialStopReasonCategories: [TrialStopReasonCategory!]!
 	"""
 	Lead sponsor associated with the clinical trial.
 	"""
@@ -638,7 +680,7 @@ type ClinicalReport {
 	"""
 	URL linking to the source record.
 	"""
-	url: String
+	url: String!
 	"""
 	Nature of the record the report originates from.
 	"""
@@ -655,9 +697,23 @@ type ClinicalReportDrugListItem {
 	"""
 	drugFromSource: String!
 	"""
-	Drug in the clinical report.
+	Drug in the clinical report. Null if the source drug isn't mapped.
 	"""
-	drug: Drug!
+	drug: Drug
+}
+
+"""
+Kind of clinical evidence the report describes.
+"""
+enum ClinicalReportType {
+	"""
+	Clinical evidence informing about a drug/disease claim.
+	"""
+	INDICATION
+	"""
+	Clinical evidence informing about a drug's safety event.
+	"""
+	SAFETY
 }
 
 """
@@ -667,7 +723,7 @@ type ClinicalSideEffectListItem {
 	"""
 	Side effect disease name as reported in the source.
 	"""
-	diseaseFromSource: String
+	diseaseFromSource: String!
 	"""
 	Disease for the reported side effect.
 	"""
@@ -733,6 +789,20 @@ enum ClinicalStage {
 }
 
 """
+A disease of the clinical reports linked to a target-drug pair.
+"""
+type ClinicalTargetDiseaseListItem {
+	"""
+	Disease name as reported in the source.
+	"""
+	diseaseFromSource: String
+	"""
+	Disease in the clinical reports. Null if the source disease isn't mapped.
+	"""
+	disease: Disease
+}
+
+"""
 Target-drug associations derived from clinical reports, capturing the maximum clinical stage and
 associated diseases for each target-drug pair.
 
@@ -747,8 +817,11 @@ type ClinicalTargetFromTarget {
 	"""
 	Diseases associated with the clinical reports linked to the drug in question.
 	"""
-	diseases: [ClinicalDiseaseListItem!]!
-	maxClinicalStage: String!
+	diseases: [ClinicalTargetDiseaseListItem!]!
+	"""
+	Maximum clinical stage reached by the drug for the target.
+	"""
+	maxClinicalStage: ClinicalStage!
 	"""
 	Name of the drug. Null if the drug isn't found.
 	"""
@@ -2315,7 +2388,7 @@ type Drug {
 	"""
 	Classification of the molecule's therapeutic category or chemical class (e.g. Antibody).
 	"""
-	drugType: String!
+	drugType: DrugType!
 	"""
 	Cross-reference information for this molecule from external databases.
 	"""
@@ -2323,11 +2396,11 @@ type Drug {
 	"""
 	Highest clinical stage reached by the drug or clinical candidate molecule.
 	"""
-	maximumClinicalStage: String!
+	maximumClinicalStage: ClinicalStage!
 	"""
 	Summary of the drug's clinical development.
 	"""
-	description: String
+	description: String!
 	"""
 	Mol Block is a chemical structure file format that serves as a connection table,
 	representing molecules through a list of atoms, bonds, and spatial coordinates.
@@ -2543,6 +2616,56 @@ type DrugReferences {
 	List of identifiers from the source database.
 	"""
 	ids: [String!]!
+}
+
+"""
+Therapeutic category or chemical class of a drug molecule.
+"""
+enum DrugType {
+	"""
+	Antibody.
+	"""
+	Antibody
+	"""
+	Antibody drug conjugate.
+	"""
+	Antibody_drug_conjugate
+	"""
+	Cell.
+	"""
+	Cell
+	"""
+	Enzyme.
+	"""
+	Enzyme
+	"""
+	Gene.
+	"""
+	Gene
+	"""
+	Oligonucleotide.
+	"""
+	Oligonucleotide
+	"""
+	Oligosaccharide.
+	"""
+	Oligosaccharide
+	"""
+	Protein.
+	"""
+	Protein
+	"""
+	Small molecule.
+	"""
+	Small_molecule
+	"""
+	Unknown type.
+	"""
+	Unknown
+	"""
+	Vaccine component.
+	"""
+	Vaccine_component
 }
 
 """
@@ -6985,6 +7108,152 @@ type MappingResults {
 }
 
 """
+How a drug interacts with its target, as classified by ChEMBL.
+"""
+enum MechanismActionType {
+	"""
+	Activator.
+	"""
+	ACTIVATOR
+	"""
+	Agonist.
+	"""
+	AGONIST
+	"""
+	Allosteric antagonist.
+	"""
+	ALLOSTERIC_ANTAGONIST
+	"""
+	Antagonist.
+	"""
+	ANTAGONIST
+	"""
+	Antisense inhibitor.
+	"""
+	ANTISENSE_INHIBITOR
+	"""
+	Binding agent.
+	"""
+	BINDING_AGENT
+	"""
+	Blocker.
+	"""
+	BLOCKER
+	"""
+	Chelating agent.
+	"""
+	CHELATING_AGENT
+	"""
+	Cross-linking agent.
+	"""
+	CROSS_LINKING_AGENT
+	"""
+	Degrader.
+	"""
+	DEGRADER
+	"""
+	Disrupting agent.
+	"""
+	DISRUPTING_AGENT
+	"""
+	Exogenous gene.
+	"""
+	EXOGENOUS_GENE
+	"""
+	Exogenous protein.
+	"""
+	EXOGENOUS_PROTEIN
+	"""
+	Gene editing negative modulator.
+	"""
+	GENE_EDITING_NEGATIVE_MODULATOR
+	"""
+	Hydrolytic enzyme.
+	"""
+	HYDROLYTIC_ENZYME
+	"""
+	Inhibitor.
+	"""
+	INHIBITOR
+	"""
+	Inverse agonist.
+	"""
+	INVERSE_AGONIST
+	"""
+	Methylating agent.
+	"""
+	METHYLATING_AGENT
+	"""
+	Modulator.
+	"""
+	MODULATOR
+	"""
+	Negative allosteric modulator.
+	"""
+	NEGATIVE_ALLOSTERIC_MODULATOR
+	"""
+	Negative modulator.
+	"""
+	NEGATIVE_MODULATOR
+	"""
+	Opener.
+	"""
+	OPENER
+	"""
+	Oxidative enzyme.
+	"""
+	OXIDATIVE_ENZYME
+	"""
+	Partial agonist.
+	"""
+	PARTIAL_AGONIST
+	"""
+	Positive allosteric modulator.
+	"""
+	POSITIVE_ALLOSTERIC_MODULATOR
+	"""
+	Positive modulator.
+	"""
+	POSITIVE_MODULATOR
+	"""
+	Proteolytic enzyme.
+	"""
+	PROTEOLYTIC_ENZYME
+	"""
+	Reducing agent.
+	"""
+	REDUCING_AGENT
+	"""
+	Releasing agent.
+	"""
+	RELEASING_AGENT
+	"""
+	RNA interference inhibitor.
+	"""
+	RNAI_INHIBITOR
+	"""
+	Sequestering agent.
+	"""
+	SEQUESTERING_AGENT
+	"""
+	Stabiliser.
+	"""
+	STABILISER
+	"""
+	Substrate.
+	"""
+	SUBSTRATE
+	"""
+	Vaccine antigen.
+	"""
+	VACCINE_ANTIGEN
+	"""
+	Other.
+	"""
+	OTHER
+}
+
+"""
 Mechanism of action information for a drug.
 """
 type MechanismOfActionRow {
@@ -7017,6 +7286,116 @@ type MechanismOfActionRow {
 }
 
 """
+Kind of target a drug acts on, as classified by ChEMBL.
+"""
+enum MechanismTargetType {
+	"""
+	3D cell culture.
+	"""
+	_3d_cell_culture
+	"""
+	ADMET.
+	"""
+	admet
+	"""
+	Cell-line.
+	"""
+	cell_line
+	"""
+	Chimeric protein.
+	"""
+	chimeric_protein
+	"""
+	Lipid.
+	"""
+	lipid
+	"""
+	Macromolecule.
+	"""
+	macromolecule
+	"""
+	Metal.
+	"""
+	metal
+	"""
+	No target.
+	"""
+	no_target
+	"""
+	Non-molecular.
+	"""
+	non_molecular
+	"""
+	Nucleic-acid.
+	"""
+	nucleic_acid
+	"""
+	Oligosaccharide.
+	"""
+	oligosaccharide
+	"""
+	Organism.
+	"""
+	organism
+	"""
+	Phenotype.
+	"""
+	phenotype
+	"""
+	Protein complex.
+	"""
+	protein_complex
+	"""
+	Protein complex group.
+	"""
+	protein_complex_group
+	"""
+	Protein family.
+	"""
+	protein_family
+	"""
+	Protein nucleic-acid complex.
+	"""
+	protein_nucleic_acid_complex
+	"""
+	Protein-protein interaction.
+	"""
+	protein_protein_interaction
+	"""
+	Selectivity group.
+	"""
+	selectivity_group
+	"""
+	Single protein.
+	"""
+	single_protein
+	"""
+	Small molecule.
+	"""
+	small_molecule
+	"""
+	Subcellular.
+	"""
+	subcellular
+	"""
+	Tissue.
+	"""
+	tissue
+	"""
+	Unchecked.
+	"""
+	unchecked
+	"""
+	Unknown.
+	"""
+	unknown
+	"""
+	Other.
+	"""
+	other
+}
+
+"""
 Collection of mechanisms of action for a drug molecule.
 """
 type MechanismsOfAction {
@@ -7027,11 +7406,11 @@ type MechanismsOfAction {
 	"""
 	Unique list of action types across all mechanisms.
 	"""
-	uniqueActionTypes: [String!]!
+	uniqueActionTypes: [MechanismActionType!]!
 	"""
 	Unique list of target types across all mechanisms.
 	"""
-	uniqueTargetTypes: [String!]!
+	uniqueTargetTypes: [MechanismTargetType!]!
 }
 
 """
@@ -7150,19 +7529,19 @@ Nature of the record the report originates from.
 """
 enum Origin {
 	"""
-	TODO DESCRIPTION: Clinical trial record.
+	Clinical trial record.
 	"""
 	CLINICAL_TRIAL
 	"""
-	TODO DESCRIPTION: Drug label record.
+	Drug label record.
 	"""
 	DRUG_LABEL
 	"""
-	TODO DESCRIPTION: Regulatory agency record.
+	Regulatory agency record.
 	"""
 	REGULATORY_AGENCY
 	"""
-	TODO DESCRIPTION: Curated resource record.
+	Curated resource record.
 	"""
 	CURATED_RESOURCE
 }
@@ -7517,7 +7896,7 @@ enum Provider {
 	"""
 	ChEMBL.
 	"""
-	CHEMBL
+	ChEMBL
 	"""
 	Therapeutic Target Database.
 	"""
@@ -7534,6 +7913,10 @@ enum Provider {
 	Pharmaceuticals and Medical Devices Agency.
 	"""
 	PMDA
+	"""
+	US Food and Drug Administration.
+	"""
+	FDA
 }
 
 """
@@ -9557,12 +9940,172 @@ type TrialLiterature {
 	"""
 	PubMed identifier of the reference, when the source records one.
 	"""
-	id: String!
+	id: String
 	"""
 	How the reference relates to the trial: RESULT and DERIVED report its outcome, BACKGROUND
 	is literature its authors cited.
 	"""
-	referenceType: String!
+	referenceType: TrialLiteratureType!
+}
+
+"""
+How a literature reference relates to the clinical trial.
+"""
+enum TrialLiteratureType {
+	"""
+	Literature the trial's authors cited.
+	"""
+	BACKGROUND
+	"""
+	Reports the trial's outcome.
+	"""
+	RESULT
+	"""
+	Derived from the trial's outcome.
+	"""
+	DERIVED
+}
+
+"""
+Overall recruitment status of the clinical trial.
+"""
+enum TrialOverallStatus {
+	"""
+	Active, not recruiting.
+	"""
+	ACTIVE_NOT_RECRUITING
+	"""
+	Completed.
+	"""
+	COMPLETED
+	"""
+	Enrolling by invitation.
+	"""
+	ENROLLING_BY_INVITATION
+	"""
+	Not yet recruiting.
+	"""
+	NOT_YET_RECRUITING
+	"""
+	Recruiting.
+	"""
+	RECRUITING
+	"""
+	Suspended.
+	"""
+	SUSPENDED
+	"""
+	Terminated.
+	"""
+	TERMINATED
+	"""
+	Withdrawn.
+	"""
+	WITHDRAWN
+	"""
+	Expanded access available.
+	"""
+	AVAILABLE
+	"""
+	Expanded access no longer available.
+	"""
+	NO_LONGER_AVAILABLE
+	"""
+	Expanded access temporarily not available.
+	"""
+	TEMPORARILY_NOT_AVAILABLE
+	"""
+	Approved for marketing.
+	"""
+	APPROVED_FOR_MARKETING
+	"""
+	Withheld.
+	"""
+	WITHHELD
+	"""
+	Unknown status.
+	"""
+	UNKNOWN
+}
+
+"""
+Phase of the clinical trial as registered.
+"""
+enum TrialPhase {
+	"""
+	Early phase 1.
+	"""
+	EARLY_PHASE1
+	"""
+	Phase 1.
+	"""
+	PHASE1
+	"""
+	Phase 1/phase 2.
+	"""
+	PHASE1_PHASE2
+	"""
+	Phase 2.
+	"""
+	PHASE2
+	"""
+	Phase 2/phase 3.
+	"""
+	PHASE2_PHASE3
+	"""
+	Phase 3.
+	"""
+	PHASE3
+	"""
+	Phase 4.
+	"""
+	PHASE4
+}
+
+"""
+Primary purpose of the clinical trial.
+"""
+enum TrialPrimaryPurpose {
+	"""
+	Treatment.
+	"""
+	TREATMENT
+	"""
+	Prevention.
+	"""
+	PREVENTION
+	"""
+	Diagnostic.
+	"""
+	DIAGNOSTIC
+	"""
+	Educational, counseling or training.
+	"""
+	ECT
+	"""
+	Supportive care.
+	"""
+	SUPPORTIVE_CARE
+	"""
+	Screening.
+	"""
+	SCREENING
+	"""
+	Health services research.
+	"""
+	HEALTH_SERVICES_RESEARCH
+	"""
+	Basic science.
+	"""
+	BASIC_SCIENCE
+	"""
+	Device feasibility.
+	"""
+	DEVICE_FEASIBILITY
+	"""
+	Other purpose.
+	"""
+	OTHER
 }
 
 """
@@ -9572,7 +10115,7 @@ type TrialSponsor {
 	"""
 	Classification of the lead trial sponsor (e.g. INDUSTRY, NIH, OTHER).
 	"""
-	agencyClass: String
+	agencyClass: AgencyClass
 	"""
 	Name of the lead sponsor associated with the clinical trial.
 	"""

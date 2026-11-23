@@ -9,12 +9,17 @@ use strum::IntoEnumIterator;
 use crate::entity::association_timeseries_ppp::AggregationType;
 use crate::entity::{
     association::Datasource,
-    clinical_report::ClinicalStage,
+    clinical_report::{
+        AgencyClass, ClinicalReportType, ClinicalStage, Origin, Provider, TrialLiteratureType,
+        TrialOverallStatus, TrialPhase, TrialPrimaryPurpose, TrialStudyType,
+    },
     credible_set::FineMappingMethod,
+    drug::DrugType,
     evidence::{
         Datatype, DirectionOnTarget, DirectionOnTrait, EuropePmcSection, TrialStopReasonCategory,
     },
     interaction::InteractionSourceDatabase,
+    mechanisms_of_action::{MechanismActionType, MechanismTargetType},
     study::StudyType,
     target::{
         ConstraintType, GoAspect, GoEvidenceCode, HomologyType, SafetyStudyType,
@@ -185,6 +190,51 @@ pub fn bindings() -> Vec<EnumBinding> {
             SafetyStudyType,
             "targets",
             "tupleElement(arrayJoin(tupleElement(arrayJoin(safetyLiabilities), 'studies')), 'type')"
+        ),
+        binding!(ClinicalStage, "clinical_report", "clinicalStage"),
+        binding!(
+            ClinicalStage,
+            "clinical_indication_disease",
+            "maxClinicalStage"
+        ),
+        binding!(ClinicalStage, "clinical_target", "maxClinicalStage"),
+        binding!(ClinicalStage, "drug", "maximumClinicalStage"),
+        binding!(Origin, "clinical_report", "origin"),
+        binding!(ClinicalReportType, "clinical_report", "type"),
+        binding!(Provider, "clinical_report", "provider"),
+        binding!(TrialStudyType, "clinical_report", "trialStudyType"),
+        binding!(TrialOverallStatus, "clinical_report", "trialOverallStatus"),
+        binding!(TrialPhase, "clinical_report", "trialPhase"),
+        binding!(
+            TrialPrimaryPurpose,
+            "clinical_report",
+            "trialPrimaryPurpose"
+        ),
+        binding!(
+            AgencyClass,
+            "clinical_report",
+            "tupleElement(trialSponsor, 'agencyClass')"
+        ),
+        binding!(
+            TrialLiteratureType,
+            "clinical_report",
+            "tupleElement(arrayJoin(trialLiterature), 'type')"
+        ),
+        binding!(
+            TrialStopReasonCategory,
+            "clinical_report",
+            "trialStopReasonCategories"
+        ),
+        binding!(DrugType, "drug", "drugType"),
+        binding!(
+            MechanismActionType,
+            "mechanism_of_action",
+            "uniqueActionTypes"
+        ),
+        binding!(
+            MechanismTargetType,
+            "mechanism_of_action",
+            "uniqueTargetTypes"
         ),
     ]
 }
