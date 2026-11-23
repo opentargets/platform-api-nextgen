@@ -37,19 +37,17 @@ pub struct Publication {
     /// PubMed Central identifier (if available) [bioregistry:pmc].
     pmcid: Option<String>,
     #[graphql(skip)]
-    year: Option<u16>,
+    year: u16,
     #[graphql(skip)]
-    month: Option<u8>,
+    month: u8,
     /// Relevance to each queried id.
     relevances: Vec<KeywordRelevance>,
 }
 
 #[ComplexObject]
 impl Publication {
-    /// Publication date (first of the month). Null when the date is unknown.
-    async fn publication_date(&self) -> Option<String> {
-        Some(format!("{:04}-{:02}-01", self.year?, self.month?))
-    }
+    /// Publication date.
+    async fn publication_date(&self) -> String { format!("{:04}-{:02}-01", self.year, self.month) }
 }
 
 /// Statistics for a set of publications.
@@ -71,10 +69,6 @@ pub struct PublicationArguments {
     pub end_month: Option<u32>,
     pub page: Page,
 }
-
-/// The (year, month) range used when no bounds are given.
-const UNBOUNDED_START: (u32, u32) = (0, 1);
-const UNBOUNDED_END: (u32, u32) = (9999, 12);
 
 /// A key used to uniquely identify a set of literature results.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -104,15 +98,16 @@ pub struct PublicationLoader {
 
 const QUERY: &str = "
 WITH
-    ifNull((year, month) BETWEEN (?, ?) AND (?, ?), ?) AS in_range  -- An undated publication is in range only without date bounds
+    year IS NOT NULL AND month IS NOT NULL                      -- Undated publications are never listed or counted
+        AND (assumeNotNull(year), assumeNotNull(month)) BETWEEN (?, ?) AND (?, ?) AS in_range
 SELECT                                                          -- SECOND: Builds one row per LiteratureKey
     CAST(? AS UInt64) AS key,                                   -- Index of the LiteratureKey, to match results back to each request
     countIf(in_range) AS count,
-    ifNull(min(year), 0) AS earliestPubYear,
+    ifNull(min(year), 0) AS earliestPubYear,                    -- Over dated publications; 0 if none
     arraySlice(                                                                  -- 3.  Slice the array using 3a
         arrayReverseSort(                                                        -- 2.  Sort reverse using 1c
             (row, sort_key) -> sort_key,                                         -- 1c. Lambda for sorting (returns 1a)
-            groupArrayIf((pmid, pmcid, year, month, relevances), in_range),      -- 1b. Return tuple
+            groupArrayIf((pmid, pmcid, assumeNotNull(year), assumeNotNull(month), relevances), in_range),  -- 1b. Return tuple
             groupArrayIf((min_relevance, sum_relevance, year, month), in_range)  -- 1a. Sort tuple: min_relevance, sum_relevance, year, month
         ),
         ?, ?                                                    -- 3a. offset (index*size+1), size
@@ -152,7 +147,6 @@ impl Loader<LiteratureKey> for PublicationLoader {
                     .bind(k.start.1)
                     .bind(k.end.0)
                     .bind(k.end.1)
-                    .bind(k.start == UNBOUNDED_START && k.end == UNBOUNDED_END)
                     .bind(i as u64)
                     .bind(k.page.index * k.page.size + 1)
                     .bind(k.page.size)
@@ -198,14 +192,8 @@ pub async fn load_publications(
 
     let key = LiteratureKey {
         ids,
-        start: (
-            args.start_year.unwrap_or(UNBOUNDED_START.0),
-            args.start_month.unwrap_or(UNBOUNDED_START.1),
-        ),
-        end: (
-            args.end_year.unwrap_or(UNBOUNDED_END.0),
-            args.end_month.unwrap_or(UNBOUNDED_END.1),
-        ),
+        start: (args.start_year.unwrap_or(0), args.start_month.unwrap_or(1)),
+        end: (args.end_year.unwrap_or(9999), args.end_month.unwrap_or(12)),
         page: args.page,
     };
 

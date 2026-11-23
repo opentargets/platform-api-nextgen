@@ -1428,11 +1428,12 @@ fn expected_target_extras() -> serde_json::Value {
              "speciesB": {"mnemonic": "unknown", "scientificName": null, "taxonId": null},
              "evidences": []},
         ]},
-        "literatureOcurrences": {"count": 2, "rows": [
+        // The undated 88888888 is excluded, with or without date bounds.
+        "literatureOcurrences": {"count": 1, "rows": [
             {"pmid": "77777777", "pmcid": "PMC777", "publicationDate": "2003-04-01"},
-            {"pmid": "88888888", "pmcid": null, "publicationDate": null},
         ], "stats": {"earliestPubDate": 2003}},
         "datedLiterature": {"count": 1, "rows": [{"pmid": "77777777"}]},
+        "beforeLiterature": {"count": 0, "rows": []},
         "drugLiterature": {"count": 1, "rows": [{"pmid": "77777777"}]},
     })
 }
@@ -1487,6 +1488,7 @@ async fn other_fixtures_decode_to_inserted_values() {
                 literatureOcurrences {{ count rows {{ pmid pmcid publicationDate }}
                     stats {{ earliestPubDate }} }}
                 datedLiterature: literatureOcurrences(startYear: 2000) {{ count rows {{ pmid }} }}
+                beforeLiterature: literatureOcurrences(endYear: 2000) {{ count rows {{ pmid }} }}
                 drugLiterature: literatureOcurrences(additionalIds: [\"CHEMBL9999999\"]) {{
                     count rows {{ pmid }} }}
             }}

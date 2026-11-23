@@ -8189,9 +8189,9 @@ type Publication {
 	"""
 	relevances: [KeywordRelevance!]!
 	"""
-	Publication date (first of the month). Null when the date is unknown.
+	Publication date.
 	"""
-	publicationDate: String
+	publicationDate: String!
 }
 
 """
