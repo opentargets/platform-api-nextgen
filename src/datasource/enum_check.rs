@@ -6,6 +6,7 @@
 use strum::IntoEnumIterator;
 
 use crate::entity::{
+    association::Datasource,
     clinical_report::ClinicalStage,
     credible_set::FineMappingMethod,
     evidence::{
@@ -39,6 +40,33 @@ macro_rules! binding {
             },
             table: $table,
             expr: $expr,
+        }
+    };
+}
+
+/// `Datasource`'s values. Platform's DDL keeps the PPP-only tail, which Platform data never holds
+/// and which fails to decode if it does.
+fn datasource_variants() -> Vec<(&'static str, i16)> {
+    #[allow(unused_mut, reason = "extended on Platform only")]
+    let mut values: Vec<(&'static str, i16)> = Datasource::iter()
+        .map(|v| (<&'static str>::from(v), v as i16))
+        .collect();
+    #[cfg(not(feature = "product-ppp"))]
+    values.extend([
+        ("encore", 21),
+        ("ot_crispr", 22),
+        ("ot_crispr_validation", 23),
+    ]);
+    values
+}
+
+macro_rules! datasource_binding {
+    ($table:literal) => {
+        EnumBinding {
+            rust: "Datasource",
+            variants: datasource_variants,
+            table: $table,
+            expr: "datasourceId",
         }
     };
 }
@@ -89,6 +117,9 @@ pub fn bindings() -> Vec<EnumBinding> {
             "interaction",
             "tupleElement(arrayJoin(interactions), 'sourceDatabase')"
         ),
+        datasource_binding!("evidence"),
+        datasource_binding!("evidence_by_disease_and_target"),
+        datasource_binding!("evidence_by_variant"),
         binding!(Datatype, "evidence", "datatypeId"),
         binding!(DirectionOnTarget, "evidence", "directionOnTarget"),
         binding!(DirectionOnTrait, "evidence", "directionOnTrait"),

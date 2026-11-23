@@ -887,3 +887,22 @@ impl Evidence {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde::de::{IntoDeserializer, value::Error};
+
+    use super::*;
+
+    #[test]
+    fn datasource_enum8_decodes_by_number() {
+        let ds = datasource_from_enum8(4_i8.into_deserializer());
+        assert_eq!(ds, Ok::<_, Error>(Datasource::Eva));
+    }
+
+    #[test]
+    fn unknown_datasource_enum8_is_an_error() {
+        let ds: Result<Datasource, Error> = datasource_from_enum8(99_i8.into_deserializer());
+        assert!(ds.is_err());
+    }
+}
