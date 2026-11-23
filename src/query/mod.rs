@@ -82,12 +82,12 @@ impl<T: OutputType> Query<T> {
     fn page_slice(&mut self, page: Page) -> Vec<T> {
         // Using drain here is much faster than into_iter().skip()/take() because it avoids copying
         // the items into a new vector, and instead moves them directly into the Paged struct.
-        #[allow(clippy::cast_possible_truncation)]
-        let total = self.0.len() as u32;
-        let size = page.size.min(MAX_PAGE_SIZE);
-        let start = (page.index * size).min(total);
-        let end = (start + size).min(total);
-        self.0.drain(start as usize..end as usize).collect()
+        let total = self.0.len();
+        let size = usize::try_from(page.size.min(MAX_PAGE_SIZE)).unwrap_or(usize::MAX);
+        let index = usize::try_from(page.index).unwrap_or(usize::MAX);
+        let start = index.saturating_mul(size).min(total);
+        let end = start.saturating_add(size).min(total);
+        self.0.drain(start..end).collect()
     }
 
     #[must_use]
@@ -129,4 +129,216 @@ where
 {
     let mut found = loader.load_many(ids.iter().cloned()).await?;
     Ok(ids.iter().filter_map(|id| found.remove(id)).collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cmp::Ordering;
+
+    use async_graphql::{Enum, SimpleObject};
+    use strum::EnumIter;
+
+    use super::*;
+    use crate::query::{
+        search::contains,
+        sort::{Nulls, SortDirection, Term},
+        stats::HasStats,
+    };
+
+    #[derive(Clone, SimpleObject)]
+    struct Item {
+        name: String,
+        value: i32,
+    }
+
+    impl Entity for Item {
+        fn id(&self) -> &str { &self.name }
+    }
+
+    #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Enum, EnumIter)]
+    enum Field {
+        Name,
+    }
+
+    impl Searchable for Item {
+        type Field = Field;
+
+        fn field_matches(&self, _: Field, needle: &str) -> bool { contains(&self.name, needle) }
+    }
+
+    impl SortKey<Item> for Field {
+        fn compare(&self, a: &Item, b: &Item, direction: SortDirection) -> Ordering {
+            Term::new(direction, Nulls::Last).cmp(&a.name, &b.name)
+        }
+    }
+
+    struct MinimumValue(i32);
+
+    impl Filter<Item> for MinimumValue {
+        fn matches(&self, item: &Item) -> bool { item.value >= self.0 }
+    }
+
+    impl HasStats for Item {
+        type Stats = i32;
+    }
+
+    impl ComputeStats for Item {
+        fn compute(items: &[Self]) -> i32 { items.iter().map(|item| item.value).sum() }
+    }
+
+    fn items() -> Vec<Item> {
+        [
+            ("Gamma match", 30),
+            ("Zulu match", 1),
+            ("Alpha match", 10),
+            ("Unrelated", 100),
+            ("Beta match", 20),
+            ("Delta match", 40),
+        ]
+        .into_iter()
+        .map(|(name, value)| Item {
+            name: name.into(),
+            value,
+        })
+        .collect()
+    }
+
+    fn matching_items() -> Query<Item> {
+        items()
+            .query()
+            .filter(Some(&MinimumValue(10)))
+            .search(Some(Search {
+                text: " MATCH ".into(),
+                fields: vec![Field::Name],
+            }))
+            .sort(&[Sort {
+                key: Field::Name,
+                direction: SortDirection::Ascending,
+            }])
+    }
+
+    #[test]
+    fn pagination_preserves_order_and_total_across_page_boundaries() {
+        for (index, expected) in [
+            (0, vec![50, 10]),
+            (1, vec![30, 20]),
+            (2, vec![40]),
+            (3, vec![]),
+            (10, vec![]),
+        ] {
+            let result = vec![50, 10, 30, 20, 40]
+                .query()
+                .paginate(Page { index, size: 2 });
+            assert_eq!(result.count, 5, "page {index}");
+            assert_eq!(result.rows, expected, "page {index}");
+        }
+    }
+
+    #[test]
+    fn default_pagination_returns_the_first_ten_rows() {
+        let result = (0..12)
+            .collect::<Vec<_>>()
+            .query()
+            .paginate(Page::default());
+        assert_eq!(result.count, 12);
+        assert_eq!(result.rows, vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    }
+
+    #[test]
+    fn page_size_cap_applies_to_both_length_and_offset() {
+        for size in [MAX_PAGE_SIZE, MAX_PAGE_SIZE + 1, u32::MAX] {
+            let values: Vec<_> = (0..MAX_PAGE_SIZE + 3).collect();
+            let first = values.clone().query().paginate(Page { index: 0, size });
+            let second = values.query().paginate(Page { index: 1, size });
+            assert_eq!(first.count, u64::from(MAX_PAGE_SIZE + 3), "size {size}");
+            assert_eq!(
+                first.rows,
+                (0..MAX_PAGE_SIZE).collect::<Vec<_>>(),
+                "size {size}"
+            );
+            assert_eq!(second.count, first.count, "size {size}");
+            assert_eq!(
+                second.rows,
+                vec![MAX_PAGE_SIZE, MAX_PAGE_SIZE + 1, MAX_PAGE_SIZE + 2],
+                "size {size}"
+            );
+        }
+    }
+
+    #[test]
+    fn large_page_indices_return_empty_rows_without_overflowing() {
+        for page in [
+            Page {
+                index: 65_536,
+                size: 65_536,
+            },
+            Page {
+                index: u32::MAX,
+                size: MAX_PAGE_SIZE,
+            },
+            Page {
+                index: u32::MAX,
+                size: 1,
+            },
+        ] {
+            let result = items().query().paginate(page);
+            assert_eq!(result.count, 6, "{page:?}");
+            assert!(result.rows.is_empty(), "{page:?}");
+
+            let with_stats = items().query().paginate_with_stats(page);
+            assert_eq!(with_stats.count, 6, "{page:?}");
+            assert!(with_stats.rows.is_empty(), "{page:?}");
+            assert_eq!(with_stats.stats, 201, "{page:?}");
+        }
+    }
+
+    #[test]
+    fn empty_input_has_no_rows_and_empty_statistics() {
+        for index in [0, 1] {
+            let page = Page { index, size: 2 };
+            let result = Vec::<Item>::new().query().paginate(page);
+            assert_eq!(result.count, 0);
+            assert!(result.rows.is_empty());
+
+            let with_stats = Vec::<Item>::new().query().paginate_with_stats(page);
+            assert_eq!(with_stats.count, 0);
+            assert!(with_stats.rows.is_empty());
+            assert_eq!(with_stats.stats, 0);
+        }
+    }
+
+    #[test]
+    fn filtered_and_searched_pages_keep_total_and_stats_for_all_matches() {
+        for (index, expected) in [
+            (0, vec!["Alpha match", "Beta match"]),
+            (1, vec!["Delta match", "Gamma match"]),
+            (2, vec![]),
+        ] {
+            let page = Page { index, size: 2 };
+            let result = matching_items().paginate(page);
+            assert_eq!(result.count, 4, "page {index}");
+            assert_eq!(
+                result
+                    .rows
+                    .iter()
+                    .map(|item| item.name.as_str())
+                    .collect::<Vec<_>>(),
+                expected,
+                "page {index}"
+            );
+
+            let with_stats = matching_items().paginate_with_stats(page);
+            assert_eq!(with_stats.count, 4, "page {index}");
+            assert_eq!(with_stats.stats, 100, "page {index}");
+            assert_eq!(
+                with_stats
+                    .rows
+                    .iter()
+                    .map(|item| item.name.as_str())
+                    .collect::<Vec<_>>(),
+                expected,
+                "page {index}"
+            );
+        }
+    }
 }
