@@ -93,11 +93,57 @@ type AlleleFrequency {
 	"""
 	Name of the population where the allele frequency was measured.
 	"""
-	populationName: String
+	populationName: AlleleFrequencyPopulation!
 	"""
 	Frequency of the alternate allele in the population (ranging from 0 to 1).
 	"""
 	alleleFrequency: Float
+}
+
+"""
+gnomAD population of an allele frequency.
+"""
+enum AlleleFrequencyPopulation {
+	"""
+	African/African American.
+	"""
+	afr_adj
+	"""
+	Admixed American.
+	"""
+	amr_adj
+	"""
+	Amish.
+	"""
+	ami_adj
+	"""
+	Ashkenazi Jewish.
+	"""
+	asj_adj
+	"""
+	East Asian.
+	"""
+	eas_adj
+	"""
+	Finnish.
+	"""
+	fin_adj
+	"""
+	Non-Finnish European.
+	"""
+	nfe_adj
+	"""
+	Middle Eastern.
+	"""
+	mid_adj
+	"""
+	South Asian.
+	"""
+	sas_adj
+	"""
+	Remaining individuals.
+	"""
+	remaining_adj
 }
 
 """
@@ -185,11 +231,11 @@ type BaselineExpression {
 	"""
 	Origin of expression data.
 	"""
-	datasourceId: String!
+	datasourceId: BaselineExpressionDatasource!
 	"""
 	Type of expression data.
 	"""
-	datatypeId: String!
+	datatypeId: BaselineExpressionDatatype!
 	"""
 	Unit for the target expression.
 	"""
@@ -214,6 +260,46 @@ type BaselineExpression {
 	Cell type biosample parent reported by study.
 	"""
 	celltypeBiosampleParent: Biosample
+}
+
+"""
+Origin of baseline expression data.
+"""
+enum BaselineExpressionDatasource {
+	"""
+	Database of Immune Cell Expression.
+	"""
+	DICE
+	"""
+	PRIDE proteomics database.
+	"""
+	PRIDE
+	"""
+	Genotype-Tissue Expression project.
+	"""
+	gtex
+	"""
+	Tabula Sapiens single-cell atlas.
+	"""
+	tabula_sapiens
+}
+
+"""
+Type of baseline expression data.
+"""
+enum BaselineExpressionDatatype {
+	"""
+	Bulk RNA sequencing.
+	"""
+	bulk_rna_seq
+	"""
+	Mass spectrometry proteomics.
+	"""
+	mass_spectrometry_proteomics
+	"""
+	Single-cell RNA sequencing.
+	"""
+	scrna_seq
 }
 
 """
@@ -1773,11 +1859,11 @@ type DbXref {
 	"""
 	Identifier of the variant in the given database.
 	"""
-	id: String
+	id: String!
 	"""
 	Name of the database the variant is referenced in.
 	"""
-	source: String
+	source: String!
 }
 
 type DepMapEssentiality {
@@ -1874,14 +1960,6 @@ type Disease {
 	Cross-references in other disease ontologies.
 	"""
 	dbXRefs: [String!]!
-	"""
-	EFO terms for direct anatomical locations.
-	"""
-	directLocationIds: [String!]!
-	"""
-	EFO terms for indirect anatomical locations (propagated).
-	"""
-	indirectLocationIds: [String!]!
 	"""
 	List of studies associated with the disease.
 	"""
@@ -2737,13 +2815,13 @@ Drug with drug identifiers.
 """
 type DrugWithIdentifiers {
 	"""
-	Drug or clinical candidate identifier.
-	"""
-	drugId: String!
-	"""
 	Drug identifier from the original data source.
 	"""
 	drugFromSource: String!
+	"""
+	Drug or clinical candidate identifier.
+	"""
+	drugId: String
 	"""
 	Drug or clinical candidate entity.
 	"""
@@ -2776,7 +2854,7 @@ type EnhancerToGene {
 	"""
 	Type of regulatory region (e.g., enhancer, promoter).
 	"""
-	intervalType: String!
+	intervalType: IntervalType!
 	"""
 	Distance from the regulatory region to the transcription start site.
 	"""
@@ -2792,7 +2870,7 @@ type EnhancerToGene {
 	"""
 	Identifier of the data source providing the regulatory region to gene prediction.
 	"""
-	datasourceId: String!
+	datasourceId: EnhancerToGeneDatasource!
 	"""
 	PubMed identifier for the study providing the evidence [bioregistry:pubmed].
 	"""
@@ -2813,6 +2891,16 @@ type EnhancerToGene {
 	Predicted gene (target).
 	"""
 	target: Target
+}
+
+"""
+Provider of enhancer-to-gene predictions.
+"""
+enum EnhancerToGeneDatasource {
+	"""
+	ENCODE-rE2G predictions.
+	"""
+	E2G
 }
 
 """
@@ -6609,7 +6697,6 @@ type Hpo {
 	Description of the disease.
 	"""
 	description: String
-	namespace: [String!]! @deprecated(reason: "empty")
 }
 
 """
@@ -6832,6 +6919,32 @@ type InteractionSpeciesB {
 }
 
 """
+Type of a regulatory region relative to the gene.
+"""
+enum IntervalType {
+	"""
+	Within the gene body.
+	"""
+	genic
+	"""
+	Between genes.
+	"""
+	intergenic
+	"""
+	Promoter region.
+	"""
+	promoter
+	"""
+	Enhancer region.
+	"""
+	enhancer
+	"""
+	Within the gene, outside its exons.
+	"""
+	intragenic
+}
+
+"""
 Relevance of a publication to one of the queried ids.
 """
 type KeywordRelevance {
@@ -6946,13 +7059,59 @@ type LabelledUri {
 }
 
 """
+Linkage disequilibrium reference population (gnomAD).
+"""
+enum LdPopulation {
+	"""
+	African/African American.
+	"""
+	afr
+	"""
+	Admixed American.
+	"""
+	amr
+	"""
+	Ashkenazi Jewish.
+	"""
+	asj
+	"""
+	East Asian.
+	"""
+	eas
+	"""
+	Non-Finnish European.
+	"""
+	nfe
+	"""
+	Estonian.
+	"""
+	est
+	"""
+	Finnish.
+	"""
+	fin
+	"""
+	North-western European.
+	"""
+	nwe
+	"""
+	Southern European.
+	"""
+	seu
+	"""
+	Central/South Asian.
+	"""
+	csa
+}
+
+"""
 Collection of populations.
 """
 type LdPopulationStructure {
 	"""
 	Population identifier.
 	"""
-	ldPopulation: String!
+	ldPopulation: LdPopulation!
 	"""
 	Fraction of the total sample represented by the population.
 	"""
@@ -7073,6 +7232,20 @@ The result of a paginated query, containing the total number of items and the it
 type LocusPage {
 	count: Int!
 	rows: [Locus!]!
+}
+
+"""
+Loss-of-function confidence predicted by LOFTEE.
+"""
+enum LofteePrediction {
+	"""
+	High confidence loss of function.
+	"""
+	HC
+	"""
+	Low confidence loss of function.
+	"""
+	LC
 }
 
 """
@@ -7597,11 +7770,11 @@ type Pharmacogenomics {
 	"""
 	Identifier for the data provider.
 	"""
-	datasourceId: String!
+	datasourceId: PharmacogenomicsDatasource!
 	"""
 	Classification of the type of pharmacogenomic data (e.g., `clinical_annotation`).
 	"""
-	datatypeId: String!
+	datatypeId: PharmacogenomicsDatatype!
 	"""
 	List of drugs or clinical candidates associated with the pharmacogenomic data.
 	"""
@@ -7609,15 +7782,15 @@ type Pharmacogenomics {
 	"""
 	Strength of the scientific support for the variant/drug response.
 	"""
-	evidenceLevel: String!
+	evidenceLevel: PharmacogenomicsEvidenceLevel!
 	"""
 	Genetic variant configuration.
 	"""
-	genotype: String
+	genotype: String!
 	"""
 	Explanation of the genotype's clinical significance.
 	"""
-	genotypeAnnotationText: String
+	genotypeAnnotationText: String!
 	"""
 	Identifier for the specific genetic variant combination (e.g., `1_1500_A_A,T`).
 	"""
@@ -7638,7 +7811,7 @@ type Pharmacogenomics {
 	"""
 	Classification of the drug response type (e.g., Toxicity).
 	"""
-	pgxCategory: String!
+	pgxCategory: PharmacogenomicsCategory!
 	"""
 	Phenotype identifier from the source.
 	"""
@@ -7654,7 +7827,7 @@ type Pharmacogenomics {
 	"""
 	Identifier of the study providing the pharmacogenomic evidence.
 	"""
-	studyId: String
+	studyId: String!
 	"""
 	Target (gene/protein) identifier as reported by the data source.
 	"""
@@ -7685,6 +7858,86 @@ type Pharmacogenomics {
 	the context of the transcript [bioregistry:so]
 	"""
 	variantFunctionalConsequence: SequenceOntologyTerm
+}
+
+"""
+Classification of a drug response.
+"""
+enum PharmacogenomicsCategory {
+	"""
+	Dosage.
+	"""
+	dosage
+	"""
+	Efficacy.
+	"""
+	efficacy
+	"""
+	Metabolism or pharmacokinetics.
+	"""
+	metabolism_pk
+	"""
+	Other.
+	"""
+	other
+	"""
+	Pharmacodynamics.
+	"""
+	pd
+	"""
+	Toxicity.
+	"""
+	toxicity
+}
+
+"""
+Provider of pharmacogenomics data.
+"""
+enum PharmacogenomicsDatasource {
+	"""
+	ClinPGx.
+	"""
+	clinpgx
+}
+
+"""
+Type of pharmacogenomics data.
+"""
+enum PharmacogenomicsDatatype {
+	"""
+	ClinPGx clinical annotation.
+	"""
+	clinical_annotation
+}
+
+"""
+Strength of the scientific support for a variant/drug response (ClinPGx levels of evidence).
+"""
+enum PharmacogenomicsEvidenceLevel {
+	"""
+	Level 1A.
+	"""
+	_1A
+	"""
+	Level 1B.
+	"""
+	_1B
+	"""
+	Level 2A.
+	"""
+	_2A
+	"""
+	Level 2B.
+	"""
+	_2B
+	"""
+	Level 3.
+	"""
+	_3
+	"""
+	Level 4.
+	"""
+	_4
 }
 
 """
@@ -7936,9 +8189,9 @@ type Publication {
 	"""
 	relevances: [KeywordRelevance!]!
 	"""
-	Publication date.
+	Publication date (first of the month). Null when the date is unknown.
 	"""
-	publicationDate: String!
+	publicationDate: String
 }
 
 """
@@ -8274,6 +8527,20 @@ type Region {
 }
 
 """
+Represents a sample of the study replication phase.
+"""
+type ReplicationSample {
+	"""
+	Sample size.
+	"""
+	sampleSize: Int
+	"""
+	Sample ancestry name.
+	"""
+	ancestry: String!
+}
+
+"""
 Score from a specific datasource.
 """
 type ResourceScore {
@@ -8410,13 +8677,13 @@ Represents a sample of biological material.
 """
 type Sample {
 	"""
-	Sample ancestry name.
-	"""
-	ancestry: String!
-	"""
 	Sample size.
 	"""
 	sampleSize: Int!
+	"""
+	Sample ancestry name.
+	"""
+	ancestry: String!
 }
 
 """
@@ -8787,7 +9054,7 @@ type Study {
 	"""
 	Collection of ancestries reported by the study replication phase.
 	"""
-	replicationSamples: [Sample!]!
+	replicationSamples: [ReplicationSample!]!
 	"""
 	Collection of populations referenced by the study.
 	"""
@@ -9876,23 +10143,23 @@ type TranscriptConsequence {
 	"""
 	Ensembl VEP predicted impact of the variant on the transcript.
 	"""
-	impact: String
-	"""
-	Ensembl transcript identifier [bioregistry:ensembl].
-	"""
-	transcriptId: String
+	impact: String!
 	"""
 	Loss-of-function prediction based on LOFTEE.
 	"""
-	lofteePrediction: String
+	lofteePrediction: LofteePrediction
+	"""
+	Score assigned to transcript based on Ensembl VEP consequence.
+	"""
+	consequenceScore: Float!
 	"""
 	Index of the transcript in the list of transcripts around the gene.
 	"""
 	transcriptIndex: Int!
 	"""
-	Score assigned to transcript based on Ensembl VEP consequence.
+	Ensembl transcript identifier [bioregistry:ensembl].
 	"""
-	consequenceScore: Float!
+	transcriptId: String!
 	"""
 	The target (gene/protein) associated with the transcript.
 	"""
@@ -10422,7 +10689,7 @@ type VariantAnnotation {
 	"""
 	Allele or genotype in the base case.
 	"""
-	baseAlleleOrGenotype: String
+	baseAlleleOrGenotype: String!
 	"""
 	Allele or genotype in the comparison case.
 	"""
@@ -10438,11 +10705,11 @@ type VariantAnnotation {
 	"""
 	Summary of the impact of the allele on the drug response.
 	"""
-	effectDescription: String
+	effectDescription: String!
 	"""
 	Type of effect.
 	"""
-	effectType: String
+	effectType: VariantAnnotationEffectType!
 	"""
 	Entity affected by the effect.
 	"""
@@ -10450,7 +10717,25 @@ type VariantAnnotation {
 	"""
 	PubMed identifier (PMID) of the literature entry.
 	"""
-	literature: String
+	literature: String!
+}
+
+"""
+Type of a variant annotation effect.
+"""
+enum VariantAnnotationEffectType {
+	"""
+	Effect on a drug response.
+	"""
+	drug
+	"""
+	Functional effect.
+	"""
+	functional
+	"""
+	Effect on a phenotype.
+	"""
+	phenotype
 }
 
 """
@@ -10576,7 +10861,7 @@ type VariantEffect {
 	"""
 	Method name used to predict the effect of the variant.
 	"""
-	method: String
+	method: VariantEffectMethod!
 	"""
 	Textual assessment of the variant effect.
 	"""
@@ -10592,11 +10877,49 @@ type VariantEffect {
 	"""
 	Variant effect normalised between -1 and 1.
 	"""
-	normalisedScore: Float
+	normalisedScore: Float!
 	"""
 	The target (gene/protein) on which the variant effect is interpreted.
 	"""
 	target: Target
+}
+
+"""
+Method used to predict or measure the effect of a variant.
+"""
+enum VariantEffectMethod {
+	"""
+	Missense pathogenicity prediction.
+	"""
+	AlphaMissense
+	"""
+	Protein stability prediction.
+	"""
+	FoldX
+	"""
+	GERP conservation score.
+	"""
+	GERP
+	"""
+	GPN-Star conservation score.
+	"""
+	GPN_Star
+	"""
+	LOFTEE loss-of-function prediction.
+	"""
+	LOFTEE
+	"""
+	Manual loss-of-function curation.
+	"""
+	LossOfFunctionCuration
+	"""
+	SIFT prediction.
+	"""
+	SIFT
+	"""
+	Ensembl VEP consequence.
+	"""
+	VEP
 }
 
 """
@@ -10644,15 +10967,15 @@ type VariantTranscriptConsequence {
 	"""
 	Ensembl VEP predicted impact of the variant on the transcript.
 	"""
-	impact: String
+	impact: String!
 	"""
 	Ensembl transcript identifier [bioregistry:ensembl].
 	"""
-	transcriptId: String
+	transcriptId: String!
 	"""
 	Loss-of-function prediction based on LOFTEE.
 	"""
-	lofteePrediction: String
+	lofteePrediction: LofteePrediction
 	"""
 	Index of the transcript in the list of transcripts around the gene.
 	"""
@@ -10755,10 +11078,6 @@ type Version {
 	revision: String!
 }
 
-"""
-Marks an element of a GraphQL schema as no longer supported.
-"""
-directive @deprecated(reason: String = "No longer supported") on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
 """
 Directs the executor to include this field or fragment only when the `if` argument is true.
 """

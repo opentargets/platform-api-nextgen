@@ -7,7 +7,8 @@ use async_graphql::{
 use clickhouse::Row;
 use derive_more::From;
 use serde::Deserialize;
-use strum::EnumIter;
+use serde_repr::Deserialize_repr;
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
@@ -25,15 +26,174 @@ use crate::{
 
 // ---- models ----
 
+/// Provider of pharmacogenomics data.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum PharmacogenomicsDatasource {
+    /// ClinPGx.
+    Clinpgx = 1,
+}
+
+/// Type of pharmacogenomics data.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum PharmacogenomicsDatatype {
+    /// ClinPGx clinical annotation.
+    ClinicalAnnotation = 1,
+}
+
+/// Strength of the scientific support for a variant/drug response (ClinPGx levels of evidence).
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+pub enum PharmacogenomicsEvidenceLevel {
+    /// Level 1A.
+    #[graphql(name = "_1A")]
+    #[strum(serialize = "1A")]
+    L1A = 1,
+    /// Level 1B.
+    #[graphql(name = "_1B")]
+    #[strum(serialize = "1B")]
+    L1B = 2,
+    /// Level 2A.
+    #[graphql(name = "_2A")]
+    #[strum(serialize = "2A")]
+    L2A = 3,
+    /// Level 2B.
+    #[graphql(name = "_2B")]
+    #[strum(serialize = "2B")]
+    L2B = 4,
+    /// Level 3.
+    #[graphql(name = "_3")]
+    #[strum(serialize = "3")]
+    L3 = 5,
+    /// Level 4.
+    #[graphql(name = "_4")]
+    #[strum(serialize = "4")]
+    L4 = 6,
+}
+
+/// Classification of a drug response.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+pub enum PharmacogenomicsCategory {
+    /// Dosage.
+    #[graphql(name = "dosage")]
+    #[strum(serialize = "dosage")]
+    Dosage = 1,
+    /// Efficacy.
+    #[graphql(name = "efficacy")]
+    #[strum(serialize = "efficacy")]
+    Efficacy = 2,
+    /// Metabolism or pharmacokinetics.
+    #[graphql(name = "metabolism_pk")]
+    #[strum(serialize = "metabolism/pk")]
+    MetabolismPk = 3,
+    /// Other.
+    #[graphql(name = "other")]
+    #[strum(serialize = "other")]
+    Other = 4,
+    /// Pharmacodynamics.
+    #[graphql(name = "pd")]
+    #[strum(serialize = "pd")]
+    Pd = 5,
+    /// Toxicity.
+    #[graphql(name = "toxicity")]
+    #[strum(serialize = "toxicity")]
+    Toxicity = 6,
+}
+
+/// Type of a variant annotation effect.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum VariantAnnotationEffectType {
+    /// Effect on a drug response.
+    Drug = 1,
+    /// Functional effect.
+    Functional = 2,
+    /// Effect on a phenotype.
+    Phenotype = 3,
+}
+
 /// Drug with drug identifiers.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 pub struct DrugWithIdentifiers {
-    /// Drug or clinical candidate identifier.
-    drug_id: String,
     /// Drug identifier from the original data source.
     drug_from_source: String,
+    /// Drug or clinical candidate identifier.
+    drug_id: Option<String>,
 }
 
 /// Genetic variants influencing individual drug responses. Pharmacogenetics data is integrated from
@@ -42,7 +202,7 @@ pub struct DrugWithIdentifiers {
 #[serde(rename_all = "camelCase")]
 pub struct VariantAnnotation {
     /// Allele or genotype in the base case.
-    base_allele_or_genotype: Option<String>,
+    base_allele_or_genotype: String,
     /// Allele or genotype in the comparison case.
     comparison_allele_or_genotype: Option<String>,
     /// Indicates in which direction the genetic variant increases or decreases drug response.
@@ -50,13 +210,16 @@ pub struct VariantAnnotation {
     /// Allele observed effect.
     effect: Option<String>,
     /// Summary of the impact of the allele on the drug response.
-    effect_description: Option<String>,
+    effect_description: String,
     /// Type of effect.
-    effect_type: Option<String>,
+    effect_type: VariantAnnotationEffectType,
     /// Entity affected by the effect.
     entity: Option<String>,
+    #[graphql(skip)]
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    id: String,
     /// PubMed identifier (PMID) of the literature entry.
-    literature: Option<String>,
+    literature: String,
 }
 
 /// Pharmacogenomics data linking genetic variants to drug responses. Data is integrated from
@@ -70,17 +233,17 @@ pub struct Pharmacogenomics {
     #[allow(dead_code, reason = "read only to keep the column order")]
     row_id: u64,
     /// Identifier for the data provider.
-    datasource_id: String,
+    datasource_id: PharmacogenomicsDatasource,
     /// Classification of the type of pharmacogenomic data (e.g., `clinical_annotation`).
-    datatype_id: String,
+    datatype_id: PharmacogenomicsDatatype,
     /// List of drugs or clinical candidates associated with the pharmacogenomic data.
     drugs: Vec<DrugWithIdentifiers>,
     /// Strength of the scientific support for the variant/drug response.
-    evidence_level: String,
+    evidence_level: PharmacogenomicsEvidenceLevel,
     /// Genetic variant configuration.
-    genotype: Option<String>,
+    genotype: String,
     /// Explanation of the genotype's clinical significance.
-    genotype_annotation_text: Option<String>,
+    genotype_annotation_text: String,
     /// Identifier for the specific genetic variant combination (e.g., `1_1500_A_A,T`).
     genotype_id: Option<String>,
     /// Haplotype ID in the ClinPGx dataset.
@@ -91,7 +254,7 @@ pub struct Pharmacogenomics {
     /// PubMed identifier (PMID) of the literature entry [bioregistry:pubmed].
     literature: Vec<String>,
     /// Classification of the drug response type (e.g., Toxicity).
-    pgx_category: String,
+    pgx_category: PharmacogenomicsCategory,
     /// Phenotype identifier from the source.
     phenotype_from_source_id: Option<String>,
     /// Description of the phenotype associated with the variant.
@@ -99,7 +262,7 @@ pub struct Pharmacogenomics {
     /// Annotation details about the variant effect on drug response.
     variant_annotation: Vec<VariantAnnotation>,
     /// Identifier of the study providing the pharmacogenomic evidence.
-    study_id: Option<String>,
+    study_id: String,
     /// Target (gene/protein) identifier as reported by the data source.
     target_from_source_id: Option<String>,
     /// The sequence ontology identifier of the consequence of the variant based on Ensembl VEP in
@@ -154,7 +317,10 @@ impl Pharmacogenomics {
 impl DrugWithIdentifiers {
     ///Drug or clinical candidate entity.
     async fn drug(&self, ctx: &Context<'_>) -> Result<Option<Drug>> {
-        load_drug(ctx, self.drug_id.clone()).await
+        match &self.drug_id {
+            Some(id) => load_drug(ctx, id.clone()).await,
+            None => Ok(None),
+        }
     }
 }
 
@@ -178,8 +344,9 @@ columns!(PgxCol {
     PhenotypeFromSourceId             => "phenotypeFromSourceId"             : Str,
     GenotypeAnnotationText            => "genotypeAnnotationText"            : Str,
     PhenotypeText                     => "phenotypeText"                     : Str,
-    PgxCategory                       => "pgxCategory"                       : Str,
-    EvidenceLevel                     => "evidenceLevel"                     : Str,
+    PgxCategory                       => "pgxCategory"                       : Enum,
+    // Enum order is strongest first, as the names sort.
+    EvidenceLevel                     => "evidenceLevel"                     : Enum,
     StudyId                           => "studyId"                           : Str,
 });
 

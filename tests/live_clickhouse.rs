@@ -1166,3 +1166,383 @@ async fn clinical_fixtures_decode_to_inserted_values() {
         }]})
     );
 }
+
+// ---- disease, study, variant and other fixtures decode to the inserted values ----
+
+#[cfg(feature = "product-ppp")]
+const PPP_DISEASE_FIELDS: &str =
+    "otarProjects { count rows { otarCode status projectName integratesInPPP reference } }";
+#[cfg(not(feature = "product-ppp"))]
+const PPP_DISEASE_FIELDS: &str = "";
+
+const STUDY_FIELDS: &str = "fragment S on Study {
+    id projectId studyType traitFromSource traitFromSourceMappedIds condition initialSampleSize
+    nSamples nCases nControls cohorts discoverySamples { sampleSize ancestry }
+    replicationSamples { sampleSize ancestry }
+    ldPopulationStructure { ldPopulation relativeSampleSize }
+    hasSumstats summarystatsLocation analysisFlags qualityControls
+    SumstatQCValues { QCCheckName QCCheckValue }
+    pubmedId publicationFirstAuthor publicationTitle publicationJournal publicationDate
+}";
+
+const VARIANT_FIELDS: &str = "variantId chromosome position referenceAllele alternateAllele
+    variantEffect { method assessment score assessmentFlag normalisedScore target { id } }
+    rsIds dbXrefs { id source } alleleFrequencies { populationName alleleFrequency }
+    hgvsId variantDescription
+    transcriptConsequences { aminoAcidChange uniprotAccessions isEnsemblCanonical codons
+        distanceFromFootprint distanceFromTss impact lofteePrediction consequenceScore
+        transcriptIndex transcriptId target { id } }
+    transcriptConsequencesView { count rows { transcriptId target { id } impact
+        lofteePrediction transcriptIndex consequenceScore codons aminoAcidChange } }
+    enhancerToGene { count rows { chromosome start end biosampleFromSourceId intervalType
+        distanceToTss score resourceScore { name value } datasourceId pmid studyId
+        qualityControls target { id } } }
+    byIntervalType: enhancerToGene(sort: [{key: INTERVAL_TYPE, direction: ASCENDING}]) {
+        rows { intervalType } }
+    enhancerSearch: enhancerToGene(search: {text: \"enhancer\"}) { count }
+    pharmacogenomics { count rows { datasourceId datatypeId evidenceLevel genotype
+        genotypeAnnotationText genotypeId haplotypeFromSourceId haplotypeId literature
+        pgxCategory phenotypeFromSourceId phenotypeText studyId targetFromSourceId
+        variantFunctionalConsequenceId variantRsId variantId isDirectTarget
+        drugs { drugFromSource drugId drug { id } }
+        variantAnnotation { baseAlleleOrGenotype comparisonAlleleOrGenotype directionality
+            effect effectDescription effectType entity literature } } }
+    pgxSearch: pharmacogenomics(search: {text: \"metabolism/pk\"}) { count }
+    pgxDrugSearch: pharmacogenomics(search: {text: \"chembl9999999\"}) { count }";
+
+fn expected_variant() -> serde_json::Value {
+    let consequence = json!({
+        "aminoAcidChange": "K12N", "uniprotAccessions": ["P99999"], "isEnsemblCanonical": true,
+        "codons": "aaG/aaT", "distanceFromFootprint": 0, "distanceFromTss": 1234,
+        "impact": "MODERATE", "lofteePrediction": "LC", "consequenceScore": 0.66,
+        "transcriptIndex": 2, "transcriptId": "ENST99999999999",
+        "target": {"id": FIXTURE_TARGET},
+    });
+    let null_consequence = json!({
+        "aminoAcidChange": null, "uniprotAccessions": [], "isEnsemblCanonical": false,
+        "codons": null, "distanceFromFootprint": -7, "distanceFromTss": -8,
+        "impact": "MODIFIER", "lofteePrediction": null, "consequenceScore": 0.1,
+        "transcriptIndex": 1, "transcriptId": "ENST99999999998", "target": null,
+    });
+    let pgx_annotated = json!({
+        "datasourceId": "clinpgx", "datatypeId": "clinical_annotation", "evidenceLevel": "_2A",
+        "genotype": "AT", "genotypeAnnotationText": "genotype annotation text",
+        "genotypeId": "7_140000050_A_A,T", "haplotypeFromSourceId": "PA999",
+        "haplotypeId": "LTGENE1*3", "literature": ["11111111"], "pgxCategory": "metabolism_pk",
+        "phenotypeFromSourceId": "EFO_9999999", "phenotypeText": "phenotype text",
+        "studyId": "PGX-STUDY-1", "targetFromSourceId": FIXTURE_TARGET,
+        "variantFunctionalConsequenceId": "SO_0001583", "variantRsId": "rs999999",
+        "variantId": "7_140000050_A_T", "isDirectTarget": true,
+        "drugs": [
+            {"drugFromSource": "live test drug from source", "drugId": "CHEMBL9999999",
+             "drug": {"id": "CHEMBL9999999"}},
+            {"drugFromSource": "unmapped drug", "drugId": null, "drug": null},
+        ],
+        "variantAnnotation": [
+            {"baseAlleleOrGenotype": "AA", "comparisonAlleleOrGenotype": "AT",
+             "directionality": "decreased", "effect": "effect",
+             "effectDescription": "effect description", "effectType": "functional",
+             "entity": "entity", "literature": "22222222"},
+            {"baseAlleleOrGenotype": "TT", "comparisonAlleleOrGenotype": null,
+             "directionality": null, "effect": null, "effectDescription": "other description",
+             "effectType": "phenotype", "entity": null, "literature": "33333333"},
+        ],
+    });
+    let pgx_bare = json!({
+        "datasourceId": "clinpgx", "datatypeId": "clinical_annotation", "evidenceLevel": "_1B",
+        "genotype": "TT", "genotypeAnnotationText": "null row text", "genotypeId": null,
+        "haplotypeFromSourceId": null, "haplotypeId": null, "literature": [],
+        "pgxCategory": "toxicity", "phenotypeFromSourceId": null, "phenotypeText": null,
+        "studyId": "PGX-STUDY-2", "targetFromSourceId": null,
+        "variantFunctionalConsequenceId": null, "variantRsId": null, "variantId": null,
+        "isDirectTarget": false, "drugs": [], "variantAnnotation": [],
+    });
+    json!({
+        "variantId": "7_140000050_A_T", "chromosome": "chr7", "position": 140_000_050,
+        "referenceAllele": "A", "alternateAllele": "T",
+        "variantEffect": [
+            {"method": "GPN_Star", "assessment": "conserved", "score": 2.5,
+             "assessmentFlag": "flag", "normalisedScore": 0.25,
+             "target": {"id": FIXTURE_TARGET}},
+            {"method": "VEP", "assessment": null, "score": null, "assessmentFlag": null,
+             "normalisedScore": -0.5, "target": null},
+        ],
+        "rsIds": ["rs999999"],
+        "dbXrefs": [
+            {"id": "rs999999", "source": "ensembl_variation"},
+            {"id": "VCV999", "source": "clinvar"},
+        ],
+        "alleleFrequencies": [
+            {"populationName": "nfe_adj", "alleleFrequency": 0.125},
+            {"populationName": "remaining_adj", "alleleFrequency": null},
+        ],
+        "hgvsId": "NC_000007.14:g.140000050A>T", "variantDescription": "variant description",
+        // Sorted by `distanceFromFootprint` by default.
+        "transcriptConsequences": [null_consequence, consequence],
+        "transcriptConsequencesView": {"count": 2, "rows": [
+            {"transcriptId": "ENST99999999998", "target": null, "impact": "MODIFIER",
+             "lofteePrediction": null, "transcriptIndex": 1, "consequenceScore": 0.1,
+             "codons": null, "aminoAcidChange": null},
+            {"transcriptId": "ENST99999999999", "target": {"id": FIXTURE_TARGET},
+             "impact": "MODERATE", "lofteePrediction": "LC", "transcriptIndex": 2,
+             "consequenceScore": 0.66, "codons": "aaG/aaT", "aminoAcidChange": "K12N"},
+        ]},
+        "enhancerToGene": {"count": 2, "rows": [
+            {"chromosome": "chr7", "start": 140_000_001, "end": 140_000_100,
+             "biosampleFromSourceId": "EFO_SOURCE_1", "intervalType": "enhancer",
+             "distanceToTss": -250, "score": 0.875,
+             "resourceScore": [{"name": "ABC", "value": 0.5}], "datasourceId": "E2G",
+             "pmid": "44444444", "studyId": "E2G-STUDY-1", "qualityControls": ["qc"],
+             "target": {"id": FIXTURE_TARGET}},
+            {"chromosome": "chr7", "start": 140_000_040, "end": 140_000_060,
+             "biosampleFromSourceId": null, "intervalType": "promoter", "distanceToTss": 15,
+             "score": 0.125, "resourceScore": [], "datasourceId": "E2G", "pmid": "55555555",
+             "studyId": "E2G-STUDY-2", "qualityControls": [], "target": null},
+        ]},
+        "byIntervalType": {"rows": [{"intervalType": "enhancer"}, {"intervalType": "promoter"}]},
+        "enhancerSearch": {"count": 1},
+        "pharmacogenomics": {"count": 2, "rows": [pgx_bare, pgx_annotated]},
+        "pgxSearch": {"count": 1},
+        "pgxDrugSearch": {"count": 1},
+    })
+}
+
+fn expected_studies() -> (serde_json::Value, serde_json::Value) {
+    let full = json!({
+        "id": "GCST99999999", "projectId": "GCST", "studyType": "gwas",
+        "traitFromSource": "live test trait", "traitFromSourceMappedIds": ["EFO_9999999"],
+        "condition": "stimulated", "initialSampleSize": "1,000 cases", "nSamples": 1000,
+        "nCases": 100, "nControls": 900, "cohorts": ["UKB"],
+        "discoverySamples": [
+            {"sampleSize": 1000, "ancestry": "European"},
+            {"sampleSize": 20, "ancestry": "South Asian"},
+        ],
+        "replicationSamples": [
+            {"sampleSize": 300, "ancestry": "East Asian"},
+            {"sampleSize": null, "ancestry": "African"},
+        ],
+        "ldPopulationStructure": [
+            {"ldPopulation": "nfe", "relativeSampleSize": 0.75},
+            {"ldPopulation": "csa", "relativeSampleSize": null},
+        ],
+        "hasSumstats": true, "summarystatsLocation": "gs://bucket/sumstats",
+        "analysisFlags": ["analysis flag"], "qualityControls": ["qc flag"],
+        "SumstatQCValues": [{"QCCheckName": "mean_beta", "QCCheckValue": 0.5}],
+        "pubmedId": "99999999", "publicationFirstAuthor": "Author A",
+        "publicationTitle": "publication title", "publicationJournal": "Journal J",
+        "publicationDate": "2001-02-03",
+    });
+    let null = json!({
+        "id": "GCST99999998", "projectId": "FINNGEN", "studyType": "eqtl",
+        "traitFromSource": "null trait", "traitFromSourceMappedIds": [], "condition": null,
+        "initialSampleSize": null, "nSamples": null, "nCases": null, "nControls": null,
+        "cohorts": [], "discoverySamples": [], "replicationSamples": [],
+        "ldPopulationStructure": [], "hasSumstats": null, "summarystatsLocation": null,
+        "analysisFlags": [], "qualityControls": [], "SumstatQCValues": [], "pubmedId": null,
+        "publicationFirstAuthor": null, "publicationTitle": null, "publicationJournal": null,
+        "publicationDate": null,
+    });
+    (full, null)
+}
+
+fn expected_disease() -> serde_json::Value {
+    let evidence = json!([
+        {"aspect": "C", "bioCuration": "HPO:curator[2020-01-01]",
+         "diseaseFromSourceId": "OMIM:999999", "diseaseFromSource": "disease from source",
+         "diseaseName": "live test disease", "evidenceType": "PCS", "frequency": "HP_9999998",
+         "qualifierNot": true, "references": ["PMID:1"], "sex": "FEMALE", "resource": "HPO",
+         "frequencyHPO": {"id": "HP_9999998", "description": null}},
+        {"aspect": null, "bioCuration": null, "diseaseFromSourceId": "ORPHA:1",
+         "diseaseFromSource": "other source", "diseaseName": "other name",
+         "evidenceType": null, "frequency": null, "qualifierNot": false, "references": [],
+         "sex": null, "resource": "HPO", "frequencyHPO": null},
+    ]);
+    #[allow(unused_mut, reason = "extended on PPP only")]
+    let mut disease = json!({
+        "id": FIXTURE_DISEASE, "name": "live test disease", "description": "disease description",
+        "isTherapeuticArea": false, "ancestors": ["EFO_9999998"], "descendants": [],
+        "synonyms": [
+            {"relation": "hasExactSynonym", "terms": ["exact synonym", null]},
+            {"relation": "hasRelatedSynonym", "terms": ["related synonym"]},
+        ],
+        "obsoleteTerms": ["EFO_0000000"], "dbXRefs": ["MONDO:9999999", "OMIM:999999"],
+        "studyIds": ["GCST99999999"], "indirectStudyIds": ["GCST99999998"],
+        "parents": [{"id": "EFO_9999998", "description": null, "isTherapeuticArea": true}],
+        "therapeuticAreas": [{"id": "EFO_9999998"}],
+        "phenotypes": {"count": 1, "rows": [{
+            "phenotypeHPO": {"id": "HP_9999999", "name": "live test phenotype",
+                             "description": "phenotype description"},
+            "evidence": evidence,
+        }]},
+        "literatureOcurrences": {"count": 1, "rows": [{"pmid": "77777777", "pmcid": "PMC777",
+            "publicationDate": "2003-04-01"}], "stats": {"earliestPubDate": 2003}},
+    });
+    #[cfg(feature = "product-ppp")]
+    {
+        disease["otarProjects"] = json!({"count": 2, "rows": [
+            {"otarCode": "OTAR999", "status": "Active", "projectName": "live test project",
+             "integratesInPPP": true, "reference": "reference text"},
+            {"otarCode": "OTAR998", "status": "Closed", "projectName": "other project",
+             "integratesInPPP": false, "reference": ""},
+        ]});
+    }
+    disease
+}
+
+/// Sorts `rows` by the field `key`, for tables read without an `ORDER BY`.
+fn sorted_by(rows: &serde_json::Value, key: &str) -> serde_json::Value {
+    let mut rows = rows.as_array().expect("rows").clone();
+    rows.sort_by_key(|r| r[key].to_string());
+    serde_json::Value::Array(rows)
+}
+
+fn expected_target_extras() -> serde_json::Value {
+    json!({
+        "baselineExpression": {"count": 2, "rows": [
+            {"targetId": FIXTURE_TARGET, "targetFromSourceId": null,
+             "tissueBiosampleFromSource": null, "celltypeBiosampleFromSource": null, "min": null,
+             "q1": null, "median": null, "q3": null, "max": null, "distributionScore": 0.125,
+             "specificityScore": null, "datasourceId": "PRIDE",
+             "datatypeId": "mass_spectrometry_proteomics", "unit": "ppm", "qualityControls": []},
+            {"targetId": FIXTURE_TARGET, "targetFromSourceId": "LTGENE1",
+             "tissueBiosampleFromSource": "tissue from source",
+             "celltypeBiosampleFromSource": "celltype from source", "min": 0.5, "q1": 1.5,
+             "median": 2.5, "q3": 3.5, "max": 4.5, "distributionScore": 0.75,
+             "specificityScore": 0.25, "datasourceId": "tabula_sapiens",
+             "datatypeId": "scrna_seq", "unit": "TPM", "qualityControls": ["low counts"]},
+        ]},
+        "interactions": {"count": 2, "rows": [
+            {"intA": "P99999", "intB": "Q99999", "intABiologicalRole": "bait",
+             "intBBiologicalRole": "prey", "score": 0.75, "count": 3, "sourceDatabase": "signor",
+             "speciesA": {"mnemonic": "human", "scientificName": "Homo sapiens", "taxonId": 9606},
+             "speciesB": {"mnemonic": "mouse", "scientificName": "Mus musculus",
+                          "taxonId": 10090},
+             "evidences": [{"evidenceScore": 0.5, "hostOrganismTaxId": 9606,
+                            "interactionIdentifier": "EBI-1", "pubmedId": "66666666",
+                            "participantDetectionMethodB": [
+                                {"miIdentifier": null, "shortName": null}]}]},
+            {"intA": "P99999", "intB": "CHEBI:1", "intABiologicalRole": "unspecified role",
+             "intBBiologicalRole": "unspecified role", "score": null, "count": 1,
+             "sourceDatabase": "intact",
+             "speciesA": {"mnemonic": "human", "scientificName": "Homo sapiens", "taxonId": 9606},
+             "speciesB": {"mnemonic": "unknown", "scientificName": null, "taxonId": null},
+             "evidences": []},
+        ]},
+        "literatureOcurrences": {"count": 2, "rows": [
+            {"pmid": "77777777", "pmcid": "PMC777", "publicationDate": "2003-04-01"},
+            {"pmid": "88888888", "pmcid": null, "publicationDate": null},
+        ], "stats": {"earliestPubDate": 2003}},
+        "datedLiterature": {"count": 1, "rows": [{"pmid": "77777777"}]},
+        "drugLiterature": {"count": 1, "rows": [{"pmid": "77777777"}]},
+    })
+}
+
+#[tokio::test]
+#[ignore = "needs a ClickHouse database: set LIVE_CLICKHOUSE_URL and LIVE_FIXTURES=1"]
+async fn other_fixtures_decode_to_inserted_values() {
+    let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
+    assert!(with_fixtures(), "set LIVE_FIXTURES=1");
+    let config = config(&url);
+    load_fixtures(&ClickHouse::new(&config)).await;
+
+    let state = AppState::new(config);
+    let query = format!(
+        "{{ disease(efoId: \"{FIXTURE_DISEASE}\") {{
+                id name description isTherapeuticArea ancestors descendants
+                synonyms {{ relation terms }} obsoleteTerms dbXRefs studyIds indirectStudyIds
+                parents {{ id description isTherapeuticArea }} therapeuticAreas {{ id }}
+                phenotypes {{ count rows {{
+                    phenotypeHPO {{ id name description }}
+                    evidence {{ aspect bioCuration diseaseFromSourceId diseaseFromSource
+                        diseaseName evidenceType frequency qualifierNot references sex resource
+                        frequencyHPO {{ id description }} }}
+                }} }}
+                literatureOcurrences {{ count rows {{ pmid pmcid publicationDate }}
+                    stats {{ earliestPubDate }} }}
+                {PPP_DISEASE_FIELDS}
+            }}
+            diseases(efoIds: [\"{FIXTURE_DISEASE}\"]) {{
+                studiesView(enableIndirect: true) {{ count rows {{ id projectId traitFromSource
+                    publicationFirstAuthor publicationDate publicationJournal nSamples cohorts
+                    pubmedId ldPopulationStructure {{ ldPopulation relativeSampleSize }}
+                    credibleSetsCount diseaseIds }} }}
+            }}
+            full: study(studyId: \"GCST99999999\") {{ ...S }}
+            null: study(studyId: \"GCST99999998\") {{ ...S }}
+            byDisease: studies(diseaseIds: [\"{FIXTURE_DISEASE}\"], enableIndirect: true) {{
+                count rows {{ id }} }}
+            variant(variantId: \"7_140000050_A_T\") {{ {VARIANT_FIELDS} }}
+            interactionResources {{ databaseVersion sourceDatabase }}
+            target(ensemblId: \"{FIXTURE_TARGET}\") {{
+                baselineExpression {{ count rows {{ targetId targetFromSourceId
+                    tissueBiosampleFromSource celltypeBiosampleFromSource min q1 median q3 max
+                    distributionScore specificityScore datasourceId datatypeId unit
+                    qualityControls }} }}
+                interactions {{ count rows {{ intA intB intABiologicalRole intBBiologicalRole
+                    score count sourceDatabase
+                    speciesA {{ mnemonic scientificName taxonId }}
+                    speciesB {{ mnemonic scientificName taxonId }}
+                    evidences {{ evidenceScore hostOrganismTaxId interactionIdentifier pubmedId
+                        participantDetectionMethodB {{ miIdentifier shortName }} }} }} }}
+                literatureOcurrences {{ count rows {{ pmid pmcid publicationDate }}
+                    stats {{ earliestPubDate }} }}
+                datedLiterature: literatureOcurrences(startYear: 2000) {{ count rows {{ pmid }} }}
+                drugLiterature: literatureOcurrences(additionalIds: [\"CHEMBL9999999\"]) {{
+                    count rows {{ pmid }} }}
+            }}
+        }}
+        {STUDY_FIELDS}"
+    );
+    let response = state.api.execute(Request::new(query)).await;
+    assert!(response.errors.is_empty(), "{:#?}", response.errors);
+    let mut data = response.data.into_json().expect("json");
+
+    let disease = expected_disease();
+    assert_fields("disease", &data["disease"], &disease);
+    assert_eq!(data["disease"], disease);
+
+    assert_eq!(
+        data["diseases"]["studiesView"],
+        json!({"count": 2, "rows": [
+            {"id": "GCST99999999", "projectId": "GCST", "traitFromSource": "live test trait",
+             "publicationFirstAuthor": "Author A", "publicationDate": "2001-02-03",
+             "publicationJournal": "Journal J", "nSamples": 1000, "cohorts": ["UKB"],
+             "pubmedId": "99999999",
+             "ldPopulationStructure": [
+                 {"ldPopulation": "nfe", "relativeSampleSize": 0.75},
+                 {"ldPopulation": "csa", "relativeSampleSize": null},
+             ],
+             "credibleSetsCount": 1, "diseaseIds": [FIXTURE_DISEASE]},
+            {"id": "GCST99999998", "projectId": "FINNGEN", "traitFromSource": "null trait",
+             "publicationFirstAuthor": null, "publicationDate": null,
+             "publicationJournal": null, "nSamples": null, "cohorts": [], "pubmedId": null,
+             "ldPopulationStructure": [], "credibleSetsCount": 0,
+             "diseaseIds": ["EFO_9999998"]},
+        ]})
+    );
+
+    let (full, null) = expected_studies();
+    assert_fields("full", &data["full"], &full);
+    assert_eq!(data["full"], full);
+    assert_fields("null", &data["null"], &null);
+    assert_eq!(data["null"], null);
+    assert_eq!(
+        data["byDisease"],
+        json!({"count": 2, "rows": [{"id": "GCST99999999"}, {"id": "GCST99999998"}]})
+    );
+
+    let variant = expected_variant();
+    assert_fields("variant", &data["variant"], &variant);
+    assert_eq!(data["variant"], variant);
+
+    assert_eq!(
+        data["interactionResources"],
+        json!([{"databaseVersion": "2026-11", "sourceDatabase": "signor"}])
+    );
+
+    let rows = &data["target"]["baselineExpression"]["rows"];
+    data["target"]["baselineExpression"]["rows"] = sorted_by(rows, "datasourceId");
+    let expected = expected_target_extras();
+    assert_fields("target", &data["target"], &expected);
+    assert_eq!(data["target"], expected);
+}

@@ -87,10 +87,61 @@ pub enum StudyType {
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct Sample {
-    /// Sample ancestry name.
-    ancestry: String,
     /// Sample size.
     sample_size: u32,
+    /// Sample ancestry name.
+    ancestry: String,
+}
+
+/// Represents a sample of the study replication phase.
+#[derive(Debug, Clone, Deserialize, SimpleObject)]
+#[serde(rename_all = "camelCase")]
+pub struct ReplicationSample {
+    /// Sample size.
+    sample_size: Option<u32>,
+    /// Sample ancestry name.
+    ancestry: String,
+}
+
+/// Linkage disequilibrium reference population (gnomAD).
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum LdPopulation {
+    /// African/African American.
+    Afr = 1,
+    /// Admixed American.
+    Amr = 2,
+    /// Ashkenazi Jewish.
+    Asj = 3,
+    /// East Asian.
+    Eas = 4,
+    /// Non-Finnish European.
+    Nfe = 5,
+    /// Estonian.
+    Est = 6,
+    /// Finnish.
+    Fin = 7,
+    /// North-western European.
+    Nwe = 8,
+    /// Southern European.
+    Seu = 9,
+    /// Central/South Asian.
+    Csa = 10,
 }
 
 /// Collection of populations.
@@ -98,7 +149,7 @@ pub struct Sample {
 #[serde(rename_all = "camelCase")]
 pub struct LdPopulationStructure {
     /// Population identifier.
-    ld_population: String,
+    ld_population: LdPopulation,
     /// Fraction of the total sample represented by the population.
     relative_sample_size: Option<f64>,
 }
@@ -157,7 +208,7 @@ pub struct Study {
     /// Collection of ancestries reported by the study discovery phase.
     discovery_samples: Vec<Sample>,
     /// Collection of ancestries reported by the study replication phase.
-    replication_samples: Vec<Sample>,
+    replication_samples: Vec<ReplicationSample>,
     /// Collection of populations referenced by the study.
     ld_population_structure: Vec<LdPopulationStructure>,
 

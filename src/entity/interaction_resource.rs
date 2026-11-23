@@ -29,7 +29,8 @@ impl InteractionResourceQuery {
         ctx: &Context<'_>,
     ) -> async_graphql::Result<Vec<InteractionResource>> {
         let ch = ctx.data_unchecked::<ClickHouse>();
-        let sql = "SELECT DISTINCT interactionResources.databaseVersion, interactionResources.sourceDatabase
+        let sql = "SELECT DISTINCT interactionResources.databaseVersion,
+            toString(interactionResources.sourceDatabase)
         FROM interaction_evidence_log";
         Ok(ch.query(sql).fetch_all::<InteractionResource>().await?)
     }

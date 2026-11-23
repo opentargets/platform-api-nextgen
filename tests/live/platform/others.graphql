@@ -32,8 +32,6 @@ query LiveOthers($disease: String!, $variant: String!, $study: String!, $credibl
     }
     obsoleteTerms
     dbXRefs
-    directLocationIds
-    indirectLocationIds
     studyIds
     indirectStudyIds
     parents {
@@ -64,26 +62,22 @@ query LiveOthers($disease: String!, $variant: String!, $study: String!, $credibl
             id
             name
             description
-            namespace
           }
           onset {
             id
             name
             description
-            namespace
           }
           frequencyHPO {
             id
             name
             description
-            namespace
           }
         }
         phenotypeHPO {
           id
           name
           description
-          namespace
         }
         phenotypeEFO {
           id
@@ -198,8 +192,6 @@ query LiveOthers($disease: String!, $variant: String!, $study: String!, $credibl
       descendants
       obsoleteTerms
       dbXRefs
-      directLocationIds
-      indirectLocationIds
       studyIds
       indirectStudyIds
     }
@@ -215,8 +207,6 @@ query LiveOthers($disease: String!, $variant: String!, $study: String!, $credibl
       descendants
       obsoleteTerms
       dbXRefs
-      directLocationIds
-      indirectLocationIds
       studyIds
       indirectStudyIds
     }
@@ -232,8 +222,6 @@ query LiveOthers($disease: String!, $variant: String!, $study: String!, $credibl
       descendants
       obsoleteTerms
       dbXRefs
-      directLocationIds
-      indirectLocationIds
       studyIds
       indirectStudyIds
     }
@@ -251,12 +239,12 @@ query LiveOthers($disease: String!, $variant: String!, $study: String!, $credibl
     nControls
     cohorts
     discoverySamples {
-      ancestry
       sampleSize
+      ancestry
     }
     replicationSamples {
-      ancestry
       sampleSize
+      ancestry
     }
     ldPopulationStructure {
       ldPopulation
@@ -821,10 +809,10 @@ query LiveOthers($disease: String!, $variant: String!, $study: String!, $credibl
       distanceFromFootprint
       distanceFromTss
       impact
-      transcriptId
       lofteePrediction
-      transcriptIndex
       consequenceScore
+      transcriptIndex
+      transcriptId
       target {
         id
       }
@@ -841,10 +829,10 @@ query LiveOthers($disease: String!, $variant: String!, $study: String!, $credibl
       distanceFromFootprint
       distanceFromTss
       impact
-      transcriptId
       lofteePrediction
-      transcriptIndex
       consequenceScore
+      transcriptIndex
+      transcriptId
     }
     transcriptConsequencesView {
       count
@@ -1010,8 +998,8 @@ query LiveOthers($disease: String!, $variant: String!, $study: String!, $credibl
         datasourceId
         datatypeId
         drugs {
-          drugId
           drugFromSource
+          drugId
           drug {
             id
           }

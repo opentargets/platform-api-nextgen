@@ -14,6 +14,7 @@ use crate::{
     entity::{
         sequence_ontology::{SequenceOntologyTerm, load_sequence_ontology_many},
         target::{Target, load_target},
+        variant::LofteePrediction,
     },
     query::{
         paginate::Paged,
@@ -54,13 +55,13 @@ pub struct VariantTranscriptConsequence {
     distance_from_tss: i32,
     /// Open Targets target identifier of the transcript [bioregistry:ensembl].
     #[graphql(skip)]
-    target_id: Option<String>,
+    target_id: String,
     /// Ensembl VEP predicted impact of the variant on the transcript.
-    impact: Option<String>,
+    impact: String,
     /// Ensembl transcript identifier [bioregistry:ensembl].
-    transcript_id: Option<String>,
+    transcript_id: String,
     /// Loss-of-function prediction based on LOFTEE.
-    loftee_prediction: Option<String>,
+    loftee_prediction: Option<LofteePrediction>,
     /// Index of the transcript in the list of transcripts around the gene.
     transcript_index: u32,
     /// Score assigned to transcript based on Ensembl VEP consequence.
@@ -79,10 +80,7 @@ pub struct VariantTranscriptConsequence {
 impl VariantTranscriptConsequence {
     /// The target (gene/protein) associated with the transcript.
     async fn target(&self, ctx: &Context<'_>) -> Result<Option<Target>> {
-        match &self.target_id {
-            Some(target_id) => load_target(ctx, target_id.clone()).await,
-            None => Ok(None),
-        }
+        load_target(ctx, self.target_id.clone()).await
     }
 
     /// The sequence ontology terms of the consequence of the variant based on Ensembl VEP in the

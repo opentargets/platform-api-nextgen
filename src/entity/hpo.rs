@@ -31,9 +31,6 @@ pub struct Hpo {
     name: String,
     /// Description of the disease.
     description: Option<String>,
-    // DEPRECATED - This is always empty in the data.
-    #[graphql(deprecation = "empty")]
-    namespace: Vec<String>,
 }
 
 // ---- query utilities ----

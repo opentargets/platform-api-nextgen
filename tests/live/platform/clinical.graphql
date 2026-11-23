@@ -237,8 +237,8 @@ query LiveClinical($target: String!, $disease: String!, $drug: String!, $clinica
         datasourceId
         datatypeId
         drugs {
-          drugId
           drugFromSource
+          drugId
           drug {
             id
           }

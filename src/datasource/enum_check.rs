@@ -9,23 +9,29 @@ use strum::IntoEnumIterator;
 use crate::entity::association_timeseries_ppp::AggregationType;
 use crate::entity::{
     association::Datasource,
+    baseline_expression::{BaselineExpressionDatasource, BaselineExpressionDatatype},
     clinical_report::{
         AgencyClass, ClinicalReportType, ClinicalStage, Origin, Provider, TrialLiteratureType,
         TrialOverallStatus, TrialPhase, TrialPrimaryPurpose, TrialStudyType,
     },
     credible_set::FineMappingMethod,
     drug::DrugType,
+    enhancer_to_gene::{EnhancerToGeneDatasource, IntervalType},
     evidence::{
         Datatype, DirectionOnTarget, DirectionOnTrait, EuropePmcSection, TrialStopReasonCategory,
     },
     interaction::InteractionSourceDatabase,
     mechanisms_of_action::{MechanismActionType, MechanismTargetType},
-    study::StudyType,
+    pharmacogenomics::{
+        PharmacogenomicsCategory, PharmacogenomicsDatasource, PharmacogenomicsDatatype,
+        PharmacogenomicsEvidenceLevel, VariantAnnotationEffectType,
+    },
+    study::{LdPopulation, StudyType},
     target::{
         ConstraintType, GoAspect, GoEvidenceCode, HomologyType, SafetyStudyType,
         TractabilityModality,
     },
-    variant::Chromosome,
+    variant::{AlleleFrequencyPopulation, Chromosome, LofteePrediction, VariantEffectMethod},
 };
 
 /// A Rust enum and a ClickHouse expression it decodes.
@@ -236,6 +242,55 @@ pub fn bindings() -> Vec<EnumBinding> {
             "mechanism_of_action",
             "uniqueTargetTypes"
         ),
+        binding!(
+            LdPopulation,
+            "studies",
+            "tupleElement(arrayJoin(ldPopulationStructure), 'ldPopulation')"
+        ),
+        binding!(
+            VariantEffectMethod,
+            "variants",
+            "tupleElement(arrayJoin(variantEffect), 'method')"
+        ),
+        binding!(
+            AlleleFrequencyPopulation,
+            "variants",
+            "tupleElement(arrayJoin(alleleFrequencies), 'populationName')"
+        ),
+        binding!(
+            LofteePrediction,
+            "variants",
+            "tupleElement(arrayJoin(transcriptConsequences), 'lofteePrediction')"
+        ),
+        binding!(
+            BaselineExpressionDatasource,
+            "baseline_expression",
+            "datasourceId"
+        ),
+        binding!(
+            BaselineExpressionDatatype,
+            "baseline_expression",
+            "datatypeId"
+        ),
+        binding!(
+            PharmacogenomicsDatasource,
+            "pharmacogenomics",
+            "datasourceId"
+        ),
+        binding!(PharmacogenomicsDatatype, "pharmacogenomics", "datatypeId"),
+        binding!(
+            PharmacogenomicsEvidenceLevel,
+            "pharmacogenomics",
+            "evidenceLevel"
+        ),
+        binding!(PharmacogenomicsCategory, "pharmacogenomics", "pgxCategory"),
+        binding!(
+            VariantAnnotationEffectType,
+            "pharmacogenomics",
+            "tupleElement(arrayJoin(variantAnnotation), 'effectType')"
+        ),
+        binding!(IntervalType, "enhancer_to_gene", "intervalType"),
+        binding!(EnhancerToGeneDatasource, "enhancer_to_gene", "datasourceId"),
     ]
 }
 

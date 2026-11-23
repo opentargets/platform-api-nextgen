@@ -95,12 +95,6 @@ pub struct Disease {
     /// Cross-references in other disease ontologies.
     db_x_refs: Vec<String>,
 
-    // Location
-    /// EFO terms for direct anatomical locations.
-    direct_location_ids: Vec<String>,
-    /// EFO terms for indirect anatomical locations (propagated).
-    indirect_location_ids: Vec<String>,
-
     // Studies
     /// List of studies associated with the disease.
     study_ids: Vec<String>,

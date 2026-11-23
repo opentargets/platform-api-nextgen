@@ -408,8 +408,8 @@ query LiveTarget($target: String!, $disease: String!) {
         datasourceId
         datatypeId
         drugs {
-          drugId
           drugFromSource
+          drugId
           drug {
             id
           }
@@ -1946,8 +1946,8 @@ query LiveTarget($target: String!, $disease: String!) {
             datasourceId
             datatypeId
             drugs {
-              drugId
               drugFromSource
+              drugId
               drug {
                 id
               }
