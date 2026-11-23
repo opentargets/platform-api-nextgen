@@ -39,7 +39,7 @@ use crate::{
         disease_studies::DiseaseStudy,
         evidence::{
             cancer_biomarkers::EvidenceCancerBiomarkers,
-            cancer_gene_census::EvidenceCancerGeneCensusLoader, clingen::EvidenceClinGen,
+            cancer_gene_census::EvidenceCancerGeneCensus, clingen::EvidenceClinGen,
             clinical_precedence::EvidenceClinicalPrecedence, crispr::EvidenceCrispr,
             crispr_screen::EvidenceCrisprScreen, eva::EvidenceEva, eva_somatic::EvidenceEvaSomatic,
             expression_atlas::EvidenceExpressionAtlas, gene_burden::EvidenceGeneBurden,
