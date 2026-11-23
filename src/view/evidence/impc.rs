@@ -18,7 +18,7 @@ use serde::Deserialize;
 use super::EvidenceScope;
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::evidence::LabelledElement,
+    entity::evidence::{DirectionOnTarget, DirectionOnTrait, LabelledElement},
     query::{
         paginate::Paged,
         sort::SortDirection,
@@ -54,9 +54,9 @@ pub struct EvidenceImpc {
     /// Symbol of the target orthologue in the animal model.
     target_in_model: Option<String>,
     /// Gain or loss of function effect of the evidence on the target.
-    direction_on_target: Option<String>,
+    direction_on_target: Option<DirectionOnTarget>,
     /// Predicted direction of effect on the trait.
-    direction_on_trait: Option<String>,
+    direction_on_trait: Option<DirectionOnTrait>,
     /// Identifier of the animal model (e.g. an MGI model ID).
     biological_model_id: Option<String>,
     /// Genetic background of the animal model (e.g. a mouse strain).
@@ -80,7 +80,7 @@ impl Table for EvidenceImpc {
 columns!(EvidenceImpcCol {
     Id           => "id"           : Str,
     Score        => "score"        : F64,
-    DatasourceId => "datasourceId" : Str,
+    DatasourceId => "datasourceId" : Enum,
     DiseaseId    => "diseaseId"    : Str,
     TargetId     => "targetId"     : Str,
 });

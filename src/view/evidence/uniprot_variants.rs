@@ -48,7 +48,7 @@ pub struct EvidenceUniprotVariants {
     /// Approved symbol of the target. Empty if the target isn't found.
     target_approved_symbol: String,
     /// Reported protein: the `UniProt` accession of the target in the source.
-    target_from_source_id: Option<String>,
+    target_from_source_id: String,
     /// Identifier of the variant.
     variant_id: Option<String>,
     /// HGVS identifier of the variant.

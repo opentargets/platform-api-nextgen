@@ -23,8 +23,8 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         biologicalModelGeneticBackground
         biologicalModelId
         biomarkerList {
-          name
           description
+          name
         }
         biomarkerName
         biomarkers {
@@ -112,7 +112,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         projectDescription
         projectId
         publicationDate
-        publicationFirstAuthor
         publicationYear
         qualityControls
         reactionId
@@ -138,21 +137,20 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         targetRole
         textMiningSentences {
           dEnd
-          tEnd
           dStart
-          tStart
           section
+          tEnd
+          tStart
           text
         }
         trialStopReasonCategories
         trialWhyStopped
         urls {
-          url
           niceName
+          url
         }
         variantAminoacidDescriptions
         variantRsId
-        warningMessage
         disease {
           id
         }
@@ -172,10 +170,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           id
         }
         variantFunctionalConsequence {
-          id
-          label
-        }
-        variantFunctionalConsequenceFromQtl {
           id
           label
         }
@@ -238,7 +232,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         projectDescription
         projectId
         publicationDate
-        publicationFirstAuthor
         publicationYear
         qualityControls
         reactionId
@@ -266,7 +259,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         trialWhyStopped
         variantAminoacidDescriptions
         variantRsId
-        warningMessage
       }
     }
     evidenceViews(efoIds: [$disease]) {
@@ -862,8 +854,8 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         biologicalModelGeneticBackground
         biologicalModelId
         biomarkerList {
-          name
           description
+          name
         }
         biomarkerName
         biomarkers {
@@ -951,7 +943,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         projectDescription
         projectId
         publicationDate
-        publicationFirstAuthor
         publicationYear
         qualityControls
         reactionId
@@ -977,21 +968,20 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         targetRole
         textMiningSentences {
           dEnd
-          tEnd
           dStart
-          tStart
           section
+          tEnd
+          tStart
           text
         }
         trialStopReasonCategories
         trialWhyStopped
         urls {
-          url
           niceName
+          url
         }
         variantAminoacidDescriptions
         variantRsId
-        warningMessage
         disease {
           id
         }
@@ -1011,10 +1001,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           id
         }
         variantFunctionalConsequence {
-          id
-          label
-        }
-        variantFunctionalConsequenceFromQtl {
           id
           label
         }
@@ -1077,7 +1063,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         projectDescription
         projectId
         publicationDate
-        publicationFirstAuthor
         publicationYear
         qualityControls
         reactionId
@@ -1105,7 +1090,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         trialWhyStopped
         variantAminoacidDescriptions
         variantRsId
-        warningMessage
       }
     }
     evidenceViews(ensemblIds: [$target]) {
@@ -1701,8 +1685,8 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         biologicalModelGeneticBackground
         biologicalModelId
         biomarkerList {
-          name
           description
+          name
         }
         biomarkerName
         biomarkers {
@@ -1790,7 +1774,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         projectDescription
         projectId
         publicationDate
-        publicationFirstAuthor
         publicationYear
         qualityControls
         reactionId
@@ -1816,21 +1799,20 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         targetRole
         textMiningSentences {
           dEnd
-          tEnd
           dStart
-          tStart
           section
+          tEnd
+          tStart
           text
         }
         trialStopReasonCategories
         trialWhyStopped
         urls {
-          url
           niceName
+          url
         }
         variantAminoacidDescriptions
         variantRsId
-        warningMessage
         disease {
           id
         }
@@ -1850,10 +1832,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           id
         }
         variantFunctionalConsequence {
-          id
-          label
-        }
-        variantFunctionalConsequenceFromQtl {
           id
           label
         }
@@ -1916,7 +1894,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         projectDescription
         projectId
         publicationDate
-        publicationFirstAuthor
         publicationYear
         qualityControls
         reactionId
@@ -1944,7 +1921,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         trialWhyStopped
         variantAminoacidDescriptions
         variantRsId
-        warningMessage
       }
     }
   }

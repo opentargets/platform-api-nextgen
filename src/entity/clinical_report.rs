@@ -8,6 +8,8 @@ use clickhouse::Row;
 use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
+use serde_repr::Deserialize_repr;
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::{ClickHouse, from_nullable_string_opt, from_string},
@@ -48,53 +50,65 @@ pub enum Origin {
     CuratedResource,
 }
 
-// TODO: This should become an enum in CH, then we don't need to rename it all.
-// We also have to figure out some more descriptive descriptions. :)
 /// Clinical stage of the report.
-#[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq, Enum)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
 #[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum ClinicalStage {
     /// Unknown phase.
-    Unknown,
+    Unknown = 1,
     /// Preclinical stage.
-    Preclinical,
+    Preclinical = 2,
     /// Ind.
-    Ind,
+    Ind = 3,
     /// Early phase 1.
-    #[serde(rename = "EARLY_PHASE_1")]
     #[graphql(name = "EARLY_PHASE_1")]
-    EarlyPhase1,
+    #[strum(serialize = "EARLY_PHASE_1")]
+    EarlyPhase1 = 4,
     /// Phase 1.
-    #[serde(rename = "PHASE_1")]
     #[graphql(name = "PHASE_1")]
-    Phase1,
+    #[strum(serialize = "PHASE_1")]
+    Phase1 = 5,
     /// Phase 1/2.
-    #[serde(rename = "PHASE_1_2")]
     #[graphql(name = "PHASE_1_2")]
-    Phase12,
+    #[strum(serialize = "PHASE_1_2")]
+    Phase12 = 6,
     /// Phase 2.
-    #[serde(rename = "PHASE_2")]
     #[graphql(name = "PHASE_2")]
-    Phase2,
+    #[strum(serialize = "PHASE_2")]
+    Phase2 = 7,
     /// Phase 2/3.
-    #[serde(rename = "PHASE_2_3")]
     #[graphql(name = "PHASE_2_3")]
-    Phase23,
+    #[strum(serialize = "PHASE_2_3")]
+    Phase23 = 8,
     /// Phase 3.
-    #[serde(rename = "PHASE_3")]
     #[graphql(name = "PHASE_3")]
-    Phase3,
+    #[strum(serialize = "PHASE_3")]
+    Phase3 = 9,
     /// Preapproval.
-    Preapproval,
+    Preapproval = 10,
     /// The drog is approved for general use.
-    Approval,
+    Approval = 11,
     /// Phase 4.
-    #[serde(rename = "PHASE_4")]
     #[graphql(name = "PHASE_4")]
-    Phase4,
+    #[strum(serialize = "PHASE_4")]
+    Phase4 = 12,
     /// The drug has been Withdrawn.
-    Withdrawal,
+    Withdrawal = 13,
 }
 
 /// Type of clinical study.
@@ -228,7 +242,6 @@ pub struct ClinicalReport {
     /// Source database or registry from which the clinical report was obtained.
     source: String,
     /// Clinical stage of the report.
-    #[serde(deserialize_with = "from_string")]
     clinical_stage: ClinicalStage,
     /// Clinical phase as reported in the source.
     phase_from_source: Option<String>,

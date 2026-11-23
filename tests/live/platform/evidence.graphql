@@ -10,22 +10,12 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         allelicRequirements
         ancestry
         ancestryId
-        assays {
-          description
-          isHit
-          shortName
-        }
-        assessments
         beta
         betaConfidenceIntervalLower
         betaConfidenceIntervalUpper
         biologicalModelAllelicComposition
         biologicalModelGeneticBackground
         biologicalModelId
-        biomarkerList {
-          name
-          description
-        }
         biomarkerName
         biomarkers {
           geneExpression {
@@ -45,7 +35,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           }
         }
         biosamplesFromSource
-        cellLineBackground
         cellType
         clinicalReportId
         clinicalSignificances
@@ -80,10 +69,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         }
         drugFromSource
         evidenceDate
-        geneticInteractionType
-        geneticInteractionScore
-        interactingTargetFromSourceId
-        interactingTargetRole
         literature
         log2FoldChangePercentileRank
         mutatedSamples {
@@ -104,15 +89,9 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           id
           name
         }
-        phenotypicConsequenceLogFoldChange
-        phenotypicConsequencePValue
         phenotypicConsequenceScore
-        primaryProjectHit
-        primaryProjectId
-        projectDescription
         projectId
         publicationDate
-        publicationFirstAuthor
         publicationYear
         qualityControls
         reactionId
@@ -135,24 +114,22 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         targetFromSourceId
         targetInModel
         targetModulation
-        targetRole
         textMiningSentences {
           dEnd
-          tEnd
           dStart
-          tStart
           section
+          tEnd
+          tStart
           text
         }
         trialStopReasonCategories
         trialWhyStopped
         urls {
-          url
           niceName
+          url
         }
         variantAminoacidDescriptions
         variantRsId
-        warningMessage
         disease {
           id
         }
@@ -175,10 +152,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           id
           label
         }
-        variantFunctionalConsequenceFromQtl {
-          id
-          label
-        }
       }
     }
     evidences_datasourceIds: evidences(efoIds: [$disease], datasourceIds: [clinical_precedence, gwas_credible_sets, gene_burden, eva, genomics_england, gene2phenotype, uniprot_literature, uniprot_variants, orphanet, clingen, cancer_gene_census, intogen, eva_somatic, cancer_biomarkers, crispr_screen, crispr, reactome, europepmc, expression_atlas, impc]) {
@@ -189,7 +162,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         allelicRequirements
         ancestry
         ancestryId
-        assessments
         beta
         betaConfidenceIntervalLower
         betaConfidenceIntervalUpper
@@ -198,7 +170,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         biologicalModelId
         biomarkerName
         biosamplesFromSource
-        cellLineBackground
         cellType
         clinicalReportId
         clinicalSignificances
@@ -219,10 +190,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         diseaseFromSourceMappedId
         drugFromSource
         evidenceDate
-        geneticInteractionType
-        geneticInteractionScore
-        interactingTargetFromSourceId
-        interactingTargetRole
         literature
         log2FoldChangePercentileRank
         oddsRatio
@@ -230,15 +197,9 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         oddsRatioConfidenceIntervalUpper
         pValueExponent
         pValueMantissa
-        phenotypicConsequenceLogFoldChange
-        phenotypicConsequencePValue
         phenotypicConsequenceScore
-        primaryProjectHit
-        primaryProjectId
-        projectDescription
         projectId
         publicationDate
-        publicationFirstAuthor
         publicationYear
         qualityControls
         reactionId
@@ -261,12 +222,10 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         targetFromSourceId
         targetInModel
         targetModulation
-        targetRole
         trialStopReasonCategories
         trialWhyStopped
         variantAminoacidDescriptions
         variantRsId
-        warningMessage
       }
     }
     evidenceViews(efoIds: [$disease]) {
@@ -849,22 +808,12 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         allelicRequirements
         ancestry
         ancestryId
-        assays {
-          description
-          isHit
-          shortName
-        }
-        assessments
         beta
         betaConfidenceIntervalLower
         betaConfidenceIntervalUpper
         biologicalModelAllelicComposition
         biologicalModelGeneticBackground
         biologicalModelId
-        biomarkerList {
-          name
-          description
-        }
         biomarkerName
         biomarkers {
           geneExpression {
@@ -884,7 +833,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           }
         }
         biosamplesFromSource
-        cellLineBackground
         cellType
         clinicalReportId
         clinicalSignificances
@@ -919,10 +867,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         }
         drugFromSource
         evidenceDate
-        geneticInteractionType
-        geneticInteractionScore
-        interactingTargetFromSourceId
-        interactingTargetRole
         literature
         log2FoldChangePercentileRank
         mutatedSamples {
@@ -943,15 +887,9 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           id
           name
         }
-        phenotypicConsequenceLogFoldChange
-        phenotypicConsequencePValue
         phenotypicConsequenceScore
-        primaryProjectHit
-        primaryProjectId
-        projectDescription
         projectId
         publicationDate
-        publicationFirstAuthor
         publicationYear
         qualityControls
         reactionId
@@ -974,24 +912,22 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         targetFromSourceId
         targetInModel
         targetModulation
-        targetRole
         textMiningSentences {
           dEnd
-          tEnd
           dStart
-          tStart
           section
+          tEnd
+          tStart
           text
         }
         trialStopReasonCategories
         trialWhyStopped
         urls {
-          url
           niceName
+          url
         }
         variantAminoacidDescriptions
         variantRsId
-        warningMessage
         disease {
           id
         }
@@ -1014,10 +950,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           id
           label
         }
-        variantFunctionalConsequenceFromQtl {
-          id
-          label
-        }
       }
     }
     evidences_datasourceIds: evidences(ensemblIds: [$target], datasourceIds: [clinical_precedence, gwas_credible_sets, gene_burden, eva, genomics_england, gene2phenotype, uniprot_literature, uniprot_variants, orphanet, clingen, cancer_gene_census, intogen, eva_somatic, cancer_biomarkers, crispr_screen, crispr, reactome, europepmc, expression_atlas, impc]) {
@@ -1028,7 +960,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         allelicRequirements
         ancestry
         ancestryId
-        assessments
         beta
         betaConfidenceIntervalLower
         betaConfidenceIntervalUpper
@@ -1037,7 +968,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         biologicalModelId
         biomarkerName
         biosamplesFromSource
-        cellLineBackground
         cellType
         clinicalReportId
         clinicalSignificances
@@ -1058,10 +988,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         diseaseFromSourceMappedId
         drugFromSource
         evidenceDate
-        geneticInteractionType
-        geneticInteractionScore
-        interactingTargetFromSourceId
-        interactingTargetRole
         literature
         log2FoldChangePercentileRank
         oddsRatio
@@ -1069,15 +995,9 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         oddsRatioConfidenceIntervalUpper
         pValueExponent
         pValueMantissa
-        phenotypicConsequenceLogFoldChange
-        phenotypicConsequencePValue
         phenotypicConsequenceScore
-        primaryProjectHit
-        primaryProjectId
-        projectDescription
         projectId
         publicationDate
-        publicationFirstAuthor
         publicationYear
         qualityControls
         reactionId
@@ -1100,12 +1020,10 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         targetFromSourceId
         targetInModel
         targetModulation
-        targetRole
         trialStopReasonCategories
         trialWhyStopped
         variantAminoacidDescriptions
         variantRsId
-        warningMessage
       }
     }
     evidenceViews(ensemblIds: [$target]) {
@@ -1688,22 +1606,12 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         allelicRequirements
         ancestry
         ancestryId
-        assays {
-          description
-          isHit
-          shortName
-        }
-        assessments
         beta
         betaConfidenceIntervalLower
         betaConfidenceIntervalUpper
         biologicalModelAllelicComposition
         biologicalModelGeneticBackground
         biologicalModelId
-        biomarkerList {
-          name
-          description
-        }
         biomarkerName
         biomarkers {
           geneExpression {
@@ -1723,7 +1631,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           }
         }
         biosamplesFromSource
-        cellLineBackground
         cellType
         clinicalReportId
         clinicalSignificances
@@ -1758,10 +1665,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         }
         drugFromSource
         evidenceDate
-        geneticInteractionType
-        geneticInteractionScore
-        interactingTargetFromSourceId
-        interactingTargetRole
         literature
         log2FoldChangePercentileRank
         mutatedSamples {
@@ -1782,15 +1685,9 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           id
           name
         }
-        phenotypicConsequenceLogFoldChange
-        phenotypicConsequencePValue
         phenotypicConsequenceScore
-        primaryProjectHit
-        primaryProjectId
-        projectDescription
         projectId
         publicationDate
-        publicationFirstAuthor
         publicationYear
         qualityControls
         reactionId
@@ -1813,24 +1710,22 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         targetFromSourceId
         targetInModel
         targetModulation
-        targetRole
         textMiningSentences {
           dEnd
-          tEnd
           dStart
-          tStart
           section
+          tEnd
+          tStart
           text
         }
         trialStopReasonCategories
         trialWhyStopped
         urls {
-          url
           niceName
+          url
         }
         variantAminoacidDescriptions
         variantRsId
-        warningMessage
         disease {
           id
         }
@@ -1853,10 +1748,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           id
           label
         }
-        variantFunctionalConsequenceFromQtl {
-          id
-          label
-        }
       }
     }
     evidences_datasourceIds: evidences(datasourceIds: [clinical_precedence, gwas_credible_sets, gene_burden, eva, genomics_england, gene2phenotype, uniprot_literature, uniprot_variants, orphanet, clingen, cancer_gene_census, intogen, eva_somatic, cancer_biomarkers, crispr_screen, crispr, reactome, europepmc, expression_atlas, impc]) {
@@ -1867,7 +1758,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         allelicRequirements
         ancestry
         ancestryId
-        assessments
         beta
         betaConfidenceIntervalLower
         betaConfidenceIntervalUpper
@@ -1876,7 +1766,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         biologicalModelId
         biomarkerName
         biosamplesFromSource
-        cellLineBackground
         cellType
         clinicalReportId
         clinicalSignificances
@@ -1897,10 +1786,6 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         diseaseFromSourceMappedId
         drugFromSource
         evidenceDate
-        geneticInteractionType
-        geneticInteractionScore
-        interactingTargetFromSourceId
-        interactingTargetRole
         literature
         log2FoldChangePercentileRank
         oddsRatio
@@ -1908,15 +1793,9 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         oddsRatioConfidenceIntervalUpper
         pValueExponent
         pValueMantissa
-        phenotypicConsequenceLogFoldChange
-        phenotypicConsequencePValue
         phenotypicConsequenceScore
-        primaryProjectHit
-        primaryProjectId
-        projectDescription
         projectId
         publicationDate
-        publicationFirstAuthor
         publicationYear
         qualityControls
         reactionId
@@ -1939,12 +1818,10 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
         targetFromSourceId
         targetInModel
         targetModulation
-        targetRole
         trialStopReasonCategories
         trialWhyStopped
         variantAminoacidDescriptions
         variantRsId
-        warningMessage
       }
     }
   }

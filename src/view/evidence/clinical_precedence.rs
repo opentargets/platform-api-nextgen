@@ -15,6 +15,10 @@ use strum::EnumIter;
 use super::EvidenceScope;
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::{
+        clinical_report::ClinicalStage,
+        evidence::{DirectionOnTarget, DirectionOnTrait},
+    },
     query::{
         paginate::Paged,
         sort::{Sort, SortDirection},
@@ -55,11 +59,11 @@ pub struct EvidenceClinicalPrecedence {
     drug_target_symbols: Vec<String>,
     /// Gain or loss of function effect of the evidence on the target resulting from genetic
     /// variants, pharmacological modulation, or other perturbations.
-    direction_on_target: Option<String>,
+    direction_on_target: Option<DirectionOnTarget>,
     /// Predicted direction of effect on the trait.
-    direction_on_trait: Option<String>,
+    direction_on_trait: Option<DirectionOnTrait>,
     /// Clinical stage of the drug-disease pair.
-    clinical_stage: Option<String>,
+    clinical_stage: Option<ClinicalStage>,
     #[allow(dead_code, reason = "read only to keep the column order")]
     #[graphql(skip)]
     clinical_stage_rank: u64,

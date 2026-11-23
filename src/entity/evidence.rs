@@ -1,17 +1,20 @@
 use std::collections::HashMap;
 
 use async_graphql::{
-    ComplexObject, Context, SimpleObject,
+    ComplexObject, Context, Enum, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
 use derive_more::From;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer, de::Error as _};
+use serde_repr::Deserialize_repr;
+use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         association::Datasource,
+        clinical_report::ClinicalStage,
         credible_set::{CredibleSet, load_credible_set},
         disease::{Disease, load_disease},
         drug::{Drug, load_drug},
@@ -25,16 +28,252 @@ use crate::{
 
 // ---- models ----
 
+/// Datatype of an evidence.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum Datatype {
+    /// Affected pathway.
+    AffectedPathway = 1,
+    /// Animal model.
+    AnimalModel = 2,
+    /// Clinical.
+    Clinical = 3,
+    /// Genetic association.
+    GeneticAssociation = 4,
+    /// Genetic literature.
+    GeneticLiterature = 5,
+    /// Known drug.
+    KnownDrug = 6,
+    /// Literature.
+    Literature = 7,
+    /// Open Targets partner.
+    OtPartner = 8,
+    /// Open Targets validation lab.
+    OtValidationLab = 9,
+    /// RNA expression.
+    RnaExpression = 10,
+    /// Somatic mutation.
+    SomaticMutation = 11,
+}
+
+/// Gain or loss of function effect on the target.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+pub enum DirectionOnTarget {
+    /// Gain of function.
+    #[graphql(name = "GoF")]
+    GoF = 1,
+    /// Loss of function.
+    #[graphql(name = "LoF")]
+    LoF = 2,
+}
+
+/// Direction of effect on the trait.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum DirectionOnTrait {
+    /// Protective effect.
+    Protect = 1,
+    /// Risk effect.
+    Risk = 2,
+}
+
+/// Section of a Europe PMC publication.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum EuropePmcSection {
+    /// Abstract.
+    Abstract = 1,
+    /// Appendix.
+    Appendix = 2,
+    /// Case report.
+    Case = 3,
+    /// Conclusions.
+    Concl = 4,
+    /// Discussion.
+    Discuss = 5,
+    /// Figure caption.
+    Figure = 6,
+    /// Introduction.
+    Intro = 7,
+    /// Other section.
+    Other = 8,
+    /// Results.
+    Results = 9,
+    /// Table.
+    Table = 10,
+    /// Title.
+    Title = 11,
+}
+
+/// Category of the reason a clinical trial stopped.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+pub enum TrialStopReasonCategory {
+    /// Another study.
+    #[graphql(name = "Another_Study")]
+    #[strum(serialize = "Another_Study")]
+    AnotherStudy = 1,
+    /// Business or administrative reasons.
+    #[graphql(name = "Business_Administrative")]
+    #[strum(serialize = "Business_Administrative")]
+    BusinessAdministrative = 2,
+    /// COVID-19.
+    #[graphql(name = "Covid19")]
+    #[strum(serialize = "Covid19")]
+    Covid19 = 3,
+    /// Endpoint met.
+    #[graphql(name = "Endpoint_Met")]
+    #[strum(serialize = "Endpoint_Met")]
+    EndpointMet = 4,
+    /// Ethical reason.
+    #[graphql(name = "Ethical_Reason")]
+    #[strum(serialize = "Ethical_Reason")]
+    EthicalReason = 5,
+    /// Insufficient data.
+    #[graphql(name = "Insufficient_Data")]
+    #[strum(serialize = "Insufficient_Data")]
+    InsufficientData = 6,
+    /// Insufficient enrollment.
+    #[graphql(name = "Insufficient_Enrollment")]
+    #[strum(serialize = "Insufficient_Enrollment")]
+    InsufficientEnrollment = 7,
+    /// Interim analysis.
+    #[graphql(name = "Interim_Analysis")]
+    #[strum(serialize = "Interim_Analysis")]
+    InterimAnalysis = 8,
+    /// Invalid reason.
+    #[graphql(name = "Invalid_Reason")]
+    #[strum(serialize = "Invalid_Reason")]
+    InvalidReason = 9,
+    /// Logistics or resources.
+    #[graphql(name = "Logistics_Resources")]
+    #[strum(serialize = "Logistics_Resources")]
+    LogisticsResources = 10,
+    /// Negative result.
+    #[graphql(name = "Negative")]
+    #[strum(serialize = "Negative")]
+    Negative = 11,
+    /// No context.
+    #[graphql(name = "No_Context")]
+    #[strum(serialize = "No_Context")]
+    NoContext = 12,
+    /// Regulatory.
+    #[graphql(name = "Regulatory")]
+    #[strum(serialize = "Regulatory")]
+    Regulatory = 13,
+    /// Safety or side effects.
+    #[graphql(name = "Safety_Sideeffects")]
+    #[strum(serialize = "Safety_Sideeffects")]
+    SafetySideeffects = 14,
+    /// Study design.
+    #[graphql(name = "Study_Design")]
+    #[strum(serialize = "Study_Design")]
+    StudyDesign = 15,
+    /// Study staff moved.
+    #[graphql(name = "Study_Staff_Moved")]
+    #[strum(serialize = "Study_Staff_Moved")]
+    StudyStaffMoved = 16,
+    /// Success.
+    #[graphql(name = "Success")]
+    #[strum(serialize = "Success")]
+    Success = 17,
+    /// Uncategorised.
+    #[graphql(name = "Uncategorised")]
+    #[strum(serialize = "Uncategorised")]
+    Uncategorised = 18,
+}
+
+/// Decodes a `datasourceId` `Enum8` into its [`Datasource`].
+fn datasource_from_enum8<'de, D: Deserializer<'de>>(d: D) -> Result<Datasource, D::Error> {
+    let n = i8::deserialize(d)?;
+    Datasource::iter()
+        .find(|ds| *ds as i8 == n)
+        .ok_or_else(|| D::Error::custom(format!("unknown datasourceId {n}")))
+}
+
 /// Assays used in the study.
+#[cfg(feature = "product-ppp")]
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 struct Assay {
     /// Description of the assay.
-    description: Option<String>,
+    description: String,
     /// Indicates if the assay was positive or negative for the target.
-    is_hit: Option<bool>,
+    is_hit: bool,
     /// Short name of the assay.
-    short_name: Option<String>,
+    short_name: String,
 }
 
 /// List of biomarkers.
@@ -51,21 +290,18 @@ struct Biomarkers {
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 struct BiomarkerGeneExpression {
-    /// Raw gene expression annotation from the source.
-    name: Option<String>,
     /// Gene Ontology (GO) identifiers of regulation or background expression processes
     /// [bioregistry:go].
     #[graphql(skip)]
-    id: Option<String>,
+    id: String,
+    /// Raw gene expression annotation from the source.
+    name: String,
 }
 
 #[ComplexObject]
 impl BiomarkerGeneExpression {
     async fn id(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<GeneOntology>> {
-        match &self.id {
-            Some(id) => load_gene_ontology_one(ctx, id.clone()).await,
-            None => Ok(None),
-        }
+        load_gene_ontology_one(ctx, self.id.clone()).await
     }
 }
 
@@ -74,13 +310,13 @@ impl BiomarkerGeneExpression {
 #[graphql(complex)]
 /// List of gene expression altering biomarkers.
 struct GeneticVariation {
-    /// Variant identifier.
-    id: Option<String>,
-    /// Name of the variant biomarker.
-    name: Option<String>,
     /// Functional consequene identifier of the variant biomarker [bioregistry:so].
     #[graphql(skip)]
     functional_consequence_id: Option<String>,
+    /// Variant identifier.
+    id: Option<String>,
+    /// Name of the variant biomarker.
+    name: String,
 }
 
 #[ComplexObject]
@@ -102,13 +338,13 @@ impl GeneticVariation {
 #[serde(rename_all = "camelCase")]
 pub struct DiseaseCellLine {
     /// Cell type identifier in cell ontology or in cell model database.
-    id: Option<String>,
+    id: String,
     /// Name of the cell model.
-    name: Option<String>,
+    name: String,
     /// Name of the tissue from which the cells were sampled.
-    tissue: Option<String>,
+    tissue: String,
     /// Anatomical identifier of the sampled organ/tissue [bioregistry:uberon].
-    tissue_id: Option<String>,
+    tissue_id: String,
 }
 
 /// Mutation counts for a single functional consequence, across a tested sample cohort.
@@ -120,9 +356,9 @@ struct EvidenceVariation {
     #[graphql(skip)]
     functional_consequence_id: Option<String>,
     /// Number of cohort samples in which target is mutated with a mutation of any type.
-    number_mutated_samples: Option<u32>,
+    number_mutated_samples: u32,
     /// Number of cohort samples tested.
-    number_samples_tested: Option<u32>,
+    number_samples_tested: u32,
     /// Number of cohort samples in which target is mutated with a specific mutation type.
     number_samples_with_mutation_type: Option<u32>,
 }
@@ -141,21 +377,20 @@ impl EvidenceVariation {
     }
 }
 
-// CHRSNAMEDTUPLE The fields in this should be reordered to something more sane.
 /// Sentences of a publication supporting the disease/target relationship.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 struct EvidenceTextMiningSentence {
     /// End position of the disease label in sentence.
     d_end: u32,
-    /// End position of the target label in the sentence.
-    t_end: u32,
     /// Start position of the disease label in the sentence.
     d_start: u32,
+    /// Section of the publication the sentence was extracted from.
+    section: EuropePmcSection,
+    /// End position of the target label in the sentence.
+    t_end: u32,
     /// Start position of the target label in the sentence.
     t_start: u32,
-    /// Section of the publication the sentence was extracted from.
-    section: String,
     /// Text of the sentence with the disease/target relationship.
     text: String,
 }
@@ -175,20 +410,21 @@ pub struct LabelledElement {
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct LabelledUri {
-    /// URL to remote resource.
-    url: Option<String>,
     /// Human readable label of the remote reference.
     nice_name: Option<String>,
+    /// URL to remote resource.
+    url: String,
 }
 
 /// An element with name and description.
+#[cfg(feature = "product-ppp")]
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 struct NameDescription {
-    /// Name of the element.
-    name: String,
     /// Description of the element.
     description: String,
+    /// Name of the element.
+    name: String,
 }
 
 /// Pathway annotations for a target.
@@ -196,9 +432,9 @@ struct NameDescription {
 #[serde(rename_all = "camelCase")]
 pub struct Pathway {
     /// Unique identifier for the pathway.
-    id: Option<String>,
+    id: String,
     /// Name of the pathway.
-    name: Option<String>,
+    name: String,
 }
 
 #[derive(Debug, Clone, Deserialize, SimpleObject, Row)]
@@ -216,8 +452,10 @@ pub struct Evidence {
     /// Identifier of the ancestry in the HANCESTRO ontology [bioregistry:hancestro].
     ancestry_id: Option<String>,
     /// Assays used in the study.
+    #[cfg(feature = "product-ppp")]
     assays: Vec<Assay>,
     /// Short name of the assay.
+    #[cfg(feature = "product-ppp")]
     assessments: Vec<String>,
     /// Effect size of numeric traits.
     beta: Option<f64>,
@@ -232,6 +470,7 @@ pub struct Evidence {
     /// Identifier of the biological model (eg. in MGI).
     biological_model_id: Option<String>,
     /// List of biomarkers associated with the biological model.
+    #[cfg(feature = "product-ppp")]
     biomarker_list: Vec<NameDescription>,
     /// Altered characteristics that influences the disease process.
     biomarker_name: Option<String>,
@@ -240,6 +479,7 @@ pub struct Evidence {
     /// Identifier of the referenced biological material.
     biosamples_from_source: Vec<String>,
     /// Background of the derived cell lines.
+    #[cfg(feature = "product-ppp")]
     cell_line_background: Option<String>,
     /// The studied cell type. Preferably the cell line ontology label.
     cell_type: Option<String>,
@@ -248,7 +488,7 @@ pub struct Evidence {
     /// Standard terms to define clinical significance.
     clinical_significances: Vec<String>,
     /// Clinical stage of the drug-disease pair.
-    clinical_stage: Option<String>,
+    clinical_stage: Option<ClinicalStage>,
     /// Description of the studied cohort.
     cohort_description: Option<String>,
     /// Identifier of the studied cohort
@@ -264,14 +504,15 @@ pub struct Evidence {
     /// Applied screening library in the CRISPR/Cas9 project.
     crispr_screen_library: Option<String>,
     /// Identifer of the evidence source.
-    datasource_id: String,
+    #[serde(deserialize_with = "datasource_from_enum8")]
+    datasource_id: Datasource,
     /// Datatype of the evidence.
-    datatype_id: String,
+    datatype_id: Datatype,
     /// Gain or loss of function effect of the evidence on the target resulting from genetic
     /// variants, pharmacological modulation, or other perturbations.
-    direction_on_target: Option<String>,
+    direction_on_target: Option<DirectionOnTarget>,
     /// Predicted direction of effect on the trait.
-    direction_on_trait: Option<String>,
+    direction_on_trait: Option<DirectionOnTrait>,
     /// Cancer cell lines used to generate evidence.
     disease_cell_lines: Vec<DiseaseCellLine>,
     /// Disease label from the original source.
@@ -279,7 +520,7 @@ pub struct Evidence {
     /// Disease identifier from the original source.
     disease_from_source_id: Option<String>,
     /// Mapped Open Targets disease identifier.
-    disease_from_source_mapped_id: Option<String>,
+    disease_from_source_mapped_id: String,
     #[graphql(skip)]
     disease_id: String,
     /// Human phenotypes equivalent to those observed in animal models.
@@ -296,13 +537,17 @@ pub struct Evidence {
     #[allow(clippy::struct_field_names)]
     evidence_date: Option<String>,
     /// Description of the interaction between the two genes.
+    #[cfg(feature = "product-ppp")]
     genetic_interaction_type: Option<String>,
     /// The strength of the genetic interaction. Directionality is captured as well: antagonistics
     /// < 0 < cooperative.
+    #[cfg(feature = "product-ppp")]
     genetic_interaction_score: Option<f64>,
     /// Identifer of the interacting target.
+    #[cfg(feature = "product-ppp")]
     interacting_target_from_source_id: Option<String>,
     /// Role of a target in the genetic interaction test.
+    #[cfg(feature = "product-ppp")]
     interacting_target_role: Option<String>,
     /// List of PubMed or preprint reference identifiers.
     literature: Vec<String>,
@@ -323,23 +568,26 @@ pub struct Evidence {
     /// List of pooled pathways.
     pathways: Vec<Pathway>,
     /// Log 2 fold change of the cell survival.
+    #[cfg(feature = "product-ppp")]
     phenotypic_consequence_log_fold_change: Option<f64>,
     /// P-value of the the cell survival test.
+    #[cfg(feature = "product-ppp")]
     phenotypic_consequence_p_value: Option<f64>,
     /// Score of the phenotypic consequence of the target perturbation in the CRISPR screen.
     phenotypic_consequence_score: Option<f64>,
     /// If a given target was found to be a hit in the primary project.
+    #[cfg(feature = "product-ppp")]
     primary_project_hit: Option<bool>,
     /// Open Targets project identifier of the primary project.
+    #[cfg(feature = "product-ppp")]
     primary_project_id: Option<String>,
     /// Description of the project that generated the data.
+    #[cfg(feature = "product-ppp")]
     project_description: Option<String>,
     /// The identifer of the project that generated the data.
     project_id: Option<String>,
     /// Date of the earliest publication supporting the evidence.
     publication_date: Option<String>,
-    /// Last name and initials of the author of the publication that references the study.
-    publication_first_author: Option<String>,
     /// Year of publication.
     publication_year: Option<u16>,
     /// Evidence quality flags.
@@ -381,7 +629,7 @@ pub struct Evidence {
     target_from_source: Option<String>,
     /// Target ID in resource of origin (accepted sources include Ensembl gene ID, Uniprot ID, gene
     /// symbol), only capital letters are accepted.
-    target_from_source_id: Option<String>,
+    target_from_source_id: String,
     #[graphql(skip)]
     target_id: String,
     /// Target name/synonym in animal model.
@@ -389,11 +637,12 @@ pub struct Evidence {
     /// Description of target modulation event.
     target_modulation: Option<String>,
     /// Role of a target in the genetic interaction test.
+    #[cfg(feature = "product-ppp")]
     target_role: Option<String>,
     /// Sentences of a publication supporting the disease/target relationship.
     text_mining_sentences: Vec<EvidenceTextMiningSentence>,
     /// Categorised reason(s) why the trial was stopped.
-    trial_stop_reason_categories: Vec<String>,
+    trial_stop_reason_categories: Vec<TrialStopReasonCategory>,
     /// Reason why the trial was stopped, as reported.
     trial_why_stopped: Option<String>,
     /// Reference to linked external resource (e.g. clinical trials, studies, package inserts,
@@ -402,16 +651,11 @@ pub struct Evidence {
     /// Descriptions of variant consequences at protein level.
     variant_aminoacid_descriptions: Vec<String>,
     #[graphql(skip)]
-    variant_functional_consequence_from_qtl_id: Option<String>,
-    #[graphql(skip)]
     variant_functional_consequence_id: Option<String>,
     /// Variant reference SNP cluster ID (Rsid).
     variant_rs_id: Option<String>,
     #[graphql(skip)]
     variant_id: Option<String>,
-    // DEPRECATED - This is always empty in the data.
-    #[graphql(deprecation = "empty")]
-    warning_message: Option<String>,
     #[graphql(skip)]
     study_locus_id: Option<String>,
 }
@@ -638,17 +882,6 @@ impl Evidence {
         ctx: &Context<'_>,
     ) -> async_graphql::Result<Option<SequenceOntologyTerm>> {
         match &self.variant_functional_consequence_id {
-            Some(id) => load_sequence_ontology_one(ctx, id.clone()).await,
-            None => Ok(None),
-        }
-    }
-
-    /// Sequence ontology (SO) term of the functional consequence of the variant from QTL.
-    async fn variant_functional_consequence_from_qtl(
-        &self,
-        ctx: &Context<'_>,
-    ) -> async_graphql::Result<Option<SequenceOntologyTerm>> {
-        match &self.variant_functional_consequence_from_qtl_id {
             Some(id) => load_sequence_ontology_one(ctx, id.clone()).await,
             None => Ok(None),
         }

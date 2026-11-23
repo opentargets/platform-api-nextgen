@@ -73,24 +73,6 @@ type AlleleFrequency {
 }
 
 """
-Assays used in the study.
-"""
-type Assay {
-	"""
-	Description of the assay.
-	"""
-	description: String
-	"""
-	Indicates if the assay was positive or negative for the target.
-	"""
-	isHit: Boolean
-	"""
-	Short name of the assay.
-	"""
-	shortName: String
-}
-
-"""
 Sort types. Contain the sort field and direction.
 """
 input AssociationSort {
@@ -293,7 +275,7 @@ type BiomarkerGeneExpression {
 	"""
 	Raw gene expression annotation from the source.
 	"""
-	name: String
+	name: String!
 	id: GeneOntology
 }
 
@@ -1711,6 +1693,56 @@ input DatasourcePolicyOverride {
 }
 
 """
+Datatype of an evidence.
+"""
+enum Datatype {
+	"""
+	Affected pathway.
+	"""
+	affected_pathway
+	"""
+	Animal model.
+	"""
+	animal_model
+	"""
+	Clinical.
+	"""
+	clinical
+	"""
+	Genetic association.
+	"""
+	genetic_association
+	"""
+	Genetic literature.
+	"""
+	genetic_literature
+	"""
+	Known drug.
+	"""
+	known_drug
+	"""
+	Literature.
+	"""
+	literature
+	"""
+	Open Targets partner.
+	"""
+	ot_partner
+	"""
+	Open Targets validation lab.
+	"""
+	ot_validation_lab
+	"""
+	RNA expression.
+	"""
+	rna_expression
+	"""
+	Somatic mutation.
+	"""
+	somatic_mutation
+}
+
+"""
 Cross-references for the variant in different databases.
 """
 type DbXref {
@@ -1745,6 +1777,34 @@ The result of a paginated query, containing the total number of items and the it
 type DepMapEssentialityPage {
 	count: Int!
 	rows: [DepMapEssentiality!]!
+}
+
+"""
+Gain or loss of function effect on the target.
+"""
+enum DirectionOnTarget {
+	"""
+	Gain of function.
+	"""
+	GoF
+	"""
+	Loss of function.
+	"""
+	LoF
+}
+
+"""
+Direction of effect on the trait.
+"""
+enum DirectionOnTrait {
+	"""
+	Protective effect.
+	"""
+	protect
+	"""
+	Risk effect.
+	"""
+	risk
 }
 
 """
@@ -2030,19 +2090,19 @@ type DiseaseCellLine {
 	"""
 	Cell type identifier in cell ontology or in cell model database.
 	"""
-	id: String
+	id: String!
 	"""
 	Name of the cell model.
 	"""
-	name: String
+	name: String!
 	"""
 	Name of the tissue from which the cells were sampled.
 	"""
-	tissue: String
+	tissue: String!
 	"""
 	Anatomical identifier of the sampled organ/tissue [bioregistry:uberon].
 	"""
-	tissueId: String
+	tissueId: String!
 }
 
 """
@@ -2795,6 +2855,56 @@ enum EntityType {
 	variant
 }
 
+"""
+Section of a Europe PMC publication.
+"""
+enum EuropePmcSection {
+	"""
+	Abstract.
+	"""
+	abstract
+	"""
+	Appendix.
+	"""
+	appendix
+	"""
+	Case report.
+	"""
+	case
+	"""
+	Conclusions.
+	"""
+	concl
+	"""
+	Discussion.
+	"""
+	discuss
+	"""
+	Figure caption.
+	"""
+	figure
+	"""
+	Introduction.
+	"""
+	intro
+	"""
+	Other section.
+	"""
+	other
+	"""
+	Results.
+	"""
+	results
+	"""
+	Table.
+	"""
+	table
+	"""
+	Title.
+	"""
+	title
+}
+
 type Evidence {
 	"""
 	Identifer of the disease/target evidence.
@@ -2816,14 +2926,6 @@ type Evidence {
 	Identifier of the ancestry in the HANCESTRO ontology [bioregistry:hancestro].
 	"""
 	ancestryId: String
-	"""
-	Assays used in the study.
-	"""
-	assays: [Assay!]!
-	"""
-	Short name of the assay.
-	"""
-	assessments: [String!]!
 	"""
 	Effect size of numeric traits.
 	"""
@@ -2849,10 +2951,6 @@ type Evidence {
 	"""
 	biologicalModelId: String
 	"""
-	List of biomarkers associated with the biological model.
-	"""
-	biomarkerList: [NameDescription!]!
-	"""
 	Altered characteristics that influences the disease process.
 	"""
 	biomarkerName: String
@@ -2864,10 +2962,6 @@ type Evidence {
 	Identifier of the referenced biological material.
 	"""
 	biosamplesFromSource: [String!]!
-	"""
-	Background of the derived cell lines.
-	"""
-	cellLineBackground: String
 	"""
 	The studied cell type. Preferably the cell line ontology label.
 	"""
@@ -2883,7 +2977,7 @@ type Evidence {
 	"""
 	Clinical stage of the drug-disease pair.
 	"""
-	clinicalStage: String
+	clinicalStage: ClinicalStage
 	"""
 	Description of the studied cohort.
 	"""
@@ -2915,20 +3009,20 @@ type Evidence {
 	"""
 	Identifer of the evidence source.
 	"""
-	datasourceId: String!
+	datasourceId: Datasource!
 	"""
 	Datatype of the evidence.
 	"""
-	datatypeId: String!
+	datatypeId: Datatype!
 	"""
 	Gain or loss of function effect of the evidence on the target resulting from genetic
 	variants, pharmacological modulation, or other perturbations.
 	"""
-	directionOnTarget: String
+	directionOnTarget: DirectionOnTarget
 	"""
 	Predicted direction of effect on the trait.
 	"""
-	directionOnTrait: String
+	directionOnTrait: DirectionOnTrait
 	"""
 	Cancer cell lines used to generate evidence.
 	"""
@@ -2944,7 +3038,7 @@ type Evidence {
 	"""
 	Mapped Open Targets disease identifier.
 	"""
-	diseaseFromSourceMappedId: String
+	diseaseFromSourceMappedId: String!
 	"""
 	Human phenotypes equivalent to those observed in animal models.
 	"""
@@ -2961,23 +3055,6 @@ type Evidence {
 	Earliest data for the evidence.
 	"""
 	evidenceDate: String
-	"""
-	Description of the interaction between the two genes.
-	"""
-	geneticInteractionType: String
-	"""
-	The strength of the genetic interaction. Directionality is captured as well: antagonistics
-	< 0 < cooperative.
-	"""
-	geneticInteractionScore: Float
-	"""
-	Identifer of the interacting target.
-	"""
-	interactingTargetFromSourceId: String
-	"""
-	Role of a target in the genetic interaction test.
-	"""
-	interactingTargetRole: String
 	"""
 	List of PubMed or preprint reference identifiers.
 	"""
@@ -3015,29 +3092,9 @@ type Evidence {
 	"""
 	pathways: [Pathway!]!
 	"""
-	Log 2 fold change of the cell survival.
-	"""
-	phenotypicConsequenceLogFoldChange: Float
-	"""
-	P-value of the the cell survival test.
-	"""
-	phenotypicConsequencePValue: Float
-	"""
 	Score of the phenotypic consequence of the target perturbation in the CRISPR screen.
 	"""
 	phenotypicConsequenceScore: Float
-	"""
-	If a given target was found to be a hit in the primary project.
-	"""
-	primaryProjectHit: Boolean
-	"""
-	Open Targets project identifier of the primary project.
-	"""
-	primaryProjectId: String
-	"""
-	Description of the project that generated the data.
-	"""
-	projectDescription: String
 	"""
 	The identifer of the project that generated the data.
 	"""
@@ -3046,10 +3103,6 @@ type Evidence {
 	Date of the earliest publication supporting the evidence.
 	"""
 	publicationDate: String
-	"""
-	Last name and initials of the author of the publication that references the study.
-	"""
-	publicationFirstAuthor: String
 	"""
 	Year of publication.
 	"""
@@ -3131,7 +3184,7 @@ type Evidence {
 	Target ID in resource of origin (accepted sources include Ensembl gene ID, Uniprot ID, gene
 	symbol), only capital letters are accepted.
 	"""
-	targetFromSourceId: String
+	targetFromSourceId: String!
 	"""
 	Target name/synonym in animal model.
 	"""
@@ -3141,17 +3194,13 @@ type Evidence {
 	"""
 	targetModulation: String
 	"""
-	Role of a target in the genetic interaction test.
-	"""
-	targetRole: String
-	"""
 	Sentences of a publication supporting the disease/target relationship.
 	"""
 	textMiningSentences: [EvidenceTextMiningSentence!]!
 	"""
 	Categorised reason(s) why the trial was stopped.
 	"""
-	trialStopReasonCategories: [String!]!
+	trialStopReasonCategories: [TrialStopReasonCategory!]!
 	"""
 	Reason why the trial was stopped, as reported.
 	"""
@@ -3169,7 +3218,6 @@ type Evidence {
 	Variant reference SNP cluster ID (Rsid).
 	"""
 	variantRsId: String
-	warningMessage: String @deprecated(reason: "empty")
 	"""
 	Disease for which the target is associated in this evidence.
 	"""
@@ -3199,10 +3247,6 @@ type Evidence {
 	Sequence ontology (SO) term of the functional consequence of the variant.
 	"""
 	variantFunctionalConsequence: SequenceOntologyTerm
-	"""
-	Sequence ontology (SO) term of the functional consequence of the variant from QTL.
-	"""
-	variantFunctionalConsequenceFromQtl: SequenceOntologyTerm
 }
 
 """
@@ -3635,15 +3679,15 @@ type EvidenceClinicalPrecedence {
 	Gain or loss of function effect of the evidence on the target resulting from genetic
 	variants, pharmacological modulation, or other perturbations.
 	"""
-	directionOnTarget: String
+	directionOnTarget: DirectionOnTarget
 	"""
 	Predicted direction of effect on the trait.
 	"""
-	directionOnTrait: String
+	directionOnTrait: DirectionOnTrait
 	"""
 	Clinical stage of the drug-disease pair.
 	"""
-	clinicalStage: String
+	clinicalStage: ClinicalStage
 	"""
 	Identifier of the clinical report.
 	"""
@@ -4055,11 +4099,11 @@ type EvidenceEva {
 	"""
 	Gain or loss of function effect of the evidence on the target.
 	"""
-	directionOnTarget: String
+	directionOnTarget: DirectionOnTarget
 	"""
 	Predicted direction of effect on the trait.
 	"""
-	directionOnTrait: String
+	directionOnTrait: DirectionOnTrait
 	"""
 	Clinical significances of the variant.
 	"""
@@ -4394,7 +4438,7 @@ type EvidenceGene2Phenotype {
 	"""
 	Target ID in resource of origin.
 	"""
-	targetFromSourceId: String
+	targetFromSourceId: String!
 	"""
 	Sequence Ontology identifier of the functional consequence.
 	"""
@@ -4406,11 +4450,11 @@ type EvidenceGene2Phenotype {
 	"""
 	Gain or loss of function effect of the evidence on the target.
 	"""
-	directionOnTarget: String
+	directionOnTarget: DirectionOnTarget
 	"""
 	Predicted direction of effect on the trait.
 	"""
-	directionOnTrait: String
+	directionOnTrait: DirectionOnTrait
 	"""
 	Inheritance patterns.
 	"""
@@ -4526,7 +4570,7 @@ type EvidenceGeneBurden {
 	"""
 	Target ID in resource of origin.
 	"""
-	targetFromSourceId: String
+	targetFromSourceId: String!
 	"""
 	Release version of the source data.
 	"""
@@ -4538,11 +4582,11 @@ type EvidenceGeneBurden {
 	"""
 	Gain or loss of function effect of the evidence on the target.
 	"""
-	directionOnTarget: String
+	directionOnTarget: DirectionOnTarget
 	"""
 	Predicted direction of effect on the trait.
 	"""
-	directionOnTrait: String
+	directionOnTrait: DirectionOnTrait
 	"""
 	Inheritance patterns.
 	"""
@@ -5050,11 +5094,11 @@ type EvidenceImpc {
 	"""
 	Gain or loss of function effect of the evidence on the target.
 	"""
-	directionOnTarget: String
+	directionOnTarget: DirectionOnTarget
 	"""
 	Predicted direction of effect on the trait.
 	"""
-	directionOnTrait: String
+	directionOnTrait: DirectionOnTrait
 	"""
 	Identifier of the animal model (e.g. an MGI model ID).
 	"""
@@ -5510,21 +5554,21 @@ type EvidenceTextMiningSentence {
 	"""
 	dEnd: Int!
 	"""
-	End position of the target label in the sentence.
-	"""
-	tEnd: Int!
-	"""
 	Start position of the disease label in the sentence.
 	"""
 	dStart: Int!
 	"""
+	Section of the publication the sentence was extracted from.
+	"""
+	section: EuropePmcSection!
+	"""
+	End position of the target label in the sentence.
+	"""
+	tEnd: Int!
+	"""
 	Start position of the target label in the sentence.
 	"""
 	tStart: Int!
-	"""
-	Section of the publication the sentence was extracted from.
-	"""
-	section: String!
 	"""
 	Text of the sentence with the disease/target relationship.
 	"""
@@ -5569,7 +5613,7 @@ type EvidenceUniprotLiterature {
 	"""
 	Reported protein: the `UniProt` accession of the target in the source.
 	"""
-	targetFromSourceId: String
+	targetFromSourceId: String!
 	"""
 	Identifier of the study generating the data.
 	"""
@@ -5679,7 +5723,7 @@ type EvidenceUniprotVariants {
 	"""
 	Reported protein: the `UniProt` accession of the target in the source.
 	"""
-	targetFromSourceId: String
+	targetFromSourceId: String!
 	"""
 	Identifier of the variant.
 	"""
@@ -5786,11 +5830,11 @@ type EvidenceVariation {
 	"""
 	Number of cohort samples in which target is mutated with a mutation of any type.
 	"""
-	numberMutatedSamples: Int
+	numberMutatedSamples: Int!
 	"""
 	Number of cohort samples tested.
 	"""
-	numberSamplesTested: Int
+	numberSamplesTested: Int!
 	"""
 	Number of cohort samples in which target is mutated with a specific mutation type.
 	"""
@@ -6248,7 +6292,7 @@ type GeneticVariation {
 	"""
 	Name of the variant biomarker.
 	"""
-	name: String
+	name: String!
 	functionalConsequence: SequenceOntologyTerm
 }
 
@@ -6669,13 +6713,13 @@ etc.).
 """
 type LabelledUri {
 	"""
-	URL to remote resource.
-	"""
-	url: String
-	"""
 	Human readable label of the remote reference.
 	"""
 	niceName: String
+	"""
+	URL to remote resource.
+	"""
+	url: String!
 }
 
 """
@@ -6988,20 +7032,6 @@ Format: %Y-%m-%d
 scalar NaiveDate
 
 """
-An element with name and description.
-"""
-type NameDescription {
-	"""
-	Name of the element.
-	"""
-	name: String!
-	"""
-	Description of the element.
-	"""
-	description: String!
-}
-
-"""
 A bucket for a distribution of values.
 """
 type OptBoolBucket {
@@ -7073,11 +7103,11 @@ type Pathway {
 	"""
 	Unique identifier for the pathway.
 	"""
-	id: String
+	id: String!
 	"""
 	Name of the pathway.
 	"""
-	name: String
+	name: String!
 }
 
 """
@@ -9432,6 +9462,84 @@ type TrialSponsor {
 	Name of the lead sponsor associated with the clinical trial.
 	"""
 	name: String
+}
+
+"""
+Category of the reason a clinical trial stopped.
+"""
+enum TrialStopReasonCategory {
+	"""
+	Another study.
+	"""
+	Another_Study
+	"""
+	Business or administrative reasons.
+	"""
+	Business_Administrative
+	"""
+	COVID-19.
+	"""
+	Covid19
+	"""
+	Endpoint met.
+	"""
+	Endpoint_Met
+	"""
+	Ethical reason.
+	"""
+	Ethical_Reason
+	"""
+	Insufficient data.
+	"""
+	Insufficient_Data
+	"""
+	Insufficient enrollment.
+	"""
+	Insufficient_Enrollment
+	"""
+	Interim analysis.
+	"""
+	Interim_Analysis
+	"""
+	Invalid reason.
+	"""
+	Invalid_Reason
+	"""
+	Logistics or resources.
+	"""
+	Logistics_Resources
+	"""
+	Negative result.
+	"""
+	Negative
+	"""
+	No context.
+	"""
+	No_Context
+	"""
+	Regulatory.
+	"""
+	Regulatory
+	"""
+	Safety or side effects.
+	"""
+	Safety_Sideeffects
+	"""
+	Study design.
+	"""
+	Study_Design
+	"""
+	Study staff moved.
+	"""
+	Study_Staff_Moved
+	"""
+	Success.
+	"""
+	Success
+	"""
+	Uncategorised.
+	"""
+	Uncategorised
 }
 
 """

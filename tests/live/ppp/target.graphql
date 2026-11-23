@@ -919,8 +919,8 @@ query LiveTarget($target: String!, $disease: String!) {
             biologicalModelGeneticBackground
             biologicalModelId
             biomarkerList {
-              name
               description
+              name
             }
             biomarkerName
             biomarkers {
@@ -1008,7 +1008,6 @@ query LiveTarget($target: String!, $disease: String!) {
             projectDescription
             projectId
             publicationDate
-            publicationFirstAuthor
             publicationYear
             qualityControls
             reactionId
@@ -1034,21 +1033,20 @@ query LiveTarget($target: String!, $disease: String!) {
             targetRole
             textMiningSentences {
               dEnd
-              tEnd
               dStart
-              tStart
               section
+              tEnd
+              tStart
               text
             }
             trialStopReasonCategories
             trialWhyStopped
             urls {
-              url
               niceName
+              url
             }
             variantAminoacidDescriptions
             variantRsId
-            warningMessage
             disease {
               id
             }
@@ -1068,10 +1066,6 @@ query LiveTarget($target: String!, $disease: String!) {
               id
             }
             variantFunctionalConsequence {
-              id
-              label
-            }
-            variantFunctionalConsequenceFromQtl {
               id
               label
             }
@@ -1134,7 +1128,6 @@ query LiveTarget($target: String!, $disease: String!) {
             projectDescription
             projectId
             publicationDate
-            publicationFirstAuthor
             publicationYear
             qualityControls
             reactionId
@@ -1162,7 +1155,6 @@ query LiveTarget($target: String!, $disease: String!) {
             trialWhyStopped
             variantAminoacidDescriptions
             variantRsId
-            warningMessage
           }
         }
         evidenceViews(efoIds: [$disease]) {

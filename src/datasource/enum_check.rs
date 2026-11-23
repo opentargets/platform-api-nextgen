@@ -6,7 +6,13 @@
 use strum::IntoEnumIterator;
 
 use crate::entity::{
-    credible_set::FineMappingMethod, interaction::InteractionSourceDatabase, study::StudyType,
+    clinical_report::ClinicalStage,
+    credible_set::FineMappingMethod,
+    evidence::{
+        Datatype, DirectionOnTarget, DirectionOnTrait, EuropePmcSection, TrialStopReasonCategory,
+    },
+    interaction::InteractionSourceDatabase,
+    study::StudyType,
     variant::Chromosome,
 };
 
@@ -82,6 +88,20 @@ pub fn bindings() -> Vec<EnumBinding> {
             InteractionSourceDatabase,
             "interaction",
             "tupleElement(arrayJoin(interactions), 'sourceDatabase')"
+        ),
+        binding!(Datatype, "evidence", "datatypeId"),
+        binding!(DirectionOnTarget, "evidence", "directionOnTarget"),
+        binding!(DirectionOnTrait, "evidence", "directionOnTrait"),
+        binding!(ClinicalStage, "evidence", "clinicalStage"),
+        binding!(
+            TrialStopReasonCategory,
+            "evidence",
+            "trialStopReasonCategories"
+        ),
+        binding!(
+            EuropePmcSection,
+            "evidence",
+            "tupleElement(arrayJoin(textMiningSentences), 'section')"
         ),
     ]
 }
