@@ -325,6 +325,22 @@ const VIEWS_QUERY: &str = "views {
     genomicsEnglandPanelApp { rows { id confidence } }
     impc { rows { id directionOnTarget directionOnTrait
         diseaseModelAssociatedModelPhenotypes { id label } } }
+    orphanet { rows { id directionOnTarget directionOnTrait targetApprovedName
+        variantFunctionalConsequenceId confidence } }
+    clingen { rows { id diseaseFromSource allelicRequirements confidence } }
+    cancerGeneCensus { rows { id mutatedSamplesRatio mutatedSamples { functionalConsequenceId
+        numberMutatedSamples numberSamplesTested numberSamplesWithMutationType } } }
+    intogen { rows { id cohortShortName mutatedSamples { functionalConsequenceId
+        numberMutatedSamples numberSamplesTested numberSamplesWithMutationType } } }
+    evaSomatic { rows { id directionOnTarget directionOnTrait variantChromosome } }
+    cancerBiomarkers { rows { id drugId
+        biomarkerGeneticVariations { id name functionalConsequenceId }
+        biomarkerGeneExpressions { name id } urls { niceName url } } }
+    crisprScreen { rows { id datasourceId datatypeId diseaseFromSourceMappedId
+        targetFromSourceId phenotypicConsequenceScore } }
+    crispr { rows { id resourceScore diseaseCellLines { id name tissue tissueId } } }
+    reactome { rows { id targetFromSourceId reactionId pathways { id name } } }
+    expressionAtlas { rows { id studyId log2FoldChangePercentileRank } }
     clinicalLof: clinicalPrecedence(search: {text: \"lof\"}) { count }
     clinicalPhase3: clinicalPrecedence(search: {text: \"phase_3\"}) { count }
     gwasPics: gwasCredibleSets(search: {text: \"pics\"}) { count }
@@ -368,7 +384,7 @@ async fn evidence_fixtures_decode_to_inserted_values() {
     let data = response.data.into_json().expect("json");
 
     let evidences = by_id(&data["evidences"]);
-    assert_eq!(evidences.len(), 18);
+    assert_eq!(evidences.len(), 38);
     let full = &evidences["live-test-evidence-full-clinical_precedence"];
     assert_fields(
         "evidences",
@@ -466,6 +482,8 @@ async fn evidence_fixtures_decode_to_inserted_values() {
         ("eva", "eva"),
         ("gene2Phenotype", "gene2phenotype"),
         ("impc", "impc"),
+        ("orphanet", "orphanet"),
+        ("evaSomatic", "eva_somatic"),
     ] {
         let (full, null) = full_and_null(view, ds);
         assert_fields(
@@ -484,11 +502,135 @@ async fn evidence_fixtures_decode_to_inserted_values() {
         ("gene2Phenotype", "gene2phenotype"),
         ("uniprotLiterature", "uniprot_literature"),
         ("uniprotVariants", "uniprot_variants"),
+        ("crisprScreen", "crispr_screen"),
+        ("reactome", "reactome"),
     ] {
         let (full, null) = full_and_null(view, ds);
         assert_fields(view, &full, &json!({"targetFromSourceId": "P15056"}));
         assert_fields(view, &null, &json!({"targetFromSourceId": "BRAF"}));
     }
+    let (full, null) = full_and_null("orphanet", "orphanet");
+    assert_fields(
+        "orphanet",
+        &full,
+        &json!({"targetApprovedName": "live test gene 1",
+            "variantFunctionalConsequenceId": "SO_0001583", "confidence": "green"}),
+    );
+    assert_fields(
+        "orphanet",
+        &null,
+        &json!({"variantFunctionalConsequenceId": null, "confidence": null}),
+    );
+    let (full, null) = full_and_null("clingen", "clingen");
+    assert_fields(
+        "clingen",
+        &full,
+        &json!({"diseaseFromSource": "Melanoma", "allelicRequirements": ["Autosomal dominant"],
+            "confidence": "green"}),
+    );
+    assert_fields(
+        "clingen",
+        &null,
+        &json!({"diseaseFromSource": null, "allelicRequirements": [], "confidence": null}),
+    );
+    for (view, ds) in [
+        ("cancerGeneCensus", "cancer_gene_census"),
+        ("intogen", "intogen"),
+    ] {
+        let (full, null) = full_and_null(view, ds);
+        assert_fields(
+            view,
+            &full,
+            &json!({"mutatedSamples": [{"functionalConsequenceId": "SO_0001583",
+                "numberMutatedSamples": 12, "numberSamplesTested": 100,
+                "numberSamplesWithMutationType": 8}]}),
+        );
+        assert_fields(
+            view,
+            &null,
+            &json!({"mutatedSamples": [{"functionalConsequenceId": null,
+                "numberMutatedSamples": 1, "numberSamplesTested": 2,
+                "numberSamplesWithMutationType": null}]}),
+        );
+    }
+    let (full, null) = full_and_null("cancerGeneCensus", "cancer_gene_census");
+    assert_close("cancerGeneCensus", &full["mutatedSamplesRatio"], 0.12);
+    assert_close("cancerGeneCensus", &null["mutatedSamplesRatio"], 0.5);
+    let (full, null) = full_and_null("intogen", "intogen");
+    assert_fields("intogen", &full, &json!({"cohortShortName": "UKB"}));
+    assert_fields("intogen", &null, &json!({"cohortShortName": null}));
+    let (full, null) = full_and_null("cancerBiomarkers", "cancer_biomarkers");
+    assert_fields(
+        "cancerBiomarkers",
+        &full,
+        &json!({
+            "drugId": "CHEMBL9999999",
+            "biomarkerGeneticVariations": [{"id": "7_140753336_A_T", "name": "BRAF V600E",
+                "functionalConsequenceId": "SO_0001583"}],
+            "biomarkerGeneExpressions": [{"name": "BRAF overexpression", "id": "GO_0010628"}],
+            "urls": [{"niceName": "ClinicalTrials.gov",
+                "url": "https://clinicaltrials.gov/study/NCT01234567"}],
+        }),
+    );
+    assert_fields(
+        "cancerBiomarkers",
+        &null,
+        &json!({
+            "drugId": null,
+            "biomarkerGeneticVariations": [{"id": null, "name": "BRAF amplification",
+                "functionalConsequenceId": null}],
+            "biomarkerGeneExpressions": [],
+            "urls": [{"niceName": null, "url": "https://www.ebi.ac.uk/gene2phenotype"}],
+        }),
+    );
+    let (full, null) = full_and_null("crisprScreen", "crispr_screen");
+    assert_fields(
+        "crisprScreen",
+        &full,
+        &json!({"datasourceId": "crispr_screen", "datatypeId": "affected_pathway",
+            "diseaseFromSourceMappedId": "EFO_9999999", "phenotypicConsequenceScore": 0.7}),
+    );
+    assert_fields(
+        "crisprScreen",
+        &null,
+        &json!({"phenotypicConsequenceScore": null}),
+    );
+    let (full, null) = full_and_null("crispr", "crispr");
+    assert_fields(
+        "crispr",
+        &full,
+        &json!({"resourceScore": 0.8, "diseaseCellLines": [
+            {"id": "SIDM00001", "name": "A375", "tissue": "skin", "tissueId": "UBERON_0002097"},
+        ]}),
+    );
+    assert_fields(
+        "crispr",
+        &null,
+        &json!({"resourceScore": null, "diseaseCellLines": []}),
+    );
+    let (full, null) = full_and_null("reactome", "reactome");
+    assert_fields(
+        "reactome",
+        &full,
+        &json!({"reactionId": "R-HSA-6802952",
+            "pathways": [{"id": "R-HSA-5673001", "name": "RAF/MAP kinase cascade"}]}),
+    );
+    assert_fields(
+        "reactome",
+        &null,
+        &json!({"reactionId": null, "pathways": []}),
+    );
+    let (full, null) = full_and_null("expressionAtlas", "expression_atlas");
+    assert_fields(
+        "expressionAtlas",
+        &full,
+        &json!({"studyId": "RCV000012345", "log2FoldChangePercentileRank": 5}),
+    );
+    assert_fields(
+        "expressionAtlas",
+        &null,
+        &json!({"studyId": null, "log2FoldChangePercentileRank": null}),
+    );
     let (full, null) = full_and_null("geneBurden", "gene_burden");
     assert_fields(
         "geneBurden",

@@ -3470,11 +3470,11 @@ type EvidenceCancerBiomarkersGeneExpression {
 	"""
 	Raw gene expression annotation from the source, e.g. `ESR1:over`.
 	"""
-	name: String
+	name: String!
 	"""
 	Gene Ontology identifier of the expression process.
 	"""
-	id: String
+	id: String!
 	"""
 	Gene Ontology label of the expression process.
 	"""
@@ -3492,7 +3492,7 @@ type EvidenceCancerBiomarkersGeneticVariation {
 	"""
 	Name of the variant biomarker, e.g. `NF1:D1644A`.
 	"""
-	name: String
+	name: String!
 	"""
 	Sequence Ontology identifier of the functional consequence.
 	"""
@@ -3597,11 +3597,11 @@ type EvidenceCancerGeneCensusMutation {
 	"""
 	Number of samples with a mutation in the target.
 	"""
-	numberMutatedSamples: Int
+	numberMutatedSamples: Int!
 	"""
 	Number of samples tested.
 	"""
-	numberSamplesTested: Int
+	numberSamplesTested: Int!
 	"""
 	Number of mutated samples with this mutation type.
 	"""
@@ -3987,7 +3987,7 @@ type EvidenceCrisprScreen {
 	"""
 	Identifier the source's disease label was mapped to.
 	"""
-	diseaseFromSourceMappedId: String
+	diseaseFromSourceMappedId: String!
 	"""
 	Identifier of the target for which the disease is associated in this evidence.
 	"""
@@ -3999,15 +3999,15 @@ type EvidenceCrisprScreen {
 	"""
 	Target label from the original source.
 	"""
-	targetFromSourceId: String
+	targetFromSourceId: String!
 	"""
 	Identifier of the data source.
 	"""
-	datasourceId: String!
+	datasourceId: Datasource!
 	"""
 	Identifier of the data type.
 	"""
-	datatypeId: String!
+	datatypeId: Datatype!
 	"""
 	Source of the screen, e.g. `crispr_brain`.
 	"""
@@ -4345,11 +4345,11 @@ type EvidenceEvaSomatic {
 	"""
 	Gain or loss of function effect of the evidence on the target.
 	"""
-	directionOnTarget: String
+	directionOnTarget: DirectionOnTarget
 	"""
 	Predicted direction of effect on the trait.
 	"""
-	directionOnTrait: String
+	directionOnTrait: DirectionOnTrait
 	"""
 	Clinical significances of the variant.
 	"""
@@ -5338,11 +5338,11 @@ type EvidenceIntogenMutatedSamples {
 	"""
 	Number of cohort samples in which the target is mutated.
 	"""
-	numberMutatedSamples: Int
+	numberMutatedSamples: Int!
 	"""
 	Number of cohort samples tested.
 	"""
-	numberSamplesTested: Int
+	numberSamplesTested: Int!
 	"""
 	Number of cohort samples with this type of mutation.
 	"""
@@ -5458,11 +5458,11 @@ type EvidenceOrphanet {
 	"""
 	Gain or loss of function effect of the evidence on the target.
 	"""
-	directionOnTarget: String
+	directionOnTarget: DirectionOnTarget
 	"""
 	Predicted direction of effect on the trait.
 	"""
-	directionOnTrait: String
+	directionOnTrait: DirectionOnTrait
 	"""
 	Allele origins, e.g. germline or somatic.
 	"""
@@ -5580,7 +5580,7 @@ type EvidenceReactome {
 	"""
 	Reported target: the `UniProt` accession from the source.
 	"""
-	targetFromSourceId: String
+	targetFromSourceId: String!
 	"""
 	Reactome pathways the reaction belongs to.
 	"""

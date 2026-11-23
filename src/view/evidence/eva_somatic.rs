@@ -19,7 +19,10 @@ use serde::Deserialize;
 use super::EvidenceScope;
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::variant::Chromosome,
+    entity::{
+        evidence::{DirectionOnTarget, DirectionOnTrait},
+        variant::Chromosome,
+    },
     query::{
         paginate::Paged,
         sort::SortDirection,
@@ -71,9 +74,9 @@ pub struct EvidenceEvaSomatic {
     /// Sequence Ontology label of the variant's functional consequence.
     variant_functional_consequence_label: Option<String>,
     /// Gain or loss of function effect of the evidence on the target.
-    direction_on_target: Option<String>,
+    direction_on_target: Option<DirectionOnTarget>,
     /// Predicted direction of effect on the trait.
-    direction_on_trait: Option<String>,
+    direction_on_trait: Option<DirectionOnTrait>,
     /// Clinical significances of the variant.
     clinical_significances: Vec<String>,
     /// Inheritance patterns.
@@ -99,7 +102,7 @@ impl Table for EvidenceEvaSomatic {
 columns!(EvidenceEvaSomaticCol {
     Id           => "id"           : Str,
     Score        => "score"        : F64,
-    DatasourceId => "datasourceId" : Str,
+    DatasourceId => "datasourceId" : Enum,
     DiseaseId    => "diseaseId"    : Str,
     TargetId     => "targetId"     : Str,
 });

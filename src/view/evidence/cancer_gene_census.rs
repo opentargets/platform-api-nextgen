@@ -34,9 +34,9 @@ pub struct EvidenceCancerGeneCensusMutation {
     /// Label of the functional consequence, the mutation type.
     functional_consequence_label: Option<String>,
     /// Number of samples with a mutation in the target.
-    number_mutated_samples: Option<u32>,
+    number_mutated_samples: u32,
     /// Number of samples tested.
-    number_samples_tested: Option<u32>,
+    number_samples_tested: u32,
     /// Number of mutated samples with this mutation type.
     number_samples_with_mutation_type: Option<u32>,
 }

@@ -742,6 +742,444 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           literature
         }
       }
+      expressionAtlas {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          studyId
+          studyOverview
+          contrast
+          confidence
+          log2FoldChangePercentileRank
+          resourceScore
+        }
+      }
+      expressionAtlas_sort: expressionAtlas(sort: [{key: SCORE, direction: ASCENDING}, {key: PERCENTILE, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          studyId
+          studyOverview
+          contrast
+          confidence
+          log2FoldChangePercentileRank
+          resourceScore
+        }
+      }
+      expressionAtlas_search: expressionAtlas(search: {text: "a", fields: [DISEASE_NAME, STUDY_ID, CONTRAST, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          studyId
+          studyOverview
+          contrast
+          confidence
+          log2FoldChangePercentileRank
+          resourceScore
+        }
+      }
+      crispr {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          diseaseCellLines {
+            id
+            name
+            tissue
+            tissueId
+          }
+          resourceScore
+          literature
+        }
+      }
+      crispr_sort: crispr(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          literature
+        }
+      }
+      crispr_search: crispr(search: {text: "a", fields: [DISEASE_NAME, DISEASE_FROM_SOURCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          literature
+        }
+      }
+      cancerBiomarkers {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          biomarkerName
+          biomarkerGeneticVariations {
+            id
+            name
+            functionalConsequenceId
+            functionalConsequenceLabel
+          }
+          biomarkerGeneExpressions {
+            name
+            id
+            label
+          }
+          drugId
+          drugName
+          drugFromSource
+          drugResponseId
+          drugResponseName
+          confidence
+          literature
+          urls {
+            niceName
+            url
+          }
+        }
+      }
+      cancerBiomarkers_search: cancerBiomarkers(search: {text: "a", fields: [DISEASE_NAME, BIOMARKER_NAME, DRUG_NAME, DRUG_FROM_SOURCE, DRUG_RESPONSE_NAME, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          biomarkerName
+          drugId
+          drugName
+          drugFromSource
+          drugResponseId
+          drugResponseName
+          confidence
+          literature
+        }
+      }
+      crisprScreen {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          diseaseFromSourceMappedId
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          datasourceId
+          datatypeId
+          projectId
+          studyId
+          studyOverview
+          contrast
+          cellType
+          crisprScreenLibrary
+          statisticalTestTail
+          phenotypicConsequenceScore
+          resourceScore
+          literature
+        }
+      }
+      crisprScreen_sort: crisprScreen(sort: [{key: SCORE, direction: ASCENDING}, {key: SIGNIFICANCE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          diseaseFromSourceMappedId
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          datasourceId
+          datatypeId
+          projectId
+          studyId
+          studyOverview
+          contrast
+          cellType
+          crisprScreenLibrary
+          statisticalTestTail
+          phenotypicConsequenceScore
+          resourceScore
+          literature
+        }
+      }
+      crisprScreen_search: crisprScreen(search: {text: "a", fields: [DISEASE_FROM_SOURCE, STUDY_ID, CONTRAST, STUDY_OVERVIEW, CELL_TYPE, SOURCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          diseaseFromSourceMappedId
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          datasourceId
+          datatypeId
+          projectId
+          studyId
+          studyOverview
+          contrast
+          cellType
+          crisprScreenLibrary
+          statisticalTestTail
+          phenotypicConsequenceScore
+          resourceScore
+          literature
+        }
+      }
+      reactome {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          pathways {
+            id
+            name
+          }
+          reactionId
+          reactionName
+          targetModulation
+          variantAminoacidDescriptions
+          literature
+        }
+      }
+      reactome_sort: reactome(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          reactionId
+          reactionName
+          targetModulation
+          variantAminoacidDescriptions
+          literature
+        }
+      }
+      reactome_search: reactome(search: {text: "a", fields: [DISEASE_NAME, PATHWAY_NAMES, REACTION_NAME, TARGET_FROM_SOURCE_ID, TARGET_MODULATION]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          reactionId
+          reactionName
+          targetModulation
+          variantAminoacidDescriptions
+          literature
+        }
+      }
+      orphanet {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetApprovedName
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          alleleOrigins
+          confidence
+          literature
+        }
+      }
+      orphanet_sort: orphanet(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetApprovedName
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          alleleOrigins
+          confidence
+          literature
+        }
+      }
+      orphanet_search: orphanet(search: {text: "a", fields: [DISEASE_FROM_SOURCE, TARGET_APPROVED_NAME, VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL, ALLELE_ORIGINS]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetApprovedName
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          alleleOrigins
+          confidence
+          literature
+        }
+      }
+      cancerGeneCensus {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          mutatedSamples {
+            functionalConsequenceId
+            functionalConsequenceLabel
+            numberMutatedSamples
+            numberSamplesTested
+            numberSamplesWithMutationType
+          }
+          mutatedSamplesRatio
+          literature
+        }
+      }
+      cancerGeneCensus_sort: cancerGeneCensus(sort: [{key: MUTATED_SAMPLES, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          mutatedSamplesRatio
+          literature
+        }
+      }
+      cancerGeneCensus_search: cancerGeneCensus(search: {text: "a", fields: [DISEASE_NAME, MUTATION_TYPES, LITERATURE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          mutatedSamplesRatio
+          literature
+        }
+      }
+      clingen {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          allelicRequirements
+          confidence
+        }
+      }
+      clingen_sort: clingen(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          allelicRequirements
+          confidence
+        }
+      }
+      clingen_search: clingen(search: {text: "a", fields: [DISEASE_FROM_SOURCE, ALLELIC_REQUIREMENTS, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          allelicRequirements
+          confidence
+        }
+      }
       eva {
         count
         rows {
@@ -798,6 +1236,93 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           confidence
           literature
           cohortPhenotypes
+        }
+      }
+      evaSomatic {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          variantId
+          variantChromosome
+          variantPosition
+          variantReferenceAllele
+          variantAlternateAllele
+          variantHgvsId
+          variantRsId
+          studyId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          clinicalSignificances
+          allelicRequirements
+          alleleOrigins
+          confidence
+          literature
+          cohortPhenotypes
+        }
+      }
+      intogen {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          mutatedSamples {
+            functionalConsequenceId
+            functionalConsequenceLabel
+            numberMutatedSamples
+            numberSamplesTested
+            numberSamplesWithMutationType
+          }
+          resourceScore
+          significantDriverMethods
+          cohortId
+          cohortShortName
+          cohortDescription
+        }
+      }
+      intogen_sort: intogen(sort: [{key: SCORE, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          significantDriverMethods
+          cohortId
+          cohortShortName
+          cohortDescription
+        }
+      }
+      intogen_search: intogen(search: {text: "a", fields: [DISEASE_NAME, COHORT_SHORT_NAME, COHORT_DESCRIPTION]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          significantDriverMethods
+          cohortId
+          cohortShortName
+          cohortDescription
         }
       }
       impc {
@@ -1573,6 +2098,444 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           literature
         }
       }
+      expressionAtlas {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          studyId
+          studyOverview
+          contrast
+          confidence
+          log2FoldChangePercentileRank
+          resourceScore
+        }
+      }
+      expressionAtlas_sort: expressionAtlas(sort: [{key: SCORE, direction: ASCENDING}, {key: PERCENTILE, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          studyId
+          studyOverview
+          contrast
+          confidence
+          log2FoldChangePercentileRank
+          resourceScore
+        }
+      }
+      expressionAtlas_search: expressionAtlas(search: {text: "a", fields: [DISEASE_NAME, STUDY_ID, CONTRAST, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          studyId
+          studyOverview
+          contrast
+          confidence
+          log2FoldChangePercentileRank
+          resourceScore
+        }
+      }
+      crispr {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          diseaseCellLines {
+            id
+            name
+            tissue
+            tissueId
+          }
+          resourceScore
+          literature
+        }
+      }
+      crispr_sort: crispr(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          literature
+        }
+      }
+      crispr_search: crispr(search: {text: "a", fields: [DISEASE_NAME, DISEASE_FROM_SOURCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          literature
+        }
+      }
+      cancerBiomarkers {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          biomarkerName
+          biomarkerGeneticVariations {
+            id
+            name
+            functionalConsequenceId
+            functionalConsequenceLabel
+          }
+          biomarkerGeneExpressions {
+            name
+            id
+            label
+          }
+          drugId
+          drugName
+          drugFromSource
+          drugResponseId
+          drugResponseName
+          confidence
+          literature
+          urls {
+            niceName
+            url
+          }
+        }
+      }
+      cancerBiomarkers_search: cancerBiomarkers(search: {text: "a", fields: [DISEASE_NAME, BIOMARKER_NAME, DRUG_NAME, DRUG_FROM_SOURCE, DRUG_RESPONSE_NAME, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          biomarkerName
+          drugId
+          drugName
+          drugFromSource
+          drugResponseId
+          drugResponseName
+          confidence
+          literature
+        }
+      }
+      crisprScreen {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          diseaseFromSourceMappedId
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          datasourceId
+          datatypeId
+          projectId
+          studyId
+          studyOverview
+          contrast
+          cellType
+          crisprScreenLibrary
+          statisticalTestTail
+          phenotypicConsequenceScore
+          resourceScore
+          literature
+        }
+      }
+      crisprScreen_sort: crisprScreen(sort: [{key: SCORE, direction: ASCENDING}, {key: SIGNIFICANCE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          diseaseFromSourceMappedId
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          datasourceId
+          datatypeId
+          projectId
+          studyId
+          studyOverview
+          contrast
+          cellType
+          crisprScreenLibrary
+          statisticalTestTail
+          phenotypicConsequenceScore
+          resourceScore
+          literature
+        }
+      }
+      crisprScreen_search: crisprScreen(search: {text: "a", fields: [DISEASE_FROM_SOURCE, STUDY_ID, CONTRAST, STUDY_OVERVIEW, CELL_TYPE, SOURCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          diseaseFromSourceMappedId
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          datasourceId
+          datatypeId
+          projectId
+          studyId
+          studyOverview
+          contrast
+          cellType
+          crisprScreenLibrary
+          statisticalTestTail
+          phenotypicConsequenceScore
+          resourceScore
+          literature
+        }
+      }
+      reactome {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          pathways {
+            id
+            name
+          }
+          reactionId
+          reactionName
+          targetModulation
+          variantAminoacidDescriptions
+          literature
+        }
+      }
+      reactome_sort: reactome(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          reactionId
+          reactionName
+          targetModulation
+          variantAminoacidDescriptions
+          literature
+        }
+      }
+      reactome_search: reactome(search: {text: "a", fields: [DISEASE_NAME, PATHWAY_NAMES, REACTION_NAME, TARGET_FROM_SOURCE_ID, TARGET_MODULATION]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          reactionId
+          reactionName
+          targetModulation
+          variantAminoacidDescriptions
+          literature
+        }
+      }
+      orphanet {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetApprovedName
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          alleleOrigins
+          confidence
+          literature
+        }
+      }
+      orphanet_sort: orphanet(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetApprovedName
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          alleleOrigins
+          confidence
+          literature
+        }
+      }
+      orphanet_search: orphanet(search: {text: "a", fields: [DISEASE_FROM_SOURCE, TARGET_APPROVED_NAME, VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL, ALLELE_ORIGINS]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetApprovedName
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          alleleOrigins
+          confidence
+          literature
+        }
+      }
+      cancerGeneCensus {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          mutatedSamples {
+            functionalConsequenceId
+            functionalConsequenceLabel
+            numberMutatedSamples
+            numberSamplesTested
+            numberSamplesWithMutationType
+          }
+          mutatedSamplesRatio
+          literature
+        }
+      }
+      cancerGeneCensus_sort: cancerGeneCensus(sort: [{key: MUTATED_SAMPLES, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          mutatedSamplesRatio
+          literature
+        }
+      }
+      cancerGeneCensus_search: cancerGeneCensus(search: {text: "a", fields: [DISEASE_NAME, MUTATION_TYPES, LITERATURE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          mutatedSamplesRatio
+          literature
+        }
+      }
+      clingen {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          allelicRequirements
+          confidence
+        }
+      }
+      clingen_sort: clingen(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          allelicRequirements
+          confidence
+        }
+      }
+      clingen_search: clingen(search: {text: "a", fields: [DISEASE_FROM_SOURCE, ALLELIC_REQUIREMENTS, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          allelicRequirements
+          confidence
+        }
+      }
       eva {
         count
         rows {
@@ -1629,6 +2592,93 @@ query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
           confidence
           literature
           cohortPhenotypes
+        }
+      }
+      evaSomatic {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          variantId
+          variantChromosome
+          variantPosition
+          variantReferenceAllele
+          variantAlternateAllele
+          variantHgvsId
+          variantRsId
+          studyId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          clinicalSignificances
+          allelicRequirements
+          alleleOrigins
+          confidence
+          literature
+          cohortPhenotypes
+        }
+      }
+      intogen {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          mutatedSamples {
+            functionalConsequenceId
+            functionalConsequenceLabel
+            numberMutatedSamples
+            numberSamplesTested
+            numberSamplesWithMutationType
+          }
+          resourceScore
+          significantDriverMethods
+          cohortId
+          cohortShortName
+          cohortDescription
+        }
+      }
+      intogen_sort: intogen(sort: [{key: SCORE, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          significantDriverMethods
+          cohortId
+          cohortShortName
+          cohortDescription
+        }
+      }
+      intogen_search: intogen(search: {text: "a", fields: [DISEASE_NAME, COHORT_SHORT_NAME, COHORT_DESCRIPTION]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          significantDriverMethods
+          cohortId
+          cohortShortName
+          cohortDescription
         }
       }
       impc {

@@ -38,7 +38,7 @@ pub struct GeneticVariation {
     /// Variant identifier.
     id: Option<String>,
     /// Name of the variant biomarker, e.g. `NF1:D1644A`.
-    name: Option<String>,
+    name: String,
     /// Sequence Ontology identifier of the functional consequence.
     functional_consequence_id: Option<String>,
     /// Sequence Ontology label of the functional consequence, e.g. `somatic_variant`.
@@ -51,9 +51,9 @@ pub struct GeneticVariation {
 #[graphql(name = "EvidenceCancerBiomarkersGeneExpression")]
 pub struct GeneExpression {
     /// Raw gene expression annotation from the source, e.g. `ESR1:over`.
-    name: Option<String>,
+    name: String,
     /// Gene Ontology identifier of the expression process.
-    id: Option<String>,
+    id: String,
     /// Gene Ontology label of the expression process.
     label: Option<String>,
 }

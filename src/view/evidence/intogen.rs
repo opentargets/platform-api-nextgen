@@ -36,9 +36,9 @@ pub struct MutationCounts {
     /// Sequence Ontology label of the functional consequence.
     functional_consequence_label: Option<String>,
     /// Number of cohort samples in which the target is mutated.
-    number_mutated_samples: Option<u32>,
+    number_mutated_samples: u32,
     /// Number of cohort samples tested.
-    number_samples_tested: Option<u32>,
+    number_samples_tested: u32,
     /// Number of cohort samples with this type of mutation.
     number_samples_with_mutation_type: Option<u32>,
 }
