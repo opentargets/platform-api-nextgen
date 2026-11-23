@@ -34,7 +34,7 @@
           'APPROVAL',
           'PHASE_4'
         ],
-        ifNull(e.clinicalStage, '')
+        ifNull(toString(e.clinicalStage), '')
       )
     ) AS clinicalStageRank,
     e.clinicalReportId AS clinicalReportId,

@@ -39,7 +39,7 @@ FROM (
                 arrayEnumerate(s)  -- arrayEnumerate(s) just generates a rank (1, 2, 3, 4... of the length of the number of evidence rows).
             )
         ) AS datasource_score,
-        mapFromArrays([{datasources}], [{weights}])[datasourceId] AS datasource_weight  -- Adds the policy weigthts for each datasource
+        mapFromArrays([{datasources}], [{weights}])[toString(datasourceId)] AS datasource_weight  -- Adds the policy weigthts for each datasource
 
     -- The output of this inner query. `b_indirect` becomes `B` again as we've already done the indirect scoring propagation.
     SELECT b_indirect AS B, datasourceId, datasource_score, datasource_weight

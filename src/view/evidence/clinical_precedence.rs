@@ -86,9 +86,9 @@ columns!(EvidenceClinicalPrecedenceCol {
     DrugName             => "drugName"             : Str,
     // Approved symbols of all the drug's mechanism-of-action targets.
     DrugTargetSymbols    => "drugTargetSymbols"    : StrArray,
-    DirectionOnTarget    => "directionOnTarget"    : Str,
-    DirectionOnTrait     => "directionOnTrait"     : Str,
-    ClinicalStage        => "clinicalStage"        : Str,
+    DirectionOnTarget    => "directionOnTarget"    : Enum,
+    DirectionOnTrait     => "directionOnTrait"     : Enum,
+    ClinicalStage        => "clinicalStage"        : Enum,
     // Position of `clinicalStage` in the stage order, approval highest.
     ClinicalStageRank    => "clinicalStageRank"    : U64,
     ClinicalReportId     => "clinicalReportId"     : Str,
