@@ -14,16 +14,23 @@ use crate::query::{
     sql::{Column, Filter, Op, Value},
 };
 
+pub mod cancer_biomarkers;
 pub mod cancer_gene_census;
 pub mod clingen;
 pub mod clinical_precedence;
+pub mod crispr;
+pub mod crispr_screen;
 pub mod eva;
+pub mod eva_somatic;
+pub mod expression_atlas;
 pub mod gene2phenotype;
 pub mod gene_burden;
 pub mod genomics_england_panel_app;
 pub mod gwas_credible_sets;
 pub mod impc;
+pub mod intogen;
 pub mod orphanet;
+pub mod reactome;
 pub mod uniprot_literature;
 pub mod uniprot_variants;
 
@@ -326,6 +333,119 @@ impl EvidenceViews {
         genomics_england_panel_app::load_evidence_genomics_england_panel_app(ctx, key).await
     }
 
+    /// Expression Atlas evidence: genes differentially expressed between disease and normal
+    /// samples in Expression Atlas experiments.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn expression_atlas(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "expression_atlas::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<expression_atlas::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<expression_atlas::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<expression_atlas::EvidenceExpressionAtlas>> {
+        let key = expression_atlas::QueryParams::new(
+            self.scope.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        expression_atlas::load_evidence_expression_atlas(ctx, key).await
+    }
+
+    /// Project Score (CRISPR screen) evidence: cancer dependency genes prioritised from CRISPR
+    /// knockout screens of cancer cell lines.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn crispr(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "crispr::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<crispr::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<crispr::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<crispr::EvidenceCrispr>> {
+        let key = crispr::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
+        crispr::load_evidence_crispr(ctx, key).await
+    }
+
+    /// Cancer biomarkers evidence: genomic biomarkers of drug response in cancer, from the
+    /// Cancer Genome Interpreter. Always sorted by score, highest first.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn cancer_biomarkers(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<cancer_biomarkers::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<cancer_biomarkers::EvidenceCancerBiomarkers>> {
+        let key =
+            cancer_biomarkers::QueryParams::new(self.scope.clone(), search, page.index, page.size);
+        cancer_biomarkers::load_evidence_cancer_biomarkers(ctx, key).await
+    }
+
+    /// CRISPR screen evidence: genes whose perturbation changes a disease-relevant phenotype in
+    /// CRISPR screens (e.g. `CRISPRBrain`).
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn crispr_screen(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "crispr_screen::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<crispr_screen::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<crispr_screen::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<crispr_screen::EvidenceCrisprScreen>> {
+        let key = crispr_screen::QueryParams::new(
+            self.scope.clone(),
+            sort,
+            search,
+            page.index,
+            page.size,
+        );
+        crispr_screen::load_evidence_crispr_screen(ctx, key).await
+    }
+
+    /// Reactome evidence: reactions and pathways disrupted by variants in the target, linked to
+    /// the disease.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn reactome(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "reactome::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<reactome::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<reactome::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<reactome::EvidenceReactome>> {
+        let key =
+            reactome::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
+        reactome::load_evidence_reactome(ctx, key).await
+    }
+
     /// Orphanet evidence: rare-disease gene associations curated by Orphanet.
     #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn orphanet(
@@ -412,6 +532,41 @@ impl EvidenceViews {
     ) -> Result<Paged<eva::EvidenceEva>> {
         let key = eva::QueryParams::new(self.scope.clone(), sort, page.index, page.size);
         eva::load_evidence_eva(ctx, key).await
+    }
+
+    /// `ClinVar` somatic (EVA somatic) evidence: somatic variants in the target with a clinical
+    /// significance for the disease. Always sorted by score, highest first, with no search, so
+    /// it's paged from the evidence index and only the page's rows are read in full.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn eva_somatic(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<eva_somatic::EvidenceEvaSomatic>> {
+        let key = eva_somatic::QueryParams::new(self.scope.clone(), page.index, page.size);
+        eva_somatic::load_evidence_eva_somatic(ctx, key).await
+    }
+
+    /// intOGen evidence: genes found to be cancer drivers in tumour cohorts by intOGen's driver
+    /// detection methods.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn intogen(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(
+            default_with = "intogen::SortField::default_sort()",
+            validator(custom = "UniqueSortKeys"),
+            desc = "List of sort statements. Each field can be used at most once."
+        )]
+        sort: Vec<Sort<intogen::SortField>>,
+        #[graphql(desc = "Case-insensitive text search across the evidences' text fields. \
+                          Searches all fields unless `fields` is given.")]
+        search: Option<intogen::Search>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<intogen::EvidenceIntogen>> {
+        let key =
+            intogen::QueryParams::new(self.scope.clone(), sort, search, page.index, page.size);
+        intogen::load_evidence_intogen(ctx, key).await
     }
 
     /// IMPC evidence: mouse models with a disrupted orthologue of the target whose phenotypes

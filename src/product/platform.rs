@@ -51,12 +51,16 @@ use crate::{
         credible_set_variants::CredibleSetVariantsLoader,
         disease_studies::DiseaseStudiesLoader,
         evidence::{
+            cancer_biomarkers::EvidenceCancerBiomarkersLoader,
             cancer_gene_census::EvidenceCancerGeneCensusLoader, clingen::EvidenceClinGenLoader,
-            clinical_precedence::EvidenceClinicalPrecedenceLoader, eva::EvidenceEvaLoader,
+            clinical_precedence::EvidenceClinicalPrecedenceLoader, crispr::EvidenceCrisprLoader,
+            crispr_screen::EvidenceCrisprScreenLoader, eva::EvidenceEvaLoader,
+            eva_somatic::EvidenceEvaSomaticLoader, expression_atlas::EvidenceExpressionAtlasLoader,
             gene_burden::EvidenceGeneBurdenLoader, gene2phenotype::EvidenceGene2PhenotypeLoader,
             genomics_england_panel_app::EvidenceGenomicsEnglandPanelAppLoader,
             gwas_credible_sets::EvidenceGwasCredibleSetsLoader, impc::EvidenceImpcLoader,
-            orphanet::EvidenceOrphanetLoader, uniprot_literature::EvidenceUniprotLiteratureLoader,
+            intogen::EvidenceIntogenLoader, orphanet::EvidenceOrphanetLoader,
+            reactome::EvidenceReactomeLoader, uniprot_literature::EvidenceUniprotLiteratureLoader,
             uniprot_variants::EvidenceUniprotVariantsLoader,
         },
         study_credible_sets::StudyCredibleSetsLoader,
@@ -132,7 +136,14 @@ impl Product for Platform {
             .data(loader::<EvidenceClinGenLoader>(ch))
             .data(loader::<EvidenceCancerGeneCensusLoader>(ch))
             .data(loader::<EvidenceEvaLoader>(ch))
+            .data(loader::<EvidenceExpressionAtlasLoader>(ch))
+            .data(loader::<EvidenceReactomeLoader>(ch))
+            .data(loader::<EvidenceCrisprLoader>(ch))
+            .data(loader::<EvidenceCrisprScreenLoader>(ch))
+            .data(loader::<EvidenceIntogenLoader>(ch))
+            .data(loader::<EvidenceCancerBiomarkersLoader>(ch))
             .data(loader::<EvidenceImpcLoader>(ch))
+            .data(loader::<EvidenceEvaSomaticLoader>(ch))
             .data(loader::<EvidenceGene2PhenotypeLoader>(ch))
             .data(loader::<EvidenceUniprotLiteratureLoader>(ch))
             .data(loader::<EvidenceUniprotVariantsLoader>(ch))

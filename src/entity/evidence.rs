@@ -100,7 +100,7 @@ impl GeneticVariation {
 /// Cancer cell lines used to generate evidence.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-struct DiseaseCellLine {
+pub struct DiseaseCellLine {
     /// Cell type identifier in cell ontology or in cell model database.
     id: Option<String>,
     /// Name of the cell model.
@@ -174,7 +174,7 @@ pub struct LabelledElement {
 /// etc.).
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-struct LabelledUri {
+pub struct LabelledUri {
     /// URL to remote resource.
     url: Option<String>,
     /// Human readable label of the remote reference.
@@ -194,10 +194,10 @@ struct NameDescription {
 /// Pathway annotations for a target.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-struct Pathway {
-    /// Name of the pathway.
-    id: Option<String>,
+pub struct Pathway {
     /// Unique identifier for the pathway.
+    id: Option<String>,
+    /// Name of the pathway.
     name: Option<String>,
 }
 
