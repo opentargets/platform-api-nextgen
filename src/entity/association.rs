@@ -3,6 +3,7 @@ use std::{collections::HashSet, f64::consts::PI, marker::PhantomData};
 use async_graphql::{ComplexObject, Context, Enum, InputObject, OutputType, SimpleObject};
 use clickhouse::Row;
 use serde::{Deserialize, Serialize};
+use serde_repr::Deserialize_repr;
 use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use tracing::instrument;
 
@@ -54,12 +55,22 @@ fn quoted_set<S: AsRef<str>>(items: &[S]) -> String {
 
 /// Represents a datasource for association scoring.
 #[derive(
-    Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash, Enum, EnumIter, IntoStaticStr,
+    Debug,
+    Clone,
+    Copy,
+    Serialize,
+    Deserialize_repr,
+    Eq,
+    PartialEq,
+    Hash,
+    Enum,
+    EnumIter,
+    IntoStaticStr,
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 #[graphql(rename_items = "snake_case")]
-// Discriminants are the ClickHouse `datasourceId` Enum8 numbers.
+// Decoded by its ClickHouse `datasourceId` Enum8 number; serialised by name for SQL binds.
 #[repr(i8)]
 pub enum Datasource {
     /// Clinical evidence linking a target/disease via a drug that targets the gene product and is
@@ -378,7 +389,7 @@ impl AssociationSort {
 #[derive(Debug, Clone, SimpleObject)]
 pub struct Score {
     /// Identifier of the Datasource (e.g., `impc`, `chembl`).
-    id: String,
+    id: Datasource,
     /// Association score for the Datasource. Scores are normalized to a range of 0-1. The higher
     /// the score, the stronger the association.
     score: f64,
@@ -420,7 +431,7 @@ struct AssociationRow {
     #[serde(rename = "B")]
     id: String,
     score: f64,
-    datasource_scores: Vec<(String, f64)>,
+    datasource_scores: Vec<(Datasource, f64)>,
     #[cfg(feature = "product-ppp")]
     novelty: Option<f64>,
     total: u64,
@@ -430,7 +441,7 @@ impl AssociationRow {
     #[instrument(skip_all, level = "trace", fields(id = %self.id, score = %self.score))]
     // Converts an internal `AssociationRow` into a `Association`.
     fn into_association<T: OutputType + 'static>(self) -> Association<T> {
-        let map = |v: Vec<(String, f64)>| {
+        let map = |v: Vec<(Datasource, f64)>| {
             v.into_iter()
                 .map(|(id, score)| Score { id, score })
                 .collect()
@@ -703,5 +714,69 @@ impl Association<Target> {
     /// Associated target entity.
     async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
         load_target(ctx, self.id.clone()).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::de::{IntoDeserializer, value::Error};
+
+    use super::*;
+
+    fn decode(n: i8) -> Result<Datasource, Error> { Datasource::deserialize(n.into_deserializer()) }
+
+    #[test]
+    fn datasource_iter_order_is_unchanged() {
+        #[allow(unused_mut, reason = "extended on PPP only")]
+        let mut expected = vec![
+            Datasource::ClinicalPrecedence,
+            Datasource::GwasCredibleSets,
+            Datasource::GeneBurden,
+            Datasource::Eva,
+            Datasource::GenomicsEngland,
+            Datasource::Gene2Phenotype,
+            Datasource::UniprotLiterature,
+            Datasource::UniprotVariants,
+            Datasource::Orphanet,
+            Datasource::Clingen,
+            Datasource::CancerGeneCensus,
+            Datasource::Intogen,
+            Datasource::EvaSomatic,
+            Datasource::CancerBiomarkers,
+            Datasource::CrisprScreen,
+            Datasource::Crispr,
+            Datasource::Reactome,
+            Datasource::Europepmc,
+            Datasource::ExpressionAtlas,
+            Datasource::Impc,
+        ];
+        #[cfg(feature = "product-ppp")]
+        expected.extend([
+            Datasource::OtCrisprValidation,
+            Datasource::OtCrispr,
+            Datasource::Encore,
+        ]);
+        assert_eq!(Datasource::iter().collect::<Vec<_>>(), expected);
+    }
+
+    #[test]
+    fn datasource_decodes_by_enum8_number() {
+        assert_eq!(decode(4), Ok(Datasource::Eva));
+        assert_eq!(decode(20), Ok(Datasource::Impc));
+        assert!(decode(99).is_err());
+    }
+
+    #[cfg(feature = "product-ppp")]
+    #[test]
+    fn ppp_datasources_decode_by_enum8_number() {
+        assert_eq!(decode(21), Ok(Datasource::Encore));
+        assert_eq!(decode(22), Ok(Datasource::OtCrispr));
+        assert_eq!(decode(23), Ok(Datasource::OtCrisprValidation));
+    }
+
+    #[cfg(not(feature = "product-ppp"))]
+    #[test]
+    fn ppp_datasources_do_not_decode_on_platform() {
+        assert!(decode(21).is_err());
     }
 }

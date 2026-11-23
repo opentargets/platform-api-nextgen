@@ -6,9 +6,9 @@ use async_graphql::{
 };
 use clickhouse::Row;
 use derive_more::From;
-use serde::{Deserialize, Deserializer, de::Error as _};
+use serde::Deserialize;
 use serde_repr::Deserialize_repr;
-use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
@@ -255,14 +255,6 @@ pub enum TrialStopReasonCategory {
     Uncategorised = 18,
 }
 
-/// Decodes a `datasourceId` `Enum8` into its [`Datasource`].
-fn datasource_from_enum8<'de, D: Deserializer<'de>>(d: D) -> Result<Datasource, D::Error> {
-    let n = i8::deserialize(d)?;
-    Datasource::iter()
-        .find(|ds| *ds as i8 == n)
-        .ok_or_else(|| D::Error::custom(format!("unknown datasourceId {n}")))
-}
-
 /// Assays used in the study.
 #[cfg(feature = "product-ppp")]
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
@@ -504,7 +496,6 @@ pub struct Evidence {
     /// Applied screening library in the CRISPR/Cas9 project.
     crispr_screen_library: Option<String>,
     /// Identifer of the evidence source.
-    #[serde(deserialize_with = "datasource_from_enum8")]
     datasource_id: Datasource,
     /// Datatype of the evidence.
     datatype_id: Datatype,
@@ -885,24 +876,5 @@ impl Evidence {
             Some(id) => load_sequence_ontology_one(ctx, id.clone()).await,
             None => Ok(None),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use serde::de::{IntoDeserializer, value::Error};
-
-    use super::*;
-
-    #[test]
-    fn datasource_enum8_decodes_by_number() {
-        let ds = datasource_from_enum8(4_i8.into_deserializer());
-        assert_eq!(ds, Ok::<_, Error>(Datasource::Eva));
-    }
-
-    #[test]
-    fn unknown_datasource_enum8_is_an_error() {
-        let ds: Result<Datasource, Error> = datasource_from_enum8(99_i8.into_deserializer());
-        assert!(ds.is_err());
     }
 }

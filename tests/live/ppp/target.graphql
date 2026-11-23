@@ -1939,7 +1939,7 @@ query LiveTarget($target: String!, $disease: String!) {
             yearlyEvidenceCount
           }
         }
-        associationTimeSeries_aggregationTypes: associationTimeSeries(efoId: $disease, isDirect: true, aggregationTypes: [overall, datasourceId]) {
+        associationTimeSeries_aggregationTypes: associationTimeSeries(efoId: $disease, isDirect: true, aggregationTypes: [overall, datasourceId, datatypeId]) {
           count
           rows {
             diseaseId

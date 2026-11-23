@@ -9,6 +9,11 @@ use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 
+#[cfg(feature = "product-ppp")]
+use crate::entity::association_timeseries_ppp::{
+    AggregationType, AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
+    load_association_timeseries,
+};
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
@@ -16,10 +21,6 @@ use crate::{
             AssociationArguments, AssociationSort, Datasource, DatasourcePolicyOverride,
             DiseaseAssociation, EntityWithAssociations, TARGET_INDIRECT_WEIGHT_DEFAULT,
             load_associations,
-        },
-        association_timeseries_ppp::{
-            AggregationType, AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
-            load_association_timeseries,
         },
         baseline_expression::{BaselineExpression, load_baseline_expression_by_target},
         clinical_target::{self, ClinicalTarget, load_clinical_targets_from_target},
@@ -847,6 +848,7 @@ impl Target {
     }
 
     /// Association time series.
+    #[cfg(feature = "product-ppp")]
     #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn association_time_series(
         &self,

@@ -5,6 +5,8 @@
 
 use strum::IntoEnumIterator;
 
+#[cfg(feature = "product-ppp")]
+use crate::entity::association_timeseries_ppp::AggregationType;
 use crate::entity::{
     association::Datasource,
     clinical_report::ClinicalStage,
@@ -121,6 +123,16 @@ pub fn bindings() -> Vec<EnumBinding> {
         datasource_binding!("evidence_by_disease_and_target"),
         datasource_binding!("evidence_by_variant"),
         binding!(Datatype, "evidence", "datatypeId"),
+        datasource_binding!("associations_otf_disease"),
+        datasource_binding!("associations_otf_target"),
+        binding!(Datatype, "associations_otf_disease", "datatypeId"),
+        binding!(Datatype, "associations_otf_target", "datatypeId"),
+        #[cfg(feature = "product-ppp")]
+        binding!(
+            AggregationType,
+            "association_time_series",
+            "aggregationType"
+        ),
         binding!(DirectionOnTarget, "evidence", "directionOnTarget"),
         binding!(DirectionOnTrait, "evidence", "directionOnTrait"),
         binding!(ClinicalStage, "evidence", "clinicalStage"),

@@ -17,19 +17,35 @@ use std::{
 };
 
 use async_graphql::{
-    Context, EmptyMutation, EmptySubscription, Object, PathSegment, Request, Schema, Variables,
+    Context, EmptyMutation, EmptySubscription, MergedObject, Object, PathSegment, Request, Schema,
+    Variables,
 };
 use axum::body::Bytes;
 use figment::{
     Figment,
     providers::{Format, Toml},
 };
+#[cfg(feature = "product-ppp")]
+use platform_api::entity::association_timeseries_ppp::{
+    AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
+    load_association_timeseries,
+};
 use platform_api::{
     AppState,
     config::Config,
-    datasource::clickhouse::ClickHouse,
-    entity::evidence::{Evidence, EvidenceKey, load_evidences},
+    datasource::{clickhouse::ClickHouse, opensearch::OpenSearch},
+    entity::{
+        association::{
+            Association, AssociationArguments, AssociationSort, DISEASE_INDIRECT_WEIGHT_DEFAULT,
+            DatasourcePolicyOverride, TARGET_INDIRECT_WEIGHT_DEFAULT, load_associations,
+        },
+        disease::Disease,
+        evidence::{Evidence, EvidenceKey, load_evidences},
+        evidence_source::EvidenceSourceQuery,
+        target::Target,
+    },
     product::{CurrentProduct, Product},
+    query::paginate::{Page, Paged},
     view::evidence::{EvidenceScope, EvidenceViews},
 };
 use serde_json::json;
@@ -61,17 +77,25 @@ pub async fn insert_fixture(ch: &ClickHouse, table: &str, jsonl_path: &Path) {
         .execute()
         .await
         .unwrap_or_else(|e| panic!("truncate {table}: {e}"));
+    insert_rows(ch, table, rows).await;
+}
+
+/// Appends `JSONEachRow` lines to `table`.
+///
+/// # Panics
+/// Panics if ClickHouse rejects the rows.
+async fn insert_rows(ch: &ClickHouse, table: &str, rows: impl Into<Bytes>) {
     let mut insert = ch
         .client()
         .insert_formatted_with(format!("INSERT INTO `{table}` FORMAT JSONEachRow"));
     insert
-        .send(Bytes::from(rows))
+        .send(rows.into())
         .await
-        .unwrap_or_else(|e| panic!("insert {}: {e}", jsonl_path.display()));
+        .unwrap_or_else(|e| panic!("insert {table}: {e}"));
     insert
         .end()
         .await
-        .unwrap_or_else(|e| panic!("insert {}: {e}", jsonl_path.display()));
+        .unwrap_or_else(|e| panic!("insert {table}: {e}"));
 }
 
 fn with_fixtures() -> bool { std::env::var("LIVE_FIXTURES").is_ok_and(|v| v == "1") }
@@ -439,4 +463,274 @@ async fn evidence_fixtures_decode_to_inserted_values() {
     assert_eq!(views["clinicalLof"]["count"], 1);
     assert_eq!(views["clinicalPhase3"]["count"], 1);
     assert_eq!(views["gwasPics"]["count"], 2);
+}
+
+// ---- association fixtures decode to the inserted values ----
+
+/// Associations for a fixture anchor, without the `Disease`/`Target` roots.
+struct AssociationRoot;
+
+fn association_args(
+    indirect_weight: f64,
+    overrides: Option<Vec<DatasourcePolicyOverride>>,
+    sort: Option<AssociationSort>,
+) -> AssociationArguments {
+    AssociationArguments {
+        bs: Vec::new(),
+        b_filter: None,
+        facet_filters: Vec::new(),
+        include_measurements: None,
+        indirect_weight,
+        datasource_policy_overrides: overrides.unwrap_or_default(),
+        sort: sort.unwrap_or_default(),
+        page: Page::default(),
+    }
+}
+
+#[Object]
+impl AssociationRoot {
+    async fn target_associations(
+        &self,
+        ctx: &Context<'_>,
+        anchor: Option<String>,
+        overrides: Option<Vec<DatasourcePolicyOverride>>,
+        sort: Option<AssociationSort>,
+    ) -> async_graphql::Result<Paged<Association<Disease>>> {
+        let anchor = anchor.unwrap_or_else(|| FIXTURE_TARGET.to_string());
+        let args = association_args(TARGET_INDIRECT_WEIGHT_DEFAULT, overrides, sort);
+        load_associations::<Target>(ctx, &anchor, &args).await
+    }
+
+    async fn disease_associations(
+        &self,
+        ctx: &Context<'_>,
+    ) -> async_graphql::Result<Paged<Association<Target>>> {
+        let args = association_args(DISEASE_INDIRECT_WEIGHT_DEFAULT, None, None);
+        load_associations::<Disease>(ctx, FIXTURE_DISEASE, &args).await
+    }
+
+    #[cfg(feature = "product-ppp")]
+    async fn time_series(
+        &self,
+        ctx: &Context<'_>,
+        is_direct: bool,
+    ) -> async_graphql::Result<Paged<AssociationTimeseries>> {
+        load_association_timeseries(
+            ctx,
+            TimeseriesKey {
+                disease_id: FIXTURE_DISEASE.to_string(),
+                target_id: FIXTURE_TARGET.to_string(),
+            },
+            &AssociationTimeseriesArguments {
+                is_direct,
+                aggregation_types: None,
+                start_year: None,
+                end_year: None,
+                page: Page::default(),
+            },
+        )
+        .await
+    }
+}
+
+#[derive(MergedObject)]
+struct AssociationQuery(AssociationRoot, EvidenceSourceQuery);
+
+/// The `datasourceScores` ids of each row.
+fn datasource_ids(page: &serde_json::Value) -> Vec<Vec<String>> {
+    page["rows"]
+        .as_array()
+        .expect("rows")
+        .iter()
+        .map(|row| {
+            row["datasourceScores"]
+                .as_array()
+                .expect("datasourceScores")
+                .iter()
+                .map(|s| s["id"].as_str().expect("id").to_string())
+                .collect()
+        })
+        .collect()
+}
+
+fn assert_close(what: &str, value: &serde_json::Value, expected: f64) {
+    let value = value.as_f64().unwrap_or_else(|| panic!("{what}: {value}"));
+    assert!(
+        (value - expected).abs() < 1e-9,
+        "{what}: {value} != {expected}"
+    );
+}
+
+const ASSOCIATIONS_QUERY: &str = "
+    associationDatasources { datasource datatype }
+    targetAssociations { count rows { score datasourceScores { id score } } }
+    required: targetAssociations(overrides: [
+        {id: impc, policy: {weight: 1.0, required: true}}
+    ]) { count rows { datasourceScores { id } } }
+    byImpc: targetAssociations(sort: {key: \"impc\", direction: DESCENDING}) {
+        count rows { datasourceScores { id } }
+    }
+    diseaseAssociations { count rows { datasourceScores { id } } }";
+
+#[cfg(feature = "product-ppp")]
+const PPP_ASSOCIATIONS_QUERY: &str = "
+    novelty: diseaseAssociations { rows { novelty datasourceScores { id } } }
+    pppOnly: targetAssociations(anchor: \"ENSG99999999990\") { rows { datasourceScores { id } } }
+    direct: timeSeries(isDirect: true) { rows {
+        aggregationType aggregationValue year associationScore novelty yearlyEvidenceCount
+    } }
+    indirect: timeSeries(isDirect: false) { rows { aggregationType aggregationValue } }";
+#[cfg(not(feature = "product-ppp"))]
+const PPP_ASSOCIATIONS_QUERY: &str = "";
+
+/// PPP-only rows: the PPP datasources, and the time series (a PPP-only table).
+#[cfg(feature = "product-ppp")]
+async fn insert_ppp_association_rows(ch: &ClickHouse) {
+    let row = |id: &str, ds: &str, score: f64| {
+        format!(
+            "{{\"rowId\":\"{id}\",\"A\":\"ENSG99999999990\",\"B\":\"EFO_9999999\",\
+             \"datasourceId\":\"{ds}\",\"datatypeId\":\"ot_partner\",\"rowScore\":{score},\
+             \"isMeasurement\":0,\"indirect\":[]}}\n"
+        )
+    };
+    let rows = [
+        row("live-test-ppp-1", "encore", 0.5),
+        row("live-test-ppp-2", "ot_crispr", 0.2),
+        row("live-test-ppp-3", "ot_crispr_validation", 0.9),
+    ]
+    .concat();
+    insert_rows(ch, "associations_otf_target", rows).await;
+
+    ch.client()
+        .query("TRUNCATE TABLE association_time_series")
+        .execute()
+        .await
+        .expect("truncate association_time_series");
+    let series = [
+        r#"{"diseaseId":"EFO_9999999","targetId":"ENSG99999999999","aggregationType":"overall","aggregationValue":"None","year":2020,"associationScore":0.5,"novelty":0.125,"yearlyEvidenceCount":3,"isDirect":true}"#,
+        r#"{"diseaseId":"EFO_9999999","targetId":"ENSG99999999999","aggregationType":"datasourceId","aggregationValue":"eva","year":null,"associationScore":0.25,"novelty":null,"yearlyEvidenceCount":null,"isDirect":true}"#,
+        r#"{"diseaseId":"EFO_9999999","targetId":"ENSG99999999999","aggregationType":"datasourceId","aggregationValue":"ot_crispr","year":2021,"associationScore":0.75,"novelty":null,"yearlyEvidenceCount":1,"isDirect":false}"#,
+    ]
+    .join("\n");
+    insert_rows(ch, "association_time_series", series).await;
+}
+
+#[tokio::test]
+#[ignore = "needs a ClickHouse database: set LIVE_CLICKHOUSE_URL and LIVE_FIXTURES=1"]
+async fn association_fixtures_decode_to_inserted_values() {
+    let url = std::env::var("LIVE_CLICKHOUSE_URL").expect("set LIVE_CLICKHOUSE_URL");
+    assert!(with_fixtures(), "set LIVE_FIXTURES=1");
+    let config = config(&url);
+    let ch = ClickHouse::new(&config);
+    load_fixtures(&ch).await;
+    #[cfg(feature = "product-ppp")]
+    insert_ppp_association_rows(&ch).await;
+
+    let schema = Schema::build(
+        AssociationQuery(AssociationRoot, EvidenceSourceQuery),
+        EmptyMutation,
+        EmptySubscription,
+    )
+    .data(ch.clone())
+    .data(OpenSearch::new(&config))
+    .finish();
+    let query = format!("{{ {ASSOCIATIONS_QUERY} {PPP_ASSOCIATIONS_QUERY} }}");
+    let response = schema
+        .execute(CurrentProduct::prepare_request(Request::new(query), &ch))
+        .await;
+    assert!(response.errors.is_empty(), "{:#?}", response.errors);
+    let data = response.data.into_json().expect("json");
+
+    let mut sources: Vec<(String, String)> = data["associationDatasources"]
+        .as_array()
+        .expect("associationDatasources")
+        .iter()
+        .map(|s| {
+            (
+                s["datasource"].as_str().expect("datasource").to_string(),
+                s["datatype"].as_str().expect("datatype").to_string(),
+            )
+        })
+        .collect();
+    sources.sort();
+    assert_eq!(
+        sources,
+        [
+            ("clinical_precedence", "known_drug"),
+            ("eva", "genetic_association"),
+            ("impc", "animal_model"),
+        ]
+        .map(|(d, t)| (d.to_string(), t.to_string()))
+    );
+
+    // EFO_9999999 then EFO_9999998; datasources by weighted score.
+    let max_hs = std::f64::consts::PI.powi(2) / 6.0;
+    let target = &data["targetAssociations"];
+    assert_eq!(target["count"], 2);
+    assert_eq!(
+        datasource_ids(target),
+        [
+            vec!["eva", "clinical_precedence", "expression_atlas"],
+            vec!["impc"],
+        ]
+    );
+    let scores = &target["rows"][0]["datasourceScores"];
+    assert_close("eva", &scores[0]["score"], 0.9 / max_hs);
+    assert_close("clinical_precedence", &scores[1]["score"], 0.5 / max_hs);
+    assert_close("expression_atlas", &scores[2]["score"], 0.6 / max_hs);
+    let overall = (0.9 + 0.5 / 4.0 + 0.6 * 0.2 / 9.0) / max_hs / max_hs;
+    assert_close("score", &target["rows"][0]["score"], overall);
+
+    assert_eq!(data["required"]["count"], 1);
+    assert_eq!(datasource_ids(&data["required"]), [vec!["impc"]]);
+    assert_eq!(
+        datasource_ids(&data["byImpc"]),
+        [
+            vec!["impc"],
+            vec!["eva", "clinical_precedence", "expression_atlas"],
+        ]
+    );
+    assert_eq!(data["diseaseAssociations"]["count"], 2);
+    assert_eq!(
+        datasource_ids(&data["diseaseAssociations"]),
+        [vec!["eva", "clinical_precedence"], vec!["impc"]]
+    );
+
+    #[cfg(feature = "product-ppp")]
+    {
+        let novelty = &data["novelty"]["rows"];
+        assert_eq!(novelty[0]["novelty"], 0.25);
+        assert_eq!(novelty[1]["novelty"], serde_json::Value::Null);
+        assert_eq!(
+            datasource_ids(&data["pppOnly"]),
+            [vec!["ot_crispr_validation", "encore", "ot_crispr"]]
+        );
+        let mut direct = data["direct"]["rows"].as_array().expect("rows").clone();
+        direct.sort_by_key(|r| r["aggregationType"].to_string());
+        assert_eq!(
+            serde_json::Value::Array(direct),
+            json!([
+                {
+                    "aggregationType": "datasourceId",
+                    "aggregationValue": "eva",
+                    "year": null,
+                    "associationScore": 0.25,
+                    "novelty": null,
+                    "yearlyEvidenceCount": null,
+                },
+                {
+                    "aggregationType": "overall",
+                    "aggregationValue": null,
+                    "year": 2020,
+                    "associationScore": 0.5,
+                    "novelty": 0.125,
+                    "yearlyEvidenceCount": 3,
+                },
+            ])
+        );
+        assert_eq!(
+            data["indirect"]["rows"],
+            json!([{"aggregationType": "datasourceId", "aggregationValue": "ot_crispr"}])
+        );
+    }
 }

@@ -1,1 +1,3 @@
-{"rowId":"live-test-row","id":"live-test-evidence","A":"EFO_9999999","B":"ENSG99999999999","datasourceId":"clinical_precedence","datatypeId":"known_drug","rowScore":0.5,"searchA":null,"searchB":null,"indirect":[]}
+{"rowId":"live-test-d1","A":"EFO_9999999","B":"ENSG99999999999","datasourceId":"clinical_precedence","datatypeId":"known_drug","rowScore":0.5,"searchA":null,"searchB":null,"noveltyDirect":null,"noveltyIndirect":null,"indirect":[]}
+{"rowId":"live-test-d2","A":"EFO_9999999","B":"ENSG99999999999","datasourceId":"eva","datatypeId":"genetic_association","rowScore":0.7,"searchA":"melanoma","searchB":"braf","noveltyDirect":0.25,"noveltyIndirect":0.125,"indirect":[]}
+{"rowId":"live-test-d3","A":"EFO_9999999","B":"ENSG99999999998","datasourceId":"impc","datatypeId":"animal_model","rowScore":0.3,"searchA":null,"searchB":null,"noveltyDirect":null,"noveltyIndirect":null,"indirect":[]}

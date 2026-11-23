@@ -45,20 +45,6 @@ type AdverseEventStats {
 }
 
 """
-Type of aggregation used to calculate the yearly evidence count.
-"""
-enum AggregationType {
-	"""
-	Aggregates all the evidence of all datasources into an overall score.
-	"""
-	overall
-	"""
-	Aggregates the evidence of each datasource separately.
-	"""
-	datasourceId
-}
-
-"""
 Allele frequencies of the variant in different populations.
 """
 type AlleleFrequency {
@@ -85,59 +71,6 @@ input AssociationSort {
 	The direction to sort in.
 	"""
 	direction: SortDirection!
-}
-
-"""
-Association time series entry for a target-disease association.
-"""
-type AssociationTimeseries {
-	"""
-	EFO ID of the association disease.
-	"""
-	diseaseId: String!
-	"""
-	Ensembl ID of the association target.
-	"""
-	targetId: String!
-	"""
-	Type of aggregation used to calculate the yearly evidence count.
-	"""
-	aggregationType: AggregationType!
-	"""
-	Datasource identifier of the aggregation: eg. `gwas_credible_set` or `None` if the
-	aggregation is by overall score.
-	"""
-	aggregationValue: Datasource
-	"""
-	Flag indicating whether the novelty calculation is based on direct evidence only or
-	includes indirect evidence.
-	"""
-	isDirect: Boolean!
-	"""
-	Year up to and including which evidence is considered.
-	"""
-	year: Int
-	"""
-	Association score based on evidence up until a given year.
-	"""
-	associationScore: Float!
-	"""
-	Novelty of the association at the given year.
-	"""
-	novelty: Float
-	"""
-	Yearly count of evidence supporting the disease/target association (for a given
-	datasource).
-	"""
-	yearlyEvidenceCount: Int
-}
-
-"""
-The result of a paginated query, containing the total number of items and the items.
-"""
-type AssociationTimeseriesPage {
-	count: Int!
-	rows: [AssociationTimeseries!]!
 }
 
 """
@@ -1967,35 +1900,6 @@ type Disease {
 		"""
 		enableIndirect: Boolean! = true
 	): EvidenceViews!
-	"""
-	Association time series.
-	"""
-	associationTimeSeries(
-		"""
-		Ensembl ID of the target.
-		"""
-		ensemblId: String!,
-		"""
-		Whether to include only direct associations.
-		"""
-		isDirect: Boolean!,
-		"""
-		Aggregation types.
-		"""
-		aggregationTypes: [AggregationType!],
-		"""
-		Year at the lower end of the filter.
-		"""
-		startYear: Int,
-		"""
-		Year at the higher end of the filter.
-		"""
-		endYear: Int,
-		"""
-		Pagination for the associations time series.
-		"""
-		page: Page! = {index: 0, size: 10}
-	): AssociationTimeseriesPage!
 	"""
 	Return the list of publications that mention the main entity, alone or in combination with
 	other entities.
@@ -5538,11 +5442,11 @@ type EvidenceSource {
 	"""
 	Name of the evidence datasource.
 	"""
-	datasource: String!
+	datasource: Datasource!
 	"""
 	Datatype/category of the evidence (e.g., Genetic association, Somatic, Literature).
 	"""
-	datatype: String!
+	datatype: Datatype!
 }
 
 """
@@ -7921,7 +7825,7 @@ type Score {
 	"""
 	Identifier of the Datasource (e.g., `impc`, `chembl`).
 	"""
-	id: String!
+	id: Datasource!
 	"""
 	Association score for the Datasource. Scores are normalized to a range of 0-1. The higher
 	the score, the stronger the association.
@@ -8948,35 +8852,6 @@ type Target {
 		"""
 		page: Page! = {index: 0, size: 10}
 	): InteractionPage!
-	"""
-	Association time series.
-	"""
-	associationTimeSeries(
-		"""
-		EFO ID of the disease.
-		"""
-		efoId: String!,
-		"""
-		Whether to include only direct associations.
-		"""
-		isDirect: Boolean!,
-		"""
-		Aggregation types.
-		"""
-		aggregationTypes: [AggregationType!],
-		"""
-		Year at the lower end of the filter.
-		"""
-		startYear: Int,
-		"""
-		Year at the higher end of the filter.
-		"""
-		endYear: Int,
-		"""
-		Pagination for the associations time series.
-		"""
-		page: Page! = {index: 0, size: 10}
-	): AssociationTimeseriesPage!
 	"""
 	Return the list of publications that mention the main entity, alone or in combination with
 	other entities.

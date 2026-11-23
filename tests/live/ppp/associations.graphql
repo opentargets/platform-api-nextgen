@@ -76,7 +76,7 @@ query LiveAssociations($target: String!, $disease: String!) {
         yearlyEvidenceCount
       }
     }
-    associationTimeSeries_aggregationTypes: associationTimeSeries(efoId: $disease, isDirect: true, aggregationTypes: [overall, datasourceId]) {
+    associationTimeSeries_aggregationTypes: associationTimeSeries(efoId: $disease, isDirect: true, aggregationTypes: [overall, datasourceId, datatypeId]) {
       count
       rows {
         diseaseId
@@ -184,7 +184,7 @@ query LiveAssociations($target: String!, $disease: String!) {
         yearlyEvidenceCount
       }
     }
-    associationTimeSeries_aggregationTypes: associationTimeSeries(ensemblId: $target, isDirect: true, aggregationTypes: [overall, datasourceId]) {
+    associationTimeSeries_aggregationTypes: associationTimeSeries(ensemblId: $target, isDirect: true, aggregationTypes: [overall, datasourceId, datatypeId]) {
       count
       rows {
         diseaseId

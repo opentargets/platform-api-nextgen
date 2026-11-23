@@ -11,6 +11,11 @@ use serde::Deserialize;
 use strum::EnumIter;
 
 #[cfg(feature = "product-ppp")]
+use crate::entity::association_timeseries_ppp::{
+    AggregationType, AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
+    load_association_timeseries,
+};
+#[cfg(feature = "product-ppp")]
 use crate::entity::otar_project_ppp::{OtarProject, load_otar_projects};
 use crate::{
     datasource::clickhouse::ClickHouse,
@@ -18,10 +23,6 @@ use crate::{
         association::{
             AssociationArguments, AssociationSort, DISEASE_INDIRECT_WEIGHT_DEFAULT, Datasource,
             DatasourcePolicyOverride, EntityWithAssociations, TargetAssociation, load_associations,
-        },
-        association_timeseries_ppp::{
-            AggregationType, AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
-            load_association_timeseries,
         },
         clinical_indication::{self, ClinicalIndication, load_clinical_indications_from_disease},
         disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
@@ -532,6 +533,7 @@ impl Disease {
     }
 
     /// Association time series.
+    #[cfg(feature = "product-ppp")]
     #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn association_time_series(
         &self,

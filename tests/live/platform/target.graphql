@@ -1885,62 +1885,6 @@ query LiveTarget($target: String!, $disease: String!) {
             sourceDatabase
           }
         }
-        associationTimeSeries(efoId: $disease, isDirect: true) {
-          count
-          rows {
-            diseaseId
-            targetId
-            aggregationType
-            aggregationValue
-            isDirect
-            year
-            associationScore
-            novelty
-            yearlyEvidenceCount
-          }
-        }
-        associationTimeSeries_aggregationTypes: associationTimeSeries(efoId: $disease, isDirect: true, aggregationTypes: [overall, datasourceId]) {
-          count
-          rows {
-            diseaseId
-            targetId
-            aggregationType
-            aggregationValue
-            isDirect
-            year
-            associationScore
-            novelty
-            yearlyEvidenceCount
-          }
-        }
-        associationTimeSeries_startYear: associationTimeSeries(efoId: $disease, isDirect: true, startYear: 1) {
-          count
-          rows {
-            diseaseId
-            targetId
-            aggregationType
-            aggregationValue
-            isDirect
-            year
-            associationScore
-            novelty
-            yearlyEvidenceCount
-          }
-        }
-        associationTimeSeries_endYear: associationTimeSeries(efoId: $disease, isDirect: true, endYear: 1) {
-          count
-          rows {
-            diseaseId
-            targetId
-            aggregationType
-            aggregationValue
-            isDirect
-            year
-            associationScore
-            novelty
-            yearlyEvidenceCount
-          }
-        }
         literatureOcurrences {
           count
           rows {

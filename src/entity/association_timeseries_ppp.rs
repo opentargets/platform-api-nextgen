@@ -7,10 +7,12 @@ use async_graphql::{
 use clickhouse::Row;
 use derive_more::From;
 use moka::future::Cache;
-use serde::{Deserialize, Deserializer, de::IntoDeserializer};
+use serde::{Deserialize, Deserializer, de::Error as _};
+use serde_repr::Deserialize_repr;
+use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 
 use crate::{
-    datasource::clickhouse::{ClickHouse, from_string},
+    datasource::clickhouse::ClickHouse,
     entity::association::Datasource,
     query::{
         QueryExt,
@@ -22,14 +24,30 @@ use crate::{
 // ---- models ----
 
 ///  Type of aggregation used to calculate the yearly evidence count.
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
 #[graphql(rename_items = "camelCase")]
+#[strum(serialize_all = "camelCase")]
 pub enum AggregationType {
     /// Aggregates all the evidence of all datasources into an overall score.
-    Overall,
+    Overall = 1,
     /// Aggregates the evidence of each datasource separately.
-    DatasourceId,
+    DatasourceId = 2,
+    /// Aggregates the evidence of each datatype separately.
+    DatatypeId = 3,
 }
 
 /// Deserialize a `Datasource` from a `String` column, allowing `None` values.
@@ -43,7 +61,10 @@ where
     if s == "None" {
         return Ok(None);
     }
-    Datasource::deserialize(s.into_deserializer()).map(Some)
+    Datasource::iter()
+        .find(|ds| <&str>::from(*ds) == s)
+        .map(Some)
+        .ok_or_else(|| D::Error::custom(format!("unknown datasource {s}")))
 }
 
 /// Association time series entry for a target-disease association.
@@ -55,7 +76,6 @@ pub struct AssociationTimeseries {
     /// Ensembl ID of the association target.
     target_id: String,
     /// Type of aggregation used to calculate the yearly evidence count.
-    #[serde(deserialize_with = "from_string")]
     aggregation_type: AggregationType,
     /// Datasource identifier of the aggregation: eg. `gwas_credible_set` or `None` if the
     /// aggregation is by overall score.
