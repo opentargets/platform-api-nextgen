@@ -139,6 +139,9 @@ async fn load_fixtures(ch: &ClickHouse) {
                 let table = path.file_stem().and_then(|s| s.to_str()).expect("table");
                 insert_fixture(ch, table, &path).await;
             }
+            // Before any query: the time series loader caches results process-wide.
+            #[cfg(feature = "product-ppp")]
+            insert_ppp_association_rows(ch).await;
             // Dictionaries (`disease_names`, `target_symbols`, ...) load once: reread the rows.
             ch.client()
                 .query("SYSTEM RELOAD DICTIONARIES")
@@ -850,8 +853,6 @@ async fn association_fixtures_decode_to_inserted_values() {
     let config = config(&url);
     let ch = ClickHouse::new(&config);
     load_fixtures(&ch).await;
-    #[cfg(feature = "product-ppp")]
-    insert_ppp_association_rows(&ch).await;
 
     let schema = Schema::build(
         AssociationQuery(AssociationRoot, EvidenceSourceQuery),
