@@ -55,8 +55,6 @@ pub struct EvidenceExpressionAtlas {
     contrast: Option<String>,
     /// Experiment confidence: low, medium or high.
     confidence: Option<String>,
-    /// Log2 fold change of the target's expression between the compared conditions.
-    log2_fold_change_value: Option<f64>,
     /// Percentile rank of the fold change among the experiment's genes.
     log2_fold_change_percentile_rank: Option<i32>,
     /// P-value of the differential expression.
@@ -76,7 +74,6 @@ columns!(EvidenceExpressionAtlasCol {
     StudyId                      => "studyId"                      : Str,
     Contrast                     => "contrast"                     : Str,
     Confidence                   => "confidence"                   : Str,
-    Log2FoldChangeValue          => "log2FoldChangeValue"          : F64,
     Log2FoldChangePercentileRank => "log2FoldChangePercentileRank" : I64,
     ResourceScore                => "resourceScore"                : F64,
 });
@@ -137,10 +134,6 @@ impl QueryParams {
 pub enum SortField {
     /// Evidence score.
     Score,
-    /// Log2 fold change.
-    // Default naming would give `LOG_2_FOLD_CHANGE`.
-    #[graphql(name = "LOG2_FOLD_CHANGE")]
-    Log2FoldChange,
     /// Percentile rank of the fold change.
     Percentile,
     /// P-value.
@@ -159,7 +152,6 @@ impl SortField {
         use EvidenceExpressionAtlasCol as C;
         let cols: &[C] = match self {
             Self::Score => &[C::Score],
-            Self::Log2FoldChange => &[C::Log2FoldChangeValue],
             Self::Percentile => &[C::Log2FoldChangePercentileRank],
             Self::PValue => &[C::ResourceScore],
         };

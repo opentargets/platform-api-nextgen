@@ -3860,9 +3860,9 @@ type EvidenceCrisprScreen {
 	"""
 	statisticalTestTail: String
 	"""
-	Log2 fold change of the phenotype when the target is perturbed.
+	Score of the phenotypic consequence of the target perturbation in the CRISPR screen.
 	"""
-	log2FoldChangeValue: Float
+	phenotypicConsequenceScore: Float
 	"""
 	Significance: the screen's p-value or FDR for the target.
 	"""
@@ -4283,10 +4283,6 @@ type EvidenceExpressionAtlas {
 	"""
 	confidence: String
 	"""
-	Log2 fold change of the target's expression between the compared conditions.
-	"""
-	log2FoldChangeValue: Float
-	"""
 	Percentile rank of the fold change among the experiment's genes.
 	"""
 	log2FoldChangePercentileRank: Int
@@ -4350,10 +4346,6 @@ enum EvidenceExpressionAtlasSortField {
 	Evidence score.
 	"""
 	SCORE
-	"""
-	Log2 fold change.
-	"""
-	LOG2_FOLD_CHANGE
 	"""
 	Percentile rank of the fold change.
 	"""
