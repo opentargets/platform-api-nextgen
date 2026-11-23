@@ -8,7 +8,8 @@
 //!
 //! A query file may start with `# variables: {...}`. With `LIVE_FIXTURES=1`, each
 //! `tests/live/fixtures/<table>.jsonl` replaces the rows of `<table>` first: scratch databases
-//! only.
+//! only. With `LIVE_IDS=tests/live/ids-2612.json`, each query runs once per id set of that file
+//! instead of with its fixture ids, against a real release.
 
 use std::{
     collections::HashMap,
@@ -138,22 +139,54 @@ fn files(dir: &Path, extension: &str) -> Vec<PathBuf> {
     found
 }
 
-/// The query and its variables, read from a `# variables: {...}` first line.
-fn request(path: &Path) -> Request {
+/// The query and its variables, read from a `# variables: {...}` first line; `ids` replaces
+/// the values of the variables it names.
+fn request(path: &Path, ids: Option<&serde_json::Map<String, serde_json::Value>>) -> Request {
     let text = fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let variables = text
         .lines()
         .next()
         .and_then(|line| line.strip_prefix("# variables:"))
         .map(|json| {
-            serde_json::from_str(json)
-                .unwrap_or_else(|e| panic!("{}: bad variables line: {e}", path.display()))
+            let mut vars: serde_json::Map<String, serde_json::Value> = serde_json::from_str(json)
+                .unwrap_or_else(|e| panic!("{}: bad variables line: {e}", path.display()));
+            for (name, value) in &mut vars {
+                if let Some(id) = ids.and_then(|ids| ids.get(name)) {
+                    *value = id.clone();
+                }
+            }
+            serde_json::Value::Object(vars)
         });
     let request = Request::new(text.clone());
     match variables {
         Some(json) => request.variables(Variables::from_json(json)),
         None => request,
     }
+}
+
+/// The id sets of `LIVE_IDS` (`{"target": [id, ...], ...}`): the n-th set takes the n-th id of
+/// each entity. One empty set without it.
+fn id_sets() -> Vec<Option<serde_json::Map<String, serde_json::Value>>> {
+    let Ok(path) = std::env::var("LIVE_IDS") else {
+        return vec![None];
+    };
+    assert!(
+        !with_fixtures(),
+        "LIVE_IDS reads a real database: unset LIVE_FIXTURES"
+    );
+    let text = fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
+    let ids: HashMap<String, Vec<serde_json::Value>> =
+        serde_json::from_str(&text).unwrap_or_else(|e| panic!("{path}: {e}"));
+    let n = ids.values().map(Vec::len).max().unwrap_or(0);
+    (0..n)
+        .map(|i| {
+            Some(
+                ids.iter()
+                    .filter_map(|(k, v)| v.get(i).map(|id| (k.clone(), id.clone())))
+                    .collect(),
+            )
+        })
+        .collect()
 }
 
 #[tokio::test]
@@ -174,9 +207,16 @@ async fn live_queries_return_no_errors() {
     assert!(!queries.is_empty(), "no queries in tests/live/{product}");
 
     let mut errors = Vec::new();
-    for path in &queries {
-        let response = state.api.execute(request(path)).await;
+    for (path, ids) in queries
+        .iter()
+        .flat_map(|p| id_sets().into_iter().map(move |i| (p, i)))
+    {
+        let response = state.api.execute(request(path, ids.as_ref())).await;
         let name = path.file_name().unwrap_or_default().to_string_lossy();
+        let name = match &ids {
+            Some(ids) => format!("{name} {}", serde_json::Value::Object(ids.clone())),
+            None => name.to_string(),
+        };
         for error in &response.errors {
             let at: Vec<String> = error
                 .path

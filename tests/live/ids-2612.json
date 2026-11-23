@@ -1,0 +1,17 @@
+{
+  "target": ["ENSG00000149311", "ENSG00000066468", "ENSG00000180660"],
+  "disease": ["MONDO_0015356", "MONDO_0005062", "OBA_VT0001253"],
+  "drug": ["CHEMBL100", "CHEMBL1000", "CHEMBL100014"],
+  "variant": ["15_90219554_A_G", "1_205565291_C_T", "7_42918493_G_A"],
+  "study": [
+    "qts000015_qtd000359_gtex_v10_txrev_blood_ensg00000185033_grp_1_contained_enst00000558848",
+    "qts000015_qtd000229_gtex_v10_txrev_colon_sigmoid_ensg00000117266_grp_1_contained_enst00000506489",
+    "qts000015_qtd000245_gtex_v10_leafcutter_esophagus_mucosa_7_42935136_42937322_clu_41200__"
+  ],
+  "credibleSet": [
+    "000004855d12de7a284d63a12582926c",
+    "000004c55419e5eeddd4edde3b1dc86c",
+    "000006f0df2c7d488a068776cb9d93de"
+  ],
+  "clinicalReport": ["a01ab02", "a01ab03", "a01ab04"]
+}
