@@ -55,9 +55,10 @@ use crate::{
             cancer_biomarkers::EvidenceCancerBiomarkersLoader,
             cancer_gene_census::EvidenceCancerGeneCensusLoader, clingen::EvidenceClinGenLoader,
             clinical_precedence::EvidenceClinicalPrecedenceLoader, crispr::EvidenceCrisprLoader,
-            crispr_screen::EvidenceCrisprScreenLoader, eva::EvidenceEvaLoader,
-            eva_somatic::EvidenceEvaSomaticLoader, expression_atlas::EvidenceExpressionAtlasLoader,
-            gene_burden::EvidenceGeneBurdenLoader, gene2phenotype::EvidenceGene2PhenotypeLoader,
+            crispr_screen::EvidenceCrisprScreenLoader, europe_pmc::EvidenceEuropePmcLoader,
+            eva::EvidenceEvaLoader, eva_somatic::EvidenceEvaSomaticLoader,
+            expression_atlas::EvidenceExpressionAtlasLoader, gene_burden::EvidenceGeneBurdenLoader,
+            gene2phenotype::EvidenceGene2PhenotypeLoader,
             genomics_england_panel_app::EvidenceGenomicsEnglandPanelAppLoader,
             gwas_credible_sets::EvidenceGwasCredibleSetsLoader, impc::EvidenceImpcLoader,
             intogen::EvidenceIntogenLoader, orphanet::EvidenceOrphanetLoader,
@@ -147,6 +148,7 @@ impl Product for Platform {
             .data(loader::<EvidenceCancerBiomarkersLoader>(ch))
             .data(loader::<EvidenceImpcLoader>(ch))
             .data(loader::<EvidenceEvaSomaticLoader>(ch))
+            .data(loader::<EvidenceEuropePmcLoader>(ch))
             .data(loader::<EvidenceGene2PhenotypeLoader>(ch))
             .data(loader::<EvidenceUniprotLiteratureLoader>(ch))
             .data(loader::<EvidenceUniprotVariantsLoader>(ch))

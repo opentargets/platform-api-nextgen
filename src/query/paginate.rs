@@ -41,9 +41,9 @@ use crate::{
             cancer_biomarkers::EvidenceCancerBiomarkers,
             cancer_gene_census::EvidenceCancerGeneCensus, clingen::EvidenceClinGen,
             clinical_precedence::EvidenceClinicalPrecedence, crispr::EvidenceCrispr,
-            crispr_screen::EvidenceCrisprScreen, eva::EvidenceEva, eva_somatic::EvidenceEvaSomatic,
-            expression_atlas::EvidenceExpressionAtlas, gene_burden::EvidenceGeneBurden,
-            gene2phenotype::EvidenceGene2Phenotype,
+            crispr_screen::EvidenceCrisprScreen, europe_pmc::EvidenceEuropePmc, eva::EvidenceEva,
+            eva_somatic::EvidenceEvaSomatic, expression_atlas::EvidenceExpressionAtlas,
+            gene_burden::EvidenceGeneBurden, gene2phenotype::EvidenceGene2Phenotype,
             genomics_england_panel_app::EvidenceGenomicsEnglandPanelApp,
             gwas_credible_sets::EvidenceGwasCredibleSets, impc::EvidenceImpc,
             intogen::EvidenceIntogen, orphanet::EvidenceOrphanet, reactome::EvidenceReactome,
@@ -129,6 +129,7 @@ pub fn page_complexity(page: Page, child_complexity: usize) -> usize {
 #[graphql(concrete(name = "EvidenceExpressionAtlasPage", params(EvidenceExpressionAtlas)))]
 #[graphql(concrete(name = "EvidenceImpcPage", params(EvidenceImpc)))]
 #[graphql(concrete(name = "EvidenceEvaSomaticPage", params(EvidenceEvaSomatic)))]
+#[graphql(concrete(name = "EvidenceEuropePmcPage", params(EvidenceEuropePmc)))]
 #[graphql(concrete(name = "EvidenceGene2PhenotypePage", params(EvidenceGene2Phenotype)))]
 #[graphql(concrete(name = "EvidenceUniprotLiteraturePage", params(EvidenceUniprotLiterature)))]
 #[graphql(concrete(name = "EvidenceUniprotVariantsPage", params(EvidenceUniprotVariants)))]

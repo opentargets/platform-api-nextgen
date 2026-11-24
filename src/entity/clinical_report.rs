@@ -129,6 +129,9 @@ pub enum Provider {
     /// Pharmaceuticals and Medical Devices Agency.
     #[serde(rename = "PMDA")]
     Pmda,
+    // FDA.
+    #[serde(rename = "FDA")]
+    Fda,
 }
 
 #[derive(Debug, Clone, Deserialize, SimpleObject)]

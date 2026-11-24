@@ -20,6 +20,7 @@ pub mod clingen;
 pub mod clinical_precedence;
 pub mod crispr;
 pub mod crispr_screen;
+pub mod europe_pmc;
 pub mod eva;
 pub mod eva_somatic;
 pub mod expression_atlas;
@@ -545,6 +546,19 @@ impl EvidenceViews {
     ) -> Result<Paged<eva_somatic::EvidenceEvaSomatic>> {
         let key = eva_somatic::QueryParams::new(self.scope.clone(), page.index, page.size);
         eva_somatic::load_evidence_eva_somatic(ctx, key).await
+    }
+
+    /// Europe PMC evidence: publications in which text mining found the target and the disease
+    /// together. Always sorted by score, highest first, with no search, so it's paged from the
+    /// evidence index and only the page's rows are read in full.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    async fn europe_pmc(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default, desc = "Pagination for the evidence.")] page: Page,
+    ) -> Result<Paged<europe_pmc::EvidenceEuropePmc>> {
+        let key = europe_pmc::QueryParams::new(self.scope.clone(), page.index, page.size);
+        europe_pmc::load_evidence_europe_pmc(ctx, key).await
     }
 
     /// intOGen evidence: genes found to be cancer drivers in tumour cohorts by intOGen's driver

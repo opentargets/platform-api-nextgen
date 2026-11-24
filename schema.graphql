@@ -3982,6 +3982,67 @@ enum EvidenceCrisprSortField {
 }
 
 """
+A Europe PMC evidence, as shown in the evidence page's Europe PMC table.
+
+Rows are decoded by position, so field order must match the column order of
+`src/sql/evidence/europe_pmc.sql`. Update both together.
+"""
+type EvidenceEuropePmc {
+	"""
+	Identifier of the disease/target evidence.
+	"""
+	id: String!
+	"""
+	Score of the evidence reflecting the strength of the disease/target relationship.
+	"""
+	score: Float!
+	"""
+	Identifier of the disease for which the target is associated in this evidence.
+	"""
+	diseaseId: String!
+	"""
+	Name of the disease. Empty if the disease isn't found.
+	"""
+	diseaseName: String!
+	"""
+	Identifier of the target for which the disease is associated in this evidence.
+	"""
+	targetId: String!
+	"""
+	Approved symbol of the target. Empty if the target isn't found.
+	"""
+	targetApprovedSymbol: String!
+	"""
+	PubMed or preprint identifiers of the publication.
+	"""
+	literature: [String!]!
+	"""
+	PubMed Central identifiers of the publication.
+	"""
+	pmcIds: [String!]!
+	"""
+	Year the publication was published.
+	"""
+	publicationYear: Int
+	"""
+	Sentences of the publication in which the target and the disease were found.
+	"""
+	textMiningSentences: [EvidenceTextMiningSentence!]!
+	"""
+	Score from Europe PMC: the text-mining confidence of the target/disease co-occurrence.
+	"""
+	resourceScore: Float
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type EvidenceEuropePmcPage {
+	count: Int!
+	rows: [EvidenceEuropePmc!]!
+}
+
+"""
 A `ClinVar` evidence, as shown in the evidence page's `ClinVar` table.
 
 Rows are decoded by position, so field order must match the column order of
@@ -4283,6 +4344,10 @@ type EvidenceExpressionAtlas {
 	"""
 	confidence: String
 	"""
+	Log2 fold change of the target's expression between the compared conditions.
+	"""
+	log2FoldChangeValue: Float
+	"""
 	Percentile rank of the fold change among the experiment's genes.
 	"""
 	log2FoldChangePercentileRank: Int
@@ -4346,6 +4411,10 @@ enum EvidenceExpressionAtlasSortField {
 	Evidence score.
 	"""
 	SCORE
+	"""
+	Log2 fold change.
+	"""
+	LOG2_FOLD_CHANGE
 	"""
 	Percentile rank of the fold change.
 	"""
@@ -6091,6 +6160,17 @@ type EvidenceViews {
 		page: Page! = {index: 0, size: 10}
 	): EvidenceEvaSomaticPage!
 	"""
+	Europe PMC evidence: publications in which text mining found the target and the disease
+	together. Always sorted by score, highest first, with no search, so it's paged from the
+	evidence index and only the page's rows are read in full.
+	"""
+	europePmc(
+		"""
+		Pagination for the evidence.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): EvidenceEuropePmcPage!
+	"""
 	intOGen evidence: genes found to be cancer drivers in tumour cohorts by intOGen's driver
 	detection methods.
 	"""
@@ -6420,7 +6500,13 @@ type Interaction {
 	Evidence supporting the molecular interaction.
 	"""
 	evidences: [InteractionEvidence!]!
+	"""
+	Target A of the interaction.
+	"""
 	targetA: Target
+	"""
+	Target B of the interaction. Null if it isn't a known target.
+	"""
 	targetB: Target
 }
 
@@ -7404,6 +7490,7 @@ enum Provider {
 	Pharmaceuticals and Medical Devices Agency.
 	"""
 	PMDA
+	FDA
 }
 
 """
@@ -8906,7 +8993,7 @@ type Target {
 	"""
 	interactions(
 		"""
-		Threshold similarity between 0 and 1.
+		Minimum interaction score, between 0 and 1. Interactions without a score (Reactome, Signor) are always included.
 		"""
 		scoreThreshold: Float,
 		"""

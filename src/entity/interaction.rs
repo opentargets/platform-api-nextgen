@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use async_graphql::{
-    ComplexObject, Context, Enum, SimpleObject,
+    ComplexObject, Context, Enum, Error, Result, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
@@ -14,6 +14,11 @@ use crate::{
     entity::{
         interaction_resource::InteractionResource,
         target::{Target, TargetLoader},
+    },
+    query::{
+        paginate::Paged,
+        sort::SortDirection,
+        sql::{Column, Filter, Op, OrderBy, PageSpec, Table, Value, ValueKind, build, columns},
     },
 };
 
@@ -113,18 +118,23 @@ pub struct ParticipantDetectionMethod {
 /// other molecules. This dataset contains pair-wise interactions deposited in several databases
 /// capturing: physical interactions (e.g. IntAct), directional interactions (e.g. Signor), pathway
 /// relationships (e.g. Reactome) or functional interactions (e.g. STRINGdb).
-#[derive(Debug, Clone, Deserialize, SimpleObject)]
+// Rows are decoded by position, so field order must match the column order of
+// `src/sql/interactions.sql`. Update both together.
+#[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 pub struct Interaction {
     /// Open Targets target identifier of the first molecule (target A) in the interaction
-    /// [bioregistry:ensembl].
+    /// [bioregistry:ensembl]. Resolved by the `targetA` field.
     #[graphql(skip)]
     target_a: String,
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    #[graphql(skip)]
+    idx: u32,
     /// Identifier for target A in source.
     int_a: String,
     /// Open Targets target identifier of the second molecule (target B) in the interaction
-    /// [bioregistry:ensembl].
+    /// [bioregistry:ensembl]. Resolved by the `targetB` field.
     #[graphql(skip)]
     target_b: Option<String>,
     /// Identifier for target B in source.
@@ -134,8 +144,7 @@ pub struct Interaction {
     /// Biological role of target B in the interaction.
     int_b_biological_role: String,
     /// Scoring or confidence value assigned to the interaction.
-    #[graphql(name = "score")]
-    scoring: Option<f64>,
+    score: Option<f64>,
     /// Number of interaction occurrences reported in the source databases.
     count: u8,
     /// Source database reporting the molecular interaction.
@@ -148,13 +157,93 @@ pub struct Interaction {
     evidences: Vec<InteractionEvidence>,
 }
 
-// ---- loaders ----
+impl Table for Interaction {
+    type Col = InteractionCol;
+    const NAME: &'static str = include_str!("../sql/interactions.sql");
+    // Unique within one target, which every query filters on.
+    const TIE_BREAKER: &'static str = "idx";
+}
 
-#[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
+columns!(InteractionCol {
+    TargetA        => "targetA"                : Str,
+    Score          => "score"                  : F64,
+    // Scores are in [0, 1] and only Reactome/Signor have none. Treating a missing score as 1
+    // those interactions passing every threshold, as before.
+    ScoreOrMax     => "ifNull(score, 1)"       : F64,
+    // Enum8 in ClickHouse, filtered on its number.
+    SourceDatabase => "toInt8(sourceDatabase)" : I64,
+});
+
+// ---- query params ----
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct QueryParams {
+    target_id: String,
+    /// `f64::to_bits` of the score threshold, so the key is `Eq + Hash`.
+    score_threshold: Option<u64>,
+    source_database: Option<InteractionSourceDatabase>,
+    index: u32,
+    size: u32,
+}
+
+impl QueryParams {
+    #[must_use]
+    pub fn new(
+        target_id: String,
+        score_threshold: Option<f64>,
+        source_database: Option<InteractionSourceDatabase>,
+        index: u32,
+        size: u32,
+    ) -> Self {
+        Self {
+            target_id,
+            score_threshold: score_threshold.map(f64::to_bits),
+            source_database,
+            index,
+            size,
+        }
+    }
+
+    fn to_spec(&self) -> Result<PageSpec<Interaction>> {
+        use InteractionCol as C;
+        // The key of the EmbeddedRocksDB `interaction` table.
+        let mut filters = vec![
+            Filter::new(C::TargetA, Op::Eq, Value::Str(self.target_id.clone()))
+                .map_err(Error::new)?,
+        ];
+        if let Some(bits) = self.score_threshold {
+            filters.push(
+                Filter::new(C::ScoreOrMax, Op::Ge, Value::F64(f64::from_bits(bits)))
+                    .map_err(Error::new)?,
+            );
+        }
+        if let Some(db) = self.source_database {
+            filters.push(
+                Filter::new(C::SourceDatabase, Op::Eq, Value::I64(i64::from(db as i8)))
+                    .map_err(Error::new)?,
+            );
+        }
+        Ok(PageSpec {
+            filters,
+            // Always highest score first. ClickHouse puts NULL scores last.
+            order_by: vec![OrderBy {
+                col: C::Score,
+                dir: SortDirection::Descending,
+            }],
+            offset: u64::from(self.index) * u64::from(self.size),
+            limit: u64::from(self.size),
+        })
+    }
+}
+
+// ---- loader ----
+
+/// One row of the batched query: the page of results for `keys[key]`.
+#[derive(Debug, Clone, Row, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct InteractionRow {
-    pub interactions: Vec<Interaction>,
-    target_a: String,
+struct BatchRow {
+    key: usize,
+    interactions: Paged<Interaction>,
 }
 
 #[derive(From)]
@@ -167,93 +256,48 @@ impl InteractionLoader {
     pub fn new(ch: ClickHouse) -> Self { Self { ch } }
 }
 
-fn build_query(key: &(String, Option<u64>, Option<InteractionSourceDatabase>)) -> String {
-    let score_filter = match key.1 {
-        Some(_) => "or(greaterOrEquals(i.scoring, q_score),isNull(i.scoring))",
-        None => "true",
-    };
-    let database_filter = match key.2 {
-        Some(_) => "equals(i.sourceDatabase, q_db)",
-        None => "true",
-    };
-    let sort_filter = format!(
-        "arrayReverseSort(i->i.scoring,arrayFilter(i->(and({score_filter},{database_filter})),t.interactions))"
-    );
-    format!(
-        "(WITH ? as q_score, ? as q_db, SELECT {sort_filter} AS interactions, t.targetA FROM interaction as t WHERE (in(t.targetA,(?))))"
-    )
-}
+impl Loader<QueryParams> for InteractionLoader {
+    type Value = Paged<Interaction>;
+    type Error = Error;
 
-impl Loader<(String, Option<u64>, Option<InteractionSourceDatabase>)> for InteractionLoader {
-    type Value = Vec<Interaction>;
-    type Error = async_graphql::Error;
+    async fn load(&self, keys: &[QueryParams]) -> Result<HashMap<QueryParams, Self::Value>> {
+        let rendered = keys
+            .iter()
+            .map(|k| k.to_spec().map(|spec| spec.render()))
+            .collect::<Result<Vec<_>>>()?;
 
-    async fn load(
-        &self,
-        keys: &[(String, Option<u64>, Option<InteractionSourceDatabase>)],
-    ) -> Result<
-        HashMap<(String, Option<u64>, Option<InteractionSourceDatabase>), Self::Value>,
-        Self::Error,
-    > {
-        let base_queries: Vec<String> = keys.iter().map(build_query).collect();
-        let mapped_keys: HashMap<String, (String, Option<u64>, Option<InteractionSourceDatabase>)> =
-            keys.iter().map(|k| (k.0.clone(), k.clone())).collect();
+        let rows = build(self.ch.client(), &rendered)
+            .fetch_all::<BatchRow>()
+            .await?;
 
-        let full_query = keys.iter().fold(
-            self.ch.query(&base_queries.join(" UNION ALL ")),
-            |acc: clickhouse::query::Query, key| {
-                let score = f64::from_bits(key.1.unwrap_or_default());
-                match &key.2 {
-                    Some(db) => acc.bind(score).bind(db).bind(&key.0),
-                    None => acc.bind(score).bind("").bind(&key.0),
-                }
-            },
-        );
-
-        let rows: Vec<InteractionRow> = full_query.fetch_all().await?;
-
-        let mut results: HashMap<
-            (String, Option<u64>, Option<InteractionSourceDatabase>),
-            Vec<Interaction>,
-        > = HashMap::new();
-        for row in rows {
-            let id = match mapped_keys.get(&row.target_a) {
-                Some(id) => id,
-                None => &(String::new(), None, None),
-            };
-            results.entry(id.clone()).or_insert(row.interactions);
-        }
-        Ok(results)
+        Ok(rows
+            .into_iter()
+            .map(|row| (keys[row.key].clone(), row.interactions))
+            .collect())
     }
 }
 
-/// Loads Interaction by id from the cache or database. It can filter by score and
-/// database
-///
-/// # Returns
-/// A `Vec` of `Interaction` objects corresponding to the given IDs. Ordered by score desc.
 /// # Errors
-/// Returns an error if the Interaction could not be loaded.
-pub async fn load_interaction_by_target_a(
-    ctx: &Context<'_>,
-    id: String,
-    score: Option<f64>,
-    database: Option<InteractionSourceDatabase>,
-) -> async_graphql::Result<Option<Vec<Interaction>>> {
-    ctx.data_unchecked::<DataLoader<InteractionLoader>>()
-        .load_one((id.clone(), score.map(f64::to_bits), database))
-        .await
+/// If the `ClickHouse` query fails.
+pub async fn load_interactions(ctx: &Context<'_>, key: QueryParams) -> Result<Paged<Interaction>> {
+    Ok(ctx
+        .data_unchecked::<DataLoader<InteractionLoader>>()
+        .load_one(key)
+        .await?
+        .unwrap_or_default())
 }
 
 #[ComplexObject]
 impl Interaction {
-    async fn target_a(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
-        let target_id = &self.target_a;
+    /// Target A of the interaction.
+    async fn target_a(&self, ctx: &Context<'_>) -> Result<Option<Target>> {
         ctx.data_unchecked::<DataLoader<TargetLoader>>()
-            .load_one(target_id.clone())
+            .load_one(self.target_a.clone())
             .await
     }
-    async fn target_b(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
+
+    /// Target B of the interaction. Null if it isn't a known target.
+    async fn target_b(&self, ctx: &Context<'_>) -> Result<Option<Target>> {
         match &self.target_b {
             Some(target_id) => {
                 ctx.data_unchecked::<DataLoader<TargetLoader>>()
