@@ -2,7 +2,7 @@
   -- Columns listed explicitly, in the same order as `Pharmacogenomics`: rows are
   -- decoded by position.
   SELECT
-    p.rowId AS rowId,
+    p.pharmacogenomicsId AS rowId,
     p.datasourceId AS datasourceId,
     p.datatypeId AS datatypeId,
     p.drugs AS drugs,
