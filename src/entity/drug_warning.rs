@@ -8,9 +8,12 @@ use clickhouse::Row;
 use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
+use serde_repr::Deserialize_repr;
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::label::Label,
     query::cache::{CachedLoader, entity_cache},
 };
 
@@ -23,25 +26,36 @@ pub struct DrugWarningReference {
     url: String,
 }
 
-// CHRSNAMEDTUPLE The fields in this should be reordered to something more sane.
+/// Action a ChEMBL drug warning records (`warningType`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize_repr, IntoStaticStr, EnumIter)]
+#[repr(i8)]
+pub enum DrugWarningType {
+    /// A black box warning on the label.
+    #[strum(serialize = "Black Box Warning")]
+    BlackBoxWarning = 1,
+    /// Withdrawn from the market.
+    #[strum(serialize = "Withdrawn")]
+    Withdrawn = 2,
+}
+
 /// Blackbox and withdrawn information for drugs molecules included in ChEMBL database.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct DrugWarning {
-    /// Classification of toxicity type associated with the drug.
-    toxicity_class: Option<String>,
     /// List of molecule identifiers associated with the warning.
     chembl_ids: Vec<String>,
+    /// Classification of toxicity type associated with the drug.
+    toxicity_class: Option<String>,
     /// Country where the warning was issued.
-    country: Option<String>,
+    country: String,
     /// Description of the drug adverse effect.
     description: Option<String>,
     /// Internal identifier for the drug warning record.
-    id: Option<u32>,
+    id: u32,
     /// List of sources supporting the warning information.
     references: Vec<DrugWarningReference>,
     /// Classification of action taken (drug is withdrawn or has a black box warning).
-    warning_type: String,
+    warning_type: Label<DrugWarningType>,
     /// Year when the warning was issued.
     year: Option<u16>,
     /// List of disease labels associated with the warning.

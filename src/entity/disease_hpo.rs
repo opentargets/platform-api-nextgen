@@ -7,28 +7,82 @@ use async_graphql::{
 use clickhouse::Row;
 use derive_more::From;
 use serde::Deserialize;
+use serde_repr::Deserialize_repr;
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         disease::{Disease, DiseaseLoader},
         hpo::{Hpo, HpoLoader, load_hpo, load_hpos},
+        label::Label,
     },
     query::Entity,
 };
 
 // ---- models ----
 
-// CHRSNAMEDTUPLE The fields in this should be reordered to something more sane.
+/// HPO annotation aspect (`aspect`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize_repr, IntoStaticStr, EnumIter)]
+#[repr(i8)]
+pub enum HpoAspect {
+    /// Phenotypic abnormality.
+    P = 1,
+    /// Clinical course.
+    C = 2,
+    /// Inheritance.
+    I = 3,
+    /// Clinical modifier.
+    M = 4,
+    /// Past medical history.
+    H = 5,
+}
+
+/// HPO annotation evidence code (`evidenceType`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize_repr, IntoStaticStr, EnumIter)]
+#[repr(i8)]
+pub enum HpoEvidenceCode {
+    /// Inferred from electronic annotation.
+    #[strum(serialize = "IEA")]
+    Iea = 1,
+    /// Traceable author statement.
+    #[strum(serialize = "TAS")]
+    Tas = 2,
+    /// Published clinical study.
+    #[strum(serialize = "PCS")]
+    Pcs = 3,
+}
+
+/// Biological sex an HPO annotation is specific to (`sex`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize_repr, IntoStaticStr, EnumIter)]
+#[repr(i8)]
+pub enum HpoSex {
+    /// Male.
+    #[strum(serialize = "MALE")]
+    Male = 1,
+    /// Female.
+    #[strum(serialize = "FEMALE")]
+    Female = 2,
+}
+
+/// Source of an HPO annotation (`resource`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize_repr, IntoStaticStr, EnumIter)]
+#[repr(i8)]
+pub enum HpoResource {
+    /// The Human Phenotype Ontology annotations.
+    #[strum(serialize = "HPO")]
+    Hpo = 1,
+}
+
 /// A container for all evidence-related attributes supporting the disease-phenotype association.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 #[graphql(complex)]
 pub struct PhenotypeEvidence {
     /// The category of biological information being provided (e.g., clinical, genetic, etc.).
-    aspect: Option<String>,
+    aspect: Label<HpoAspect>,
     /// Indicates whether the evidence has been manually curated.
-    bio_curation: Option<String>,
+    bio_curation: String,
     /// Unique identifier for the disease from the original source.
     disease_from_source_id: String,
     /// The disease name as recorded in the original source.
@@ -36,21 +90,24 @@ pub struct PhenotypeEvidence {
     /// Standardised disease name.
     disease_name: String,
     /// The type of evidence supporting the disease-phenotype relationship.
-    evidence_type: Option<String>,
+    evidence_type: Label<HpoEvidenceCode>,
     /// The observed frequency of the phenotype in individuals with the disease.
     frequency: Option<String>,
     #[graphql(skip)]
     modifiers: Vec<String>,
     #[graphql(skip)]
     onset: Vec<String>,
+    #[graphql(skip)]
+    #[allow(dead_code)]
+    qualifier: Option<String>,
     /// Specifies if a phenotype is not observed in a given disease.
     qualifier_not: bool,
     /// References or citations supporting the evidence [bioregistry:pubmed].
     references: Vec<String>,
     /// Indicates if the association is specific to a biological sex.
-    sex: Option<String>,
+    sex: Option<Label<HpoSex>>,
     /// The data source from which the evidence was obtained.
-    resource: String,
+    resource: Label<HpoResource>,
 }
 
 /// Clinical signs and symptoms observed in diseases or phenotypes. Signs and symptoms are

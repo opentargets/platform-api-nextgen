@@ -23,6 +23,7 @@ pub mod hpo;
 pub mod interaction;
 pub mod interaction_resource;
 pub mod l2g_predictions;
+pub mod label;
 pub mod locus;
 pub mod mapping;
 pub mod mechanisms_of_action;

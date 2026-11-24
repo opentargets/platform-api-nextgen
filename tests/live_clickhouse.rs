@@ -1293,8 +1293,8 @@ fn expected_drug() -> serde_json::Value {
                                 "urls": ["https://example.org/moa"]}],
             },
             {
-                "mechanismOfAction": "live test mechanism", "actionType": null,
-                "targetName": null, "targets": [], "curation": "electronic", "references": [],
+                "mechanismOfAction": "live test mechanism", "actionType": "CROSS-LINKING AGENT",
+                "targetName": "LTGENE2", "targets": [], "curation": "electronic", "references": [],
             },
         ],
         "uniqueActionTypes": ["CROSS_LINKING_AGENT", "INHIBITOR"],
@@ -1310,8 +1310,8 @@ fn expected_drug() -> serde_json::Value {
             "efoId": "EFO_0000002", "efoIdForWarningClass": "EFO_0000003",
         },
         {
-            "toxicityClass": null, "chemblIds": [], "country": null, "description": null,
-            "id": null, "references": [], "warningType": "Withdrawn", "year": null,
+            "toxicityClass": null, "chemblIds": [], "country": "GB", "description": null,
+            "id": 43, "references": [], "warningType": "Withdrawn", "year": null,
             "efoTerm": null, "efoId": null, "efoIdForWarningClass": null,
         },
     ]});
@@ -1602,9 +1602,9 @@ fn expected_disease() -> serde_json::Value {
          "diseaseName": "live test disease", "evidenceType": "PCS", "frequency": "HP_9999998",
          "qualifierNot": true, "references": ["PMID:1"], "sex": "FEMALE", "resource": "HPO",
          "frequencyHPO": {"id": "HP_9999998", "description": null}},
-        {"aspect": null, "bioCuration": null, "diseaseFromSourceId": "ORPHA:1",
+        {"aspect": "P", "bioCuration": "HPO:curator[2021-01-01]", "diseaseFromSourceId": "ORPHA:1",
          "diseaseFromSource": "other source", "diseaseName": "other name",
-         "evidenceType": null, "frequency": null, "qualifierNot": false, "references": [],
+         "evidenceType": "IEA", "frequency": null, "qualifierNot": false, "references": [],
          "sex": null, "resource": "HPO", "frequencyHPO": null},
     ]);
     #[allow(unused_mut, reason = "extended on PPP only")]
@@ -1685,7 +1685,27 @@ fn expected_target_extras() -> serde_json::Value {
         "datedLiterature": {"count": 1, "rows": [{"pmid": "77777777"}]},
         "beforeLiterature": {"count": 0, "rows": []},
         "drugLiterature": {"count": 1, "rows": [{"pmid": "77777777"}]},
+        "mousePhenotypes": {"count": 1, "rows": [{
+            "targetInModel": "Ltgene1", "targetInModelMgiId": "MGI:9999999",
+            "targetInModelEnsemblId": "ENSMUSG99999999999", "modelPhenotypeId": "MP:9999999",
+            "modelPhenotypeLabel": "live test phenotype",
+            "biologicalModels": [
+                {"allelicComposition": "Ltgene1<tm1> hom", "geneticBackground": "C57BL/6N",
+                 "id": "MGI:9999998", "literature": ["99999999"]},
+                {"allelicComposition": "Ltgene1<tm2> het", "geneticBackground": "129S",
+                 "id": null, "literature": []},
+            ],
+            "modelPhenotypeClasses": [{"id": "MP:0005390", "label": "skeleton phenotype"}],
+        }]},
     })
+}
+
+/// `tests/live/fixtures/pharmacovigilance.jsonl` as the API serves it.
+fn expected_adverse_events() -> serde_json::Value {
+    json!({"count": 2, "rows": [
+        {"name": "live test event", "count": 7, "logLR": 12.5, "meddraCode": ""},
+        {"name": "other event", "count": 2, "logLR": 4.0, "meddraCode": ""},
+    ], "stats": {"criticalValue": 3.25}})
 }
 
 #[tokio::test]
@@ -1745,6 +1765,14 @@ async fn other_fixtures_decode_to_inserted_values() {
                 beforeLiterature: literatureOcurrences(endYear: 2000) {{ count rows {{ pmid }} }}
                 drugLiterature: literatureOcurrences(additionalIds: [\"CHEMBL9999999\"]) {{
                     count rows {{ pmid }} }}
+                mousePhenotypes {{ count rows {{ targetInModel targetInModelMgiId
+                    targetInModelEnsemblId modelPhenotypeId modelPhenotypeLabel
+                    biologicalModels {{ allelicComposition geneticBackground id literature }}
+                    modelPhenotypeClasses {{ id label }} }} }}
+            }}
+            drug(chemblId: \"CHEMBL9999999\") {{
+                adverseEvents {{ count rows {{ name count logLR meddraCode }}
+                    stats {{ criticalValue }} }}
             }}
         }}
         {STUDY_FIELDS}"
@@ -1801,4 +1829,6 @@ async fn other_fixtures_decode_to_inserted_values() {
     let expected = expected_target_extras();
     assert_fields("target", &data["target"], &expected);
     assert_eq!(data["target"], expected);
+
+    assert_eq!(data["drug"]["adverseEvents"], expected_adverse_events());
 }

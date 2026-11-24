@@ -1,0 +1,1 @@
+{"chembl_id":"CHEMBL9999999","adverse_events":[{"name":"live test event","count":7,"logLR":12.5,"critval":3.25,"meddraCode":""},{"name":"other event","count":2,"logLR":4.0,"critval":3.25,"meddraCode":""}],"criticalValue":3.25}

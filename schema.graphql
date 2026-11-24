@@ -7,13 +7,13 @@ all reports associated with the drugs with the same target.
 """
 type AdverseEvent {
 	"""
-	Number of reports mentioning drug and adverse event.
-	"""
-	count: Int!
-	"""
 	Meddra term on adverse event.
 	"""
 	name: String!
+	"""
+	Number of reports mentioning drug and adverse event.
+	"""
+	count: Int!
 	"""
 	Log-likelihood ratio.
 	"""
@@ -2751,17 +2751,17 @@ Blackbox and withdrawn information for drugs molecules included in ChEMBL databa
 """
 type DrugWarning {
 	"""
-	Classification of toxicity type associated with the drug.
-	"""
-	toxicityClass: String
-	"""
 	List of molecule identifiers associated with the warning.
 	"""
 	chemblIds: [String!]!
 	"""
+	Classification of toxicity type associated with the drug.
+	"""
+	toxicityClass: String
+	"""
 	Country where the warning was issued.
 	"""
-	country: String
+	country: String!
 	"""
 	Description of the drug adverse effect.
 	"""
@@ -2769,7 +2769,7 @@ type DrugWarning {
 	"""
 	Internal identifier for the drug warning record.
 	"""
-	id: Int
+	id: Int!
 	"""
 	List of sources supporting the warning information.
 	"""
@@ -7437,20 +7437,20 @@ type MechanismOfActionRow {
 	"""
 	Classification of how the drug interacts with its target (e.g., ACTIVATOR, INHIBITOR).
 	"""
-	actionType: String
+	actionType: String!
+	"""
+	Reference information supporting the mechanism of action.
+	"""
+	references: [Reference!]!
 	"""
 	Name of the target molecule.
 	"""
-	targetName: String
+	targetName: String!
 	"""
 	How the mechanism was curated, e.g. whether it was inferred from trial text or the
 	literature.
 	"""
 	curation: String!
-	"""
-	Reference information supporting the mechanism of action.
-	"""
-	references: [Reference!]!
 	"""
 	List of on-target (genes or proteins) involved in the drug or clinical candidate
 	mechanism of action.
@@ -7635,13 +7635,17 @@ Mouse phenotype information linking human targets to observed phenotypes in mous
 """
 type MousePhenotype {
 	"""
-	Container for all biological model-related attributes.
+	Name of the target gene as represented in the mouse model.
 	"""
-	biologicalModels: [BiologicalModels!]!
+	targetInModel: String!
 	"""
-	Container for phenotype class-related attributes.
+	MGI identifier for the target gene in the mouse model [bioregistry:mgi].
 	"""
-	modelPhenotypeClasses: [ModelPhenotypeClasses!]!
+	targetInModelMgiId: String!
+	"""
+	Ensembl identifier for the target gene in the mouse model.
+	"""
+	targetInModelEnsemblId: String!
 	"""
 	Identifier for the specific phenotype observed in the model [bioregistry:mp].
 	"""
@@ -7651,17 +7655,13 @@ type MousePhenotype {
 	"""
 	modelPhenotypeLabel: String!
 	"""
-	Name of the target gene as represented in the mouse model.
+	Container for all biological model-related attributes.
 	"""
-	targetInModel: String!
+	biologicalModels: [BiologicalModels!]!
 	"""
-	Ensembl identifier for the target gene in the mouse model.
+	Container for phenotype class-related attributes.
 	"""
-	targetInModelEnsemblId: String
-	"""
-	MGI identifier for the target gene in the mouse model [bioregistry:mgi].
-	"""
-	targetInModelMgiId: String!
+	modelPhenotypeClasses: [ModelPhenotypeClasses!]!
 }
 
 """
@@ -8007,11 +8007,11 @@ type PhenotypeEvidence {
 	"""
 	The category of biological information being provided (e.g., clinical, genetic, etc.).
 	"""
-	aspect: String
+	aspect: String!
 	"""
 	Indicates whether the evidence has been manually curated.
 	"""
-	bioCuration: String
+	bioCuration: String!
 	"""
 	Unique identifier for the disease from the original source.
 	"""
@@ -8027,7 +8027,7 @@ type PhenotypeEvidence {
 	"""
 	The type of evidence supporting the disease-phenotype relationship.
 	"""
-	evidenceType: String
+	evidenceType: String!
 	"""
 	The observed frequency of the phenotype in individuals with the disease.
 	"""
@@ -8489,13 +8489,13 @@ Reference information supporting the drug mechanisms of action.
 """
 type Reference {
 	"""
-	List of reference identifiers.
-	"""
-	ids: [String!]!
-	"""
 	Source of the reference (e.g., PubMed, FDA, package inserts).
 	"""
 	source: String!
+	"""
+	List of reference identifiers.
+	"""
+	ids: [String!]!
 	"""
 	List of URLs linking to the reference.
 	"""

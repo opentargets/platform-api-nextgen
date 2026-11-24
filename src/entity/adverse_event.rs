@@ -49,16 +49,16 @@ impl AdverseEventRow {
 #[derive(Debug, Clone, Deserialize, SimpleObject, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct AdverseEvent {
+    /// Meddra term on adverse event.
+    name: String,
     /// Number of reports mentioning drug and adverse event.
     count: u32,
+    /// Log-likelihood ratio.
+    log_l_r: f64,
     /// Critical value used to determine statistical significance of the association.
     #[graphql(skip)]
     #[allow(unused)]
     critval: f64,
-    /// Meddra term on adverse event.
-    name: String,
-    /// Log-likelihood ratio.
-    log_l_r: f64,
     /// 8 digit unique meddra identification number.
     meddra_code: String,
 }

@@ -36,29 +36,28 @@ pub struct ModelPhenotypeClasses {
     label: String,
 }
 
-// CHRSNAMEDTUPLE The fields in this should be reordered to something more sane.
 /// Mouse phenotype information linking human targets to observed phenotypes in mouse models.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct MousePhenotype {
-    /// Container for all biological model-related attributes.
-    biological_models: Vec<BiologicalModels>,
-    /// Container for phenotype class-related attributes.
-    model_phenotype_classes: Vec<ModelPhenotypeClasses>,
-    /// Identifier for the specific phenotype observed in the model [bioregistry:mp].
-    model_phenotype_id: String,
-    /// Human-readable label describing the observed phenotype.
-    model_phenotype_label: String,
+    /// Name of the target gene as represented in the mouse model.
+    target_in_model: String,
+    /// MGI identifier for the target gene in the mouse model [bioregistry:mgi].
+    target_in_model_mgi_id: String,
+    /// Ensembl identifier for the target gene in the mouse model.
+    target_in_model_ensembl_id: String,
     // CHRSNAMEDTUPLE Unused, but we must parse this until clickhouse-rs support named tuples.
     #[graphql(skip)]
     #[allow(unused)]
     target_from_source_id: String,
-    /// Name of the target gene as represented in the mouse model.
-    target_in_model: String,
-    /// Ensembl identifier for the target gene in the mouse model.
-    target_in_model_ensembl_id: Option<String>,
-    /// MGI identifier for the target gene in the mouse model [bioregistry:mgi].
-    target_in_model_mgi_id: String,
+    /// Identifier for the specific phenotype observed in the model [bioregistry:mp].
+    model_phenotype_id: String,
+    /// Human-readable label describing the observed phenotype.
+    model_phenotype_label: String,
+    /// Container for all biological model-related attributes.
+    biological_models: Vec<BiologicalModels>,
+    /// Container for phenotype class-related attributes.
+    model_phenotype_classes: Vec<ModelPhenotypeClasses>,
 }
 
 /// One row of the `mouse_phenotypes` table; wraps the `Array(Tuple(...))` column so that

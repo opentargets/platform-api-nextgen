@@ -13,7 +13,10 @@ use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::target::{Target, load_targets},
+    entity::{
+        label::Label,
+        target::{Target, load_targets},
+    },
     query::cache::{CachedLoader, entity_cache},
 };
 
@@ -305,12 +308,23 @@ pub enum MechanismTargetType {
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct Reference {
-    /// List of reference identifiers.
-    ids: Vec<String>,
     /// Source of the reference (e.g., PubMed, FDA, package inserts).
     source: String,
+    /// List of reference identifiers.
+    ids: Vec<String>,
     /// List of URLs linking to the reference.
     urls: Vec<String>,
+}
+
+/// How a mechanism of action was curated (`curation`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize_repr, IntoStaticStr, EnumIter)]
+#[repr(i8)]
+#[strum(serialize_all = "lowercase")]
+pub enum MechanismCuration {
+    /// Inferred by a language model from trial text or literature sentences.
+    Electronic = 1,
+    /// Curated by ChEMBL.
+    Manual = 2,
 }
 
 /// Collection of mechanisms of action for a drug molecule.
@@ -335,18 +349,18 @@ pub struct MechanismOfActionRow {
     /// Description of the mechanism of action.
     mechanism_of_action: String,
     /// Classification of how the drug interacts with its target (e.g., ACTIVATOR, INHIBITOR).
-    action_type: Option<String>,
+    action_type: Label<MechanismActionType>,
+    /// Reference information supporting the mechanism of action.
+    references: Vec<Reference>,
     /// Name of the target molecule.
-    target_name: Option<String>,
+    target_name: String,
     /// List of on-target (genes or proteins) involved in the drug or clinical candidate mechanism
     /// of action.
     #[graphql(skip)]
     targets: Vec<String>,
     /// How the mechanism was curated, e.g. whether it was inferred from trial text or the
     /// literature.
-    curation: String,
-    /// Reference information supporting the mechanism of action.
-    references: Vec<Reference>,
+    curation: Label<MechanismCuration>,
 }
 
 #[ComplexObject]

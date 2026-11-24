@@ -15,13 +15,15 @@ use crate::entity::{
         TrialOverallStatus, TrialPhase, TrialPrimaryPurpose, TrialStudyType,
     },
     credible_set::FineMappingMethod,
+    disease_hpo::{HpoAspect, HpoEvidenceCode, HpoResource, HpoSex},
     drug::DrugType,
+    drug_warning::DrugWarningType,
     enhancer_to_gene::{EnhancerToGeneDatasource, IntervalType},
     evidence::{
         Datatype, DirectionOnTarget, DirectionOnTrait, EuropePmcSection, TrialStopReasonCategory,
     },
     interaction::InteractionSourceDatabase,
-    mechanisms_of_action::{MechanismActionType, MechanismTargetType},
+    mechanisms_of_action::{MechanismActionType, MechanismCuration, MechanismTargetType},
     pharmacogenomics::{
         PharmacogenomicsCategory, PharmacogenomicsDatasource, PharmacogenomicsDatatype,
         PharmacogenomicsEvidenceLevel, VariantAnnotationEffectType,
@@ -241,6 +243,41 @@ pub fn bindings() -> Vec<EnumBinding> {
             MechanismTargetType,
             "mechanism_of_action",
             "uniqueTargetTypes"
+        ),
+        binding!(
+            MechanismActionType,
+            "mechanism_of_action",
+            "tupleElement(arrayJoin(rows), 'actionType')"
+        ),
+        binding!(
+            MechanismCuration,
+            "mechanism_of_action",
+            "tupleElement(arrayJoin(rows), 'curation')"
+        ),
+        binding!(
+            DrugWarningType,
+            "drug_warnings",
+            "tupleElement(arrayJoin(drugWarnings), 'warningType')"
+        ),
+        binding!(
+            HpoAspect,
+            "disease_hpo",
+            "tupleElement(arrayJoin(tupleElement(arrayJoin(phenotypes), 'evidence')), 'aspect')"
+        ),
+        binding!(
+            HpoEvidenceCode,
+            "disease_hpo",
+            "tupleElement(arrayJoin(tupleElement(arrayJoin(phenotypes), 'evidence')), 'evidenceType')"
+        ),
+        binding!(
+            HpoSex,
+            "disease_hpo",
+            "tupleElement(arrayJoin(tupleElement(arrayJoin(phenotypes), 'evidence')), 'sex')"
+        ),
+        binding!(
+            HpoResource,
+            "disease_hpo",
+            "tupleElement(arrayJoin(tupleElement(arrayJoin(phenotypes), 'evidence')), 'resource')"
         ),
         binding!(
             LdPopulation,
