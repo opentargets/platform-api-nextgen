@@ -27,7 +27,7 @@ use crate::{
         disease::Disease,
         evidence::{Evidence, EvidenceKey, load_evidences},
         gene_ontology::{GeneOntology, load_gene_ontology_one},
-        interaction::{Interaction, InteractionSourceDatabase, load_interaction_by_target_a},
+        interaction::{self as ti, InteractionSourceDatabase},
         mouse_phenotype::{MousePhenotype, load_mouse_phenotype_by_target},
         pharmacogenomics::{
             Pharmacogenomics, Search as PharmacogenomicsSearch,
@@ -833,17 +833,25 @@ impl Target {
     async fn interactions(
         &self,
         ctx: &Context<'_>,
-        #[graphql(desc = "Threshold similarity between 0 and 1.")] score_threshold: Option<f64>,
+        #[graphql(
+            validator(minimum = 0.0, maximum = 1.0),
+            desc = "Minimum interaction score, between 0 and 1. Interactions without a score \
+                    (Reactome, Signor) are always included."
+        )]
+        score_threshold: Option<f64>,
         #[graphql(desc = "Source database name.")] source_database: Option<
             InteractionSourceDatabase,
         >,
         #[graphql(default, desc = "Pagination for the interactions.")] page: Page,
-    ) -> async_graphql::Result<Paged<Interaction>> {
-        let interactions =
-            load_interaction_by_target_a(ctx, self.id.clone(), score_threshold, source_database)
-                .await?
-                .unwrap_or_default();
-        Ok(interactions.query().paginate(page))
+    ) -> async_graphql::Result<Paged<ti::Interaction>> {
+        let query_params = ti::QueryParams::new(
+            self.id.clone(),
+            score_threshold,
+            source_database,
+            page.index,
+            page.size,
+        );
+        ti::load_interactions(ctx, query_params).await
     }
 
     /// Association time series.
@@ -951,7 +959,7 @@ impl Target {
         entity_names: Option<Vec<String>>,
         #[graphql(
             desc = "Threshold similarity between 0 and 1",
-            validator(minimum = 0, maximum = 1)
+            validator(minimum = 0.0, maximum = 1.0)
         )]
         threshold: Option<f64>,
         #[graphql(default, desc = "Pagination for Similar Entities.")] page: Page,

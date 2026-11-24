@@ -145,7 +145,7 @@ impl EvidenceVariation {
 /// Sentences of a publication supporting the disease/target relationship.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
-struct EvidenceTextMiningSentence {
+pub struct EvidenceTextMiningSentence {
     /// End position of the disease label in sentence.
     d_end: u32,
     /// End position of the target label in the sentence.
