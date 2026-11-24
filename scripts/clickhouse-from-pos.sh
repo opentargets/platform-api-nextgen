@@ -5,7 +5,7 @@
 #
 # Creates database <product><YYMM> (YYMM from <pos-version>, e.g. 26.12.0rc17 -> platform2612)
 # from the pos image: the landing tables pos generates from the data models (`pos-ddl`), member
-# inserts and drops, and the serving scripts, run in the load step's `requires:` order as
+# inserts and drops, the declared tables and dictionaries (`tables:`), and the serving scripts, run in the load step's `requires:` order as
 # pos/tests/test_serving_sql.py does. Every table is empty, plus the marker table _live_test_marker that the fixture tests require.
 # Without a URL, starts clickhouse/clickhouse-server in docker (container clickhouse-pos-test,
 # http://localhost:8123) and replaces the database; with a URL, refuses an existing database.
@@ -81,10 +81,17 @@ from pos.clickhouse_ddl import ddl_for, members
 from pos.sql import split_statements
 from pos.tasks.clickhouse_load import member_drops, union_inserts
 
+try:
+    from pos.clickhouse_ddl import declared_sql
+except ImportError:  # images before declared tables
+    def declared_sql(entry, product):
+        return []
+
 product = sys.argv[1]
 step = yaml.safe_load(Path('config/config.yaml').read_text())['steps']['backend_clickhouse']
 entries = yaml.safe_load(Path('config/datasets.yaml').read_text())['clickhouse']
 tasks = {}
+after = {}  # an explode is done once all its children are
 for task in step:
     if product not in task.get('products', [product]):
         continue
@@ -92,9 +99,10 @@ for task in step:
         for child in task['do']:
             child = yaml.safe_load(yaml.safe_dump(child).replace('${each}', each))
             tasks[child['name']] = child | {'requires': task.get('requires', [])}
+            after.setdefault(task['name'], []).append(child['name'])
     if 'foreach' not in task:
         tasks[task['name']] = task
-order = TopologicalSorter({n: t.get('requires', []) for n, t in tasks.items()}).static_order()
+order = TopologicalSorter({n: t.get('requires', []) for n, t in tasks.items()} | after).static_order()
 statements = []
 for name in order:
     if 'dataset' not in tasks.get(name, {}):
@@ -104,6 +112,7 @@ for name in order:
     if 'models' in entry:
         loaded = members(entry['models'], product)
         statements += union_inserts(entry['table'], loaded) + member_drops(loaded)
+    statements += declared_sql(entry, product)
     for key in ('preload_script', 'postload_script'):
         if script := entry.get(key):
             statements += split_statements(Path(script).read_text())

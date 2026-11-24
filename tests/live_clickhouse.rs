@@ -137,6 +137,9 @@ async fn load_fixtures(ch: &ClickHouse) {
         .get_or_init(|| async {
             for path in files(&Path::new(LIVE).join("fixtures"), "jsonl") {
                 let table = path.file_stem().and_then(|s| s.to_str()).expect("table");
+                if cfg!(not(feature = "product-ppp")) && table == "otar_projects" {
+                    continue; // ppp-only table
+                }
                 insert_fixture(ch, table, &path).await;
             }
             // Before any query: the time series loader caches results process-wide.
