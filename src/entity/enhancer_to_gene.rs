@@ -7,7 +7,8 @@ use async_graphql::{
 use clickhouse::Row;
 use derive_more::From;
 use serde::Deserialize;
-use strum::EnumIter;
+use serde_repr::Deserialize_repr;
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
@@ -23,6 +24,60 @@ use crate::{
 };
 
 // ---- models ----
+
+/// Type of a regulatory region relative to the gene.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum IntervalType {
+    /// Within the gene body.
+    Genic = 1,
+    /// Between genes.
+    Intergenic = 2,
+    /// Promoter region.
+    Promoter = 3,
+    /// Enhancer region.
+    Enhancer = 4,
+    /// Within the gene, outside its exons.
+    Intragenic = 5,
+}
+
+/// Provider of enhancer-to-gene predictions.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+pub enum EnhancerToGeneDatasource {
+    /// ENCODE-rE2G predictions.
+    #[graphql(name = "E2G")]
+    #[strum(serialize = "E2G")]
+    E2g = 1,
+}
 
 ///Score from a specific datasource.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
@@ -56,7 +111,7 @@ pub struct EnhancerToGene {
     /// Identifier of the biosample defined by the datasource provider.
     biosample_from_source_id: Option<String>,
     /// Type of regulatory region (e.g., enhancer, promoter).
-    interval_type: String,
+    interval_type: IntervalType,
     /// Distance from the regulatory region to the transcription start site.
     distance_to_tss: i32,
     /// Combined score for the enhancer/promoter region to gene prediction.
@@ -64,7 +119,7 @@ pub struct EnhancerToGene {
     /// Scores from individual resources used in prediction.
     resource_score: Vec<ResourceScore>,
     /// Identifier of the data source providing the regulatory region to gene prediction.
-    datasource_id: String,
+    datasource_id: EnhancerToGeneDatasource,
     /// PubMed identifier for the study providing the evidence [bioregistry:pubmed].
     pmid: String,
     /// Identifier of the study providing the experimental data.
@@ -110,7 +165,8 @@ columns!(E2gCol {
     TargetApprovedSymbol => "targetApprovedSymbol" : Str,
     BiosampleId          => "biosampleId"          : Str,
     BiosampleName        => "biosampleDisplayName" : Str,
-    IntervalType         => "intervalType"         : Str,
+    // Text, so the sort stays alphabetical.
+    IntervalType         => "toString(intervalType)" : Str,
     StudyId              => "studyId"              : Str,
     DistanceToTss        => "distanceToTss"        : I64,
     // Both ends are inclusive.

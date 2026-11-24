@@ -28,16 +28,16 @@ pub struct OtarProject {
     /// OTAR project code identifier.
     otar_code: String,
     /// Status of the OTAR project.
-    status: Option<String>,
+    status: String,
     #[allow(clippy::struct_field_names)]
     /// Name of the OTAR project.
-    project_name: Option<String>,
-    /// Reference or citation for the OTAR project.
-    reference: String,
+    project_name: String,
     /// Whether the project integrates data in the Open Targets Partner Preview (PPP).
     #[graphql(name = "integratesInPPP")]
     #[serde(rename = "integrates_data_PPP")]
-    integrates_data_ppp: Option<bool>,
+    integrates_data_ppp: bool,
+    /// Reference or citation for the OTAR project.
+    reference: String,
 }
 
 // ---- loaders ----

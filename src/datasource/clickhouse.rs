@@ -1,10 +1,6 @@
 //! ClickHouse connector.
 
 use clickhouse::{Client, error::Result};
-use serde::{
-    Deserialize, Deserializer,
-    de::{DeserializeOwned, IntoDeserializer},
-};
 
 use crate::{config::Config, server::metric_utils};
 
@@ -52,33 +48,4 @@ impl ClickHouse {
     /// # Errors
     /// This function will return an error if the database is unreachable or unresponsive.
     pub async fn health(&self) -> Result<()> { self.0.query("SELECT 1").execute().await }
-}
-
-/// Decode a ClickHouse `String` column into a serde enum by name.
-///
-/// # Errors
-/// This function will return an error if the string does not match any variant of the enum.
-pub fn from_string<'de, D, T>(d: D) -> Result<T, D::Error>
-where
-    D: Deserializer<'de>,
-    T: DeserializeOwned,
-{
-    let s = String::deserialize(d)?;
-    T::deserialize(s.into_deserializer())
-}
-
-/// Decode a ClickHouse `String` column into `Option<T>`, mapping `""` to `None`.
-///
-/// # Errors
-/// This function will return an error if the string does not match any variant of the enum.
-pub fn from_nullable_string_opt<'de, D, T>(d: D) -> Result<Option<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: DeserializeOwned,
-{
-    match Option::<String>::deserialize(d)? {
-        None => Ok(None),
-        Some(s) if s.is_empty() => Ok(None),
-        Some(s) => T::deserialize(s.into_deserializer()).map(Some),
-    }
 }

@@ -98,15 +98,16 @@ pub struct PublicationLoader {
 
 const QUERY: &str = "
 WITH
-    (year, month) BETWEEN (?, ?) AND (?, ?) AS in_range
+    year IS NOT NULL AND month IS NOT NULL                      -- Undated publications are never listed or counted
+        AND (assumeNotNull(year), assumeNotNull(month)) BETWEEN (?, ?) AND (?, ?) AS in_range
 SELECT                                                          -- SECOND: Builds one row per LiteratureKey
     CAST(? AS UInt64) AS key,                                   -- Index of the LiteratureKey, to match results back to each request
     countIf(in_range) AS count,
-    min(year) AS earliestPubYear,
+    ifNull(min(year), 0) AS earliestPubYear,                    -- Over dated publications; 0 if none
     arraySlice(                                                                  -- 3.  Slice the array using 3a
         arrayReverseSort(                                                        -- 2.  Sort reverse using 1c
             (row, sort_key) -> sort_key,                                         -- 1c. Lambda for sorting (returns 1a)
-            groupArrayIf((pmid, pmcid, year, month, relevances), in_range),      -- 1b. Return tuple
+            groupArrayIf((pmid, pmcid, assumeNotNull(year), assumeNotNull(month), relevances), in_range),  -- 1b. Return tuple
             groupArrayIf((min_relevance, sum_relevance, year, month), in_range)  -- 1a. Sort tuple: min_relevance, sum_relevance, year, month
         ),
         ?, ?                                                    -- 3a. offset (index*size+1), size

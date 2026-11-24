@@ -3,6 +3,7 @@ use std::{collections::HashSet, f64::consts::PI, marker::PhantomData};
 use async_graphql::{ComplexObject, Context, Enum, InputObject, OutputType, SimpleObject};
 use clickhouse::Row;
 use serde::{Deserialize, Serialize};
+use serde_repr::Deserialize_repr;
 use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use tracing::instrument;
 
@@ -54,96 +55,108 @@ fn quoted_set<S: AsRef<str>>(items: &[S]) -> String {
 
 /// Represents a datasource for association scoring.
 #[derive(
-    Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash, Enum, EnumIter, IntoStaticStr,
+    Debug,
+    Clone,
+    Copy,
+    Serialize,
+    Deserialize_repr,
+    Eq,
+    PartialEq,
+    Hash,
+    Enum,
+    EnumIter,
+    IntoStaticStr,
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 #[graphql(rename_items = "snake_case")]
+// Decoded by its ClickHouse `datasourceId` Enum8 number; serialised by name for SQL binds.
+#[repr(i8)]
 pub enum Datasource {
     /// Clinical evidence linking a target/disease via a drug that targets the gene product and is
     /// indicated for the disease (approved or in development); inferred from clinical reports +
     /// drug MoA data.
     /// See <https://platform-docs.opentargets.org/evidence#clinical-precedence>.
-    ClinicalPrecedence,
+    ClinicalPrecedence = 1,
     /// Target-disease relationships from GWAS-significant signals, fine-mapped, colocalised against
     /// molQTL, and scored by the Locus-to-Gene (L2G) ML method; evidence is any credible set with
     /// L2G > 0.05.
     /// See <https://platform-docs.opentargets.org/evidence#gwas-associations>.
-    GwasCredibleSets,
+    GwasCredibleSets = 2,
     /// Gene–phenotype relationships observed in gene-level association tests using rare variant
     /// collapsing analyses.
     /// See <https://platform-docs.opentargets.org/evidence#gene-burden>.
-    GeneBurden,
+    GeneBurden = 3,
     /// Germline variant-phenotype relationships from ClinVar (NIH archive), the germline subset;
     /// each evidence captures a single RCV record.
     /// See <https://platform-docs.opentargets.org/evidence#clinvar>.
-    Eva,
+    Eva = 4,
     /// Gene-disease relationships from Genomics England PanelApp expert-reviewed gene panels.
     /// See <https://platform-docs.opentargets.org/evidence#genomics-england-gel-panelapp>.
-    GenomicsEngland,
+    GenomicsEngland = 5,
     /// Gene-disease relationships from Gene2Phenotype (G2P), literature-curated by expert clinical
     /// geneticist panels.
     /// See <https://platform-docs.opentargets.org/evidence#gene2phenotype>.
     #[serde(rename = "gene2phenotype")]
     #[strum(serialize = "gene2phenotype")]
     #[graphql(name = "gene2phenotype")]
-    Gene2Phenotype,
+    Gene2Phenotype = 6,
     /// UniProt-curated target-disease relationships from publications supporting a protein's
     /// involvement in disease, aggregated per evidence.
     /// See <https://platform-docs.opentargets.org/evidence#uniprot-literature>.
-    UniprotLiterature,
+    UniprotLiterature = 7,
     /// UniProt-curated variants known to alter protein function in disease, aggregated from
     /// supporting publications.
     /// See <https://platform-docs.opentargets.org/evidence#uniprot-curated-variants>.
-    UniprotVariants,
+    UniprotVariants = 8,
     /// Orphanet gene-disease associations for rare disorders of genetic origin, with relationship
     /// classification, mutation type, and supporting references.
     /// See <https://platform-docs.opentargets.org/evidence#orphanet>.
-    Orphanet,
+    Orphanet = 9,
     /// ClinGen gene-disease validity curation: evaluates the strength of evidence for a gene
     /// causing a disease, classified via a semi-quantitative framework.
     /// See <https://platform-docs.opentargets.org/evidence#clingen>.
-    Clingen,
+    Clingen = 10,
     /// Cancer Gene Census (CGC, part of COSMIC): curated genes with mutations causally implicated
     /// in cancer, aggregated per target-disease.
     /// See <https://platform-docs.opentargets.org/evidence#cancer-gene-census>.
-    CancerGeneCensus,
+    CancerGeneCensus = 11,
     /// IntOGen consensus cancer driver genes from harmonised tumour sequencing (PCAWG and others);
     /// each evidence is a significant driver in one cohort.
     /// See <https://platform-docs.opentargets.org/evidence#intogen>.
-    Intogen,
+    Intogen = 12,
     /// Somatic variant-phenotype relationships from ClinVar (NIH archive), the somatic subset; each
     /// evidence captures a single RCV record.
     /// See <https://platform-docs.opentargets.org/evidence#clinvar-somatic>.
-    EvaSomatic,
+    EvaSomatic = 13,
     /// Expert-curated cancer biomarkers of drug sensitivity, resistance, and toxicity from Cancer
     /// Genome Interpreter, by cancer type.
     /// See <https://platform-docs.opentargets.org/evidence#cancer-biomarkers>.
-    CancerBiomarkers,
+    CancerBiomarkers = 14,
     /// Target-disease evidence from genome-wide CRISPRi/a/KO functional genomics screens in human
     /// brain cell types (CRISPRbrain), linking cell types to diseases.
     /// See <https://platform-docs.opentargets.org/evidence#crispr-screens>.
-    CrisprScreen,
+    CrisprScreen = 15,
     /// Cancer target dependencies from whole-genome CRISPR-Cas9 fitness screens in cell lines
     /// (Project Score, Sanger), mapped to tumours; targets scoring ≥ 36.0.
     /// See <https://platform-docs.opentargets.org/evidence#project-score>.
-    Crispr,
+    Crispr = 16,
     /// Reactome-curated reaction pathways affected by disease, linking target to disease via
     /// protein-coding mutation or altered expression.
     /// See <https://platform-docs.opentargets.org/evidence#reactome>.
-    Reactome,
+    Reactome = 17,
     /// Target-disease co-occurrences mined from Europe PMC literature via deep-learning NER,
     /// aggregated per publication with a confidence assessment.
     /// See <https://platform-docs.opentargets.org/evidence#europe-pmc>.
-    Europepmc,
+    Europepmc = 18,
     /// Target-disease evidence from differentially expressed genes (disease vs control) in EMBL-EBI
     /// Expression Atlas; each study contrast is one evidence.
     /// See <https://platform-docs.opentargets.org/evidence#expression-atlas>.
-    ExpressionAtlas,
+    ExpressionAtlas = 19,
     /// Target-disease evidence from mouse knockout genotype-phenotype associations (IMPC), scored
     /// by human-mouse phenotypic similarity (PhenoDigm).
     /// See <https://platform-docs.opentargets.org/evidence#impc>.
-    Impc,
+    Impc = 20,
     /// Pre-publication orthogonal validation of primary project target-disease evidence performed
     /// by the Open Targets Validation Lab.
     ///
@@ -151,12 +164,12 @@ pub enum Datasource {
     ///
     /// See <https://home.opentargets.org/OTAR2059>.
     #[cfg(feature = "product-ppp")]
-    OtCrisprValidation,
+    OtCrisprValidation = 23,
     /// Pre-publication target-disease evidence derived from Open Targets CRISPR screenings.
     ///
     /// **PPP-Only data source**.
     #[cfg(feature = "product-ppp")]
-    OtCrispr,
+    OtCrispr = 22,
     /// Target-disease evidence derived from dual CRISPR screenings performed in cancer cell
     /// lines.
     ///
@@ -164,7 +177,7 @@ pub enum Datasource {
     ///
     /// See <https://home.opentargets.org/OTAR2062>.
     #[cfg(feature = "product-ppp")]
-    Encore,
+    Encore = 21,
 }
 
 impl AsRef<str> for Datasource {
@@ -376,7 +389,7 @@ impl AssociationSort {
 #[derive(Debug, Clone, SimpleObject)]
 pub struct Score {
     /// Identifier of the Datasource (e.g., `impc`, `chembl`).
-    id: String,
+    id: Datasource,
     /// Association score for the Datasource. Scores are normalized to a range of 0-1. The higher
     /// the score, the stronger the association.
     score: f64,
@@ -418,7 +431,7 @@ struct AssociationRow {
     #[serde(rename = "B")]
     id: String,
     score: f64,
-    datasource_scores: Vec<(String, f64)>,
+    datasource_scores: Vec<(Datasource, f64)>,
     #[cfg(feature = "product-ppp")]
     novelty: Option<f64>,
     total: u64,
@@ -428,7 +441,7 @@ impl AssociationRow {
     #[instrument(skip_all, level = "trace", fields(id = %self.id, score = %self.score))]
     // Converts an internal `AssociationRow` into a `Association`.
     fn into_association<T: OutputType + 'static>(self) -> Association<T> {
-        let map = |v: Vec<(String, f64)>| {
+        let map = |v: Vec<(Datasource, f64)>| {
             v.into_iter()
                 .map(|(id, score)| Score { id, score })
                 .collect()
@@ -701,5 +714,69 @@ impl Association<Target> {
     /// Associated target entity.
     async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
         load_target(ctx, self.id.clone()).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::de::{IntoDeserializer, value::Error};
+
+    use super::*;
+
+    fn decode(n: i8) -> Result<Datasource, Error> { Datasource::deserialize(n.into_deserializer()) }
+
+    #[test]
+    fn datasource_iter_order_is_unchanged() {
+        #[allow(unused_mut, reason = "extended on PPP only")]
+        let mut expected = vec![
+            Datasource::ClinicalPrecedence,
+            Datasource::GwasCredibleSets,
+            Datasource::GeneBurden,
+            Datasource::Eva,
+            Datasource::GenomicsEngland,
+            Datasource::Gene2Phenotype,
+            Datasource::UniprotLiterature,
+            Datasource::UniprotVariants,
+            Datasource::Orphanet,
+            Datasource::Clingen,
+            Datasource::CancerGeneCensus,
+            Datasource::Intogen,
+            Datasource::EvaSomatic,
+            Datasource::CancerBiomarkers,
+            Datasource::CrisprScreen,
+            Datasource::Crispr,
+            Datasource::Reactome,
+            Datasource::Europepmc,
+            Datasource::ExpressionAtlas,
+            Datasource::Impc,
+        ];
+        #[cfg(feature = "product-ppp")]
+        expected.extend([
+            Datasource::OtCrisprValidation,
+            Datasource::OtCrispr,
+            Datasource::Encore,
+        ]);
+        assert_eq!(Datasource::iter().collect::<Vec<_>>(), expected);
+    }
+
+    #[test]
+    fn datasource_decodes_by_enum8_number() {
+        assert_eq!(decode(4), Ok(Datasource::Eva));
+        assert_eq!(decode(20), Ok(Datasource::Impc));
+        assert!(decode(99).is_err());
+    }
+
+    #[cfg(feature = "product-ppp")]
+    #[test]
+    fn ppp_datasources_decode_by_enum8_number() {
+        assert_eq!(decode(21), Ok(Datasource::Encore));
+        assert_eq!(decode(22), Ok(Datasource::OtCrispr));
+        assert_eq!(decode(23), Ok(Datasource::OtCrisprValidation));
+    }
+
+    #[cfg(not(feature = "product-ppp"))]
+    #[test]
+    fn ppp_datasources_do_not_decode_on_platform() {
+        assert!(decode(21).is_err());
     }
 }

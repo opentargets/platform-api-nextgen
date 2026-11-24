@@ -96,12 +96,12 @@ columns!(EvidenceGwasCredibleSetsCol {
     CredibleSetId          => "credibleSetId"          : Str,
     LeadVariantId          => "leadVariantId"          : Str,
     // Enum8 in ClickHouse, ordered by its numeric value.
-    LeadChromosome         => "leadChromosome"         : I64,
+    LeadChromosome         => "leadChromosome"         : Enum,
     LeadPosition           => "leadPosition"           : I64,
     PValueMantissa         => "pValueMantissa"         : F64,
     PValueExponent         => "pValueExponent"         : I64,
     Beta                   => "beta"                   : F64,
-    FineMappingMethod      => "fineMappingMethod"      : Str,
+    FineMappingMethod      => "fineMappingMethod"      : Enum,
     // Level from 0 (unknown) to 4 (best).
     Confidence             => "confidence"             : I64,
     StudyId                => "studyId"                : Str,

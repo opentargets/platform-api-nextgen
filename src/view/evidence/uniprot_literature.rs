@@ -48,7 +48,7 @@ pub struct EvidenceUniprotLiterature {
     /// Approved symbol of the target. Empty if the target isn't found.
     target_approved_symbol: String,
     /// Reported protein: the `UniProt` accession of the target in the source.
-    target_from_source_id: Option<String>,
+    target_from_source_id: String,
     /// Identifier of the study generating the data.
     study_id: Option<String>,
     /// Confidence of the disease/target relationship reported by `UniProt`.

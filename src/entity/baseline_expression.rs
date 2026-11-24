@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
 use async_graphql::{
-    ComplexObject, Context, SimpleObject,
+    ComplexObject, Context, Enum, SimpleObject,
     dataloader::{DataLoader, Loader},
 };
 use clickhouse::Row;
 use derive_more::From;
 use serde::Deserialize;
+use serde_repr::Deserialize_repr;
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
@@ -15,6 +17,72 @@ use crate::{
 };
 
 // ---- models ----
+
+/// Origin of baseline expression data.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+pub enum BaselineExpressionDatasource {
+    /// Database of Immune Cell Expression.
+    #[graphql(name = "DICE")]
+    #[strum(serialize = "DICE")]
+    Dice = 1,
+    /// PRIDE proteomics database.
+    #[graphql(name = "PRIDE")]
+    #[strum(serialize = "PRIDE")]
+    Pride = 2,
+    /// Genotype-Tissue Expression project.
+    #[graphql(name = "gtex")]
+    #[strum(serialize = "gtex")]
+    Gtex = 3,
+    /// Tabula Sapiens single-cell atlas.
+    #[graphql(name = "tabula_sapiens")]
+    #[strum(serialize = "tabula_sapiens")]
+    TabulaSapiens = 4,
+}
+
+/// Type of baseline expression data.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+pub enum BaselineExpressionDatatype {
+    /// Bulk RNA sequencing.
+    #[graphql(name = "bulk_rna_seq")]
+    #[strum(serialize = "bulk rna-seq")]
+    BulkRnaSeq = 1,
+    /// Mass spectrometry proteomics.
+    #[graphql(name = "mass_spectrometry_proteomics")]
+    #[strum(serialize = "mass-spectrometry proteomics")]
+    MassSpectrometryProteomics = 2,
+    /// Single-cell RNA sequencing.
+    #[graphql(name = "scrna_seq")]
+    #[strum(serialize = "scrna-seq")]
+    ScrnaSeq = 3,
+}
 
 /// Aggregated expression data generated from RNA-seq and mass spectrometry proteomic data.
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
@@ -53,9 +121,9 @@ pub struct BaselineExpression {
     /// Measure of how specific expression is to a biosample.
     specificity_score: Option<f64>,
     /// Origin of expression data.
-    datasource_id: String,
+    datasource_id: BaselineExpressionDatasource,
     /// Type of expression data.
-    datatype_id: String,
+    datatype_id: BaselineExpressionDatatype,
     /// Unit for the target expression.
     unit: String,
     /// Quality control flags or notes for baseline expression.
@@ -107,7 +175,27 @@ impl Loader<(String, Page)> for BaselineExpressionLoader {
             FROM filtered
         ) as count,
         paged AS (
-            SELECT *
+            -- In `BaselineExpression` order: rows are decoded by position.
+            SELECT
+                targetId,
+                targetFromSourceId,
+                tissueBiosampleId,
+                tissueBiosampleParentId,
+                tissueBiosampleFromSource,
+                celltypeBiosampleId,
+                celltypeBiosampleParentId,
+                celltypeBiosampleFromSource,
+                min,
+                q1,
+                median,
+                q3,
+                max,
+                distribution_score AS distributionScore,
+                specificity_score AS specificityScore,
+                datasourceId,
+                datatypeId,
+                unit,
+                qualityControls
             FROM filtered
             LIMIT q_limit OFFSET q_offset
         )

@@ -27,7 +27,7 @@
           'APPROVAL',
           'PHASE_4'
         ],
-        ci.maxClinicalStage
+        ifNull(toString(ci.maxClinicalStage), '')
       )
     ) AS maxClinicalStageRank
   FROM

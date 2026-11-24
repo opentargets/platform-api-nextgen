@@ -14,6 +14,7 @@ use strum::EnumIter;
 use super::EvidenceScope;
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::evidence::{DirectionOnTarget, DirectionOnTrait},
     query::{
         paginate::Paged,
         sort::{Sort, SortDirection},
@@ -47,15 +48,15 @@ pub struct EvidenceGene2Phenotype {
     /// Approved symbol of the target. Empty if the target isn't found.
     target_approved_symbol: String,
     /// Target ID in resource of origin.
-    target_from_source_id: Option<String>,
+    target_from_source_id: String,
     /// Sequence Ontology identifier of the functional consequence.
     variant_functional_consequence_id: Option<String>,
     /// Sequence Ontology label of the functional consequence.
     variant_functional_consequence_label: Option<String>,
     /// Gain or loss of function effect of the evidence on the target.
-    direction_on_target: Option<String>,
+    direction_on_target: Option<DirectionOnTarget>,
     /// Predicted direction of effect on the trait.
-    direction_on_trait: Option<String>,
+    direction_on_trait: Option<DirectionOnTrait>,
     /// Inheritance patterns.
     allelic_requirements: Vec<String>,
     /// Gene2Phenotype panels the relationship is curated in, e.g. `DD; Ear`.

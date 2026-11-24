@@ -1,0 +1,2 @@
+{"id":"live-test-ci","drugId":"CHEMBL9999999","diseaseId":"EFO_9999999","maxClinicalStage":"PHASE_1_2","clinicalReportIds":["live-test-clinical-report","live-test-clinical-report-null"]}
+{"id":"live-test-ci-unnamed","drugId":"CHEMBL9999999","diseaseId":"EFO_9999990","maxClinicalStage":"PHASE_1","clinicalReportIds":[]}

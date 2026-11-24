@@ -8,7 +8,14 @@ use clickhouse::Row;
 use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
+use serde_repr::Deserialize_repr;
+use strum::{EnumIter, IntoStaticStr};
 
+#[cfg(feature = "product-ppp")]
+use crate::entity::association_timeseries_ppp::{
+    AggregationType, AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
+    load_association_timeseries,
+};
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
@@ -16,10 +23,6 @@ use crate::{
             AssociationArguments, AssociationSort, Datasource, DatasourcePolicyOverride,
             DiseaseAssociation, EntityWithAssociations, TARGET_INDIRECT_WEIGHT_DEFAULT,
             load_associations,
-        },
-        association_timeseries_ppp::{
-            AggregationType, AssociationTimeseries, AssociationTimeseriesArguments, TimeseriesKey,
-            load_association_timeseries,
         },
         baseline_expression::{BaselineExpression, load_baseline_expression_by_target},
         clinical_target::{self, ClinicalTarget, load_clinical_targets_from_target},
@@ -37,6 +40,7 @@ use crate::{
         similar_entity::{SimilarEntityArguments, Similarity, load_similar_entities},
         target_essentiality::{DepMapEssentiality, load_target_essentiality_by_target},
         target_prioritisation::{TargetPrioritisations, load_target_prioritisations},
+        variant::Chromosome,
     },
     query::{
         Entity, QueryExt,
@@ -64,6 +68,187 @@ pub enum Strand {
     Unknown,
 }
 
+/// Gene Ontology evidence code.
+#[derive(
+    Debug, Clone, Copy, Hash, Eq, PartialEq, Enum, Deserialize_repr, IntoStaticStr, EnumIter,
+)]
+#[repr(i8)]
+#[strum(serialize_all = "UPPERCASE")]
+pub enum GoEvidenceCode {
+    /// Inferred from Experiment.
+    Exp = 1,
+    /// Inferred from Direct Assay.
+    Ida = 2,
+    /// Inferred from Physical Interaction.
+    Ipi = 3,
+    /// Inferred from Mutant Phenotype.
+    Imp = 4,
+    /// Inferred from Genetic Interaction.
+    Igi = 5,
+    /// Inferred from Expression Pattern.
+    Iep = 6,
+    /// Inferred from High Throughput Experiment.
+    Htp = 7,
+    /// Inferred from High Throughput Direct Assay.
+    Hda = 8,
+    /// Inferred from High Throughput Mutant Phenotype.
+    Hmp = 9,
+    /// Inferred from High Throughput Genetic Interaction.
+    Hgi = 10,
+    /// Inferred from High Throughput Expression Pattern.
+    Hep = 11,
+    /// Inferred from Biological aspect of Ancestor.
+    Iba = 12,
+    /// Inferred from Biological aspect of Descendant.
+    Ibd = 13,
+    /// Inferred from Key Residues.
+    Ikr = 14,
+    /// Inferred from Rapid Divergence.
+    Ird = 15,
+    /// Inferred from Sequence or structural Similarity.
+    Iss = 16,
+    /// Inferred from Sequence Orthology.
+    Iso = 17,
+    /// Inferred from Sequence Alignment.
+    Isa = 18,
+    /// Inferred from Sequence Model.
+    Ism = 19,
+    /// Inferred from Genomic Context.
+    Igc = 20,
+    /// Inferred from Reviewed Computational Analysis.
+    Rca = 21,
+    /// Traceable Author Statement.
+    Tas = 22,
+    /// Non-traceable Author Statement.
+    Nas = 23,
+    /// Inferred by Curator.
+    Ic = 24,
+    /// No biological Data available.
+    Nd = 25,
+    /// Inferred from Electronic Annotation.
+    Iea = 26,
+}
+
+/// Gene Ontology aspect.
+#[derive(
+    Debug, Clone, Copy, Hash, Eq, PartialEq, Enum, Deserialize_repr, IntoStaticStr, EnumIter,
+)]
+#[repr(i8)]
+pub enum GoAspect {
+    /// Biological process.
+    P = 1,
+    /// Molecular function.
+    F = 2,
+    /// Cellular component.
+    C = 3,
+}
+
+/// Type of GnomAD constraint.
+#[derive(
+    Debug, Clone, Copy, Hash, Eq, PartialEq, Enum, Deserialize_repr, IntoStaticStr, EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum ConstraintType {
+    /// Loss-of-function variants.
+    Lof = 1,
+    /// Missense variants.
+    Mis = 2,
+    /// Synonymous variants.
+    Syn = 3,
+}
+
+/// Ensembl Compara homology type.
+#[derive(
+    Debug, Clone, Copy, Hash, Eq, PartialEq, Enum, Deserialize_repr, IntoStaticStr, EnumIter,
+)]
+#[repr(i8)]
+pub enum HomologyType {
+    /// One-to-one ortholog.
+    #[graphql(name = "ortholog_one2one")]
+    #[strum(serialize = "ortholog_one2one")]
+    OrthologOne2One = 1,
+    /// One-to-many ortholog.
+    #[graphql(name = "ortholog_one2many")]
+    #[strum(serialize = "ortholog_one2many")]
+    OrthologOne2Many = 2,
+    /// Many-to-many ortholog.
+    #[graphql(name = "ortholog_many2many")]
+    #[strum(serialize = "ortholog_many2many")]
+    OrthologMany2Many = 3,
+    /// Paralog within the same species.
+    #[graphql(name = "within_species_paralog")]
+    #[strum(serialize = "within_species_paralog")]
+    WithinSpeciesParalog = 4,
+    /// Other paralog.
+    #[graphql(name = "other_paralog")]
+    #[strum(serialize = "other_paralog")]
+    OtherParalog = 5,
+    /// Gene split.
+    #[graphql(name = "gene_split")]
+    #[strum(serialize = "gene_split")]
+    GeneSplit = 6,
+    /// Paralog between species.
+    #[graphql(name = "between_species_paralog")]
+    #[strum(serialize = "between_species_paralog")]
+    BetweenSpeciesParalog = 7,
+    /// Alternative allele.
+    #[graphql(name = "alt_allele")]
+    #[strum(serialize = "alt_allele")]
+    AltAllele = 8,
+    /// One-to-one homoeolog.
+    #[graphql(name = "homoeolog_one2one")]
+    #[strum(serialize = "homoeolog_one2one")]
+    HomoeologOne2One = 9,
+    /// One-to-many homoeolog.
+    #[graphql(name = "homoeolog_one2many")]
+    #[strum(serialize = "homoeolog_one2many")]
+    HomoeologOne2Many = 10,
+    /// Many-to-many homoeolog.
+    #[graphql(name = "homoeolog_many2many")]
+    #[strum(serialize = "homoeolog_many2many")]
+    HomoeologMany2Many = 11,
+}
+
+/// Therapeutic modality of a tractability assessment.
+#[derive(
+    Debug, Clone, Copy, Hash, Eq, PartialEq, Enum, Deserialize_repr, IntoStaticStr, EnumIter,
+)]
+#[repr(i8)]
+#[strum(serialize_all = "UPPERCASE")]
+pub enum TractabilityModality {
+    /// Small molecule.
+    Sm = 1,
+    /// Antibody.
+    Ab = 2,
+    /// PROTAC.
+    Pr = 3,
+    /// Other clinical modality.
+    Oc = 4,
+}
+
+/// Type of safety study.
+#[derive(
+    Debug, Clone, Copy, Hash, Eq, PartialEq, Enum, Deserialize_repr, IntoStaticStr, EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "snake_case")]
+pub enum SafetyStudyType {
+    /// Biochemical assay.
+    #[strum(serialize = "biochemical")]
+    Biochemical = 1,
+    /// Cell-based assay.
+    #[strum(serialize = "cell-based")]
+    CellBased = 2,
+    /// Clinical study.
+    #[strum(serialize = "clinical")]
+    Clinical = 3,
+    /// Preclinical study.
+    #[strum(serialize = "preclinical")]
+    Preclinical = 4,
+}
+
 /// The Ensembl canonical transcript of the target gene.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
@@ -72,11 +257,11 @@ pub struct CanonicalTranscript {
     /// The Ensembl transcript identifier for the canonical transcript.
     id: String,
     /// Chromosome location of the canonical transcript.
-    chromosome: String,
+    chromosome: Chromosome,
     /// Genomic start position of the canonical transcript.
-    start: i32,
+    start: u32,
     /// Genomic end position of the canonical transcript.
-    end: i32,
+    end: u32,
     /// Strand orientation of the canonical transcript.
     #[graphql(skip)]
     strand: i8,
@@ -109,28 +294,28 @@ pub struct URL {
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct ChemicalProbe {
+    /// Ensembl gene ID of the target for the chemical probe.
+    target_from_source_id: String,
     /// Unique identifier for the chemical probe.
     id: String,
-    /// Whether the chemical probe serves as a control.
-    control: Option<String>,
+    /// Probe identifier from the source, used to cross-reference drug information.
+    drug_from_source_id: String,
     /// Drug ID associated with the chemical probe.
     drug_id: Option<String>,
-    /// Probe identifier from the source, used to cross-reference drug information.
-    drug_from_source_id: Option<String>,
     /// Mechanism of action of the chemical probe.
     mechanism_of_action: Vec<String>,
-    /// Indicates if the chemical probe is high quality.
-    is_high_quality: bool,
     /// Origin of the chemical probe.
     origin: Vec<String>,
+    /// Whether the chemical probe serves as a control.
+    control: Option<String>,
+    /// Indicates if the chemical probe is high quality.
+    is_high_quality: bool,
     /// Score for chemical probes related to druggability.
-    probes_drugs_score: Option<f64>,
+    probes_drugs_score: f64,
     /// Score indicating chemical probe activity in cells.
     score_in_cells: Option<f64>,
     /// Score indicating chemical probe activity in organisms.
     score_in_organisms: Option<f64>,
-    /// Ensembl gene ID of the target for the chemical probe.
-    target_from_source_id: String,
     /// URLs linking to more information about the chemical probe.
     urls: Vec<URL>,
 }
@@ -152,7 +337,9 @@ pub struct DBXrefs {
 pub struct Constraint {
     /// Type of constraint applied to the target.
     #[allow(clippy::struct_field_names)]
-    constraint_type: String,
+    constraint_type: ConstraintType,
+    /// Constraint score indicating gene intolerance.
+    score: Option<f64>,
     /// Expected constraint score.
     exp: Option<f64>,
     /// Observed constraint score.
@@ -163,16 +350,14 @@ pub struct Constraint {
     oe_lower: Option<f64>,
     /// Upper bound of the OE constraint score.
     oe_upper: Option<f64>,
-    /// Constraint score indicating gene intolerance.
-    score: Option<f64>,
+    /// Upper rank classification for every coding gene assessed by GnomAD going from more
+    /// constrained to less constrained.
+    upper_rank: Option<u32>,
     /// Upper bin classification going from more constrained to less constrained.
     upper_bin: Option<u32>,
     /// Interpretable classification of constraint based on 6 bins. [GnomAD labels: 0: `very high`,
     /// 1: `high`, 2: `medium`, 3: `low`, 4: `very low`, 5: `very low`].
     upper_bin6: Option<u32>,
-    /// Upper rank classification for every coding gene assessed by GnomAD going from more
-    /// constrained to less constrained.
-    upper_rank: Option<u32>,
 }
 
 /// Genomic location information of the target gene.
@@ -181,7 +366,7 @@ pub struct Constraint {
 #[graphql(complex)]
 pub struct GenomicLocation {
     /// Chromosome on which the target is located.
-    chromosome: String,
+    chromosome: Chromosome,
     /// Genomic start position of the target gene.
     start: u32,
     /// Genomic end position of the target gene.
@@ -211,73 +396,79 @@ pub struct GeneOntologyAnnotation {
     #[graphql(visible = false)]
     /// Gene ontology term identifier [bioregistry:go].
     id: String, //TODO: replace with loader from GeneOntologyTerm
-    /// Type of the GO annotation: molecular function (F), biological process (P) and cellular
-    /// localisation (C).
-    aspect: String,
-    /// Evidence supporting the GO annotation.
-    evidence: String,
-    /// Gene product associated with the GO annotation [bioregistry:uniprot].
-    gene_product: String,
     /// Source database and identifier where the ontology term was sourced from.
     source: String,
+    /// Evidence supporting the GO annotation.
+    evidence: GoEvidenceCode,
+    /// Type of the GO annotation: molecular function (F), biological process (P) and cellular
+    /// localisation (C).
+    aspect: GoAspect,
+    /// Gene product associated with the GO annotation [bioregistry:uniprot].
+    gene_product: String,
+    #[graphql(skip)]
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    eco_id: Option<String>,
 }
 
 /// Cancer hallmarks associated with the target gene.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct CancerHallmarks {
+    /// PubMed ID of the supporting literature for the cancer hallmark [bioregistry:pubmed].
+    pmid: u32,
     /// Description of the cancer hallmark.
     description: String,
     /// Impact of the cancer hallmark on the target.
     impact: Option<String>,
     /// Label associated with the cancer hallmark.
     label: String,
-    /// PubMed ID of the supporting literature for the cancer hallmark [bioregistry:pubmed].
-    pmid: u32,
 }
 
 /// Attributes of the hallmark annotation.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct Attributes {
-    /// Name of the hallmark attribute.
-    name: String,
-    /// Description of the hallmark attribute.
-    description: String,
     /// PubMed ID of the supporting literature for the hallmark attribute [bioregistry:pubmed].
     pmid: Option<u32>,
+    /// Description of the hallmark attribute.
+    description: String,
+    /// Name of the hallmark attribute.
+    name: String,
 }
 
 /// Hallmarks related to the target gene sourced from COSMIC.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct Hallmark {
-    /// Cancer hallmarks associated with the target gene.
-    cancer_hallmarks: Vec<CancerHallmarks>,
     /// Attributes of the hallmark annotation.
     attributes: Vec<Attributes>,
+    /// Cancer hallmarks associated with the target gene.
+    cancer_hallmarks: Vec<CancerHallmarks>,
 }
 
 /// Homologues of the target gene in other species according to Ensembl Compara.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct Homologue {
-    /// Type of homology relationship.
-    homology_type: String,
-    /// Percentage identity of the query gene in the homologue.
-    query_percentage_identity: f64,
     /// Species ID for the homologue.
     species_id: String,
     /// Species name for the homologue.
     species_name: String,
+    /// Type of homology relationship.
+    homology_type: HomologyType,
     /// Gene ID of the homologue.
     target_gene_id: String,
+    /// Indicates if the homology is high confidence according to Ensembl Compara.
+    is_high_confidence: Option<bool>,
     /// Gene symbol of the homologous target.
     target_gene_symbol: String,
+    /// Percentage identity of the query gene in the homologue.
+    query_percentage_identity: f64,
     /// Percentage identity of the homologue in the query gene.
     target_percentage_identity: f64,
-    /// Indicates if the homology is high confidence according to Ensembl Compara.
-    is_high_confidence: Option<String>,
+    #[graphql(skip)]
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    priority: i32,
 }
 
 /// Pathway metadata from Reactome pathway database.
@@ -285,10 +476,10 @@ pub struct Homologue {
 #[serde(rename_all = "camelCase")]
 #[graphql(name = "ReactomePathway")]
 pub struct Pathways {
-    /// Reactome pathway name.
-    pathway: String,
     /// Reactome pathway identifier [bioregistry:reactome].
     pathway_id: String,
+    /// Reactome pathway name.
+    pathway: String,
     top_level_term: String,
 }
 
@@ -332,29 +523,29 @@ pub struct SafetyEffects {
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct SafetyStudies {
-    /// Name of the safety study.
-    name: Option<String>,
     /// Description of the safety study.
     description: Option<String>,
+    /// Name of the safety study.
+    name: Option<String>,
     /// Type of safety study.
     #[serde(rename = "type")]
-    r#type: Option<String>,
+    r#type: Option<SafetyStudyType>,
 }
 
 /// Safety liabilities associated with the target.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct SafetyLiability {
+    /// Safety event associated with the target.
+    event: String,
+    /// Unique identifier for the safety event.
+    event_id: Option<String>,
+    /// Effects reported for the safety event.
+    effects: Vec<SafetyEffects>,
     /// Biosamples used in safety assessments.
     biosamples: Vec<SafetyBiosamples>,
     /// Data source reporting the safety liability.
     datasource: String,
-    /// Effects reported for the safety event.
-    effects: Vec<SafetyEffects>,
-    /// Safety event associated with the target.
-    event: Option<String>,
-    /// Unique identifier for the safety event.
-    event_id: Option<String>,
     /// Literature references for the safety liability.
     literature: Option<String>,
     /// URL linking to more details on safety liabilities.
@@ -406,11 +597,11 @@ pub struct TargetClass {
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
 pub struct Tractability {
+    /// Modality of the tractability assessment.
+    modality: TractabilityModality,
     #[graphql(name = "label")]
     /// Tractability category label.
     id: String,
-    /// Modality of the tractability assessment.
-    modality: String,
     /// Tractability value assigned to the target (true indicates tractable).
     value: bool,
 }
@@ -424,8 +615,6 @@ pub struct Transcript {
     transcript_id: String,
     /// Biotype classification of the transcript.
     biotype: String,
-    /// Whether this is the Ensembl canonical transcript.
-    is_ensembl_canonical: Option<bool>,
     /// UniProt accession mapped to the transcript.
     uniprot_id: Option<String>,
     /// Whether the UniProt entry is reviewed (Swiss-Prot).
@@ -436,6 +625,8 @@ pub struct Transcript {
     alphafold_id: Option<String>,
     /// UniProt isoform identifier.
     uniprot_isoform_id: Option<String>,
+    /// Whether this is the Ensembl canonical transcript.
+    is_ensembl_canonical: bool,
 }
 
 /// Core annotation for drug targets (gene/proteins). Targets are defined based on EMBL-EBI Ensembl
@@ -819,9 +1010,7 @@ impl Target {
     /// cellular models.
     async fn is_essential(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<bool>> {
         let target_essentiality = load_target_essentiality_by_target(ctx, self.id.clone()).await?;
-        Ok(target_essentiality
-            .map(|t| t.is_essential)
-            .unwrap_or_default())
+        Ok(target_essentiality.map(|t| t.is_essential))
     }
 
     /// Molecular interactions reporting experimental or functional interactions between this target
@@ -847,6 +1036,7 @@ impl Target {
     }
 
     /// Association time series.
+    #[cfg(feature = "product-ppp")]
     #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn association_time_series(
         &self,

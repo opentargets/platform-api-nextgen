@@ -1,0 +1,2977 @@
+# variables: {"target": "ENSG99999999999", "disease": "EFO_9999999", "variant": "7_140000050_A_T"}
+query LiveEvidence($target: String!, $disease: String!, $variant: String!) {
+  target(ensemblId: $target) {
+    id
+    evidences(efoIds: [$disease]) {
+      count
+      rows {
+        id
+        alleleOrigins
+        allelicRequirements
+        ancestry
+        ancestryId
+        assays {
+          description
+          isHit
+          shortName
+        }
+        assessments
+        beta
+        betaConfidenceIntervalLower
+        betaConfidenceIntervalUpper
+        biologicalModelAllelicComposition
+        biologicalModelGeneticBackground
+        biologicalModelId
+        biomarkerList {
+          description
+          name
+        }
+        biomarkerName
+        biomarkers {
+          geneExpression {
+            name
+            id {
+              id
+              label
+            }
+          }
+          geneticVariation {
+            id
+            name
+            functionalConsequence {
+              id
+              label
+            }
+          }
+        }
+        biosamplesFromSource
+        cellLineBackground
+        cellType
+        clinicalReportId
+        clinicalSignificances
+        clinicalStage
+        cohortDescription
+        cohortId
+        cohortPhenotypes
+        cohortShortName
+        confidence
+        contrast
+        crisprScreenLibrary
+        datasourceId
+        datatypeId
+        directionOnTarget
+        directionOnTrait
+        diseaseCellLines {
+          id
+          name
+          tissue
+          tissueId
+        }
+        diseaseFromSource
+        diseaseFromSourceId
+        diseaseFromSourceMappedId
+        diseaseModelAssociatedHumanPhenotypes {
+          id
+          label
+        }
+        diseaseModelAssociatedModelPhenotypes {
+          id
+          label
+        }
+        drugFromSource
+        evidenceDate
+        geneticInteractionType
+        geneticInteractionScore
+        interactingTargetFromSourceId
+        interactingTargetRole
+        literature
+        log2FoldChangePercentileRank
+        mutatedSamples {
+          numberMutatedSamples
+          numberSamplesTested
+          numberSamplesWithMutationType
+          functionalConsequence {
+            id
+            label
+          }
+        }
+        oddsRatio
+        oddsRatioConfidenceIntervalLower
+        oddsRatioConfidenceIntervalUpper
+        pValueExponent
+        pValueMantissa
+        pathways {
+          id
+          name
+        }
+        phenotypicConsequenceLogFoldChange
+        phenotypicConsequencePValue
+        phenotypicConsequenceScore
+        primaryProjectHit
+        primaryProjectId
+        projectDescription
+        projectId
+        publicationDate
+        publicationYear
+        qualityControls
+        reactionId
+        reactionName
+        releaseDate
+        releaseVersion
+        resourceScore
+        score
+        significantDriverMethods
+        statisticalMethod
+        statisticalMethodOverview
+        statisticalTestTail
+        studyCases
+        studyCasesWithQualifyingVariants
+        studyId
+        studyOverview
+        studySampleSize
+        studyStartDate
+        targetFromSource
+        targetFromSourceId
+        targetInModel
+        targetModulation
+        targetRole
+        textMiningSentences {
+          dEnd
+          dStart
+          section
+          tEnd
+          tStart
+          text
+        }
+        trialStopReasonCategories
+        trialWhyStopped
+        urls {
+          niceName
+          url
+        }
+        variantAminoacidDescriptions
+        variantRsId
+        disease {
+          id
+        }
+        credibleSet {
+          credibleSetId
+        }
+        variant {
+          variantId
+        }
+        target {
+          id
+        }
+        drug {
+          id
+        }
+        drugResponse {
+          id
+        }
+        variantFunctionalConsequence {
+          id
+          label
+        }
+      }
+    }
+    evidences_datasourceIds: evidences(efoIds: [$disease], datasourceIds: [clinical_precedence, gwas_credible_sets, gene_burden, eva, genomics_england, gene2phenotype, uniprot_literature, uniprot_variants, orphanet, clingen, cancer_gene_census, intogen, eva_somatic, cancer_biomarkers, crispr_screen, crispr, reactome, europepmc, expression_atlas, impc, ot_crispr_validation, ot_crispr, encore]) {
+      count
+      rows {
+        id
+        alleleOrigins
+        allelicRequirements
+        ancestry
+        ancestryId
+        assessments
+        beta
+        betaConfidenceIntervalLower
+        betaConfidenceIntervalUpper
+        biologicalModelAllelicComposition
+        biologicalModelGeneticBackground
+        biologicalModelId
+        biomarkerName
+        biosamplesFromSource
+        cellLineBackground
+        cellType
+        clinicalReportId
+        clinicalSignificances
+        clinicalStage
+        cohortDescription
+        cohortId
+        cohortPhenotypes
+        cohortShortName
+        confidence
+        contrast
+        crisprScreenLibrary
+        datasourceId
+        datatypeId
+        directionOnTarget
+        directionOnTrait
+        diseaseFromSource
+        diseaseFromSourceId
+        diseaseFromSourceMappedId
+        drugFromSource
+        evidenceDate
+        geneticInteractionType
+        geneticInteractionScore
+        interactingTargetFromSourceId
+        interactingTargetRole
+        literature
+        log2FoldChangePercentileRank
+        oddsRatio
+        oddsRatioConfidenceIntervalLower
+        oddsRatioConfidenceIntervalUpper
+        pValueExponent
+        pValueMantissa
+        phenotypicConsequenceLogFoldChange
+        phenotypicConsequencePValue
+        phenotypicConsequenceScore
+        primaryProjectHit
+        primaryProjectId
+        projectDescription
+        projectId
+        publicationDate
+        publicationYear
+        qualityControls
+        reactionId
+        reactionName
+        releaseDate
+        releaseVersion
+        resourceScore
+        score
+        significantDriverMethods
+        statisticalMethod
+        statisticalMethodOverview
+        statisticalTestTail
+        studyCases
+        studyCasesWithQualifyingVariants
+        studyId
+        studyOverview
+        studySampleSize
+        studyStartDate
+        targetFromSource
+        targetFromSourceId
+        targetInModel
+        targetModulation
+        targetRole
+        trialStopReasonCategories
+        trialWhyStopped
+        variantAminoacidDescriptions
+        variantRsId
+      }
+    }
+    evidenceViews(efoIds: [$disease]) {
+      clinicalPrecedence {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          drugId
+          drugName
+          drugTargetIds
+          drugTargetSymbols
+          directionOnTarget
+          directionOnTrait
+          clinicalStage
+          clinicalReportId
+          studyStartDate
+        }
+      }
+      clinicalPrecedence_sort: clinicalPrecedence(sort: [{key: SCORE, direction: ASCENDING}, {key: CLINICAL_STAGE, direction: ASCENDING}, {key: STUDY_START_DATE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          drugId
+          drugName
+          drugTargetIds
+          drugTargetSymbols
+          directionOnTarget
+          directionOnTrait
+          clinicalStage
+          clinicalReportId
+          studyStartDate
+        }
+      }
+      clinicalPrecedence_search: clinicalPrecedence(search: {text: "a", fields: [DISEASE_NAME, TARGET_APPROVED_SYMBOL, DRUG_TARGET_SYMBOLS, DRUG_NAME, DIRECTION_ON_TARGET, DIRECTION_ON_TRAIT, CLINICAL_STAGE, CLINICAL_REPORT_ID, STUDY_START_DATE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          drugId
+          drugName
+          drugTargetIds
+          drugTargetSymbols
+          directionOnTarget
+          directionOnTrait
+          clinicalStage
+          clinicalReportId
+          studyStartDate
+        }
+      }
+      gwasCredibleSets {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          credibleSetId
+          leadVariantId
+          leadChromosome
+          leadPosition
+          leadReferenceAllele
+          leadAlternateAllele
+          pValueMantissa
+          pValueExponent
+          beta
+          fineMappingMethod
+          confidence
+          studyId
+          traitFromSource
+          projectId
+          publicationFirstAuthor
+          publicationDate
+          pubmedId
+          nSamples
+        }
+      }
+      gwasCredibleSets_sort: gwasCredibleSets(sort: [{key: SCORE, direction: ASCENDING}, {key: LEAD_VARIANT, direction: ASCENDING}, {key: SAMPLE_SIZE, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}, {key: BETA, direction: ASCENDING}, {key: CONFIDENCE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          credibleSetId
+          leadVariantId
+          leadChromosome
+          leadPosition
+          leadReferenceAllele
+          leadAlternateAllele
+          pValueMantissa
+          pValueExponent
+          beta
+          fineMappingMethod
+          confidence
+          studyId
+          traitFromSource
+          projectId
+          publicationFirstAuthor
+          publicationDate
+          pubmedId
+          nSamples
+        }
+      }
+      gwasCredibleSets_search: gwasCredibleSets(search: {text: "a", fields: [LEAD_VARIANT_ID, TRAIT_FROM_SOURCE, DISEASE_NAME, STUDY_ID, FINE_MAPPING_METHOD, PUBLICATION_FIRST_AUTHOR, PUBLICATION_DATE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          credibleSetId
+          leadVariantId
+          leadChromosome
+          leadPosition
+          leadReferenceAllele
+          leadAlternateAllele
+          pValueMantissa
+          pValueExponent
+          beta
+          fineMappingMethod
+          confidence
+          studyId
+          traitFromSource
+          projectId
+          publicationFirstAuthor
+          publicationDate
+          pubmedId
+          nSamples
+        }
+      }
+      geneBurden {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          releaseVersion
+          urls
+          directionOnTarget
+          directionOnTrait
+          allelicRequirements
+          studyId
+          ancestry
+          ancestryId
+          resourceScore
+          cohortId
+          projectId
+          statisticalMethod
+          statisticalMethodOverview
+          studyCases
+          studyCasesWithQualifyingVariants
+          studySampleSize
+          oddsRatio
+          oddsRatioConfidenceIntervalLower
+          oddsRatioConfidenceIntervalUpper
+          beta
+          betaConfidenceIntervalLower
+          betaConfidenceIntervalUpper
+          pValueMantissa
+          pValueExponent
+          literature
+        }
+      }
+      geneBurden_sort: geneBurden(sort: [{key: SCORE, direction: ASCENDING}, {key: CASES_WITH_QUALIFYING_VARIANTS, direction: ASCENDING}, {key: CASES, direction: ASCENDING}, {key: SAMPLE_SIZE, direction: ASCENDING}, {key: ODDS_RATIO, direction: ASCENDING}, {key: BETA, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          releaseVersion
+          urls
+          directionOnTarget
+          directionOnTrait
+          allelicRequirements
+          studyId
+          ancestry
+          ancestryId
+          resourceScore
+          cohortId
+          projectId
+          statisticalMethod
+          statisticalMethodOverview
+          studyCases
+          studyCasesWithQualifyingVariants
+          studySampleSize
+          oddsRatio
+          oddsRatioConfidenceIntervalLower
+          oddsRatioConfidenceIntervalUpper
+          beta
+          betaConfidenceIntervalLower
+          betaConfidenceIntervalUpper
+          pValueMantissa
+          pValueExponent
+          literature
+        }
+      }
+      geneBurden_search: geneBurden(search: {text: "a", fields: [DISEASE_NAME, DISEASE_FROM_SOURCE, COHORT_ID, PROJECT_ID, ANCESTRY, ANCESTRY_ID, STATISTICAL_METHOD, ALLELIC_REQUIREMENTS]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          releaseVersion
+          urls
+          directionOnTarget
+          directionOnTrait
+          allelicRequirements
+          studyId
+          ancestry
+          ancestryId
+          resourceScore
+          cohortId
+          projectId
+          statisticalMethod
+          statisticalMethodOverview
+          studyCases
+          studyCasesWithQualifyingVariants
+          studySampleSize
+          oddsRatio
+          oddsRatioConfidenceIntervalLower
+          oddsRatioConfidenceIntervalUpper
+          beta
+          betaConfidenceIntervalLower
+          betaConfidenceIntervalUpper
+          pValueMantissa
+          pValueExponent
+          literature
+        }
+      }
+      gene2Phenotype {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          allelicRequirements
+          studyId
+          confidence
+          literature
+        }
+      }
+      gene2Phenotype_sort: gene2Phenotype(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          allelicRequirements
+          studyId
+          confidence
+          literature
+        }
+      }
+      gene2Phenotype_search: gene2Phenotype(search: {text: "a", fields: [DISEASE_NAME, DISEASE_FROM_SOURCE, VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL, ALLELIC_REQUIREMENTS, STUDY_ID, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          allelicRequirements
+          studyId
+          confidence
+          literature
+        }
+      }
+      uniprotLiterature {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          studyId
+          confidence
+          literature
+        }
+      }
+      uniprotLiterature_sort: uniprotLiterature(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          studyId
+          confidence
+          literature
+        }
+      }
+      uniprotLiterature_search: uniprotLiterature(search: {text: "a", fields: [DISEASE_NAME, DISEASE_FROM_SOURCE, TARGET_FROM_SOURCE_ID]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          studyId
+          confidence
+          literature
+        }
+      }
+      uniprotVariants {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          variantId
+          variantHgvsId
+          variantRsId
+          variantAminoAcidChange
+          variantConsequenceId
+          variantConsequenceLabel
+          confidence
+          literature
+        }
+      }
+      uniprotVariants_sort: uniprotVariants(sort: [{key: SCORE, direction: ASCENDING}, {key: VARIANT, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          variantId
+          variantHgvsId
+          variantRsId
+          variantAminoAcidChange
+          variantConsequenceId
+          variantConsequenceLabel
+          confidence
+          literature
+        }
+      }
+      uniprotVariants_search: uniprotVariants(search: {text: "a", fields: [DISEASE_NAME, DISEASE_FROM_SOURCE, TARGET_FROM_SOURCE_ID, VARIANT_ID, VARIANT_RS_ID, VARIANT_AMINO_ACID_CHANGE, VARIANT_CONSEQUENCE_LABEL, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          variantId
+          variantHgvsId
+          variantRsId
+          variantAminoAcidChange
+          variantConsequenceId
+          variantConsequenceLabel
+          confidence
+          literature
+        }
+      }
+      genomicsEnglandPanelApp {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          allelicRequirements
+          panelId
+          panelName
+          confidence
+          literature
+        }
+      }
+      genomicsEnglandPanelApp_sort: genomicsEnglandPanelApp(sort: [{key: SCORE, direction: ASCENDING}, {key: CONFIDENCE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          allelicRequirements
+          panelId
+          panelName
+          confidence
+          literature
+        }
+      }
+      genomicsEnglandPanelApp_search: genomicsEnglandPanelApp(search: {text: "a", fields: [DISEASE_NAME, TARGET_APPROVED_SYMBOL, ALLELIC_REQUIREMENTS, PANEL_NAME]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          allelicRequirements
+          panelId
+          panelName
+          confidence
+          literature
+        }
+      }
+      expressionAtlas {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          studyId
+          studyOverview
+          contrast
+          confidence
+          log2FoldChangePercentileRank
+          resourceScore
+        }
+      }
+      expressionAtlas_sort: expressionAtlas(sort: [{key: SCORE, direction: ASCENDING}, {key: PERCENTILE, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          studyId
+          studyOverview
+          contrast
+          confidence
+          log2FoldChangePercentileRank
+          resourceScore
+        }
+      }
+      expressionAtlas_search: expressionAtlas(search: {text: "a", fields: [DISEASE_NAME, STUDY_ID, CONTRAST, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          studyId
+          studyOverview
+          contrast
+          confidence
+          log2FoldChangePercentileRank
+          resourceScore
+        }
+      }
+      crispr {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          diseaseCellLines {
+            id
+            name
+            tissue
+            tissueId
+          }
+          resourceScore
+          literature
+        }
+      }
+      crispr_sort: crispr(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          literature
+        }
+      }
+      crispr_search: crispr(search: {text: "a", fields: [DISEASE_NAME, DISEASE_FROM_SOURCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          literature
+        }
+      }
+      cancerBiomarkers {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          biomarkerName
+          biomarkerGeneticVariations {
+            id
+            name
+            functionalConsequenceId
+            functionalConsequenceLabel
+          }
+          biomarkerGeneExpressions {
+            name
+            id
+            label
+          }
+          drugId
+          drugName
+          drugFromSource
+          drugResponseId
+          drugResponseName
+          confidence
+          literature
+          urls {
+            niceName
+            url
+          }
+        }
+      }
+      cancerBiomarkers_search: cancerBiomarkers(search: {text: "a", fields: [DISEASE_NAME, BIOMARKER_NAME, DRUG_NAME, DRUG_FROM_SOURCE, DRUG_RESPONSE_NAME, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          biomarkerName
+          drugId
+          drugName
+          drugFromSource
+          drugResponseId
+          drugResponseName
+          confidence
+          literature
+        }
+      }
+      crisprScreen {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          diseaseFromSourceMappedId
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          datasourceId
+          datatypeId
+          projectId
+          studyId
+          studyOverview
+          contrast
+          cellType
+          crisprScreenLibrary
+          statisticalTestTail
+          phenotypicConsequenceScore
+          resourceScore
+          literature
+        }
+      }
+      crisprScreen_sort: crisprScreen(sort: [{key: SCORE, direction: ASCENDING}, {key: SIGNIFICANCE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          diseaseFromSourceMappedId
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          datasourceId
+          datatypeId
+          projectId
+          studyId
+          studyOverview
+          contrast
+          cellType
+          crisprScreenLibrary
+          statisticalTestTail
+          phenotypicConsequenceScore
+          resourceScore
+          literature
+        }
+      }
+      crisprScreen_search: crisprScreen(search: {text: "a", fields: [DISEASE_FROM_SOURCE, STUDY_ID, CONTRAST, STUDY_OVERVIEW, CELL_TYPE, SOURCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          diseaseFromSourceMappedId
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          datasourceId
+          datatypeId
+          projectId
+          studyId
+          studyOverview
+          contrast
+          cellType
+          crisprScreenLibrary
+          statisticalTestTail
+          phenotypicConsequenceScore
+          resourceScore
+          literature
+        }
+      }
+      reactome {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          pathways {
+            id
+            name
+          }
+          reactionId
+          reactionName
+          targetModulation
+          variantAminoacidDescriptions
+          literature
+        }
+      }
+      reactome_sort: reactome(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          reactionId
+          reactionName
+          targetModulation
+          variantAminoacidDescriptions
+          literature
+        }
+      }
+      reactome_search: reactome(search: {text: "a", fields: [DISEASE_NAME, PATHWAY_NAMES, REACTION_NAME, TARGET_FROM_SOURCE_ID, TARGET_MODULATION]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          reactionId
+          reactionName
+          targetModulation
+          variantAminoacidDescriptions
+          literature
+        }
+      }
+      orphanet {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetApprovedName
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          alleleOrigins
+          confidence
+          literature
+        }
+      }
+      orphanet_sort: orphanet(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetApprovedName
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          alleleOrigins
+          confidence
+          literature
+        }
+      }
+      orphanet_search: orphanet(search: {text: "a", fields: [DISEASE_FROM_SOURCE, TARGET_APPROVED_NAME, VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL, ALLELE_ORIGINS]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetApprovedName
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          alleleOrigins
+          confidence
+          literature
+        }
+      }
+      cancerGeneCensus {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          mutatedSamples {
+            functionalConsequenceId
+            functionalConsequenceLabel
+            numberMutatedSamples
+            numberSamplesTested
+            numberSamplesWithMutationType
+          }
+          mutatedSamplesRatio
+          literature
+        }
+      }
+      cancerGeneCensus_sort: cancerGeneCensus(sort: [{key: MUTATED_SAMPLES, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          mutatedSamplesRatio
+          literature
+        }
+      }
+      cancerGeneCensus_search: cancerGeneCensus(search: {text: "a", fields: [DISEASE_NAME, MUTATION_TYPES, LITERATURE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          mutatedSamplesRatio
+          literature
+        }
+      }
+      clingen {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          allelicRequirements
+          confidence
+        }
+      }
+      clingen_sort: clingen(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          allelicRequirements
+          confidence
+        }
+      }
+      clingen_search: clingen(search: {text: "a", fields: [DISEASE_FROM_SOURCE, ALLELIC_REQUIREMENTS, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          allelicRequirements
+          confidence
+        }
+      }
+      eva {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          variantId
+          variantChromosome
+          variantPosition
+          variantReferenceAllele
+          variantAlternateAllele
+          variantHgvsId
+          variantRsId
+          studyId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          clinicalSignificances
+          allelicRequirements
+          alleleOrigins
+          confidence
+          literature
+          cohortPhenotypes
+        }
+      }
+      eva_sort: eva(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          variantId
+          variantChromosome
+          variantPosition
+          variantReferenceAllele
+          variantAlternateAllele
+          variantHgvsId
+          variantRsId
+          studyId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          clinicalSignificances
+          allelicRequirements
+          alleleOrigins
+          confidence
+          literature
+          cohortPhenotypes
+        }
+      }
+      evaSomatic {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          variantId
+          variantChromosome
+          variantPosition
+          variantReferenceAllele
+          variantAlternateAllele
+          variantHgvsId
+          variantRsId
+          studyId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          clinicalSignificances
+          allelicRequirements
+          alleleOrigins
+          confidence
+          literature
+          cohortPhenotypes
+        }
+      }
+      intogen {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          mutatedSamples {
+            functionalConsequenceId
+            functionalConsequenceLabel
+            numberMutatedSamples
+            numberSamplesTested
+            numberSamplesWithMutationType
+          }
+          resourceScore
+          significantDriverMethods
+          cohortId
+          cohortShortName
+          cohortDescription
+        }
+      }
+      intogen_sort: intogen(sort: [{key: SCORE, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          significantDriverMethods
+          cohortId
+          cohortShortName
+          cohortDescription
+        }
+      }
+      intogen_search: intogen(search: {text: "a", fields: [DISEASE_NAME, COHORT_SHORT_NAME, COHORT_DESCRIPTION]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          significantDriverMethods
+          cohortId
+          cohortShortName
+          cohortDescription
+        }
+      }
+      impc {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetInModel
+          directionOnTarget
+          directionOnTrait
+          biologicalModelId
+          biologicalModelGeneticBackground
+          biologicalModelAllelicComposition
+          diseaseModelAssociatedModelPhenotypes {
+            id
+            label
+          }
+          diseaseModelAssociatedHumanPhenotypes {
+            id
+            label
+          }
+        }
+      }
+    }
+    evidenceViews_enableIndirect: evidenceViews(efoIds: [$disease], enableIndirect: true) {
+      __typename
+    }
+  }
+  disease(efoId: $disease) {
+    id
+    evidences(ensemblIds: [$target]) {
+      count
+      rows {
+        id
+        alleleOrigins
+        allelicRequirements
+        ancestry
+        ancestryId
+        assays {
+          description
+          isHit
+          shortName
+        }
+        assessments
+        beta
+        betaConfidenceIntervalLower
+        betaConfidenceIntervalUpper
+        biologicalModelAllelicComposition
+        biologicalModelGeneticBackground
+        biologicalModelId
+        biomarkerList {
+          description
+          name
+        }
+        biomarkerName
+        biomarkers {
+          geneExpression {
+            name
+            id {
+              id
+              label
+            }
+          }
+          geneticVariation {
+            id
+            name
+            functionalConsequence {
+              id
+              label
+            }
+          }
+        }
+        biosamplesFromSource
+        cellLineBackground
+        cellType
+        clinicalReportId
+        clinicalSignificances
+        clinicalStage
+        cohortDescription
+        cohortId
+        cohortPhenotypes
+        cohortShortName
+        confidence
+        contrast
+        crisprScreenLibrary
+        datasourceId
+        datatypeId
+        directionOnTarget
+        directionOnTrait
+        diseaseCellLines {
+          id
+          name
+          tissue
+          tissueId
+        }
+        diseaseFromSource
+        diseaseFromSourceId
+        diseaseFromSourceMappedId
+        diseaseModelAssociatedHumanPhenotypes {
+          id
+          label
+        }
+        diseaseModelAssociatedModelPhenotypes {
+          id
+          label
+        }
+        drugFromSource
+        evidenceDate
+        geneticInteractionType
+        geneticInteractionScore
+        interactingTargetFromSourceId
+        interactingTargetRole
+        literature
+        log2FoldChangePercentileRank
+        mutatedSamples {
+          numberMutatedSamples
+          numberSamplesTested
+          numberSamplesWithMutationType
+          functionalConsequence {
+            id
+            label
+          }
+        }
+        oddsRatio
+        oddsRatioConfidenceIntervalLower
+        oddsRatioConfidenceIntervalUpper
+        pValueExponent
+        pValueMantissa
+        pathways {
+          id
+          name
+        }
+        phenotypicConsequenceLogFoldChange
+        phenotypicConsequencePValue
+        phenotypicConsequenceScore
+        primaryProjectHit
+        primaryProjectId
+        projectDescription
+        projectId
+        publicationDate
+        publicationYear
+        qualityControls
+        reactionId
+        reactionName
+        releaseDate
+        releaseVersion
+        resourceScore
+        score
+        significantDriverMethods
+        statisticalMethod
+        statisticalMethodOverview
+        statisticalTestTail
+        studyCases
+        studyCasesWithQualifyingVariants
+        studyId
+        studyOverview
+        studySampleSize
+        studyStartDate
+        targetFromSource
+        targetFromSourceId
+        targetInModel
+        targetModulation
+        targetRole
+        textMiningSentences {
+          dEnd
+          dStart
+          section
+          tEnd
+          tStart
+          text
+        }
+        trialStopReasonCategories
+        trialWhyStopped
+        urls {
+          niceName
+          url
+        }
+        variantAminoacidDescriptions
+        variantRsId
+        disease {
+          id
+        }
+        credibleSet {
+          credibleSetId
+        }
+        variant {
+          variantId
+        }
+        target {
+          id
+        }
+        drug {
+          id
+        }
+        drugResponse {
+          id
+        }
+        variantFunctionalConsequence {
+          id
+          label
+        }
+      }
+    }
+    evidences_datasourceIds: evidences(ensemblIds: [$target], datasourceIds: [clinical_precedence, gwas_credible_sets, gene_burden, eva, genomics_england, gene2phenotype, uniprot_literature, uniprot_variants, orphanet, clingen, cancer_gene_census, intogen, eva_somatic, cancer_biomarkers, crispr_screen, crispr, reactome, europepmc, expression_atlas, impc, ot_crispr_validation, ot_crispr, encore]) {
+      count
+      rows {
+        id
+        alleleOrigins
+        allelicRequirements
+        ancestry
+        ancestryId
+        assessments
+        beta
+        betaConfidenceIntervalLower
+        betaConfidenceIntervalUpper
+        biologicalModelAllelicComposition
+        biologicalModelGeneticBackground
+        biologicalModelId
+        biomarkerName
+        biosamplesFromSource
+        cellLineBackground
+        cellType
+        clinicalReportId
+        clinicalSignificances
+        clinicalStage
+        cohortDescription
+        cohortId
+        cohortPhenotypes
+        cohortShortName
+        confidence
+        contrast
+        crisprScreenLibrary
+        datasourceId
+        datatypeId
+        directionOnTarget
+        directionOnTrait
+        diseaseFromSource
+        diseaseFromSourceId
+        diseaseFromSourceMappedId
+        drugFromSource
+        evidenceDate
+        geneticInteractionType
+        geneticInteractionScore
+        interactingTargetFromSourceId
+        interactingTargetRole
+        literature
+        log2FoldChangePercentileRank
+        oddsRatio
+        oddsRatioConfidenceIntervalLower
+        oddsRatioConfidenceIntervalUpper
+        pValueExponent
+        pValueMantissa
+        phenotypicConsequenceLogFoldChange
+        phenotypicConsequencePValue
+        phenotypicConsequenceScore
+        primaryProjectHit
+        primaryProjectId
+        projectDescription
+        projectId
+        publicationDate
+        publicationYear
+        qualityControls
+        reactionId
+        reactionName
+        releaseDate
+        releaseVersion
+        resourceScore
+        score
+        significantDriverMethods
+        statisticalMethod
+        statisticalMethodOverview
+        statisticalTestTail
+        studyCases
+        studyCasesWithQualifyingVariants
+        studyId
+        studyOverview
+        studySampleSize
+        studyStartDate
+        targetFromSource
+        targetFromSourceId
+        targetInModel
+        targetModulation
+        targetRole
+        trialStopReasonCategories
+        trialWhyStopped
+        variantAminoacidDescriptions
+        variantRsId
+      }
+    }
+    evidenceViews(ensemblIds: [$target]) {
+      clinicalPrecedence {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          drugId
+          drugName
+          drugTargetIds
+          drugTargetSymbols
+          directionOnTarget
+          directionOnTrait
+          clinicalStage
+          clinicalReportId
+          studyStartDate
+        }
+      }
+      clinicalPrecedence_sort: clinicalPrecedence(sort: [{key: SCORE, direction: ASCENDING}, {key: CLINICAL_STAGE, direction: ASCENDING}, {key: STUDY_START_DATE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          drugId
+          drugName
+          drugTargetIds
+          drugTargetSymbols
+          directionOnTarget
+          directionOnTrait
+          clinicalStage
+          clinicalReportId
+          studyStartDate
+        }
+      }
+      clinicalPrecedence_search: clinicalPrecedence(search: {text: "a", fields: [DISEASE_NAME, TARGET_APPROVED_SYMBOL, DRUG_TARGET_SYMBOLS, DRUG_NAME, DIRECTION_ON_TARGET, DIRECTION_ON_TRAIT, CLINICAL_STAGE, CLINICAL_REPORT_ID, STUDY_START_DATE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          drugId
+          drugName
+          drugTargetIds
+          drugTargetSymbols
+          directionOnTarget
+          directionOnTrait
+          clinicalStage
+          clinicalReportId
+          studyStartDate
+        }
+      }
+      gwasCredibleSets {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          credibleSetId
+          leadVariantId
+          leadChromosome
+          leadPosition
+          leadReferenceAllele
+          leadAlternateAllele
+          pValueMantissa
+          pValueExponent
+          beta
+          fineMappingMethod
+          confidence
+          studyId
+          traitFromSource
+          projectId
+          publicationFirstAuthor
+          publicationDate
+          pubmedId
+          nSamples
+        }
+      }
+      gwasCredibleSets_sort: gwasCredibleSets(sort: [{key: SCORE, direction: ASCENDING}, {key: LEAD_VARIANT, direction: ASCENDING}, {key: SAMPLE_SIZE, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}, {key: BETA, direction: ASCENDING}, {key: CONFIDENCE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          credibleSetId
+          leadVariantId
+          leadChromosome
+          leadPosition
+          leadReferenceAllele
+          leadAlternateAllele
+          pValueMantissa
+          pValueExponent
+          beta
+          fineMappingMethod
+          confidence
+          studyId
+          traitFromSource
+          projectId
+          publicationFirstAuthor
+          publicationDate
+          pubmedId
+          nSamples
+        }
+      }
+      gwasCredibleSets_search: gwasCredibleSets(search: {text: "a", fields: [LEAD_VARIANT_ID, TRAIT_FROM_SOURCE, DISEASE_NAME, STUDY_ID, FINE_MAPPING_METHOD, PUBLICATION_FIRST_AUTHOR, PUBLICATION_DATE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          credibleSetId
+          leadVariantId
+          leadChromosome
+          leadPosition
+          leadReferenceAllele
+          leadAlternateAllele
+          pValueMantissa
+          pValueExponent
+          beta
+          fineMappingMethod
+          confidence
+          studyId
+          traitFromSource
+          projectId
+          publicationFirstAuthor
+          publicationDate
+          pubmedId
+          nSamples
+        }
+      }
+      geneBurden {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          releaseVersion
+          urls
+          directionOnTarget
+          directionOnTrait
+          allelicRequirements
+          studyId
+          ancestry
+          ancestryId
+          resourceScore
+          cohortId
+          projectId
+          statisticalMethod
+          statisticalMethodOverview
+          studyCases
+          studyCasesWithQualifyingVariants
+          studySampleSize
+          oddsRatio
+          oddsRatioConfidenceIntervalLower
+          oddsRatioConfidenceIntervalUpper
+          beta
+          betaConfidenceIntervalLower
+          betaConfidenceIntervalUpper
+          pValueMantissa
+          pValueExponent
+          literature
+        }
+      }
+      geneBurden_sort: geneBurden(sort: [{key: SCORE, direction: ASCENDING}, {key: CASES_WITH_QUALIFYING_VARIANTS, direction: ASCENDING}, {key: CASES, direction: ASCENDING}, {key: SAMPLE_SIZE, direction: ASCENDING}, {key: ODDS_RATIO, direction: ASCENDING}, {key: BETA, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          releaseVersion
+          urls
+          directionOnTarget
+          directionOnTrait
+          allelicRequirements
+          studyId
+          ancestry
+          ancestryId
+          resourceScore
+          cohortId
+          projectId
+          statisticalMethod
+          statisticalMethodOverview
+          studyCases
+          studyCasesWithQualifyingVariants
+          studySampleSize
+          oddsRatio
+          oddsRatioConfidenceIntervalLower
+          oddsRatioConfidenceIntervalUpper
+          beta
+          betaConfidenceIntervalLower
+          betaConfidenceIntervalUpper
+          pValueMantissa
+          pValueExponent
+          literature
+        }
+      }
+      geneBurden_search: geneBurden(search: {text: "a", fields: [DISEASE_NAME, DISEASE_FROM_SOURCE, COHORT_ID, PROJECT_ID, ANCESTRY, ANCESTRY_ID, STATISTICAL_METHOD, ALLELIC_REQUIREMENTS]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          releaseVersion
+          urls
+          directionOnTarget
+          directionOnTrait
+          allelicRequirements
+          studyId
+          ancestry
+          ancestryId
+          resourceScore
+          cohortId
+          projectId
+          statisticalMethod
+          statisticalMethodOverview
+          studyCases
+          studyCasesWithQualifyingVariants
+          studySampleSize
+          oddsRatio
+          oddsRatioConfidenceIntervalLower
+          oddsRatioConfidenceIntervalUpper
+          beta
+          betaConfidenceIntervalLower
+          betaConfidenceIntervalUpper
+          pValueMantissa
+          pValueExponent
+          literature
+        }
+      }
+      gene2Phenotype {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          allelicRequirements
+          studyId
+          confidence
+          literature
+        }
+      }
+      gene2Phenotype_sort: gene2Phenotype(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          allelicRequirements
+          studyId
+          confidence
+          literature
+        }
+      }
+      gene2Phenotype_search: gene2Phenotype(search: {text: "a", fields: [DISEASE_NAME, DISEASE_FROM_SOURCE, VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL, ALLELIC_REQUIREMENTS, STUDY_ID, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          allelicRequirements
+          studyId
+          confidence
+          literature
+        }
+      }
+      uniprotLiterature {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          studyId
+          confidence
+          literature
+        }
+      }
+      uniprotLiterature_sort: uniprotLiterature(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          studyId
+          confidence
+          literature
+        }
+      }
+      uniprotLiterature_search: uniprotLiterature(search: {text: "a", fields: [DISEASE_NAME, DISEASE_FROM_SOURCE, TARGET_FROM_SOURCE_ID]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          studyId
+          confidence
+          literature
+        }
+      }
+      uniprotVariants {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          variantId
+          variantHgvsId
+          variantRsId
+          variantAminoAcidChange
+          variantConsequenceId
+          variantConsequenceLabel
+          confidence
+          literature
+        }
+      }
+      uniprotVariants_sort: uniprotVariants(sort: [{key: SCORE, direction: ASCENDING}, {key: VARIANT, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          variantId
+          variantHgvsId
+          variantRsId
+          variantAminoAcidChange
+          variantConsequenceId
+          variantConsequenceLabel
+          confidence
+          literature
+        }
+      }
+      uniprotVariants_search: uniprotVariants(search: {text: "a", fields: [DISEASE_NAME, DISEASE_FROM_SOURCE, TARGET_FROM_SOURCE_ID, VARIANT_ID, VARIANT_RS_ID, VARIANT_AMINO_ACID_CHANGE, VARIANT_CONSEQUENCE_LABEL, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          variantId
+          variantHgvsId
+          variantRsId
+          variantAminoAcidChange
+          variantConsequenceId
+          variantConsequenceLabel
+          confidence
+          literature
+        }
+      }
+      genomicsEnglandPanelApp {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          allelicRequirements
+          panelId
+          panelName
+          confidence
+          literature
+        }
+      }
+      genomicsEnglandPanelApp_sort: genomicsEnglandPanelApp(sort: [{key: SCORE, direction: ASCENDING}, {key: CONFIDENCE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          allelicRequirements
+          panelId
+          panelName
+          confidence
+          literature
+        }
+      }
+      genomicsEnglandPanelApp_search: genomicsEnglandPanelApp(search: {text: "a", fields: [DISEASE_NAME, TARGET_APPROVED_SYMBOL, ALLELIC_REQUIREMENTS, PANEL_NAME]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          allelicRequirements
+          panelId
+          panelName
+          confidence
+          literature
+        }
+      }
+      expressionAtlas {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          studyId
+          studyOverview
+          contrast
+          confidence
+          log2FoldChangePercentileRank
+          resourceScore
+        }
+      }
+      expressionAtlas_sort: expressionAtlas(sort: [{key: SCORE, direction: ASCENDING}, {key: PERCENTILE, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          studyId
+          studyOverview
+          contrast
+          confidence
+          log2FoldChangePercentileRank
+          resourceScore
+        }
+      }
+      expressionAtlas_search: expressionAtlas(search: {text: "a", fields: [DISEASE_NAME, STUDY_ID, CONTRAST, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          studyId
+          studyOverview
+          contrast
+          confidence
+          log2FoldChangePercentileRank
+          resourceScore
+        }
+      }
+      crispr {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          diseaseCellLines {
+            id
+            name
+            tissue
+            tissueId
+          }
+          resourceScore
+          literature
+        }
+      }
+      crispr_sort: crispr(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          literature
+        }
+      }
+      crispr_search: crispr(search: {text: "a", fields: [DISEASE_NAME, DISEASE_FROM_SOURCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          literature
+        }
+      }
+      cancerBiomarkers {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          biomarkerName
+          biomarkerGeneticVariations {
+            id
+            name
+            functionalConsequenceId
+            functionalConsequenceLabel
+          }
+          biomarkerGeneExpressions {
+            name
+            id
+            label
+          }
+          drugId
+          drugName
+          drugFromSource
+          drugResponseId
+          drugResponseName
+          confidence
+          literature
+          urls {
+            niceName
+            url
+          }
+        }
+      }
+      cancerBiomarkers_search: cancerBiomarkers(search: {text: "a", fields: [DISEASE_NAME, BIOMARKER_NAME, DRUG_NAME, DRUG_FROM_SOURCE, DRUG_RESPONSE_NAME, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          biomarkerName
+          drugId
+          drugName
+          drugFromSource
+          drugResponseId
+          drugResponseName
+          confidence
+          literature
+        }
+      }
+      crisprScreen {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          diseaseFromSourceMappedId
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          datasourceId
+          datatypeId
+          projectId
+          studyId
+          studyOverview
+          contrast
+          cellType
+          crisprScreenLibrary
+          statisticalTestTail
+          phenotypicConsequenceScore
+          resourceScore
+          literature
+        }
+      }
+      crisprScreen_sort: crisprScreen(sort: [{key: SCORE, direction: ASCENDING}, {key: SIGNIFICANCE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          diseaseFromSourceMappedId
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          datasourceId
+          datatypeId
+          projectId
+          studyId
+          studyOverview
+          contrast
+          cellType
+          crisprScreenLibrary
+          statisticalTestTail
+          phenotypicConsequenceScore
+          resourceScore
+          literature
+        }
+      }
+      crisprScreen_search: crisprScreen(search: {text: "a", fields: [DISEASE_FROM_SOURCE, STUDY_ID, CONTRAST, STUDY_OVERVIEW, CELL_TYPE, SOURCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          diseaseFromSourceMappedId
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          datasourceId
+          datatypeId
+          projectId
+          studyId
+          studyOverview
+          contrast
+          cellType
+          crisprScreenLibrary
+          statisticalTestTail
+          phenotypicConsequenceScore
+          resourceScore
+          literature
+        }
+      }
+      reactome {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          pathways {
+            id
+            name
+          }
+          reactionId
+          reactionName
+          targetModulation
+          variantAminoacidDescriptions
+          literature
+        }
+      }
+      reactome_sort: reactome(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          reactionId
+          reactionName
+          targetModulation
+          variantAminoacidDescriptions
+          literature
+        }
+      }
+      reactome_search: reactome(search: {text: "a", fields: [DISEASE_NAME, PATHWAY_NAMES, REACTION_NAME, TARGET_FROM_SOURCE_ID, TARGET_MODULATION]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetFromSourceId
+          reactionId
+          reactionName
+          targetModulation
+          variantAminoacidDescriptions
+          literature
+        }
+      }
+      orphanet {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetApprovedName
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          alleleOrigins
+          confidence
+          literature
+        }
+      }
+      orphanet_sort: orphanet(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetApprovedName
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          alleleOrigins
+          confidence
+          literature
+        }
+      }
+      orphanet_search: orphanet(search: {text: "a", fields: [DISEASE_FROM_SOURCE, TARGET_APPROVED_NAME, VARIANT_FUNCTIONAL_CONSEQUENCE_LABEL, ALLELE_ORIGINS]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetApprovedName
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          alleleOrigins
+          confidence
+          literature
+        }
+      }
+      cancerGeneCensus {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          mutatedSamples {
+            functionalConsequenceId
+            functionalConsequenceLabel
+            numberMutatedSamples
+            numberSamplesTested
+            numberSamplesWithMutationType
+          }
+          mutatedSamplesRatio
+          literature
+        }
+      }
+      cancerGeneCensus_sort: cancerGeneCensus(sort: [{key: MUTATED_SAMPLES, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          mutatedSamplesRatio
+          literature
+        }
+      }
+      cancerGeneCensus_search: cancerGeneCensus(search: {text: "a", fields: [DISEASE_NAME, MUTATION_TYPES, LITERATURE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          targetId
+          targetApprovedSymbol
+          mutatedSamplesRatio
+          literature
+        }
+      }
+      clingen {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          allelicRequirements
+          confidence
+        }
+      }
+      clingen_sort: clingen(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          allelicRequirements
+          confidence
+        }
+      }
+      clingen_search: clingen(search: {text: "a", fields: [DISEASE_FROM_SOURCE, ALLELIC_REQUIREMENTS, CONFIDENCE]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          allelicRequirements
+          confidence
+        }
+      }
+      eva {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          variantId
+          variantChromosome
+          variantPosition
+          variantReferenceAllele
+          variantAlternateAllele
+          variantHgvsId
+          variantRsId
+          studyId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          clinicalSignificances
+          allelicRequirements
+          alleleOrigins
+          confidence
+          literature
+          cohortPhenotypes
+        }
+      }
+      eva_sort: eva(sort: [{key: SCORE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          variantId
+          variantChromosome
+          variantPosition
+          variantReferenceAllele
+          variantAlternateAllele
+          variantHgvsId
+          variantRsId
+          studyId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          clinicalSignificances
+          allelicRequirements
+          alleleOrigins
+          confidence
+          literature
+          cohortPhenotypes
+        }
+      }
+      evaSomatic {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          variantId
+          variantChromosome
+          variantPosition
+          variantReferenceAllele
+          variantAlternateAllele
+          variantHgvsId
+          variantRsId
+          studyId
+          variantFunctionalConsequenceId
+          variantFunctionalConsequenceLabel
+          directionOnTarget
+          directionOnTrait
+          clinicalSignificances
+          allelicRequirements
+          alleleOrigins
+          confidence
+          literature
+          cohortPhenotypes
+        }
+      }
+      intogen {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          mutatedSamples {
+            functionalConsequenceId
+            functionalConsequenceLabel
+            numberMutatedSamples
+            numberSamplesTested
+            numberSamplesWithMutationType
+          }
+          resourceScore
+          significantDriverMethods
+          cohortId
+          cohortShortName
+          cohortDescription
+        }
+      }
+      intogen_sort: intogen(sort: [{key: SCORE, direction: ASCENDING}, {key: P_VALUE, direction: ASCENDING}]) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          significantDriverMethods
+          cohortId
+          cohortShortName
+          cohortDescription
+        }
+      }
+      intogen_search: intogen(search: {text: "a", fields: [DISEASE_NAME, COHORT_SHORT_NAME, COHORT_DESCRIPTION]}) {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          resourceScore
+          significantDriverMethods
+          cohortId
+          cohortShortName
+          cohortDescription
+        }
+      }
+      impc {
+        count
+        rows {
+          id
+          score
+          diseaseId
+          diseaseName
+          diseaseFromSource
+          targetId
+          targetApprovedSymbol
+          targetInModel
+          directionOnTarget
+          directionOnTrait
+          biologicalModelId
+          biologicalModelGeneticBackground
+          biologicalModelAllelicComposition
+          diseaseModelAssociatedModelPhenotypes {
+            id
+            label
+          }
+          diseaseModelAssociatedHumanPhenotypes {
+            id
+            label
+          }
+        }
+      }
+    }
+    evidenceViews_enableIndirect: evidenceViews(ensemblIds: [$target], enableIndirect: true) {
+      __typename
+    }
+  }
+  variant(variantId: $variant) {
+    variantId
+    evidences {
+      count
+      rows {
+        id
+        alleleOrigins
+        allelicRequirements
+        ancestry
+        ancestryId
+        assays {
+          description
+          isHit
+          shortName
+        }
+        assessments
+        beta
+        betaConfidenceIntervalLower
+        betaConfidenceIntervalUpper
+        biologicalModelAllelicComposition
+        biologicalModelGeneticBackground
+        biologicalModelId
+        biomarkerList {
+          description
+          name
+        }
+        biomarkerName
+        biomarkers {
+          geneExpression {
+            name
+            id {
+              id
+              label
+            }
+          }
+          geneticVariation {
+            id
+            name
+            functionalConsequence {
+              id
+              label
+            }
+          }
+        }
+        biosamplesFromSource
+        cellLineBackground
+        cellType
+        clinicalReportId
+        clinicalSignificances
+        clinicalStage
+        cohortDescription
+        cohortId
+        cohortPhenotypes
+        cohortShortName
+        confidence
+        contrast
+        crisprScreenLibrary
+        datasourceId
+        datatypeId
+        directionOnTarget
+        directionOnTrait
+        diseaseCellLines {
+          id
+          name
+          tissue
+          tissueId
+        }
+        diseaseFromSource
+        diseaseFromSourceId
+        diseaseFromSourceMappedId
+        diseaseModelAssociatedHumanPhenotypes {
+          id
+          label
+        }
+        diseaseModelAssociatedModelPhenotypes {
+          id
+          label
+        }
+        drugFromSource
+        evidenceDate
+        geneticInteractionType
+        geneticInteractionScore
+        interactingTargetFromSourceId
+        interactingTargetRole
+        literature
+        log2FoldChangePercentileRank
+        mutatedSamples {
+          numberMutatedSamples
+          numberSamplesTested
+          numberSamplesWithMutationType
+          functionalConsequence {
+            id
+            label
+          }
+        }
+        oddsRatio
+        oddsRatioConfidenceIntervalLower
+        oddsRatioConfidenceIntervalUpper
+        pValueExponent
+        pValueMantissa
+        pathways {
+          id
+          name
+        }
+        phenotypicConsequenceLogFoldChange
+        phenotypicConsequencePValue
+        phenotypicConsequenceScore
+        primaryProjectHit
+        primaryProjectId
+        projectDescription
+        projectId
+        publicationDate
+        publicationYear
+        qualityControls
+        reactionId
+        reactionName
+        releaseDate
+        releaseVersion
+        resourceScore
+        score
+        significantDriverMethods
+        statisticalMethod
+        statisticalMethodOverview
+        statisticalTestTail
+        studyCases
+        studyCasesWithQualifyingVariants
+        studyId
+        studyOverview
+        studySampleSize
+        studyStartDate
+        targetFromSource
+        targetFromSourceId
+        targetInModel
+        targetModulation
+        targetRole
+        textMiningSentences {
+          dEnd
+          dStart
+          section
+          tEnd
+          tStart
+          text
+        }
+        trialStopReasonCategories
+        trialWhyStopped
+        urls {
+          niceName
+          url
+        }
+        variantAminoacidDescriptions
+        variantRsId
+        disease {
+          id
+        }
+        credibleSet {
+          credibleSetId
+        }
+        variant {
+          variantId
+        }
+        target {
+          id
+        }
+        drug {
+          id
+        }
+        drugResponse {
+          id
+        }
+        variantFunctionalConsequence {
+          id
+          label
+        }
+      }
+    }
+    evidences_datasourceIds: evidences(datasourceIds: [clinical_precedence, gwas_credible_sets, gene_burden, eva, genomics_england, gene2phenotype, uniprot_literature, uniprot_variants, orphanet, clingen, cancer_gene_census, intogen, eva_somatic, cancer_biomarkers, crispr_screen, crispr, reactome, europepmc, expression_atlas, impc, ot_crispr_validation, ot_crispr, encore]) {
+      count
+      rows {
+        id
+        alleleOrigins
+        allelicRequirements
+        ancestry
+        ancestryId
+        assessments
+        beta
+        betaConfidenceIntervalLower
+        betaConfidenceIntervalUpper
+        biologicalModelAllelicComposition
+        biologicalModelGeneticBackground
+        biologicalModelId
+        biomarkerName
+        biosamplesFromSource
+        cellLineBackground
+        cellType
+        clinicalReportId
+        clinicalSignificances
+        clinicalStage
+        cohortDescription
+        cohortId
+        cohortPhenotypes
+        cohortShortName
+        confidence
+        contrast
+        crisprScreenLibrary
+        datasourceId
+        datatypeId
+        directionOnTarget
+        directionOnTrait
+        diseaseFromSource
+        diseaseFromSourceId
+        diseaseFromSourceMappedId
+        drugFromSource
+        evidenceDate
+        geneticInteractionType
+        geneticInteractionScore
+        interactingTargetFromSourceId
+        interactingTargetRole
+        literature
+        log2FoldChangePercentileRank
+        oddsRatio
+        oddsRatioConfidenceIntervalLower
+        oddsRatioConfidenceIntervalUpper
+        pValueExponent
+        pValueMantissa
+        phenotypicConsequenceLogFoldChange
+        phenotypicConsequencePValue
+        phenotypicConsequenceScore
+        primaryProjectHit
+        primaryProjectId
+        projectDescription
+        projectId
+        publicationDate
+        publicationYear
+        qualityControls
+        reactionId
+        reactionName
+        releaseDate
+        releaseVersion
+        resourceScore
+        score
+        significantDriverMethods
+        statisticalMethod
+        statisticalMethodOverview
+        statisticalTestTail
+        studyCases
+        studyCasesWithQualifyingVariants
+        studyId
+        studyOverview
+        studySampleSize
+        studyStartDate
+        targetFromSource
+        targetFromSourceId
+        targetInModel
+        targetModulation
+        targetRole
+        trialStopReasonCategories
+        trialWhyStopped
+        variantAminoacidDescriptions
+        variantRsId
+      }
+    }
+  }
+}

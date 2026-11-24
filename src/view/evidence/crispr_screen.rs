@@ -15,6 +15,7 @@ use strum::EnumIter;
 use super::EvidenceScope;
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::{association::Datasource, evidence::Datatype},
     query::{
         paginate::Paged,
         sort::{Sort, SortDirection},
@@ -44,17 +45,17 @@ pub struct EvidenceCrisprScreen {
     /// Reported disease: the disease label from the original source.
     disease_from_source: Option<String>,
     /// Identifier the source's disease label was mapped to.
-    disease_from_source_mapped_id: Option<String>,
+    disease_from_source_mapped_id: String,
     /// Identifier of the target for which the disease is associated in this evidence.
     target_id: String,
     /// Approved symbol of the target. Empty if the target isn't found.
     target_approved_symbol: String,
     /// Target label from the original source.
-    target_from_source_id: Option<String>,
+    target_from_source_id: String,
     /// Identifier of the data source.
-    datasource_id: String,
+    datasource_id: Datasource,
     /// Identifier of the data type.
-    datatype_id: String,
+    datatype_id: Datatype,
     /// Source of the screen, e.g. `crispr_brain`.
     project_id: Option<String>,
     /// Identifier of the screen.

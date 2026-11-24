@@ -1,0 +1,105 @@
+# variables: {"target": "ENSG99999999999", "disease": "EFO_9999999"}
+query LiveAssociations($target: String!, $disease: String!) {
+  associationDatasources {
+    datasource
+    datatype
+  }
+  target(ensemblId: $target) {
+    id
+    associatedDiseases {
+      count
+      rows {
+        score
+        datasourceScores {
+          id
+          score
+        }
+        disease {
+          id
+        }
+      }
+    }
+    associatedDiseases_Bs: associatedDiseases(Bs: [$disease]) {
+      count
+      rows {
+        score
+      }
+    }
+    associatedDiseases_BFilter: associatedDiseases(BFilter: "a") {
+      count
+      rows {
+        score
+      }
+    }
+    associatedDiseases_includeMeasurements: associatedDiseases(includeMeasurements: true) {
+      count
+      rows {
+        score
+      }
+    }
+    associatedDiseases_indirectWeight: associatedDiseases(indirectWeight: 0.5) {
+      count
+      rows {
+        score
+      }
+    }
+    associatedDiseases_datasourcePolicyOverrides: associatedDiseases(datasourcePolicyOverrides: [{id: clinical_precedence, policy: {weight: 0.5, required: true, propagate: true}}]) {
+      count
+      rows {
+        score
+      }
+    }
+    associatedDiseases_sort: associatedDiseases(sort: {key: "eva", direction: ASCENDING}) {
+      count
+      rows {
+        score
+      }
+    }
+  }
+  disease(efoId: $disease) {
+    id
+    associatedTargets {
+      count
+      rows {
+        score
+        datasourceScores {
+          id
+          score
+        }
+        target {
+          id
+        }
+      }
+    }
+    associatedTargets_Bs: associatedTargets(Bs: [$disease]) {
+      count
+      rows {
+        score
+      }
+    }
+    associatedTargets_BFilter: associatedTargets(BFilter: "a") {
+      count
+      rows {
+        score
+      }
+    }
+    associatedTargets_indirectWeight: associatedTargets(indirectWeight: 0.5) {
+      count
+      rows {
+        score
+      }
+    }
+    associatedTargets_datasourcePolicyOverrides: associatedTargets(datasourcePolicyOverrides: [{id: clinical_precedence, policy: {weight: 0.5, required: true, propagate: true}}]) {
+      count
+      rows {
+        score
+      }
+    }
+    associatedTargets_sort: associatedTargets(sort: {key: "eva", direction: ASCENDING}) {
+      count
+      rows {
+        score
+      }
+    }
+  }
+}

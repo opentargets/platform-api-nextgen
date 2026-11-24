@@ -18,7 +18,7 @@
       dictGet(
         'target_symbols',
         'approvedSymbol',
-        ifNull(tc.targetId, '')
+        tc.targetId
       ),
       ''
     ) AS targetApprovedSymbol,

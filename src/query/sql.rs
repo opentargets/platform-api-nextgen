@@ -25,6 +25,8 @@ pub trait Table: Send + Sync + 'static {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ValueKind {
     Str,
+    /// A ClickHouse `Enum8`/`Enum16` column: filtered by name (`Str` values), text in expressions.
+    Enum,
     U32,
     U64,
     I64,
@@ -37,6 +39,11 @@ pub enum ValueKind {
 /// can't span two fields. It's the ASCII "unit separator", which won't appear in data.
 const SEARCH_SEP: &str = r"'\x1F'";
 
+/// Whether a column of kind `col` takes a value of kind `value`: an `Enum` column takes names.
+fn accepts(col: ValueKind, value: ValueKind) -> bool {
+    col == value || (col == ValueKind::Enum && value == ValueKind::Str)
+}
+
 /// SQL expression turning a text column into a single string, or `None` if
 /// the column isn't text.
 fn as_text_sql<C: Column>(col: C) -> Option<String> {
@@ -45,6 +52,8 @@ fn as_text_sql<C: Column>(col: C) -> Option<String> {
         // `ifNull` because one NULL makes the whole concatenation NULL, which would
         // drop the row from every search. It's a no-op on non-Nullable columns.
         ValueKind::Str => Some(format!("ifNull({name}, '')")),
+        // `toString` because `concatWithSeparator` rejects an Enum; `ifNull` over it is for a NULL.
+        ValueKind::Enum => Some(format!("ifNull(toString({name}), '')")),
         ValueKind::StrArray => Some(format!("arrayStringConcat({name}, {SEARCH_SEP})")),
         ValueKind::U32 | ValueKind::U64 | ValueKind::I64 | ValueKind::F64 | ValueKind::U64Array => {
             None
@@ -124,7 +133,7 @@ impl<C: Column> Filter<C> {
     /// A comparison filter. Errors if the value's type doesn't match the column.
     #[allow(clippy::missing_errors_doc)]
     pub fn new(col: C, op: Op, value: Value) -> Result<Self, String> {
-        if col.kind() != value.kind() {
+        if !accepts(col.kind(), value.kind()) {
             return Err(format!(
                 "column {} expects {:?}, got {:?}",
                 col.as_sql(),
@@ -166,10 +175,10 @@ impl<C: Column> Filter<C> {
         })
     }
 
-    /// An `IN` filter over a `Str` column. Errors if `col` isn't `Str`.
+    /// An `IN` filter over a `Str` column, or an `Enum` column by name. Errors otherwise.
     #[allow(clippy::missing_errors_doc)]
     pub fn in_str(col: C, values: Vec<String>) -> Result<Self, String> {
-        if col.kind() != ValueKind::Str {
+        if !accepts(col.kind(), ValueKind::Str) {
             return Err(format!(
                 "column {} expects Str, got {:?}",
                 col.as_sql(),
@@ -201,10 +210,10 @@ impl<C: Column> Filter<C> {
     }
 
     /// A case-insensitive substring filter on a `Str` column: the column contains `term`,
-    /// or with `negate`, doesn't. Errors if `col` isn't `Str`.
+    /// or with `negate`, doesn't. Errors if `col` isn't `Str` or `Enum`.
     #[allow(clippy::missing_errors_doc)]
     pub fn contains(col: C, term: String, negate: bool) -> Result<Self, String> {
-        if col.kind() != ValueKind::Str {
+        if !accepts(col.kind(), ValueKind::Str) {
             return Err(format!(
                 "column {} expects Str, got {:?}",
                 col.as_sql(),
@@ -228,7 +237,11 @@ impl<C: Column> Filter<C> {
             Self::Compare { col, op, .. } => format!("{} {} ?", col.as_sql(), op.as_sql()),
             Self::Contains { col, negate, .. } => format!(
                 "positionCaseInsensitiveUTF8({}, ?) {} 0",
-                col.as_sql(),
+                if col.kind() == ValueKind::Enum {
+                    format!("toString({})", col.as_sql())
+                } else {
+                    col.as_sql().to_string()
+                },
                 if *negate { "=" } else { ">" }
             ),
             Self::IsNull { col, null } => format!(
@@ -432,6 +445,7 @@ mod tests {
         Score => "score" : F64,
         Count => "count" : U64,
         Tags  => "tags"  : StrArray,
+        Stage => "stage" : Enum,
     });
 
     struct TestTable;
@@ -604,6 +618,34 @@ mod tests {
         let sql = f.to_sql();
         assert!(sql.contains("ifNull(id, '')"), "sql was:\n{sql}");
         assert!(sql.contains("arrayStringConcat(tags,"), "sql was:\n{sql}");
+    }
+
+    #[test]
+    fn search_converts_enum_columns_to_text() {
+        let f = Filter::search(vec![TestCol::Id, TestCol::Stage], "x".to_string()).unwrap();
+        assert!(
+            f.to_sql().contains("ifNull(toString(stage), '')"),
+            "sql was:\n{}",
+            f.to_sql()
+        );
+    }
+
+    #[test]
+    fn enum_column_filters_by_name_without_to_string() {
+        let f = Filter::new(TestCol::Stage, Op::Eq, Value::Str("PHASE_1".to_string())).unwrap();
+        assert_eq!(f.to_sql(), "stage = ?");
+        let f = Filter::in_str(TestCol::Stage, vec!["PHASE_1".to_string()]).unwrap();
+        assert_eq!(f.to_sql(), "stage IN ?");
+        assert!(Filter::new(TestCol::Stage, Op::Eq, Value::U64(1)).is_err());
+    }
+
+    #[test]
+    fn contains_converts_enum_column_to_text() {
+        let f = Filter::contains(TestCol::Stage, "x".to_string(), false).unwrap();
+        assert_eq!(
+            f.to_sql(),
+            "positionCaseInsensitiveUTF8(toString(stage), ?) > 0"
+        );
     }
 
     #[test]

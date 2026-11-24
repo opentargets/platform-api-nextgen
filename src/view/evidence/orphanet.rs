@@ -14,6 +14,7 @@ use strum::EnumIter;
 use super::EvidenceScope;
 use crate::{
     datasource::clickhouse::ClickHouse,
+    entity::evidence::{DirectionOnTarget, DirectionOnTrait},
     query::{
         paginate::Paged,
         sort::{Sort, SortDirection},
@@ -53,9 +54,9 @@ pub struct EvidenceOrphanet {
     /// Label of the variant functional consequence.
     variant_functional_consequence_label: Option<String>,
     /// Gain or loss of function effect of the evidence on the target.
-    direction_on_target: Option<String>,
+    direction_on_target: Option<DirectionOnTarget>,
     /// Predicted direction of effect on the trait.
-    direction_on_trait: Option<String>,
+    direction_on_trait: Option<DirectionOnTrait>,
     /// Allele origins, e.g. germline or somatic.
     allele_origins: Vec<String>,
     /// Whether Orphanet has assessed the association.

@@ -8,12 +8,15 @@ use clickhouse::Row;
 use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
+use serde_repr::Deserialize_repr;
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
     entity::{
         adverse_event::{AdverseEvent, load_adverse_events},
         clinical_indication::{ClinicalIndication, by_drug, load_clinical_indications_from_drug},
+        clinical_report::ClinicalStage,
         drug_warning::{DrugWarning, load_drug_warnings},
         mechanisms_of_action::{MechanismsOfAction, load_mechanisms_of_action},
         pharmacogenomics::{
@@ -33,6 +36,69 @@ use crate::{
 };
 
 // ---- models ----
+
+/// Therapeutic category or chemical class of a drug molecule.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+pub enum DrugType {
+    /// Antibody.
+    #[graphql(name = "Antibody")]
+    #[strum(serialize = "Antibody")]
+    Antibody = 1,
+    /// Antibody drug conjugate.
+    #[graphql(name = "Antibody_drug_conjugate")]
+    #[strum(serialize = "Antibody drug conjugate")]
+    AntibodyDrugConjugate = 2,
+    /// Cell.
+    #[graphql(name = "Cell")]
+    #[strum(serialize = "Cell")]
+    Cell = 3,
+    /// Enzyme.
+    #[graphql(name = "Enzyme")]
+    #[strum(serialize = "Enzyme")]
+    Enzyme = 4,
+    /// Gene.
+    #[graphql(name = "Gene")]
+    #[strum(serialize = "Gene")]
+    Gene = 5,
+    /// Oligonucleotide.
+    #[graphql(name = "Oligonucleotide")]
+    #[strum(serialize = "Oligonucleotide")]
+    Oligonucleotide = 6,
+    /// Oligosaccharide.
+    #[graphql(name = "Oligosaccharide")]
+    #[strum(serialize = "Oligosaccharide")]
+    Oligosaccharide = 7,
+    /// Protein.
+    #[graphql(name = "Protein")]
+    #[strum(serialize = "Protein")]
+    Protein = 8,
+    /// Small molecule.
+    #[graphql(name = "Small_molecule")]
+    #[strum(serialize = "Small molecule")]
+    SmallMolecule = 9,
+    /// Unknown type.
+    #[graphql(name = "Unknown")]
+    #[strum(serialize = "Unknown")]
+    Unknown = 10,
+    /// Vaccine component.
+    #[graphql(name = "Vaccine_component")]
+    #[strum(serialize = "Vaccine component")]
+    VaccineComponent = 11,
+}
 
 /// Cross-reference information for a drug molecule.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
@@ -73,7 +139,7 @@ pub struct Drug {
     trade_names: Vec<DrugLabelAndSource>,
     /// Classification of the molecule's therapeutic category or chemical class (e.g. Antibody).
     #[allow(clippy::struct_field_names)]
-    drug_type: String, // TODO: make it enum type because 11 drug types
+    drug_type: DrugType,
     /// Cross-reference information for this molecule from external databases.
     cross_references: Vec<DrugReferences>,
     /// Parent molecule for derivative compounds.
@@ -83,9 +149,9 @@ pub struct Drug {
     #[graphql(skip)]
     child_chembl_ids: Vec<String>,
     /// Highest clinical stage reached by the drug or clinical candidate molecule.
-    maximum_clinical_stage: String,
+    maximum_clinical_stage: ClinicalStage,
     /// Summary of the drug's clinical development.
-    description: Option<String>,
+    description: String,
     /// Mol Block is a chemical structure file format that serves as a connection table,
     /// representing molecules through a list of atoms, bonds, and spatial coordinates.
     molblock: Option<String>,

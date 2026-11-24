@@ -9,6 +9,7 @@ use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
@@ -41,36 +42,190 @@ use crate::{
 // ---- models ----
 /// Chromosome type.
 #[derive(
-    Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, Enum, Deserialize_repr, Serialize_repr,
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    Serialize_repr,
+    IntoStaticStr,
+    EnumIter,
 )]
 #[repr(i8)]
 #[graphql(rename_items = "lowercase")]
 pub enum Chromosome {
+    #[strum(serialize = "1")]
     Chr1 = 1,
+    #[strum(serialize = "2")]
     Chr2 = 2,
+    #[strum(serialize = "3")]
     Chr3 = 3,
+    #[strum(serialize = "4")]
     Chr4 = 4,
+    #[strum(serialize = "5")]
     Chr5 = 5,
+    #[strum(serialize = "6")]
     Chr6 = 6,
+    #[strum(serialize = "7")]
     Chr7 = 7,
+    #[strum(serialize = "8")]
     Chr8 = 8,
+    #[strum(serialize = "9")]
     Chr9 = 9,
+    #[strum(serialize = "10")]
     Chr10 = 10,
+    #[strum(serialize = "11")]
     Chr11 = 11,
+    #[strum(serialize = "12")]
     Chr12 = 12,
+    #[strum(serialize = "13")]
     Chr13 = 13,
+    #[strum(serialize = "14")]
     Chr14 = 14,
+    #[strum(serialize = "15")]
     Chr15 = 15,
+    #[strum(serialize = "16")]
     Chr16 = 16,
+    #[strum(serialize = "17")]
     Chr17 = 17,
+    #[strum(serialize = "18")]
     Chr18 = 18,
+    #[strum(serialize = "19")]
     Chr19 = 19,
+    #[strum(serialize = "20")]
     Chr20 = 20,
+    #[strum(serialize = "21")]
     Chr21 = 21,
+    #[strum(serialize = "22")]
     Chr22 = 22,
+    #[strum(serialize = "X")]
     ChrX = 23,
+    #[strum(serialize = "Y")]
     ChrY = 24,
+    #[strum(serialize = "MT")]
     ChrMT = 25,
+}
+
+/// Method used to predict or measure the effect of a variant.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+pub enum VariantEffectMethod {
+    /// Missense pathogenicity prediction.
+    #[graphql(name = "AlphaMissense")]
+    #[strum(serialize = "AlphaMissense")]
+    AlphaMissense = 1,
+    /// Protein stability prediction.
+    #[graphql(name = "FoldX")]
+    #[strum(serialize = "FoldX")]
+    FoldX = 2,
+    /// GERP conservation score.
+    #[graphql(name = "GERP")]
+    #[strum(serialize = "GERP")]
+    Gerp = 3,
+    /// GPN-Star conservation score.
+    #[graphql(name = "GPN_Star")]
+    #[strum(serialize = "GPN-Star")]
+    GpnStar = 4,
+    /// LOFTEE loss-of-function prediction.
+    #[graphql(name = "LOFTEE")]
+    #[strum(serialize = "LOFTEE")]
+    Loftee = 5,
+    /// Manual loss-of-function curation.
+    #[graphql(name = "LossOfFunctionCuration")]
+    #[strum(serialize = "LossOfFunctionCuration")]
+    LossOfFunctionCuration = 6,
+    /// SIFT prediction.
+    #[graphql(name = "SIFT")]
+    #[strum(serialize = "SIFT")]
+    Sift = 7,
+    /// Ensembl VEP consequence.
+    #[graphql(name = "VEP")]
+    #[strum(serialize = "VEP")]
+    Vep = 8,
+}
+
+/// gnomAD population of an allele frequency.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum AlleleFrequencyPopulation {
+    /// African/African American.
+    AfrAdj = 1,
+    /// Admixed American.
+    AmrAdj = 2,
+    /// Amish.
+    AmiAdj = 3,
+    /// Ashkenazi Jewish.
+    AsjAdj = 4,
+    /// East Asian.
+    EasAdj = 5,
+    /// Finnish.
+    FinAdj = 6,
+    /// Non-Finnish European.
+    NfeAdj = 7,
+    /// Middle Eastern.
+    MidAdj = 8,
+    /// South Asian.
+    SasAdj = 9,
+    /// Remaining individuals.
+    RemainingAdj = 10,
+}
+
+/// Loss-of-function confidence predicted by LOFTEE.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Enum,
+    Deserialize_repr,
+    IntoStaticStr,
+    EnumIter,
+)]
+#[repr(i8)]
+#[graphql(rename_items = "UPPERCASE")]
+#[strum(serialize_all = "UPPERCASE")]
+pub enum LofteePrediction {
+    /// High confidence loss of function.
+    Hc = 1,
+    /// Low confidence loss of function.
+    Lc = 2,
 }
 
 /// Predicted or measured effect of the variant based on various methods.
@@ -79,7 +234,7 @@ pub enum Chromosome {
 #[graphql(complex)]
 pub struct VariantEffect {
     /// Method name used to predict the effect of the variant.
-    method: Option<String>,
+    method: VariantEffectMethod,
     /// Textual assessment of the variant effect.
     assessment: Option<String>,
     /// Score of the variant effect.
@@ -90,7 +245,7 @@ pub struct VariantEffect {
     #[graphql(skip)]
     target_id: Option<String>,
     /// Variant effect normalised between -1 and 1.
-    normalised_score: Option<f64>,
+    normalised_score: f64,
 }
 
 #[ComplexObject]
@@ -125,19 +280,32 @@ pub struct TranscriptConsequence {
     distance_from_footprint: i32,
     /// Distance of the variant from the transcription start site.
     distance_from_tss: i32,
+    // Enum8 APPRIS annotation, not exposed.
+    #[graphql(skip)]
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    appris: Option<i8>,
+    #[graphql(skip)]
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    mane_select: Option<String>,
     /// Open Target target identifier of the transcript [bioregistry:ensembl].
     #[graphql(skip)]
-    target_id: Option<String>,
+    target_id: String,
     /// Ensembl VEP predicted impact of the variant on the transcript.
-    impact: Option<String>,
-    /// Ensembl transcript identifier [bioregistry:ensembl].
-    transcript_id: Option<String>,
+    impact: String,
     /// Loss-of-function prediction based on LOFTEE.
-    loftee_prediction: Option<String>,
-    /// Index of the transcript in the list of transcripts around the gene.
-    transcript_index: u32,
+    loftee_prediction: Option<LofteePrediction>,
     /// Score assigned to transcript based on Ensembl VEP consequence.
     consequence_score: f64,
+    /// Index of the transcript in the list of transcripts around the gene.
+    transcript_index: u32,
+    #[graphql(skip)]
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    approved_symbol: Option<String>,
+    #[graphql(skip)]
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    biotype: String,
+    /// Ensembl transcript identifier [bioregistry:ensembl].
+    transcript_id: String,
 
     // sort fields
     #[graphql(skip)]
@@ -149,10 +317,7 @@ pub struct TranscriptConsequence {
 impl TranscriptConsequence {
     /// The target (gene/protein) associated with the transcript.
     async fn target(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Target>> {
-        match &self.target_id {
-            Some(target_id) => load_target(ctx, target_id.clone()).await,
-            None => Ok(None),
-        }
+        load_target(ctx, self.target_id.clone()).await
     }
 
     /// The sequence ontology term of the consequence of the variant based on Ensembl VEP in the
@@ -166,7 +331,7 @@ impl TranscriptConsequence {
 }
 
 impl TranscriptConsequence {
-    fn approved_symbol(&self) -> Option<&str> {
+    fn target_approved_symbol(&self) -> Option<&str> {
         self.target.as_ref().map(|t| t.approved_symbol.as_str())
     }
 
@@ -176,13 +341,11 @@ impl TranscriptConsequence {
         rows: &mut [TranscriptConsequence],
     ) -> async_graphql::Result<()> {
         let loader = ctx.data_unchecked::<DataLoader<TargetLoader>>();
-        let ids = rows.iter().filter_map(|tc| tc.target_id.clone());
+        let ids = rows.iter().map(|tc| tc.target_id.clone());
         let targets = loader.load_many(ids).await?;
 
         for tc in rows {
-            if let Some(id) = &tc.target_id {
-                tc.target = targets.get(id).cloned();
-            }
+            tc.target = targets.get(&tc.target_id).cloned();
         }
         Ok(())
     }
@@ -193,9 +356,9 @@ impl TranscriptConsequence {
 #[serde(rename_all = "camelCase")]
 pub struct DbXref {
     /// Identifier of the variant in the given database.
-    id: Option<String>,
+    id: String,
     /// Name of the database the variant is referenced in.
-    source: Option<String>,
+    source: String,
 }
 
 /// Allele frequencies of the variant in different populations.
@@ -203,7 +366,7 @@ pub struct DbXref {
 #[serde(rename_all = "camelCase")]
 pub struct AlleleFrequency {
     /// Name of the population where the allele frequency was measured.
-    population_name: Option<String>,
+    population_name: AlleleFrequencyPopulation,
     /// Frequency of the alternate allele in the population (ranging from 0 to 1).
     allele_frequency: Option<f64>,
 }
@@ -257,7 +420,7 @@ pub struct Variant {
 // ---- query utilities ----
 
 impl Entity for TranscriptConsequence {
-    fn id(&self) -> &str { self.transcript_id.as_deref().unwrap_or_default() }
+    fn id(&self) -> &str { &self.transcript_id }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Enum)]
@@ -284,7 +447,9 @@ impl SortKey<TranscriptConsequence> for TranscriptConsequenceSortField {
     ) -> Ordering {
         let primary = Term::new(direction, Nulls::Last);
         match self {
-            Self::TargetApprovedSymbol => primary.cmp(&a.approved_symbol(), &b.approved_symbol()),
+            Self::TargetApprovedSymbol => {
+                primary.cmp(&a.target_approved_symbol(), &b.target_approved_symbol())
+            }
             Self::DistanceFromFootprint => {
                 primary.cmp(&a.distance_from_footprint, &b.distance_from_footprint)
             }

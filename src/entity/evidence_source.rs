@@ -2,7 +2,10 @@ use async_graphql::{Context, Object, SimpleObject};
 use clickhouse::Row;
 use serde::Deserialize;
 
-use crate::datasource::clickhouse::ClickHouse;
+use crate::{
+    datasource::clickhouse::ClickHouse,
+    entity::{association::Datasource, evidence::Datatype},
+};
 
 // ---- models ----
 
@@ -10,9 +13,9 @@ use crate::datasource::clickhouse::ClickHouse;
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 pub struct EvidenceSource {
     /// Name of the evidence datasource.
-    datasource: String,
+    datasource: Datasource,
     /// Datatype/category of the evidence (e.g., Genetic association, Somatic, Literature).
-    datatype: String,
+    datatype: Datatype,
 }
 
 // ---- resolvers ----
@@ -28,7 +31,8 @@ impl EvidenceSourceQuery {
         ctx: &Context<'_>,
     ) -> async_graphql::Result<Vec<EvidenceSource>> {
         let ch = ctx.data_unchecked::<ClickHouse>();
-        let sql = "SELECT DISTINCT datasourceId, datatypeId FROM associations_otf_disease";
+        let sql = "SELECT DISTINCT datasourceId AS datasource, datatypeId AS datatype \
+                   FROM associations_otf_disease ORDER BY datasource, datatype";
         Ok(ch.query(sql).fetch_all::<EvidenceSource>().await?)
     }
 }

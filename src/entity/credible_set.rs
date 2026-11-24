@@ -9,6 +9,7 @@ use derive_more::From;
 use moka::future::Cache;
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
+use strum::{EnumIter, IntoStaticStr};
 
 use crate::{
     datasource::clickhouse::ClickHouse,
@@ -27,14 +28,19 @@ use crate::{
 // --- models ---
 
 /// Fine-mapping method used to derive a credible set.
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Enum, Deserialize_repr)]
+#[derive(
+    Debug, Clone, Copy, Hash, Eq, PartialEq, Enum, Deserialize_repr, IntoStaticStr, EnumIter,
+)]
 #[repr(i8)]
 pub enum FineMappingMethod {
     /// Probabilistic Identification of Causal SNPs, from summary statistics or a reported top hit.
+    #[strum(serialize = "PICS")]
     Pics = 1,
     /// Sum of Single Effects regression (`SuSiE`).
+    #[strum(serialize = "SuSiE")]
     Susie = 2,
     /// `SuSiE` with an infinitesimal effects component.
+    #[strum(serialize = "SuSiE-inf")]
     SusieInf = 3,
 }
 
