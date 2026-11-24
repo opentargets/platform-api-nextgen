@@ -4,9 +4,9 @@ Rust GraphQL API for Open Targets Platform and Partner Preview Platform.
 
 ## Compatibility
 
-This API version reads only ClickHouse databases loaded by `pos` from the [`opentargets/pipeline`](https://github.com/opentargets/pipeline) monorepo at **`pos@v26.12.0rc17` or later**. It does not work with databases loaded by `platform-output-support` or by earlier pos release candidates: rows would be misread silently. `scripts/clickhouse-from-pos.sh` builds an empty database for tests; `examples/check-clickhouse-enums.rs` checks the Rust enums against a database.
+This API version reads only ClickHouse databases loaded by `pos` from the [`opentargets/pipeline`](https://github.com/opentargets/pipeline) monorepo at **`pos@v26.12.0rc20` or later**. It does not work with databases loaded by `platform-output-support` or by earlier pos release candidates: rows would be misread silently. `scripts/clickhouse-from-pos.sh` builds an empty database for tests; `examples/check-clickhouse-enums.rs` checks the Rust enums against a database.
 
-TODO: `pos@v26.12.0rcNN (with #426)`. The pharmacogenomics table serves `pharmacogenomicsId` instead of `rowId` from the pos release candidate that includes opentargets/pipeline#426; fill in the rc number when it is cut. rc17 databases fail the pharmacogenomics queries and live test.
+From rc20 (opentargets/pipeline#426) the pharmacogenomics table serves `pharmacogenomicsId` instead of `rowId`; rc17–rc19 databases fail the pharmacogenomics queries and live test.
 
 ## Testing against ClickHouse
 
@@ -14,7 +14,7 @@ Build an empty database from a pos image (starts ClickHouse in docker when no UR
 check the enums, then run the live queries in `tests/live/<product>/`:
 
 ```bash
-scripts/clickhouse-from-pos.sh 26.12.0rc17 platform
+scripts/clickhouse-from-pos.sh 26.12.0rc20 platform
 cargo run --example check-clickhouse-enums --features product-platform -- http://localhost:8123
 LIVE_CLICKHOUSE_URL=http://localhost:8123 cargo test --features product-platform --test live_clickhouse -- --ignored
 ```
