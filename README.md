@@ -4,9 +4,11 @@ Rust GraphQL API for Open Targets Platform and Partner Preview Platform.
 
 ## Compatibility
 
-This API version reads only ClickHouse databases loaded by `pos` from the [`opentargets/pipeline`](https://github.com/opentargets/pipeline) monorepo at **`pos@v26.12.0rc20` or later**. It does not work with databases loaded by `platform-output-support` or by earlier pos release candidates: rows would be misread silently. `scripts/clickhouse-from-pos.sh` builds an empty database for tests; `examples/check-clickhouse-enums.rs` checks the Rust enums against a database.
+This API version reads only ClickHouse databases loaded by `pos` from the [`opentargets/pipeline`](https://github.com/opentargets/pipeline) monorepo at **`pos@v26.12.0rc26` or later**. It does not work with databases loaded by `platform-output-support` or by earlier pos release candidates: rows would be misread silently. `scripts/clickhouse-from-pos.sh` builds an empty database for tests; `examples/check-clickhouse-enums.rs` checks the Rust enums against a database.
 
 From rc20 (opentargets/pipeline#426) the pharmacogenomics table serves `pharmacogenomicsId` instead of `rowId`; rc17–rc19 databases fail the pharmacogenomics queries and live test.
+
+From rc26 (opentargets/pipeline#442) `disease_hpo`, `mouse_phenotypes`, `drug_warnings`, `mechanism_of_action` and `pharmacovigilance` serve the output models' types and field order; rc25 and earlier databases fail the enum check and the decoding of those tables.
 
 ## Testing against ClickHouse
 
@@ -14,7 +16,7 @@ Build an empty database from a pos image (starts ClickHouse in docker when no UR
 check the enums, then run the live queries in `tests/live/<product>/`:
 
 ```bash
-scripts/clickhouse-from-pos.sh 26.12.0rc20 platform
+scripts/clickhouse-from-pos.sh 26.12.0rc26 platform
 cargo run --example check-clickhouse-enums --features product-platform -- http://localhost:8123
 LIVE_CLICKHOUSE_URL=http://localhost:8123 cargo test --features product-platform --test live_clickhouse -- --ignored
 ```
