@@ -27,9 +27,9 @@ use crate::{
 /// A colocalisation of this credible set with another one, as shown in the credible set page's
 /// GWAS and molQTL colocalisation tables. Study, lead variant and P-value fields describe the
 /// **other** credible set.
-///
-/// Rows are decoded by position, so field order must match the column order of
-/// `src/sql/credible_set_colocalisations.sql`. Update both together.
+// Rows are decoded by position, so field order must match the column order of
+// `src/sql/credible_set_colocalisations.sql`, followed by the columns that
+// `src/sql/credible_set_colocalisations_page.sql` adds. Update them together.
 #[allow(clippy::struct_field_names)]
 #[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
@@ -87,11 +87,17 @@ pub struct CredibleSetColocalisation {
     clpp: f64,
     /// Average sign of the beta ratio between colocalised variants (directionality).
     beta_ratio_sign_average: Option<f64>,
+    /// Reference allele of the lead variant. Null if the variant isn't in the variant index.
+    lead_reference_allele: Option<String>,
+    /// Alternate allele of the lead variant. Null if the variant isn't in the variant index.
+    lead_alternate_allele: Option<String>,
 }
 
 impl Table for CredibleSetColocalisation {
     type Col = CredibleSetColocalisationCol;
     const NAME: &'static str = include_str!("../sql/credible_set_colocalisations.sql");
+    const PAGE_JOIN: Option<&'static str> =
+        Some(include_str!("../sql/credible_set_colocalisations_page.sql"));
     // Unique within a credible set, which is all a page ever holds.
     const TIE_BREAKER: &'static str = "otherCredibleSetId";
 }

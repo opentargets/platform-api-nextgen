@@ -1219,9 +1219,6 @@ type CredibleSet {
 A colocalisation of this credible set with another one, as shown in the credible set page's
 GWAS and molQTL colocalisation tables. Study, lead variant and P-value fields describe the
 **other** credible set.
-
-Rows are decoded by position, so field order must match the column order of
-`src/sql/credible_set_colocalisations.sql`. Update both together.
 """
 type CredibleSetColocalisation {
 	"""
@@ -1327,6 +1324,14 @@ type CredibleSetColocalisation {
 	Average sign of the beta ratio between colocalised variants (directionality).
 	"""
 	betaRatioSignAverage: Float
+	"""
+	Reference allele of the lead variant. Null if the variant isn't in the variant index.
+	"""
+	leadReferenceAllele: String
+	"""
+	Alternate allele of the lead variant. Null if the variant isn't in the variant index.
+	"""
+	leadAlternateAllele: String
 }
 
 """
@@ -6220,11 +6225,11 @@ enum FineMappingMethod {
 	"""
 	Sum of Single Effects regression (`SuSiE`).
 	"""
-	SUSIE
+	SuSiE
 	"""
 	`SuSiE` with an infinitesimal effects component.
 	"""
-	SUSIE_INF
+	SuSiE-inf
 }
 
 """
@@ -7473,7 +7478,7 @@ enum Provider {
 	"""
 	ChEMBL.
 	"""
-	CHEMBL
+	ChEMBL
 	"""
 	Therapeutic Target Database.
 	"""
@@ -7490,6 +7495,9 @@ enum Provider {
 	Pharmaceuticals and Medical Devices Agency.
 	"""
 	PMDA
+	"""
+	Food and Drug Administration.
+	"""
 	FDA
 }
 
