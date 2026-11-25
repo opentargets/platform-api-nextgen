@@ -8849,7 +8849,12 @@ type Target {
 	"""
 	List of transcripts associated with the target including protein and structure annotations.
 	"""
-	transcripts: [Transcript!]!
+	transcripts(
+		"""
+		Whether to return only the Ensembl canonical transcript (`true`) or only the non-canonical ones (`false`). Returns all when omitted.
+		"""
+		canonical: Boolean
+	): [Transcript!]!
 	"""
 	Target-disease associations calculated on-the-fly using configurable data source weights and
 	evidence filters. Returns associations with aggregated scores and evidence counts supporting

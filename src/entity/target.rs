@@ -506,6 +506,8 @@ pub struct Target {
     /// List of Ensembl transcript identifiers associated with the target.
     transcript_ids: Vec<String>,
     /// List of transcripts associated with the target including protein and structure annotations.
+    /// Resolved by the `transcripts` field, which can filter on `canonical`.
+    #[graphql(skip)]
     transcripts: Vec<Transcript>,
 }
 
@@ -626,6 +628,19 @@ impl GeneOntologyAnnotation {
 
 #[ComplexObject]
 impl Target {
+    /// List of transcripts associated with the target including protein and structure annotations.
+    async fn transcripts(
+        &self,
+        #[graphql(desc = "Whether to return only the Ensembl canonical transcript (`true`) or \
+                          only the non-canonical ones (`false`). Returns all when omitted.")]
+        canonical: Option<bool>,
+    ) -> Vec<&Transcript> {
+        self.transcripts
+            .iter()
+            .filter(|t| canonical.is_none_or(|c| t.is_ensembl_canonical.unwrap_or(false) == c))
+            .collect()
+    }
+
     /// Target-disease associations calculated on-the-fly using configurable data source weights and
     /// evidence filters. Returns associations with aggregated scores and evidence counts supporting
     /// the target-disease relationship.
