@@ -31,10 +31,13 @@ use crate::{
 #[repr(i8)]
 pub enum FineMappingMethod {
     /// Probabilistic Identification of Causal SNPs, from summary statistics or a reported top hit.
+    #[graphql(name = "PICS")]
     Pics = 1,
     /// Sum of Single Effects regression (`SuSiE`).
+    #[graphql(name = "SuSiE")]
     Susie = 2,
     /// `SuSiE` with an infinitesimal effects component.
+    #[graphql(name = "SuSiE-inf")]
     SusieInf = 3,
 }
 
