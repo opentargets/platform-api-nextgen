@@ -20,6 +20,12 @@ pub trait Table: Send + Sync + 'static {
     /// [`Self::TIE_BREAKER`], so expensive columns and joins cost one page, not every candidate.
     /// It must have the tie-breaker and every sort column. `None` returns rows from `NAME`.
     const ROW_SOURCE: Option<&'static str> = None;
+    /// Display-only columns joined onto the page's rows after filtering, sorting and paging, so a
+    /// join costs one page, not every candidate. A subquery in parentheses that reads `FROM paged`
+    /// and keeps all its columns first, then appends the new ones, e.g.
+    /// `(SELECT p.*, v.x AS x FROM paged AS p LEFT JOIN v ON v.id = p.vId)`. The added columns
+    /// can't be filtered, sorted or searched on. Can't be combined with [`Self::ROW_SOURCE`].
+    const PAGE_JOIN: Option<&'static str> = None;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -366,16 +372,22 @@ impl<T: Table> PageSpec<T> {
         order.push(format!("{} ASC", T::TIE_BREAKER));
 
         let order_by = order.join(", ");
-        let rows = T::ROW_SOURCE.map_or_else(
-            || "paged".to_string(),
-            |source| {
-                let tie = T::TIE_BREAKER;
-                format!(
-                    "(SELECT * FROM {source} WHERE {tie} IN (SELECT {tie} FROM paged) \
-                     ORDER BY {order_by})"
-                )
-            },
-        );
+        const {
+            assert!(
+                T::ROW_SOURCE.is_none() || T::PAGE_JOIN.is_none(),
+                "a table can't have both ROW_SOURCE and PAGE_JOIN"
+            );
+        }
+        let tie = T::TIE_BREAKER;
+        let rows = match (T::ROW_SOURCE, T::PAGE_JOIN) {
+            (Some(source), _) => format!(
+                "(SELECT * FROM {source} WHERE {tie} IN (SELECT {tie} FROM paged) \
+                 ORDER BY {order_by})"
+            ),
+            // The join doesn't keep the page's order, so sort again.
+            (None, Some(join)) => format!("(SELECT * FROM {join} ORDER BY {order_by})"),
+            (None, None) => "paged".to_string(),
+        };
 
         let sql = TEMPLATE
             .replace("{{table}}", T::NAME)
@@ -527,6 +539,38 @@ mod tests {
             r.sql
         );
         assert!(r.sql.contains("FROM narrow\n"), "sql was:\n{}", r.sql);
+    }
+
+    #[test]
+    fn page_join_wraps_the_page_in_order() {
+        struct Joined;
+        impl Table for Joined {
+            type Col = TestCol;
+            const NAME: &'static str = "base";
+            const TIE_BREAKER: &'static str = "id";
+            const PAGE_JOIN: Option<&'static str> =
+                Some("(SELECT p.*, e.x AS x FROM paged AS p LEFT JOIN extra AS e ON e.id = p.id)");
+        }
+        let r = PageSpec::<Joined> {
+            filters: vec![],
+            order_by: vec![OrderBy {
+                col: TestCol::Score,
+                dir: SortDirection::Descending,
+            }],
+            offset: 0,
+            limit: 10,
+        }
+        .render();
+        assert!(
+            r.sql.contains(
+                "FROM (SELECT * FROM (SELECT p.*, e.x AS x FROM paged AS p LEFT JOIN extra AS e \
+                 ON e.id = p.id) ORDER BY score DESC, id ASC)\nGROUP BY"
+            ),
+            "sql was:\n{}",
+            r.sql
+        );
+        // Filtering and paging still read the base table only.
+        assert!(r.sql.contains("FROM base\n"), "sql was:\n{}", r.sql);
     }
 
     #[test]

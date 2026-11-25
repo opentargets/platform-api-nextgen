@@ -112,10 +112,10 @@ pub enum TrialStudyType {
 
 /// Source that provided the clinical report.
 #[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq, Enum)]
-#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
 pub enum Provider {
     /// ChEMBL.
     #[serde(rename = "ChEMBL")]
+    #[graphql(name = "ChEMBL")]
     Chembl,
     /// Therapeutic Target Database.
     #[serde(rename = "TTD")]
@@ -129,7 +129,7 @@ pub enum Provider {
     /// Pharmaceuticals and Medical Devices Agency.
     #[serde(rename = "PMDA")]
     Pmda,
-    // FDA.
+    /// Food and Drug Administration.
     #[serde(rename = "FDA")]
     Fda,
 }
