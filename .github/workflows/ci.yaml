@@ -160,6 +160,24 @@ jobs:
       - name: Run clippy
         run: cargo clippy --locked --all-targets --features product-${{ matrix.product }} -- -D warnings
 
+  test:
+    name: tests (${{ matrix.product }})
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        product: [platform, ppp]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install stable Rust
+        run: rustup toolchain install "$RUST_STABLE" --profile minimal
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.product }}
+      - name: Run tests
+        run: cargo "+$RUST_STABLE" test --locked --features product-${{ matrix.product }}
+
   deny:
     name: cargo-deny
     runs-on: ubuntu-24.04
