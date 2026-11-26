@@ -1,4 +1,4 @@
-data_release = "26.09"
+data_release = "26.12"
 log_level = "trace"
 bind_address = "0.0.0.0:8080"
 # cert_file = ""
