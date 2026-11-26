@@ -1353,7 +1353,7 @@ input CredibleSetColocalisationsSearch {
 	"""
 	Fields to search in. Defaults to all of them.
 	"""
-	fields: [CredibleSetColocalisationsSearchField!]! = [STUDY_ID, TRAIT_FROM_SOURCE, PUBLICATION_FIRST_AUTHOR, TARGET_APPROVED_SYMBOL, BIOSAMPLE_NAME, LEAD_VARIANT_ID]
+	fields: [CredibleSetColocalisationsSearchField!]! = [STUDY_ID, TRAIT_FROM_SOURCE, PUBLICATION_FIRST_AUTHOR, CONDITION, TARGET_APPROVED_SYMBOL, BIOSAMPLE_NAME, LEAD_VARIANT_ID]
 }
 
 """
@@ -1364,6 +1364,7 @@ enum CredibleSetColocalisationsSearchField {
 	STUDY_ID
 	TRAIT_FROM_SOURCE
 	PUBLICATION_FIRST_AUTHOR
+	CONDITION
 	TARGET_APPROVED_SYMBOL
 	BIOSAMPLE_NAME
 	LEAD_VARIANT_ID
