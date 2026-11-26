@@ -37,7 +37,7 @@ pub enum FineMappingMethod {
     #[graphql(name = "SuSiE")]
     Susie = 2,
     /// `SuSiE` with an infinitesimal effects component.
-    #[graphql(name = "SuSiE-inf")]
+    #[graphql(name = "SuSiE_inf")]
     SusieInf = 3,
 }
 
