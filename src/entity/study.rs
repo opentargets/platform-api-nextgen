@@ -565,3 +565,97 @@ impl Study {
         load_diseases(ctx, &self.background_trait_from_source_mapped_ids).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn study(id: &str, date: Option<&str>, author: Option<&str>) -> Study {
+        Study {
+            study_id: id.into(),
+            project_id: "test".into(),
+            study_type: StudyType::Gwas,
+            trait_from_source: "test".into(),
+            trait_from_source_mapped_ids: vec![],
+            condition: None,
+            initial_sample_size: None,
+            n_samples: None,
+            n_cases: None,
+            n_controls: None,
+            cohorts: vec![],
+            discovery_samples: vec![],
+            replication_samples: vec![],
+            ld_population_structure: vec![],
+            has_sumstats: None,
+            summarystats_location: None,
+            analysis_flags: vec![],
+            quality_controls: vec![],
+            sumstat_qc_values: vec![],
+            pubmed_id: None,
+            publication_first_author: author.map(str::to_owned),
+            publication_title: None,
+            publication_journal: None,
+            publication_date: date.map(str::to_owned),
+            disease_ids: vec![],
+            study_locus_ids: vec![],
+            gene_id: None,
+            biosample_from_source_id: None,
+            background_trait_from_source_mapped_ids: vec![],
+        }
+    }
+
+    #[test]
+    fn publication_sort_uses_date_then_author_ascending_with_nulls_last() {
+        use SortDirection::{Ascending, Descending};
+
+        let studies = vec![
+            study("undated-none", None, None),
+            study("new-z", Some("2024-06-01"), Some("Zulu")),
+            study("old", Some("2020-06-01"), Some("Zulu")),
+            study("new-none", Some("2024-06-01"), None),
+            study("undated-z", None, Some("Zulu")),
+            study("new-a", Some("2024-06-01"), Some("Alpha")),
+            study("undated-a", None, Some("Alpha")),
+        ];
+        for (direction, expected) in [
+            (
+                Ascending,
+                [
+                    "old",
+                    "new-a",
+                    "new-z",
+                    "new-none",
+                    "undated-a",
+                    "undated-z",
+                    "undated-none",
+                ],
+            ),
+            (
+                Descending,
+                [
+                    "new-a",
+                    "new-z",
+                    "new-none",
+                    "old",
+                    "undated-a",
+                    "undated-z",
+                    "undated-none",
+                ],
+            ),
+        ] {
+            let sorted = studies
+                .clone()
+                .query()
+                .sort(&[Sort {
+                    key: StudySortField::PublicationAuthorDate,
+                    direction,
+                }])
+                .into_vec();
+            assert_eq!(
+                sorted.iter().map(Entity::id).collect::<Vec<_>>(),
+                expected,
+                "{direction:?}"
+            );
+        }
+    }
+}
