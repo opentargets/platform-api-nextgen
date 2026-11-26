@@ -36,6 +36,8 @@ pub struct CredibleSetVariant {
     credible_set_id: String,
     /// Variant identifier (`chromosome_position_ref_alt`).
     variant_id: String,
+    /// Whether this is the credible set's lead variant.
+    is_lead: bool,
     /// Chromosome of the variant.
     chromosome: Chromosome,
     /// Position of the variant on the chromosome (`GRCh38`).
@@ -74,7 +76,8 @@ impl Table for CredibleSetVariant {
 columns!(CredibleSetVariantCol {
     CredibleSetId              => "credibleSetId"              : Str,
     VariantId                  => "variantId"                  : Str,
-    Chromosome                 => "chromosome"                 : I64,
+    IsLead                     => "isLead"                     : U64,
+    Chromosome                => "chromosome"                 : I64,
     Position                   => "position"                   : I64,
     ReferenceAllele            => "referenceAllele"            : Str,
     AlternateAllele            => "alternateAllele"            : Str,
@@ -147,6 +150,8 @@ impl QueryParams {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Hash)]
 #[graphql(name = "CredibleSetVariantsSortField")]
 pub enum SortField {
+    /// Whether the variant is the credible set's lead variant. Sort descending to put it first.
+    IsLead,
     /// By chromosome, then position, then alleles.
     Variant,
     /// By exponent, then mantissa.
@@ -160,10 +165,17 @@ pub enum SortField {
     LogBayesFactor,
 }
 
-const DEFAULT_SORT: [Sort<SortField>; 1] = [Sort {
-    key: SortField::PosteriorProbability,
-    direction: SortDirection::Descending,
-}];
+/// By posterior probability, with the lead variant first among ties.
+const DEFAULT_SORT: [Sort<SortField>; 2] = [
+    Sort {
+        key: SortField::PosteriorProbability,
+        direction: SortDirection::Descending,
+    },
+    Sort {
+        key: SortField::IsLead,
+        direction: SortDirection::Descending,
+    },
+];
 
 impl SortField {
     pub(crate) fn default_sort() -> Vec<Sort<Self>> { DEFAULT_SORT.to_vec() }
@@ -171,6 +183,7 @@ impl SortField {
     fn as_order_by(self, dir: SortDirection) -> Vec<OrderBy<CredibleSetVariantCol>> {
         use CredibleSetVariantCol as C;
         let cols: &[C] = match self {
+            Self::IsLead => &[C::IsLead],
             Self::Variant => &[
                 C::Chromosome,
                 C::Position,
