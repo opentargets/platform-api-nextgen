@@ -1166,7 +1166,7 @@ type CredibleSet {
 		"""
 		List of sort statements. Each field can be used at most once.
 		"""
-		sort: [CredibleSetVariantsSort!]! = [{key: POSTERIOR_PROBABILITY, direction: DESCENDING}],
+		sort: [CredibleSetVariantsSort!]! = [{key: POSTERIOR_PROBABILITY, direction: DESCENDING}, {key: IS_LEAD, direction: DESCENDING}],
 		"""
 		Case-insensitive text search across the variants' text fields. Searches all fields unless `fields` is given.
 		"""
@@ -1435,6 +1435,10 @@ type CredibleSetVariant {
 	"""
 	variantId: String!
 	"""
+	Whether this is the credible set's lead variant.
+	"""
+	isLead: Boolean!
+	"""
 	Chromosome of the variant.
 	"""
 	chromosome: Chromosome!
@@ -1536,6 +1540,10 @@ input CredibleSetVariantsSort {
 Fields available for sorting.
 """
 enum CredibleSetVariantsSortField {
+	"""
+	Whether the variant is the credible set's lead variant. Sort descending to put it first.
+	"""
+	IS_LEAD
 	"""
 	By chromosome, then position, then alleles.
 	"""
