@@ -88,7 +88,8 @@ columns!(CredibleSetVariantCol {
     ReportedBeta               => "reportedBeta"               : F64,
     ReportedStandardError      => "reportedStandardError"      : F64,
     R2Overall                  => "r2Overall"                  : F64,
-    MostSevereConsequenceLabel => "mostSevereConsequenceLabel" : Str,
+    // Search sees spaces, as the table shows them. The returned label keeps underscores.
+    MostSevereConsequenceLabel => "replaceAll(mostSevereConsequenceLabel, '_', ' ')" : Str,
 });
 
 // ---- query params ----
