@@ -1,17 +1,64 @@
 name: build-dev
 
+# On-demand dev images: Actions → build-dev → Run workflow, or `just dev-build`.
+# Builds the latest pushed commit of the chosen branch as
+#   <Cargo.toml base version>-dev.<id>.<run number>   e.g. 26.12.0-dev.4628.57
+# and also tags it dev-<id>, which always points at the latest build for that id.
+# <id> is the branch's leading issue number (4628-custom-views, feature/4628-x),
+# otherwise the sanitised branch name. Nothing is committed or tagged.
 on:
-  push:
-    tags:
-      # Matches tags that contain a dash after YY.major.minor
-      # Example: 25.0.0-beta.1
-      # Keep in mind github does not support all regex features:
-      # https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet
-      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+  workflow_dispatch:
+    inputs:
+      id:
+        description: 'Issue number or short name (blank = derive from the branch name)'
+        required: false
+        type: string
 
 jobs:
+  version:
+    name: Compute dev version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      extra-tags: ${{ steps.ver.outputs.extra-tags }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: ver
+        name: Compute version
+        shell: bash
+        env:
+          # Passed through env, never interpolated into the script, so the input can't inject commands.
+          ID_INPUT: ${{ inputs.id }}
+          RUN: ${{ github.run_number }}
+        run: |
+          CRATE=$(cargo pkgid | sed 's/.*[#@]//')
+
+          if [ -n "$ID_INPUT" ]; then
+            ID="$ID_INPUT"
+          elif [[ "$GITHUB_REF_NAME" =~ ^([^/]+/)?([0-9]+)(-|$) ]]; then
+            ID="$((10#${BASH_REMATCH[2]}))"   # leading issue number; semver forbids leading zeros
+          else
+            ID="$GITHUB_REF_NAME"
+          fi
+
+          # Lower-case; anything but [a-z0-9] becomes '-'; trim; cap at 40 chars.
+          ID=$(echo "$ID" | tr '[:upper:]' '[:lower:]' \
+            | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//' | cut -c1-40 | sed -E 's/-+$//')
+          [ -n "$ID" ] || { echo "::error::Could not derive a build id"; exit 1; }
+
+          # Drop any pre-release (-dev, -rc.N) so dev builds always use the base version.
+          V="${CRATE%%-*}-dev.$ID.$RUN"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "extra-tags=dev-$ID" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Dev build \`$V\`"
+            echo "Branch \`$GITHUB_REF_NAME\` @ \`${GITHUB_SHA::7}\`, also tagged \`dev-$ID\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
   build:
     name: Build dev images
+    needs: version
     permissions:
       packages: write
       contents: read
@@ -19,5 +66,6 @@ jobs:
       id-token: write
     uses: ./.github/workflows/build-images.yaml
     with:
-      tag: ${{ github.ref_name }}
+      version: ${{ needs.version.outputs.version }}
+      extra-tags: ${{ needs.version.outputs.extra-tags }}
       latest: false
