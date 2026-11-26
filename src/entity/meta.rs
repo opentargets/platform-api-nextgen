@@ -7,6 +7,7 @@ use crate::{
     config::Config,
     datasource::opensearch::OpenSearch,
     product::{CurrentProduct, Flavor, Product},
+    version::API_VERSION,
 };
 
 // ---- models ----
@@ -41,8 +42,11 @@ pub struct Meta {
 
 // ---- retrievers ----
 
+/// Splits `YY.MM.REV` into its parts. Any semver pre-release suffix
+/// (`-dev`, `-rc.1`, `-dev.4628.57`) is ignored; the full version is in `Meta::name`.
 fn split_version(v: &str) -> (String, String, String) {
-    let mut parts = v.split('.').map(str::to_string);
+    let core = v.split_once('-').map_or(v, |(core, _)| core);
+    let mut parts = core.split('.').map(str::to_string);
     (
         parts.next().unwrap_or_default(),
         parts.next().unwrap_or_default(),
@@ -84,7 +88,7 @@ impl Meta {
 impl Meta {
     #[must_use]
     pub fn new(config: &Config) -> Self {
-        let api_version = env!("CARGO_PKG_VERSION").to_string();
+        let api_version = API_VERSION.to_string();
         let (api_year, api_month, api_revision) = split_version(&api_version);
         let (data_year, data_month, data_revision) = split_version(&config.data_release);
         let product = <CurrentProduct as Product>::NAME;
@@ -119,5 +123,28 @@ impl MetaQuery {
     #[allow(clippy::unused_async)]
     async fn meta(&self, ctx: &Context<'_>) -> async_graphql::Result<Meta> {
         Ok(ctx.data::<Meta>()?.clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::split_version as split;
+
+    #[test]
+    fn splits_release_and_data_versions() {
+        assert_eq!(split("26.12.0"), ("26".into(), "12".into(), "0".into()));
+        assert_eq!(split("26.12"), ("26".into(), "12".into(), String::new()));
+    }
+
+    #[test]
+    fn ignores_prerelease_suffix() {
+        for v in [
+            "26.12.0-dev",
+            "26.12.0-rc.1",
+            "26.12.0-dev.4628.57",
+            "26.12.0-dev.fix-typo.3",
+        ] {
+            assert_eq!(split(v), ("26".into(), "12".into(), "0".into()), "{v}");
+        }
     }
 }

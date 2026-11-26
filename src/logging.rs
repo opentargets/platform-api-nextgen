@@ -8,7 +8,7 @@ use tracing_subscriber::{
     prelude::*,
 };
 
-use crate::config::Config;
+use crate::{config::Config, version::API_VERSION};
 
 const BANNER: &str = r"
     ▒▒   ▄███▄ ▄▄▄▄  ▄▄▄▄▄ ▄▄  ▄▄  ██████ ▄▄▄  ▄▄▄▄   ▄▄▄▄ ▄▄▄▄▄ ▄▄▄▄▄▄ ▄▄▄▄
@@ -24,10 +24,7 @@ pub fn init(config: &Config) {
     let force_pretty = std::env::var_os("LOG_PRETTY").is_some();
 
     if force_pretty || io::stdout().is_terminal() {
-        println!(
-            "{BANNER}{:>72}\n",
-            concat!("API Version ", env!("CARGO_PKG_VERSION"))
-        );
+        println!("{BANNER}{:>72}\n", format!("API Version {API_VERSION}"));
         tracing_subscriber::registry()
             .with(filter)
             .with(fmt::layer().pretty().with_span_events(FmtSpan::CLOSE))

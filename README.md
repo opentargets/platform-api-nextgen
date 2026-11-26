@@ -14,7 +14,8 @@ rustup toolchain install 1.99.0 --profile minimal --component clippy
 
 Install [`just`](https://just.systems) once (`uv tool install rust-just`, or `brew install just`),
 then run `just setup` to install `pre-commit`, `cargo-release` and the commit hook. Run `just`
-on its own to list every recipe.
+on its own to list every recipe. `just dev-build` also needs the
+[GitHub CLI](https://cli.github.com) (`brew install gh`, then `gh auth login`).
 
 ```bash
     cargo watch -c -w src -x 'run --features product-platform'
