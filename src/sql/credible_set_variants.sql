@@ -2,6 +2,7 @@
   SELECT
     c.credibleSetId AS credibleSetId,
     l.variantId AS variantId,
+    toBool(l.variantId = c.leadVariantId) AS isLead,
     v.chromosome AS chromosome,
     v.position AS position,
     v.referenceAllele AS referenceAllele,
@@ -24,7 +25,15 @@
       ''
     ) AS mostSevereConsequenceLabel
   FROM
-    credible_sets_locus AS c
+    (
+      SELECT
+        cl.credibleSetId AS credibleSetId,
+        cl.locus AS locus,
+        cs.leadVariantId AS leadVariantId
+      FROM
+        credible_sets_locus AS cl
+        LEFT JOIN credible_sets AS cs ON cs.credibleSetId = cl.credibleSetId
+    ) AS c
     ARRAY JOIN c.locus AS l
     -- A key lookup on the EmbeddedRocksDB variants table.
     LEFT JOIN variants AS v ON v.variantId = l.variantId
