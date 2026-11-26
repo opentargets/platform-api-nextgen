@@ -6238,7 +6238,7 @@ enum FineMappingMethod {
 	"""
 	`SuSiE` with an infinitesimal effects component.
 	"""
-	SuSiE-inf
+	SuSiE_inf
 }
 
 """
