@@ -7,6 +7,7 @@ pub mod plugin;
 pub mod product;
 pub mod query;
 pub mod server;
+pub mod version;
 pub mod view;
 
 use std::sync::Arc;
