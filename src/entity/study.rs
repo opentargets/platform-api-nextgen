@@ -315,7 +315,8 @@ pub struct StudyStats {
     has_sumstats: Vec<StatsBucket<Option<bool>>>,
     /// The summary statistics of sample sizes.
     n_samples: Sumstats,
-    /// The samples to cases ratio.
+    /// Summary statistics of cases divided by samples, excluding studies with missing counts or
+    /// zero samples. The count is the number of valid ratios.
     samples_by_case: Sumstats,
 }
 
@@ -325,13 +326,20 @@ impl HasStats for Study {
 
 impl ComputeStats for Study {
     fn compute(items: &[Self]) -> StudyStats {
+        let ratios: Vec<f64> = items
+            .iter()
+            .filter_map(|s| match (s.n_cases, s.n_samples) {
+                (Some(cases), Some(samples)) if samples > 0 => {
+                    Some(f64::from(cases) / f64::from(samples))
+                }
+                _ => None,
+            })
+            .collect();
         StudyStats {
             study_type: distribution(items, |s| s.study_type),
             has_sumstats: distribution(items, |s| s.has_sumstats),
             n_samples: sumstats(items, |s| s.n_samples.unwrap_or_default()),
-            samples_by_case: sumstats(items, |s| {
-                f64::from(s.n_cases.unwrap_or_default()) / f64::from(s.n_samples.unwrap_or(0))
-            }),
+            samples_by_case: sumstats(&ratios, |ratio| *ratio),
         }
     }
 }
@@ -602,6 +610,82 @@ mod tests {
             biosample_from_source_id: None,
             background_trait_from_source_mapped_ids: vec![],
         }
+    }
+
+    fn study_with_counts(id: &str, cases: Option<u32>, samples: Option<u32>) -> Study {
+        Study {
+            n_cases: cases,
+            n_samples: samples,
+            ..study(id, None, None)
+        }
+    }
+
+    #[test]
+    fn ratio_statistics_keep_zero_cases_and_divide_cases_by_samples() {
+        for (cases, samples, ratio) in [(0, 100, 0.0), (25, 100, 0.25), (50, 25, 2.0)] {
+            let stats = Study::compute(&[study_with_counts("valid", Some(cases), Some(samples))]);
+            assert_eq!(
+                stats.samples_by_case,
+                sumstats(&[ratio], |value| *value),
+                "cases: {cases}, samples: {samples}"
+            );
+        }
+    }
+
+    #[test]
+    fn ratio_statistics_with_no_defined_ratios_keep_empty_statistics() {
+        let empty = sumstats(&[] as &[f64], |value| *value);
+        let mut undefined = Vec::new();
+        for (cases, samples) in [
+            (None, Some(100)),
+            (Some(25), None),
+            (Some(0), None),
+            (None, None),
+            (Some(25), Some(0)),
+            (Some(0), Some(0)),
+            (None, Some(0)),
+        ] {
+            let study = study_with_counts("undefined", cases, samples);
+            let stats = Study::compute(std::slice::from_ref(&study));
+            assert_eq!(
+                stats.samples_by_case, empty,
+                "cases: {cases:?}, samples: {samples:?}"
+            );
+            undefined.push(study);
+        }
+        assert_eq!(Study::compute(&undefined).samples_by_case, empty);
+        assert_eq!(Study::compute(&[]).samples_by_case, empty);
+    }
+
+    #[test]
+    fn ratio_statistics_exclude_undefined_values_without_removing_study_rows() {
+        let studies = vec![
+            study_with_counts("zero-cases", Some(0), Some(100)),
+            study_with_counts("quarter", Some(25), Some(100)),
+            study_with_counts("half", Some(1), Some(2)),
+            study_with_counts("missing-cases", None, Some(50)),
+            study_with_counts("missing-samples", Some(20), None),
+            study_with_counts("zero-samples", Some(0), Some(0)),
+            study_with_counts("positive-cases-zero-samples", Some(5), Some(0)),
+        ];
+        let result = studies
+            .query()
+            .paginate_with_stats(Page { index: 2, size: 2 });
+
+        assert_eq!(result.count, 7);
+        assert_eq!(
+            result.rows.iter().map(Entity::id).collect::<Vec<_>>(),
+            vec!["missing-samples", "zero-samples"]
+        );
+        // Summary maths has its own tests; these expected inputs protect ratio selection.
+        assert_eq!(
+            result.stats.samples_by_case,
+            sumstats(&[0.0, 0.25, 0.5], |value| *value)
+        );
+        assert_eq!(
+            result.stats.n_samples,
+            sumstats(&[100, 100, 2, 50, 0, 0, 0], |value| *value)
+        );
     }
 
     #[test]

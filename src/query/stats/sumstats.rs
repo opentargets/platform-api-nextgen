@@ -2,6 +2,7 @@ use async_graphql::SimpleObject;
 
 /// Summary statistics for a set of values.
 #[derive(Clone, SimpleObject)]
+#[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct Sumstats {
     /// The number of values.
     count: u64,
