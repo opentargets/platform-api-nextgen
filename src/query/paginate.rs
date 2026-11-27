@@ -88,6 +88,17 @@ pub fn page_complexity(page: Page, child_complexity: usize) -> usize {
         .saturating_mul(child_complexity)
 }
 
+/// Like [`page_complexity`], for a field that can return at most `max_rows` rows whatever the page
+/// size, such as a lookup by a list of IDs. Stops a large default page from multiplying the cost of
+/// page-level fields (e.g. `DiseasePage.studiesView`) that are resolved once, not once per row.
+#[must_use]
+pub fn capped_page_complexity(page: Page, max_rows: usize, child_complexity: usize) -> usize {
+    usize::try_from(page.size)
+        .unwrap_or(usize::MAX)
+        .min(max_rows)
+        .saturating_mul(child_complexity)
+}
+
 /// The result of a paginated query, containing the total number of items and the items.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[graphql(concrete(name = "AssociationTimeseriesPage", params(AssociationTimeseries)))]
@@ -188,6 +199,15 @@ mod tests {
             assert_eq!(page_complexity(page, 0), 0);
         }
         assert_eq!(page_complexity(Page { index: 0, size: 14 }, 3), 42);
+    }
+
+    #[test]
+    fn capped_page_complexity_uses_the_smaller_of_size_and_max_rows() {
+        let page = Page { index: 0, size: 10 };
+        assert_eq!(capped_page_complexity(page, 1, 3), 3);
+        assert_eq!(capped_page_complexity(page, 4, 3), 12);
+        assert_eq!(capped_page_complexity(page, 50, 3), 30);
+        assert_eq!(capped_page_complexity(page, 0, 3), 0);
     }
 
     #[test]

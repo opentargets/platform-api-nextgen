@@ -27,7 +27,7 @@ use crate::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
-        paginate::{Page, Paged, PagedWithStats, page_complexity},
+        paginate::{Page, Paged, PagedWithStats, capped_page_complexity, page_complexity},
         sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
     },
 };
@@ -179,7 +179,7 @@ pub struct DrugQuery;
 #[Object]
 impl DrugQuery {
     /// Retrieve multiple drugs or clinical candidates by identifiers.
-    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    #[graphql(complexity = "capped_page_complexity(page, chembl_ids.len(), child_complexity)")]
     async fn drugs(
         &self,
         ctx: &Context<'_>,
