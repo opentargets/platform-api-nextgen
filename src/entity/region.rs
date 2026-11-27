@@ -14,7 +14,11 @@ use crate::{
         target::{Target, load_targets},
         variant::Chromosome,
     },
-    query::paginate::{Page, Paged, page_complexity},
+    query::{
+        paginate::{Page, Paged, page_complexity},
+        sort::SortDirection,
+        sql::{Column, Filter, Op, OrderBy, PageSpec, Table, Value, ValueKind, build, columns},
+    },
 };
 
 // --- models ---
@@ -77,10 +81,54 @@ impl Key {
 }
 
 #[derive(Debug, Clone, Row, Deserialize)]
-pub struct TargetsByRegionRow {
-    key: usize,
-    count: u64,
-    ids: Vec<String>,
+struct RegionTarget {
+    id: String,
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    chromosome: Chromosome,
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    start: u32,
+    #[allow(dead_code, reason = "read only to keep the column order")]
+    end: u32,
+}
+
+impl Table for RegionTarget {
+    type Col = RegionTargetCol;
+    const NAME: &'static str = "(
+        SELECT
+            target.id AS id,
+            chromosome,
+            start,
+            end
+        FROM targets_by_region
+    )";
+    const TIE_BREAKER: &'static str = "id";
+}
+
+columns!(RegionTargetCol {
+    Chromosome => "chromosome" : I64,
+    Start      => "start"      : U32,
+    End        => "end"        : U32,
+});
+
+impl Key {
+    /// Targets overlapping the region, in genomic order.
+    fn to_spec(&self) -> async_graphql::Result<PageSpec<RegionTarget>> {
+        use RegionTargetCol as C;
+        let filters = vec![
+            Filter::new(C::Chromosome, Op::Eq, Value::I64(self.chromosome as i64)),
+            Filter::new(C::Start, Op::Le, Value::U32(self.end)),
+            Filter::new(C::End, Op::Ge, Value::U32(self.start)),
+        ]
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(async_graphql::Error::new)?;
+        Ok(PageSpec {
+            filters,
+            order_by: OrderBy::each(&[C::Start, C::End], SortDirection::Ascending),
+            offset: u64::from(self.index) * u64::from(self.size),
+            limit: u64::from(self.size),
+        })
+    }
 }
 
 /// Total target count in a region and the target ids on one page, in genomic order.
@@ -92,6 +140,13 @@ pub struct RegionTargetIds {
 
 // --- loaders ---
 
+/// One row of the batched query: the total and the page of targets for `keys[key]`.
+#[derive(Debug, Clone, Row, Deserialize)]
+struct BatchRow {
+    key: usize,
+    page: (u64, Vec<RegionTarget>),
+}
+
 #[derive(From)]
 pub struct TargetsByRegionLoader {
     ch: ClickHouse,
@@ -102,69 +157,27 @@ impl Loader<Key> for TargetsByRegionLoader {
     type Error = async_graphql::Error;
 
     async fn load(&self, keys: &[Key]) -> Result<HashMap<Key, Self::Value>, Self::Error> {
-        let base_query = "
-            WITH
-                ? AS q_chromosome,
-                ? AS q_start,
-                ? AS q_end,
-                ? AS q_offset,
-                ? AS q_limit,
-                CAST(? AS UInt64) AS query_id,
-                filtered AS
-                (
-                    SELECT *
-                    FROM targets_by_region
-                    WHERE chromosome = q_chromosome
-                      AND start <= q_end
-                      AND end >= q_start
-                ),
-                (
-                    SELECT count()
-                    FROM filtered
-                ) AS total,
-                paged AS
-                (
-                    SELECT *
-                    FROM filtered
-                    ORDER BY start, end
-                    LIMIT q_limit OFFSET q_offset
-                )
-            SELECT
-                query_id,
-                CAST(total AS UInt64) AS count,
-                -- groupArray doesn't keep the subquery's ORDER BY, so sort explicitly.
-                arrayMap(x -> x.3, arraySort(groupArray((start, end, target.id)))) AS ids
-            FROM paged
-            GROUP BY query_id
-            ";
-        let queries: Vec<String> = keys.iter().map(|_| base_query.to_string()).collect();
-        let full_query = keys.iter().enumerate().fold(
-            self.ch.query(&queries.join(" UNION ALL ")),
-            |acc: clickhouse::query::Query, (i, key)| {
-                acc.bind(key.chromosome)
-                    .bind(key.start)
-                    .bind(key.end)
-                    .bind(key.index * key.size)
-                    .bind(key.size)
-                    .bind(i as u64)
-            },
-        );
-        tracing::trace!("query is {}", full_query.sql_display());
-        let result = full_query.fetch_all::<TargetsByRegionRow>().await?;
-        let results_with_keys = result
+        let rendered = keys
             .iter()
-            .map(|res| {
-                (
-                    keys[res.key].clone(),
-                    RegionTargetIds {
-                        count: res.count,
-                        ids: res.ids.clone(),
-                    },
-                )
-            })
-            .collect();
+            .map(|k| k.to_spec().map(|spec| spec.render()))
+            .collect::<async_graphql::Result<Vec<_>>>()?;
 
-        Ok(results_with_keys)
+        let rows = build(self.ch.client(), &rendered)
+            .fetch_all::<BatchRow>()
+            .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(
+                |BatchRow {
+                     key,
+                     page: (count, rows),
+                 }| {
+                    let ids = rows.into_iter().map(|r| r.id).collect();
+                    (keys[key].clone(), RegionTargetIds { count, ids })
+                },
+            )
+            .collect())
     }
 }
 
