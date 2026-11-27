@@ -239,3 +239,190 @@ where
             .then_with(|| a.id().cmp(b.id()))
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use SortDirection::{Ascending, Descending};
+
+    use super::*;
+
+    #[derive(Clone)]
+    struct Item {
+        id: &'static str,
+        group: i32,
+        score: i32,
+    }
+
+    impl Entity for Item {
+        fn id(&self) -> &str { self.id }
+    }
+
+    #[derive(Clone, Copy, PartialEq, Eq, Enum)]
+    enum Field {
+        Group,
+        Score,
+    }
+
+    impl SortKey<Item> for Field {
+        fn compare(&self, a: &Item, b: &Item, direction: SortDirection) -> Ordering {
+            let term = Term::new(direction, Nulls::Last);
+            match self {
+                Self::Group => term.cmp(&a.group, &b.group),
+                Self::Score => term.cmp(&a.score, &b.score),
+            }
+        }
+    }
+
+    #[test]
+    fn sort_key_order_and_each_keys_direction_determine_row_order() {
+        use Field::{Group, Score};
+
+        let items: Vec<_> = [
+            ("e", 1, 20),
+            ("b", 1, 20),
+            ("a", 2, 10),
+            ("d", 1, 10),
+            ("c", 2, 30),
+        ]
+        .into_iter()
+        .map(|(id, group, score)| Item { id, group, score })
+        .collect();
+        for (terms, expected) in [
+            (
+                [(Group, Ascending), (Score, Descending)],
+                ["b", "e", "d", "c", "a"],
+            ),
+            (
+                [(Score, Descending), (Group, Ascending)],
+                ["c", "b", "e", "d", "a"],
+            ),
+            (
+                [(Group, Descending), (Score, Ascending)],
+                ["a", "c", "d", "b", "e"],
+            ),
+        ] {
+            let sorts = terms.map(|(key, direction)| Sort { key, direction });
+            let mut sorted = items.clone();
+            sort_items(&mut sorted, &sorts);
+            assert_eq!(sorted.iter().map(Entity::id).collect::<Vec<_>>(), expected);
+        }
+    }
+
+    #[test]
+    fn tied_keys_and_empty_sort_lists_use_ascending_ids_independent_of_input_order() {
+        for sorts in [
+            vec![],
+            vec![Sort {
+                key: Field::Score,
+                direction: Ascending,
+            }],
+            vec![Sort {
+                key: Field::Score,
+                direction: Descending,
+            }],
+        ] {
+            for ids in [["c", "a", "b"], ["b", "a", "c"]] {
+                let mut items = ids.map(|id| Item {
+                    id,
+                    group: 1,
+                    score: 10,
+                });
+                sort_items(&mut items, &sorts);
+                assert_eq!(items.map(|item| item.id), ["a", "b", "c"]);
+            }
+        }
+    }
+
+    #[test]
+    fn null_placement_is_independent_of_sort_direction() {
+        for (direction, nulls, expected) in [
+            (
+                Ascending,
+                Nulls::First,
+                [None, None, Some(-1), Some(2), Some(2)],
+            ),
+            (
+                Descending,
+                Nulls::First,
+                [None, None, Some(2), Some(2), Some(-1)],
+            ),
+            (
+                Ascending,
+                Nulls::Last,
+                [Some(-1), Some(2), Some(2), None, None],
+            ),
+            (
+                Descending,
+                Nulls::Last,
+                [Some(2), Some(2), Some(-1), None, None],
+            ),
+        ] {
+            let term = Term::new(direction, nulls);
+            let mut values = [Some(2), None, Some(-1), None, Some(2)];
+            values.sort_unstable_by(|a, b| term.cmp_opt(a, b));
+            assert_eq!(values, expected, "{term:?}");
+            assert_eq!(
+                term.cmp_opt::<i32>(&None, &None),
+                Ordering::Equal,
+                "{term:?}"
+            );
+            assert_eq!(
+                term.cmp_opt(&Some(2), &Some(2)),
+                Ordering::Equal,
+                "{term:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn unique_sort_keys_accepts_empty_single_and_distinct_field_lists() {
+        use DiseaseStudiesSortField::{NSamples, PublicationDate};
+
+        assert!(
+            UniqueSortKeys
+                .check(&Vec::<Sort<DiseaseStudiesSortField>>::new())
+                .is_ok()
+        );
+        for direction in [Ascending, Descending] {
+            let first = Sort {
+                key: NSamples,
+                direction,
+            };
+            assert!(UniqueSortKeys.check(&vec![first]).is_ok());
+            assert!(
+                UniqueSortKeys
+                    .check(&vec![
+                        first,
+                        Sort {
+                            key: PublicationDate,
+                            direction
+                        }
+                    ])
+                    .is_ok()
+            );
+        }
+    }
+
+    #[test]
+    fn unique_sort_keys_rejects_repeated_fields_even_with_different_directions() {
+        use DiseaseStudiesSortField::{NSamples, PublicationDate};
+
+        for direction in [Ascending, Descending] {
+            let sorts = vec![
+                Sort {
+                    key: NSamples,
+                    direction: Ascending,
+                },
+                Sort {
+                    key: PublicationDate,
+                    direction: Ascending,
+                },
+                Sort {
+                    key: NSamples,
+                    direction,
+                },
+            ];
+            assert!(UniqueSortKeys.check(&sorts).is_err(), "{sorts:?}");
+        }
+    }
+}

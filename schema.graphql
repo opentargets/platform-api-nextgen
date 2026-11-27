@@ -8639,7 +8639,8 @@ type StudyStats {
 	"""
 	nSamples: Sumstats!
 	"""
-	The samples to cases ratio.
+	Summary statistics of cases divided by samples, excluding studies with missing counts or
+	zero samples. The count is the number of valid ratios.
 	"""
 	samplesByCase: Sumstats!
 }

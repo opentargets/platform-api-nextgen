@@ -177,3 +177,39 @@ impl<F: InputType + IntoEnumIterator> Search<F> {
         Filter::search(cols, self.text.clone()).map_err(Error::new)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn blank_text_normalises_to_no_search() {
+        for text in ["", " \t\n", "\u{2003}"] {
+            let search = Search {
+                text: text.into(),
+                fields: vec![DiseaseSearchField::Name],
+            };
+            assert!(search.normalise().is_none(), "text: {text:?}");
+        }
+    }
+
+    #[test]
+    fn whitespace_and_reordered_duplicate_fields_normalise_to_the_same_key() {
+        use DiseaseSearchField::{Description, Name, Synonyms};
+
+        let expected = Search {
+            text: "Heart disease".into(),
+            fields: vec![Name, Description, Synonyms],
+        };
+        for fields in [
+            vec![Synonyms, Name, Description, Name, Synonyms],
+            vec![Description, Synonyms, Name],
+        ] {
+            let search = Search {
+                text: " \tHeart disease\n".into(),
+                fields,
+            };
+            assert_eq!(search.normalise(), Some(expected.clone()));
+        }
+    }
+}

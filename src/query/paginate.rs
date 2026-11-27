@@ -175,3 +175,32 @@ pub struct PagedWithStats<T: OutputType + HasStats> {
     pub rows: Vec<T>,
     pub stats: T::Stats,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn page_complexity_scales_with_size_and_child_cost_not_index() {
+        for index in [0, 20] {
+            let page = Page { index, size: 7 };
+            assert_eq!(page_complexity(page, 3), 21);
+            assert_eq!(page_complexity(page, 0), 0);
+        }
+        assert_eq!(page_complexity(Page { index: 0, size: 14 }, 3), 42);
+    }
+
+    #[test]
+    fn page_complexity_saturates_instead_of_overflowing() {
+        assert_eq!(
+            page_complexity(
+                Page {
+                    index: 0,
+                    size: MAX_PAGE_SIZE
+                },
+                usize::MAX
+            ),
+            usize::MAX
+        );
+    }
+}

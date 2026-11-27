@@ -649,3 +649,134 @@ impl Disease {
         load_diseases(ctx, &self.therapeutic_areas).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn diseases() -> Vec<Disease> {
+        let mut diseases: Vec<_> = [
+            ("EFO_1", "Heart syndrome", None),
+            ("EFO_2", "Condition B", Some("HEART defect")),
+            ("EFO_3", "Condition C", None),
+            ("EFO_4", "Café-au-lait spots", None),
+            ("EFO_5", "Heart disease", Some("heart issue")),
+        ]
+        .into_iter()
+        .map(|(id, name, description)| Disease {
+            id: id.into(),
+            name: name.into(),
+            description: description.map(str::to_owned),
+            is_therapeutic_area: false,
+            therapeutic_areas: vec![],
+            parents: vec![],
+            children: vec![],
+            ancestors: vec![],
+            descendants: vec![],
+            synonyms: vec![],
+            obsolete_terms: vec![],
+            db_x_refs: vec![],
+            direct_location_ids: vec![],
+            indirect_location_ids: vec![],
+            study_ids: vec![],
+            indirect_study_ids: vec![],
+        })
+        .collect();
+        diseases[2].synonyms = vec![
+            DiseaseSynonym {
+                relation: "exact".into(),
+                terms: vec![None, Some("Cardiac finding".into())],
+            },
+            DiseaseSynonym {
+                relation: "related".into(),
+                terms: vec![None, Some("hEaRt disorder".into())],
+            },
+        ];
+        diseases[3].synonyms = vec![DiseaseSynonym {
+            relation: "exact".into(),
+            terms: vec![None],
+        }];
+        diseases
+    }
+
+    fn search_ids(search: Option<Search<DiseaseSearchField>>) -> Vec<String> {
+        diseases()
+            .query()
+            .search(search)
+            .into_vec()
+            .into_iter()
+            .map(|disease| disease.id)
+            .collect()
+    }
+
+    #[test]
+    fn absent_and_blank_searches_keep_rows_with_missing_descriptions() {
+        let expected = vec!["EFO_1", "EFO_2", "EFO_3", "EFO_4", "EFO_5"];
+        assert_eq!(search_ids(None), expected);
+        for text in ["", " \t\n", "\u{2003}"] {
+            assert_eq!(
+                search_ids(Some(Search {
+                    text: text.into(),
+                    fields: vec![DiseaseSearchField::Description],
+                })),
+                expected,
+                "text: {text:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn search_trims_text_and_matches_case_insensitive_substrings() {
+        for (text, expected) in [
+            (" \nEaRt\t ", vec!["EFO_1", "EFO_5"]),
+            (" \tCAFÉ-AU\n", vec!["EFO_4"]),
+            ("pulmonary", vec![]),
+        ] {
+            assert_eq!(
+                search_ids(Some(Search {
+                    text: text.into(),
+                    fields: vec![DiseaseSearchField::Name],
+                })),
+                expected,
+                "text: {text:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn search_matches_any_selected_field_and_returns_each_row_once() {
+        use DiseaseSearchField::{Description, Id, Name, Synonyms};
+
+        for (fields, expected) in [
+            (vec![Name], vec!["EFO_1", "EFO_5"]),
+            (vec![Description], vec!["EFO_2", "EFO_5"]),
+            (vec![Name, Description], vec!["EFO_1", "EFO_2", "EFO_5"]),
+            (vec![Description, Synonyms], vec!["EFO_2", "EFO_3", "EFO_5"]),
+            (vec![Id], vec![]),
+        ] {
+            let search = Search {
+                text: "heart".into(),
+                fields,
+            };
+            assert_eq!(search_ids(Some(search.clone())), expected, "{search:?}");
+        }
+    }
+
+    #[test]
+    fn synonym_search_checks_nested_groups_and_skips_missing_terms() {
+        for (text, expected) in [
+            ("cardiac", vec!["EFO_3"]),
+            ("HEART disorder", vec!["EFO_3"]),
+            ("missing", vec![]),
+        ] {
+            assert_eq!(
+                search_ids(Some(Search {
+                    text: text.into(),
+                    fields: vec![DiseaseSearchField::Synonyms],
+                })),
+                expected,
+                "text: {text:?}"
+            );
+        }
+    }
+}
