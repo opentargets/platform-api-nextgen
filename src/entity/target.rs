@@ -38,6 +38,7 @@ use crate::{
         similar_entity::{SimilarEntityArguments, Similarity, load_similar_entities},
         target_essentiality::{DepMapEssentiality, load_target_essentiality_by_target},
         target_prioritisation::{TargetPrioritisations, load_target_prioritisations},
+        transcript::{Transcript, load_transcripts},
     },
     query::{
         Entity, QueryExt,
@@ -65,6 +66,16 @@ pub enum Strand {
     Unknown,
 }
 
+impl From<i8> for Strand {
+    fn from(strand: i8) -> Self {
+        match strand {
+            1 => Self::Positive,
+            -1 => Self::Negative,
+            _ => Self::Unknown,
+        }
+    }
+}
+
 /// The Ensembl canonical transcript of the target gene.
 #[derive(Debug, Clone, Deserialize, SimpleObject)]
 #[serde(rename_all = "camelCase")]
@@ -86,13 +97,7 @@ pub struct CanonicalTranscript {
 #[ComplexObject]
 impl CanonicalTranscript {
     /// Strand orientation of the canonical transcript.
-    async fn strand(&self) -> Strand {
-        match self.strand {
-            1 => Strand::Positive,
-            -1 => Strand::Negative,
-            _ => Strand::Unknown,
-        }
-    }
+    async fn strand(&self) -> Strand { Strand::from(self.strand) }
 }
 
 /// External resource link with an optional display name.
@@ -195,13 +200,7 @@ pub struct GenomicLocation {
 #[ComplexObject]
 impl GenomicLocation {
     /// Strand orientation of the canonical transcript.
-    async fn strand(&self) -> Strand {
-        match self.strand {
-            1 => Strand::Positive,
-            -1 => Strand::Negative,
-            _ => Strand::Unknown,
-        }
-    }
+    async fn strand(&self) -> Strand { Strand::from(self.strand) }
 }
 
 /// Gene Ontology (GO) annotations related to the target.
@@ -416,29 +415,6 @@ pub struct Tractability {
     value: bool,
 }
 
-/// Transcript annotation for a target gene.
-#[derive(Debug, Clone, Deserialize, SimpleObject)]
-#[serde(rename_all = "camelCase")]
-pub struct Transcript {
-    /// Ensembl transcript identifier.
-    #[allow(clippy::struct_field_names)]
-    transcript_id: String,
-    /// Biotype classification of the transcript.
-    biotype: String,
-    /// Whether this is the Ensembl canonical transcript.
-    is_ensembl_canonical: Option<bool>,
-    /// UniProt accession mapped to the transcript.
-    uniprot_id: Option<String>,
-    /// Whether the UniProt entry is reviewed (Swiss-Prot).
-    is_uniprot_reviewed: Option<bool>,
-    /// Ensembl translation identifier.
-    translation_id: Option<String>,
-    /// AlphaFold structure prediction identifier.
-    alphafold_id: Option<String>,
-    /// UniProt isoform identifier.
-    uniprot_isoform_id: Option<String>,
-}
-
 /// Core annotation for drug targets (gene/proteins). Targets are defined based on EMBL-EBI Ensembl
 /// database and uses the Ensembl gene ID as the primary identifier. An Ensembl gene ID is
 /// considered potential drug target if included in the canonical assembly or if present alternative
@@ -506,10 +482,6 @@ pub struct Target {
     tractability: Vec<Tractability>,
     /// List of Ensembl transcript identifiers associated with the target.
     transcript_ids: Vec<String>,
-    /// List of transcripts associated with the target including protein and structure annotations.
-    /// Resolved by the `transcripts` field, which can filter on `canonical`.
-    #[graphql(skip)]
-    transcripts: Vec<Transcript>,
 }
 
 impl EntityWithAssociations for Target {
@@ -630,17 +602,17 @@ impl GeneOntologyAnnotation {
 
 #[ComplexObject]
 impl Target {
-    /// List of transcripts associated with the target including protein and structure annotations.
+    /// Ensembl transcripts of the target, with protein, structure and exon annotations.
+    #[graphql(complexity = "page_complexity(page, child_complexity)")]
     async fn transcripts(
         &self,
+        ctx: &Context<'_>,
         #[graphql(desc = "Whether to return only the Ensembl canonical transcript (`true`) or \
                           only the non-canonical ones (`false`). Returns all when omitted.")]
         canonical: Option<bool>,
-    ) -> Vec<&Transcript> {
-        self.transcripts
-            .iter()
-            .filter(|t| canonical.is_none_or(|c| t.is_ensembl_canonical.unwrap_or(false) == c))
-            .collect()
+        #[graphql(default, desc = "Pagination for the transcripts.")] page: Page,
+    ) -> async_graphql::Result<Paged<Transcript>> {
+        load_transcripts(ctx, self.id.clone(), canonical, page).await
     }
 
     /// Target-disease associations calculated on-the-fly using configurable data source weights and

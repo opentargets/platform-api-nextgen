@@ -30,6 +30,7 @@ use crate::{
         study::Study,
         target::Target,
         target_essentiality::DepMapEssentiality,
+        transcript::Transcript,
         variant::Variant,
     },
     query::stats::HasStats,
@@ -127,6 +128,7 @@ pub fn capped_page_complexity(page: Page, max_rows: usize, child_complexity: usi
 #[graphql(concrete(name = "SimilarEntityPage", params(Similarity)))]
 #[graphql(concrete(name = "TargetAssociationPage", params(TargetAssociation)))]
 #[graphql(concrete(name = "TargetPage", params(Target)))]
+#[graphql(concrete(name = "Transcripts", params(Transcript)))]
 #[graphql(concrete(name = "VariantPage", params(Variant)))]
 #[graphql(concrete(name = "VariantCredibleSetPage", params(VariantCredibleSet)))]
 #[graphql(concrete(name = "DiseaseStudyPage", params(DiseaseStudy)))]

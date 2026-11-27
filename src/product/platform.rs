@@ -44,6 +44,7 @@ use crate::{
         target::{TargetLoader, TargetQuery},
         target_essentiality::TargetEssentialityLoader,
         target_prioritisation::TargetPrioritisationsLoader,
+        transcript::TranscriptsLoader,
         variant::{VariantLoader, VariantQuery},
     },
     product::{Flavor, Product, loader},
@@ -131,6 +132,7 @@ impl Product for Platform {
             .data(loader::<TargetsByRegionLoader>(ch))
             .data(loader::<TargetEssentialityLoader>(ch))
             .data(loader::<TargetPrioritisationsLoader>(ch))
+            .data(loader::<TranscriptsLoader>(ch))
             .data(loader::<VariantLoader>(ch))
             .data(loader::<DiseaseStudiesLoader>(ch))
             .data(loader::<EvidenceClinicalPrecedenceLoader>(ch))
