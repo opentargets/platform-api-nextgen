@@ -606,7 +606,7 @@ mod tests {
             publication_journal: None,
             publication_date: date.map(str::to_owned),
             disease_ids: vec![],
-            study_locus_ids: vec![],
+            credible_set_ids: vec![],
             gene_id: None,
             biosample_from_source_id: None,
             background_trait_from_source_mapped_ids: vec![],
