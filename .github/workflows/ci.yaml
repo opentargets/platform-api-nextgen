@@ -2,8 +2,11 @@ name: ci
 
 on:
   pull_request:
+  # Every branch push gets fmt, clippy and tests. A PR branch also runs them on
+  # the pull_request event, which tests the merge with main rather than the branch head.
+  # Tags don't match a branches filter, so v* tags only trigger build-release.
   push:
-    branches: [main]
+    branches: ['**']
   schedule:
     # Weekly, so new RustSec advisories are caught even when the code doesn't change.
     - cron: '0 6 * * 1'
@@ -177,9 +180,18 @@ jobs:
           key: ${{ matrix.product }}
       - name: Run tests
         run: cargo "+$RUST_STABLE" test --locked --features product-${{ matrix.product }}
+      # Catches commits made without the pre-commit hook that regenerates schema.graphql.
+      - name: Check schema.graphql is up to date
+        if: matrix.product == 'platform'
+        run: |
+          cargo "+$RUST_STABLE" run --quiet --locked --example export-schema --features product-platform > schema.graphql
+          git diff --exit-code -- schema.graphql \
+            || { echo "::error::schema.graphql is out of date. Run scripts/generate-graphql-schema.sh and commit the result."; exit 1; }
 
   deny:
     name: cargo-deny
+    # Dependency and base-image checks don't depend on the branch's code, so skip them on branch pushes.
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -192,6 +204,8 @@ jobs:
   # without any code change.
   trivy:
     name: trivy (image)
+    # Dependency and base-image checks don't depend on the branch's code, so skip them on branch pushes.
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
