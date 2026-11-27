@@ -121,6 +121,7 @@ fn optional_i32(row: &Row, name: &str) -> Option<i32> {
     match column(row, name) {
         Some(Field::Int(value)) => Some(*value),
         Some(Field::Short(value)) => Some(i32::from(*value)),
+        Some(Field::Long(value)) => Some(i32::try_from(*value).unwrap_or_default()),
         Some(Field::Null) | None => None,
         Some(other) => panic!("column '{name}' is not an integer: {other:?}"),
     }
@@ -1010,6 +1011,139 @@ pub fn clinical_reports() -> Vec<Value> {
         .collect()
 }
 
+/// Returns the number of a chromosome.
+///
+/// The API decodes the chromosome of a variant as a number, while the dataset
+/// holds its name.
+fn chromosome_code(name: &str) -> i8 {
+    match name {
+        "X" => 23,
+        "Y" => 24,
+        "MT" => 25,
+        other => other
+            .parse()
+            .unwrap_or_else(|_| panic!("unknown chromosome {other}")),
+    }
+}
+
+/// Converts a `variant` Parquet row into the shape of the `variants`
+/// ClickHouse table.
+///
+/// The transcript consequences of the dataset hold more members than the API
+/// expects, and in a different order, so they are picked by name. The two
+/// predictions the dataset does not hold are left empty.
+fn variant_row(row: &Row) -> Value {
+    let mut object = Map::new();
+
+    object.insert("variantId".to_string(), json!(string(row, "variantId")));
+    object.insert(
+        "chromosome".to_string(),
+        json!(chromosome_code(&string(row, "chromosome"))),
+    );
+    object.insert(
+        "position".to_string(),
+        json!(u64::from(optional_u32(row, "position").unwrap_or_default(),)),
+    );
+    object.insert(
+        "referenceAllele".to_string(),
+        json!(string(row, "referenceAllele")),
+    );
+    object.insert(
+        "alternateAllele".to_string(),
+        json!(string(row, "alternateAllele")),
+    );
+    object.insert(
+        "variantEffect".to_string(),
+        tuple_list(
+            &group_list(row, "variantEffect"),
+            &[
+                "method",
+                "assessment",
+                "score",
+                "assessmentFlag",
+                "targetId",
+                "normalisedScore",
+            ],
+        ),
+    );
+
+    // The transcript consequences are picked by name: the dataset holds more
+    // members than the API expects, in a different order.
+    object.insert(
+        "transcriptConsequences".to_string(),
+        Value::Array(
+            group_list(row, "transcriptConsequences")
+                .iter()
+                .map(|consequence| {
+                    json!([
+                        string_list(consequence, "variantFunctionalConsequenceIds"),
+                        optional_string(consequence, "aminoAcidChange")
+                            .map_or(Value::Null, |value| json!(value)),
+                        string_list(consequence, "uniprotAccessions"),
+                        optional_bool(consequence, "isEnsemblCanonical").unwrap_or_default(),
+                        optional_string(consequence, "codons")
+                            .map_or(Value::Null, |value| json!(value)),
+                        optional_i32(consequence, "distanceFromFootprint").unwrap_or_default(),
+                        optional_i32(consequence, "distanceFromTss").unwrap_or_default(),
+                        optional_string(consequence, "targetId")
+                            .map_or(Value::Null, |value| json!(value)),
+                        optional_string(consequence, "impact")
+                            .map_or(Value::Null, |value| json!(value)),
+                        optional_string(consequence, "transcriptId")
+                            .map_or(Value::Null, |value| json!(value)),
+                        optional_string(consequence, "lofteePrediction")
+                            .map_or(Value::Null, |value| json!(value)),
+                        optional_f64(consequence, "siftPrediction")
+                            .map_or(Value::Null, |value| json!(value)),
+                        optional_f64(consequence, "polyphenPrediction")
+                            .map_or(Value::Null, |value| json!(value)),
+                        optional_u32(consequence, "transcriptIndex").unwrap_or_default(),
+                        optional_f64(consequence, "consequenceScore").unwrap_or_default(),
+                    ])
+                })
+                .collect(),
+        ),
+    );
+
+    object.insert("rsIds".to_string(), string_list(row, "rsIds"));
+    object.insert(
+        "dbXrefs".to_string(),
+        tuple_list(&group_list(row, "dbXrefs"), &["id", "source"]),
+    );
+    object.insert(
+        "alleleFrequencies".to_string(),
+        tuple_list(
+            &group_list(row, "alleleFrequencies"),
+            &["populationName", "alleleFrequency"],
+        ),
+    );
+    object.insert("hgvsId".to_string(), optional_string(row, "hgvsId").into());
+    object.insert(
+        "variantDescription".to_string(),
+        json!(string(row, "variantDescription")),
+    );
+    object.insert(
+        "mostSevereConsequenceId".to_string(),
+        json!(string(row, "mostSevereConsequenceId")),
+    );
+
+    // The credible sets and the pharmacogenomics of a variant come from other
+    // tables in production. The tests do not seed those, so they are empty.
+    object.insert("studyLocusIds".to_string(), Value::Array(Vec::new()));
+    object.insert("pharmacogenomicsIds".to_string(), Value::Array(Vec::new()));
+
+    Value::Object(object)
+}
+
+/// Returns the `variants` rows of the sample data, ready to be inserted into
+/// ClickHouse.
+pub fn variants() -> Vec<Value> {
+    read_rows("output/variant/part-00000-00000.parquet")
+        .iter()
+        .map(variant_row)
+        .collect()
+}
+
 /// Returns the search documents of the sample data, ready to be indexed into
 /// OpenSearch.
 pub fn search_targets() -> Vec<Value> { search_documents("view/search_target/00000000.parquet") }
@@ -1142,6 +1276,15 @@ pub fn first_drug_name() -> String {
 pub fn first_disease_id() -> String {
     let rows = read_rows("output/disease/00000000.parquet");
     string(rows.first().expect("sample data has no diseases"), "id")
+}
+
+/// Returns the identifier of the first variant of the sample data.
+pub fn first_variant_id() -> String {
+    let rows = read_rows("output/variant/part-00000-00000.parquet");
+    string(
+        rows.first().expect("sample data has no variants"),
+        "variantId",
+    )
 }
 
 /// Returns the identifier of the first study of the sample data.

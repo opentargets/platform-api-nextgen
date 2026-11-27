@@ -1,0 +1,11 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - enhancerToGene
+# The original document is packages/sections/src/variant/EnhancerToGenePredictions/EnhancerToGenePredictionsQuery.gql.
+query EnhancerToGenePredictionsQuery(
+  $variantId: String! ) {
+  variant(variantId: $variantId) {
+    referenceAllele
+    alternateAllele
+  }
+}

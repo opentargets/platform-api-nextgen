@@ -1,0 +1,1088 @@
+{
+  "documents": [
+    {
+      "name": "AssociationsToolkit_components_Table_RowInteractors_InteractorsQuery",
+      "source": "apps/platform/src/components/AssociationsToolkit/components/Table/RowInteractors/InteractorsQuery.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensgId",
+      "removed": [
+        "interactions"
+      ]
+    },
+    {
+      "name": "GeneEnrichmentAnalysis_api_DiaseaseAssociationsQuery",
+      "source": "apps/platform/src/components/GeneEnrichmentAnalysis/api/DiaseaseAssociationsQuery.gql",
+      "kind": "operation",
+      "parent": "disease",
+      "variable": "efoId",
+      "removed": [
+        "associatedTargets"
+      ]
+    },
+    {
+      "name": "DiseasePage_DiseaseAssociations_DiseaseAssociationsQuery",
+      "source": "apps/platform/src/pages/DiseasePage/DiseaseAssociations/DiseaseAssociationsQuery.gql",
+      "kind": "operation",
+      "parent": "disease",
+      "variable": "id",
+      "removed": [
+        "associatedTargets"
+      ]
+    },
+    {
+      "name": "DiseasePage_DiseasePage",
+      "source": "apps/platform/src/pages/DiseasePage/DiseasePage.gql",
+      "kind": "operation",
+      "parent": "disease",
+      "variable": "efoId",
+      "removed": []
+    },
+    {
+      "name": "DiseasePage_ProfileHeader",
+      "source": "apps/platform/src/pages/DiseasePage/ProfileHeader.gql",
+      "kind": "fragment",
+      "parent": "disease",
+      "variable": "efoId",
+      "removed": []
+    },
+    {
+      "name": "DrugPage_DrugPage",
+      "source": "apps/platform/src/pages/DrugPage/DrugPage.gql",
+      "kind": "operation",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": []
+    },
+    {
+      "name": "DrugPage_ProfileHeader",
+      "source": "apps/platform/src/pages/DrugPage/ProfileHeader.gql",
+      "kind": "fragment",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": []
+    },
+    {
+      "name": "StudyPage_StudyPage",
+      "source": "apps/platform/src/pages/StudyPage/StudyPage.gql",
+      "kind": "operation",
+      "parent": "study",
+      "variable": "studyId",
+      "removed": []
+    },
+    {
+      "name": "StudyPage_StudyProfileHeader",
+      "source": "apps/platform/src/pages/StudyPage/StudyProfileHeader.gql",
+      "kind": "fragment",
+      "parent": "study",
+      "variable": "studyId",
+      "removed": []
+    },
+    {
+      "name": "TargetPage_TargetAssociations_TargetAssociationsQuery",
+      "source": "apps/platform/src/pages/TargetPage/TargetAssociations/TargetAssociationsQuery.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "id",
+      "removed": [
+        "associatedDiseases"
+      ]
+    },
+    {
+      "name": "TargetPage_TargetPage",
+      "source": "apps/platform/src/pages/TargetPage/TargetPage.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensgId",
+      "removed": []
+    },
+    {
+      "name": "TargetPage_TargetProfileHeader",
+      "source": "apps/platform/src/pages/TargetPage/TargetProfileHeader.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "isEssential"
+      ]
+    },
+    {
+      "name": "disease_Bibliography_BibliographyQuery",
+      "source": "packages/sections/src/disease/Bibliography/BibliographyQuery.gql",
+      "kind": "operation",
+      "parent": "disease",
+      "variable": "id",
+      "removed": [
+        "literatureOcurrences",
+        "similarEntities"
+      ]
+    },
+    {
+      "name": "disease_Bibliography_BibliographySummaryFragment",
+      "source": "packages/sections/src/disease/Bibliography/BibliographySummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "disease",
+      "variable": "efoId",
+      "removed": [
+        "literatureOcurrences"
+      ]
+    },
+    {
+      "name": "disease_Drugs_DrugsQuery",
+      "source": "packages/sections/src/disease/Drugs/DrugsQuery.gql",
+      "kind": "operation",
+      "parent": "disease",
+      "variable": "efoId",
+      "removed": [
+        "drugAndClinicalCandidates"
+      ]
+    },
+    {
+      "name": "disease_Drugs_DrugsSummaryFragment",
+      "source": "packages/sections/src/disease/Drugs/DrugsSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "disease",
+      "variable": "efoId",
+      "removed": [
+        "drugAndClinicalCandidates"
+      ]
+    },
+    {
+      "name": "disease_GWASStudies_GWASStudiesQuery",
+      "source": "packages/sections/src/disease/GWASStudies/GWASStudiesQuery.gql",
+      "kind": "list",
+      "parent": "study",
+      "variable": "diseaseIds",
+      "removed": []
+    },
+    {
+      "name": "disease_Ontology_OntologyAncestorsQuery",
+      "source": "packages/sections/src/disease/Ontology/OntologyAncestorsQuery.gql",
+      "kind": "list",
+      "parent": "disease",
+      "variable": "ids",
+      "removed": []
+    },
+    {
+      "name": "disease_Ontology_OntologyQuery",
+      "source": "packages/sections/src/disease/Ontology/OntologyQuery.gql",
+      "kind": "operation",
+      "parent": "disease",
+      "variable": "efoId",
+      "removed": []
+    },
+    {
+      "name": "disease_Ontology_OntologySummaryFragment",
+      "source": "packages/sections/src/disease/Ontology/OntologySummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "disease",
+      "variable": "efoId",
+      "removed": []
+    },
+    {
+      "name": "disease_Phenotypes_PhenotypesQuery",
+      "source": "packages/sections/src/disease/Phenotypes/PhenotypesQuery.gql",
+      "kind": "operation",
+      "parent": "disease",
+      "variable": "efoId",
+      "removed": [
+        "phenotypes"
+      ]
+    },
+    {
+      "name": "disease_Phenotypes_PhenotypesSummaryFragment",
+      "source": "packages/sections/src/disease/Phenotypes/PhenotypesSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "disease",
+      "variable": "efoId",
+      "removed": [
+        "phenotypes"
+      ]
+    },
+    {
+      "name": "drug_AdverseEvents_AdverseEventsQuery",
+      "source": "packages/sections/src/drug/AdverseEvents/AdverseEventsQuery.gql",
+      "kind": "operation",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": [
+        "adverseEvents"
+      ]
+    },
+    {
+      "name": "drug_AdverseEvents_AdverseEventsSummaryFragment",
+      "source": "packages/sections/src/drug/AdverseEvents/AdverseEventsSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": [
+        "adverseEvents"
+      ]
+    },
+    {
+      "name": "drug_Bibliography_BibliographyQuery",
+      "source": "packages/sections/src/drug/Bibliography/BibliographyQuery.gql",
+      "kind": "operation",
+      "parent": "drug",
+      "variable": "id",
+      "removed": [
+        "literatureOcurrences",
+        "similarEntities"
+      ]
+    },
+    {
+      "name": "drug_Bibliography_BibliographySummaryFragment",
+      "source": "packages/sections/src/drug/Bibliography/BibliographySummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": [
+        "literatureOcurrences"
+      ]
+    },
+    {
+      "name": "drug_DrugWarnings_DrugWarningsQuery",
+      "source": "packages/sections/src/drug/DrugWarnings/DrugWarningsQuery.gql",
+      "kind": "operation",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": [
+        "drugWarnings"
+      ]
+    },
+    {
+      "name": "drug_DrugWarnings_DrugWarningsSummaryFragment",
+      "source": "packages/sections/src/drug/DrugWarnings/DrugWarningsSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": [
+        "drugWarnings"
+      ]
+    },
+    {
+      "name": "drug_Indications_IndicationsQuery",
+      "source": "packages/sections/src/drug/Indications/IndicationsQuery.gql",
+      "kind": "operation",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": [
+        "indications"
+      ]
+    },
+    {
+      "name": "drug_Indications_IndicationsSummaryFragment",
+      "source": "packages/sections/src/drug/Indications/IndicationsSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": [
+        "indications"
+      ]
+    },
+    {
+      "name": "drug_MechanismsOfAction_MechanismsOfActionQuery",
+      "source": "packages/sections/src/drug/MechanismsOfAction/MechanismsOfActionQuery.gql",
+      "kind": "operation",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": [
+        "mechanismsOfAction"
+      ]
+    },
+    {
+      "name": "drug_MechanismsOfAction_MechanismsOfActionSummaryFragment",
+      "source": "packages/sections/src/drug/MechanismsOfAction/MechanismsOfActionSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": [
+        "mechanismsOfAction"
+      ]
+    },
+    {
+      "name": "drug_Pharmacogenomics_Pharmacogenomics",
+      "source": "packages/sections/src/drug/Pharmacogenomics/Pharmacogenomics.gql",
+      "kind": "operation",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": []
+    },
+    {
+      "name": "drug_Pharmacogenomics_PharmacogenomicsSummary",
+      "source": "packages/sections/src/drug/Pharmacogenomics/PharmacogenomicsSummary.gql",
+      "kind": "fragment",
+      "parent": "drug",
+      "variable": "chemblId",
+      "removed": []
+    },
+    {
+      "name": "target_BaselineExpression_ExpressionQuery",
+      "source": "packages/sections/src/target/BaselineExpression/ExpressionQuery.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "baselineExpression"
+      ]
+    },
+    {
+      "name": "target_BaselineExpression_ExpressionSummary",
+      "source": "packages/sections/src/target/BaselineExpression/ExpressionSummary.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "baselineExpression"
+      ]
+    },
+    {
+      "name": "target_Bibliography_SimilarEntities",
+      "source": "packages/sections/src/target/Bibliography/SimilarEntities.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "id",
+      "removed": [
+        "literatureOcurrences",
+        "similarEntities"
+      ]
+    },
+    {
+      "name": "target_Bibliography_SimilarEntitiesSummary",
+      "source": "packages/sections/src/target/Bibliography/SimilarEntitiesSummary.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "literatureOcurrences"
+      ]
+    },
+    {
+      "name": "target_CancerHallmarks_Hallmarks",
+      "source": "packages/sections/src/target/CancerHallmarks/Hallmarks.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_CancerHallmarks_HallmarksSummaryFragment",
+      "source": "packages/sections/src/target/CancerHallmarks/HallmarksSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_ChemicalProbes_ChemicalProbes",
+      "source": "packages/sections/src/target/ChemicalProbes/ChemicalProbes.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_ChemicalProbes_ProbesSummaryFragment",
+      "source": "packages/sections/src/target/ChemicalProbes/ProbesSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_ComparativeGenomics_CompGenomics",
+      "source": "packages/sections/src/target/ComparativeGenomics/CompGenomics.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_ComparativeGenomics_CompGenomicsSummaryFragment",
+      "source": "packages/sections/src/target/ComparativeGenomics/CompGenomicsSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_DepMap_Depmap",
+      "source": "packages/sections/src/target/DepMap/Depmap.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "depMapEssentiality"
+      ]
+    },
+    {
+      "name": "target_DepMap_DepmapSummaryFragment",
+      "source": "packages/sections/src/target/DepMap/DepmapSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "depMapEssentiality"
+      ]
+    },
+    {
+      "name": "target_Drugs_DrugsQuery",
+      "source": "packages/sections/src/target/Drugs/DrugsQuery.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "drugAndClinicalCandidates"
+      ]
+    },
+    {
+      "name": "target_Drugs_DrugsSummaryFragment",
+      "source": "packages/sections/src/target/Drugs/DrugsSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "drugAndClinicalCandidates"
+      ]
+    },
+    {
+      "name": "target_GeneOntology_GeneOntology",
+      "source": "packages/sections/src/target/GeneOntology/GeneOntology.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "term"
+      ]
+    },
+    {
+      "name": "target_GeneOntology_GeneOntologySummary",
+      "source": "packages/sections/src/target/GeneOntology/GeneOntologySummary.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_GeneticConstraint_GeneticConstraint",
+      "source": "packages/sections/src/target/GeneticConstraint/GeneticConstraint.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_GeneticConstraint_GeneticConstraintFragment",
+      "source": "packages/sections/src/target/GeneticConstraint/GeneticConstraintFragment.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_MolecularInteractions_InteractionsQuery",
+      "source": "packages/sections/src/target/MolecularInteractions/InteractionsQuery.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensgId",
+      "removed": [
+        "interactions"
+      ]
+    },
+    {
+      "name": "target_MolecularInteractions_InteractionsStats",
+      "source": "packages/sections/src/target/MolecularInteractions/InteractionsStats.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensgId",
+      "removed": [
+        "interactions"
+      ]
+    },
+    {
+      "name": "target_MolecularInteractions_InteractionsStringQuery",
+      "source": "packages/sections/src/target/MolecularInteractions/InteractionsStringQuery.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensgId",
+      "removed": [
+        "interactions"
+      ]
+    },
+    {
+      "name": "target_MolecularInteractions_InteractionsSummary",
+      "source": "packages/sections/src/target/MolecularInteractions/InteractionsSummary.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "interactions"
+      ]
+    },
+    {
+      "name": "target_MolecularStructure_MolecularStructure",
+      "source": "packages/sections/src/target/MolecularStructure/MolecularStructure.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_MolecularStructure_summaryQuery",
+      "source": "packages/sections/src/target/MolecularStructure/summaryQuery.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_MousePhenotypes_MousePhenotypes",
+      "source": "packages/sections/src/target/MousePhenotypes/MousePhenotypes.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "mousePhenotypes"
+      ]
+    },
+    {
+      "name": "target_MousePhenotypes_MousePhenotypesSummary",
+      "source": "packages/sections/src/target/MousePhenotypes/MousePhenotypesSummary.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "mousePhenotypes"
+      ]
+    },
+    {
+      "name": "target_Pathways_Pathways",
+      "source": "packages/sections/src/target/Pathways/Pathways.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_Pathways_PathwaysSummary",
+      "source": "packages/sections/src/target/Pathways/PathwaysSummary.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_Pharmacogenomics_Pharmacogenomics",
+      "source": "packages/sections/src/target/Pharmacogenomics/Pharmacogenomics.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "pharmacogenomics"
+      ]
+    },
+    {
+      "name": "target_Pharmacogenomics_PharmacogenomicsSummary",
+      "source": "packages/sections/src/target/Pharmacogenomics/PharmacogenomicsSummary.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "pharmacogenomics"
+      ]
+    },
+    {
+      "name": "target_QTLCredibleSets_QTLCredibleSetsQuery",
+      "source": "packages/sections/src/target/QTLCredibleSets/QTLCredibleSetsQuery.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "credibleSets"
+      ]
+    },
+    {
+      "name": "target_QTLCredibleSets_QTLCredibleSetsSummaryFragment",
+      "source": "packages/sections/src/target/QTLCredibleSets/QTLCredibleSetsSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": [
+        "credibleSets"
+      ]
+    },
+    {
+      "name": "target_Safety_Safety",
+      "source": "packages/sections/src/target/Safety/Safety.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_Safety_summaryQuery",
+      "source": "packages/sections/src/target/Safety/summaryQuery.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_SubcellularLocation_SubcellularLocation",
+      "source": "packages/sections/src/target/SubcellularLocation/SubcellularLocation.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_SubcellularLocation_SubcellularLocationFragment",
+      "source": "packages/sections/src/target/SubcellularLocation/SubcellularLocationFragment.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_Tractability_TractabilityQuery",
+      "source": "packages/sections/src/target/Tractability/TractabilityQuery.gql",
+      "kind": "operation",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "target_Tractability_TractabilitySummary",
+      "source": "packages/sections/src/target/Tractability/TractabilitySummary.gql",
+      "kind": "fragment",
+      "parent": "target",
+      "variable": "ensemblId",
+      "removed": []
+    },
+    {
+      "name": "variant_EnhancerToGenePredictions_EnhancerToGenePredictionsQuery",
+      "source": "packages/sections/src/variant/EnhancerToGenePredictions/EnhancerToGenePredictionsQuery.gql",
+      "kind": "operation",
+      "parent": "variant",
+      "variable": "variantId",
+      "removed": [
+        "enhancerToGene"
+      ]
+    },
+    {
+      "name": "variant_MolecularStructure_MolecularStructureQuery",
+      "source": "packages/sections/src/variant/MolecularStructure/MolecularStructureQuery.gql",
+      "kind": "operation",
+      "parent": "variant",
+      "variable": "variantId",
+      "removed": [
+        "proteinCodingCoordinates"
+      ]
+    },
+    {
+      "name": "variant_Pharmacogenomics_PharmacogenomicsQuery",
+      "source": "packages/sections/src/variant/Pharmacogenomics/PharmacogenomicsQuery.gql",
+      "kind": "operation",
+      "parent": "variant",
+      "variable": "variantId",
+      "removed": []
+    },
+    {
+      "name": "variant_VariantEffect_VariantEffectQuery",
+      "source": "packages/sections/src/variant/VariantEffect/VariantEffectQuery.gql",
+      "kind": "operation",
+      "parent": "variant",
+      "variable": "variantId",
+      "removed": []
+    },
+    {
+      "name": "variant_VariantEffect_VariantEffectSummaryFragment",
+      "source": "packages/sections/src/variant/VariantEffect/VariantEffectSummaryFragment.gql",
+      "kind": "fragment",
+      "parent": "variant",
+      "variable": "variantId",
+      "removed": []
+    },
+    {
+      "name": "variant_VariantGenomicRegion_VariantGenomicRegionSummary",
+      "source": "packages/sections/src/variant/VariantGenomicRegion/VariantGenomicRegionSummary.gql",
+      "kind": "fragment",
+      "parent": "variant",
+      "variable": "variantId",
+      "removed": []
+    },
+    {
+      "name": "components_ClinicalReports_ClinicalRecordsQuery",
+      "source": "packages/ui/src/components/ClinicalReports/ClinicalRecordsQuery.gql",
+      "kind": "list",
+      "parent": "clinicalReport",
+      "variable": "clinicalReportsIds",
+      "removed": []
+    },
+    {
+      "name": "components_ClinicalReports_RecordDetailQuery",
+      "source": "packages/ui/src/components/ClinicalReports/RecordDetailQuery.gql",
+      "kind": "operation",
+      "parent": "clinicalreport",
+      "variable": "clinicalReportId",
+      "removed": [
+        "diseases",
+        "drugs",
+        "sideEffects"
+      ]
+    },
+    {
+      "name": "components_OtAsyncTooltip_queries_StudyTooltipQuery",
+      "source": "packages/ui/src/components/OtAsyncTooltip/queries/StudyTooltipQuery.gql",
+      "kind": "operation",
+      "parent": "study",
+      "variable": "studyId",
+      "removed": [
+        "credibleSets"
+      ]
+    },
+    {
+      "name": "components_OtAsyncTooltip_queries_VariantTooltipQuery",
+      "source": "packages/ui/src/components/OtAsyncTooltip/queries/VariantTooltipQuery.gql",
+      "kind": "operation",
+      "parent": "variant",
+      "variable": "variantId",
+      "removed": [
+        "mostSevereConsequence"
+      ]
+    }
+  ],
+  "expected": {
+    "AssociationsToolkit_components_Table_RowInteractors_InteractorsQuery": [
+      "approvedName",
+      "approvedSymbol",
+      "id"
+    ],
+    "GeneEnrichmentAnalysis_api_DiaseaseAssociationsQuery": [
+      "id",
+      "name"
+    ],
+    "DiseasePage_DiseaseAssociations_DiseaseAssociationsQuery": [
+      "id",
+      "name"
+    ],
+    "DiseasePage_DiseasePage": [
+      "dbXRefs",
+      "id",
+      "name"
+    ],
+    "DiseasePage_ProfileHeader": [
+      "description",
+      "synonyms"
+    ],
+    "DrugPage_DrugPage": [
+      "crossReferences",
+      "id",
+      "name"
+    ],
+    "DrugPage_ProfileHeader": [
+      "description",
+      "drugType",
+      "maximumClinicalStage",
+      "synonyms"
+    ],
+    "StudyPage_StudyPage": [
+      "id",
+      "projectId",
+      "studyType"
+    ],
+    "StudyPage_StudyProfileHeader": [
+      "hasSumstats",
+      "initialSampleSize",
+      "ldPopulationStructure",
+      "nCases",
+      "nControls",
+      "nSamples",
+      "projectId",
+      "publicationDate",
+      "publicationFirstAuthor",
+      "publicationJournal",
+      "pubmedId",
+      "qualityControls",
+      "studyType",
+      "traitFromSource"
+    ],
+    "TargetPage_TargetAssociations_TargetAssociationsQuery": [
+      "approvedSymbol",
+      "id"
+    ],
+    "TargetPage_TargetPage": [
+      "approvedName",
+      "approvedSymbol",
+      "dbXrefs",
+      "id",
+      "proteinIds"
+    ],
+    "TargetPage_TargetProfileHeader": [
+      "canonicalTranscript",
+      "genomicLocation",
+      "synonyms"
+    ],
+    "disease_Bibliography_BibliographyQuery": [
+      "id",
+      "name"
+    ],
+    "disease_Bibliography_BibliographySummaryFragment": [
+      "id"
+    ],
+    "disease_Drugs_DrugsQuery": [
+      "name"
+    ],
+    "disease_Drugs_DrugsSummaryFragment": [
+      "id"
+    ],
+    "disease_GWASStudies_GWASStudiesQuery": [
+      "credibleSets",
+      "id",
+      "ldPopulationStructure",
+      "nSamples",
+      "projectId",
+      "publicationDate",
+      "publicationFirstAuthor",
+      "publicationJournal",
+      "pubmedId",
+      "traitFromSource"
+    ],
+    "disease_Ontology_OntologyAncestorsQuery": [
+      "id",
+      "isTherapeuticArea",
+      "name"
+    ],
+    "disease_Ontology_OntologyQuery": [
+      "ancestors",
+      "id",
+      "isTherapeuticArea",
+      "name"
+    ],
+    "disease_Ontology_OntologySummaryFragment": [
+      "id",
+      "isTherapeuticArea",
+      "name"
+    ],
+    "disease_Phenotypes_PhenotypesQuery": [
+      "id"
+    ],
+    "disease_Phenotypes_PhenotypesSummaryFragment": [
+      "id"
+    ],
+    "drug_AdverseEvents_AdverseEventsQuery": [
+      "id"
+    ],
+    "drug_AdverseEvents_AdverseEventsSummaryFragment": [
+      "id"
+    ],
+    "drug_Bibliography_BibliographyQuery": [
+      "id",
+      "name"
+    ],
+    "drug_Bibliography_BibliographySummaryFragment": [
+      "id"
+    ],
+    "drug_DrugWarnings_DrugWarningsQuery": [
+      "id"
+    ],
+    "drug_DrugWarnings_DrugWarningsSummaryFragment": [
+      "id"
+    ],
+    "drug_Indications_IndicationsQuery": [
+      "id"
+    ],
+    "drug_Indications_IndicationsSummaryFragment": [
+      "id"
+    ],
+    "drug_MechanismsOfAction_MechanismsOfActionQuery": [
+      "id"
+    ],
+    "drug_MechanismsOfAction_MechanismsOfActionSummaryFragment": [],
+    "drug_Pharmacogenomics_Pharmacogenomics": [
+      "id",
+      "pharmacogenomics"
+    ],
+    "drug_Pharmacogenomics_PharmacogenomicsSummary": [
+      "pharmacogenomics"
+    ],
+    "target_BaselineExpression_ExpressionQuery": [
+      "id"
+    ],
+    "target_BaselineExpression_ExpressionSummary": [
+      "id"
+    ],
+    "target_Bibliography_SimilarEntities": [
+      "approvedName",
+      "id"
+    ],
+    "target_Bibliography_SimilarEntitiesSummary": [
+      "id"
+    ],
+    "target_CancerHallmarks_Hallmarks": [
+      "hallmarks",
+      "id"
+    ],
+    "target_CancerHallmarks_HallmarksSummaryFragment": [
+      "hallmarks"
+    ],
+    "target_ChemicalProbes_ChemicalProbes": [
+      "id"
+    ],
+    "target_ChemicalProbes_ProbesSummaryFragment": [],
+    "target_ComparativeGenomics_CompGenomics": [
+      "homologues",
+      "id"
+    ],
+    "target_ComparativeGenomics_CompGenomicsSummaryFragment": [
+      "homologues"
+    ],
+    "target_DepMap_Depmap": [
+      "id"
+    ],
+    "target_DepMap_DepmapSummaryFragment": [
+      "id"
+    ],
+    "target_Drugs_DrugsQuery": [
+      "id"
+    ],
+    "target_Drugs_DrugsSummaryFragment": [
+      "id"
+    ],
+    "target_GeneOntology_GeneOntology": [
+      "id"
+    ],
+    "target_GeneOntology_GeneOntologySummary": [
+      "geneOntology",
+      "id"
+    ],
+    "target_GeneticConstraint_GeneticConstraint": [
+      "geneticConstraint",
+      "id"
+    ],
+    "target_GeneticConstraint_GeneticConstraintFragment": [
+      "geneticConstraint"
+    ],
+    "target_MolecularInteractions_InteractionsQuery": [
+      "approvedName",
+      "approvedSymbol",
+      "id"
+    ],
+    "target_MolecularInteractions_InteractionsStats": [
+      "id"
+    ],
+    "target_MolecularInteractions_InteractionsStringQuery": [
+      "id"
+    ],
+    "target_MolecularInteractions_InteractionsSummary": [
+      "id"
+    ],
+    "target_MolecularStructure_MolecularStructure": [
+      "proteinIds"
+    ],
+    "target_MolecularStructure_summaryQuery": [
+      "proteinIds"
+    ],
+    "target_MousePhenotypes_MousePhenotypes": [
+      "id"
+    ],
+    "target_MousePhenotypes_MousePhenotypesSummary": [
+      "id"
+    ],
+    "target_Pathways_Pathways": [
+      "approvedSymbol",
+      "id"
+    ],
+    "target_Pathways_PathwaysSummary": [],
+    "target_Pharmacogenomics_Pharmacogenomics": [
+      "id"
+    ],
+    "target_Pharmacogenomics_PharmacogenomicsSummary": [
+      "id"
+    ],
+    "target_QTLCredibleSets_QTLCredibleSetsQuery": [
+      "approvedSymbol",
+      "id"
+    ],
+    "target_QTLCredibleSets_QTLCredibleSetsSummaryFragment": [
+      "id"
+    ],
+    "target_Safety_Safety": [
+      "id"
+    ],
+    "target_Safety_summaryQuery": [],
+    "target_SubcellularLocation_SubcellularLocation": [
+      "id",
+      "proteinIds",
+      "subcellularLocations"
+    ],
+    "target_SubcellularLocation_SubcellularLocationFragment": [
+      "subcellularLocations"
+    ],
+    "target_Tractability_TractabilityQuery": [
+      "id",
+      "tractability"
+    ],
+    "target_Tractability_TractabilitySummary": [
+      "id",
+      "tractability"
+    ],
+    "components_ClinicalReports_ClinicalRecordsQuery": [
+      "clinicalStage",
+      "id",
+      "source",
+      "title",
+      "type"
+    ],
+    "components_ClinicalReports_RecordDetailQuery": [
+      "clinicalStage",
+      "id",
+      "phaseFromSource",
+      "source",
+      "title",
+      "trialSponsor",
+      "type",
+      "url"
+    ],
+    "components_OtAsyncTooltip_queries_StudyTooltipQuery": [
+      "id",
+      "nSamples",
+      "name",
+      "publicationDate",
+      "publicationFirstAuthor",
+      "publicationJournal",
+      "studyType"
+    ],
+    "variant_EnhancerToGenePredictions_EnhancerToGenePredictionsQuery": [
+      "alternateAllele",
+      "referenceAllele"
+    ],
+    "variant_MolecularStructure_MolecularStructureQuery": [
+      "alternateAllele",
+      "referenceAllele"
+    ],
+    "variant_Pharmacogenomics_PharmacogenomicsQuery": [
+      "alternateAllele",
+      "pharmacogenomics",
+      "referenceAllele"
+    ],
+    "variant_VariantEffect_VariantEffectQuery": [
+      "alternateAllele",
+      "referenceAllele",
+      "variantEffect"
+    ],
+    "variant_VariantEffect_VariantEffectSummaryFragment": [
+      "variantEffect"
+    ],
+    "variant_VariantGenomicRegion_VariantGenomicRegionSummary": [
+      "alternateAllele",
+      "chromosome",
+      "position",
+      "referenceAllele"
+    ],
+    "components_OtAsyncTooltip_queries_VariantTooltipQuery": [
+      "description",
+      "id"
+    ]
+  }
+}

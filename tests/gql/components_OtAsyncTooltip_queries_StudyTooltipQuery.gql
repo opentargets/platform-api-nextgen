@@ -1,0 +1,15 @@
+# The following fields were removed, because their resolvers read a
+# table the integration tests do not seed:
+#   - credibleSets
+# The original document is packages/ui/src/components/OtAsyncTooltip/queries/StudyTooltipQuery.gql.
+query StudyTooltipQuery($studyId: String!) {
+  study(studyId: $studyId) {
+    id
+    studyType
+    nSamples
+    name: traitFromSource
+    publicationFirstAuthor
+    publicationDate
+    publicationJournal
+  }
+}

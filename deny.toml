@@ -16,7 +16,8 @@ unmaintained = "all"
 yanked = "deny"
 ignore = [
     # Only add entries here with a reason. Revisit them when deps are updated.
-    { id = "RUSTSEC-2024-0436", reason = "paste is unmaintained (not vulnerable); compile-time only, via clickhouse -> polonius-the-crab. No replacement available upstream yet." },
+    { id = "RUSTSEC-2026-0440", reason = "astral-tokio-tar is unmaintained (not vulnerable); it comes with testcontainers, which the integration tests use to start the ClickHouse and OpenSearch containers. No replacement is available upstream yet." },
+    { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained (not vulnerable); it comes with parquet, which the integration tests use to read the sample data. The API itself does not depend on it, and no replacement is available upstream yet." },
 ]
 
 [licenses]

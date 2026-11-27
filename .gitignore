@@ -1,3 +1,6 @@
 /target
 /tools/graphql-inspector/node_modules/
 .DS_Store
+
+# Python bytecode, from the vendoring script
+__pycache__/

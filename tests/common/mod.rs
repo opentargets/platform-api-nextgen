@@ -44,6 +44,9 @@ const STUDY_SCHEMA: &str = include_str!("schema/study.sql");
 /// The schema of the `clinical_report` ClickHouse table.
 const CLINICAL_REPORT_SCHEMA: &str = include_str!("schema/clinical_report.sql");
 
+/// The schema of the `variants` ClickHouse table.
+const VARIANTS_SCHEMA: &str = include_str!("schema/variants.sql");
+
 /// The mappings and settings of the search indices.
 ///
 /// These are the production mappings, taken from `platform-output-support`, so the
@@ -340,6 +343,11 @@ async fn seed_clickhouse(url: &str, namespace: &str) {
         .execute()
         .await
         .expect("create clinical report fixture table");
+    client
+        .query(&VARIANTS_SCHEMA.replace("{namespace}", namespace))
+        .execute()
+        .await
+        .expect("create variants fixture table");
 
     // The sample data is loaded as JSON: the Parquet format of the fixtures uses
     // `large_list` and `large_string` types that the ClickHouse version used
@@ -356,6 +364,7 @@ async fn seed_clickhouse(url: &str, namespace: &str) {
         &sample_data::clinical_reports(),
     )
     .await;
+    insert_rows(&client, namespace, "variants", &sample_data::variants()).await;
 }
 
 /// Inserts rows into a table of the test database.
@@ -603,11 +612,21 @@ async fn index_search_document(
     );
 }
 
-/// Returns the GraphQL errors of a response, panicking with the payload when there are any.
+/// Returns the GraphQL errors of a response.
 pub fn graphql_errors(response: &Value) -> &[Value] {
-    let errors = response["errors"]
+    response["errors"]
         .as_array()
-        .map_or(&[][..], |errors| errors.as_slice());
-    assert!(errors.is_empty(), "unexpected GraphQL errors: {response}");
-    errors
+        .map_or(&[][..], |errors| errors.as_slice())
+}
+
+/// Asserts that the response carries no GraphQL errors.
+///
+/// The whole response is part of the message: a GraphQL error says what went
+/// wrong, but not what the server answered.
+pub fn assert_no_errors(response: &Value) {
+    assert_eq!(
+        graphql_errors(response),
+        &[] as &[Value],
+        "unexpected GraphQL errors: {response}"
+    );
 }

@@ -1,0 +1,30 @@
+fragment StudyProfileHeaderFragment on Study {
+  studyType
+  publicationFirstAuthor
+  publicationDate
+  publicationJournal
+  pubmedId
+  traitFromSource
+  projectId
+  diseases {
+    id
+    name
+  }
+  nSamples
+  initialSampleSize
+  nCases
+  nControls
+  cohorts
+  ldPopulationStructure {
+    ldPopulation
+    relativeSampleSize
+  }
+  hasSumstats
+  SumstatQCValues {
+    QCCheckName
+    QCCheckValue
+  }
+  qualityControls
+  analysisFlags
+  condition
+}

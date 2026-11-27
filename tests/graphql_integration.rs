@@ -1,6 +1,6 @@
 mod common;
 
-use common::{environment, frontend_queries, graphql_errors, sample_data};
+use common::{assert_no_errors, environment, frontend_queries, graphql_errors, sample_data};
 use serde_json::{Value, json};
 
 /// The query that fetches several targets at once.
@@ -122,18 +122,19 @@ async fn target_page_query_returns_the_target_from_the_sample_data() {
         )
         .await;
 
-    assert!(graphql_errors(&response).is_empty());
+    assert_no_errors(&response);
     let target = &response["data"]["target"];
     assert_eq!(target["id"], sample_data::first_target_id());
     assert_eq!(target["approvedSymbol"], sample_data::first_target_symbol());
     assert_eq!(target["approvedName"], sample_data::first_target_name());
-    assert!(
-        !target["proteinIds"]
-            .as_array()
-            .expect("proteinIds")
-            .is_empty()
+    assert_ne!(
+        target["proteinIds"].as_array().expect("proteinIds"),
+        &[] as &[Value]
     );
-    assert!(!target["dbXrefs"].as_array().expect("dbXrefs").is_empty());
+    assert_ne!(
+        target["dbXrefs"].as_array().expect("dbXrefs"),
+        &[] as &[Value]
+    );
 }
 
 #[tokio::test]
@@ -142,7 +143,7 @@ async fn targets_query_returns_the_requested_targets_in_order() {
 
     let response = environment.graphql(TARGETS_QUERY).await;
 
-    assert!(graphql_errors(&response).is_empty());
+    assert_no_errors(&response);
     let rows = response["data"]["targets"]["rows"]
         .as_array()
         .expect("targets rows");
@@ -174,7 +175,7 @@ async fn search_returns_a_deterministic_target_hit_and_aggregations() {
         )
         .await;
 
-    assert!(graphql_errors(&response).is_empty());
+    assert_no_errors(&response);
     assert_eq!(response["data"]["search"]["total"], 1);
     assert_eq!(
         response["data"]["search"]["hits"][0]["id"],
@@ -207,7 +208,7 @@ async fn search_resolves_the_target_object_from_clickhouse() {
         )
         .await;
 
-    assert!(graphql_errors(&response).is_empty());
+    assert_no_errors(&response);
     let hit = &response["data"]["search"]["hits"][0];
     assert_eq!(hit["id"], sample_data::first_target_id());
     assert_eq!(hit["object"]["__typename"], "Target");
@@ -234,7 +235,7 @@ async fn search_returns_the_documents_of_the_sample_data() {
         )
         .await;
 
-    assert!(graphql_errors(&response).is_empty());
+    assert_no_errors(&response);
     assert_eq!(response["data"]["search"]["total"], 1);
     assert_eq!(
         response["data"]["search"]["hits"][0]["id"],
@@ -253,7 +254,7 @@ async fn unknown_target_is_null() {
 
     let response = environment.graphql(UNKNOWN_TARGET_QUERY).await;
 
-    assert!(graphql_errors(&response).is_empty());
+    assert_no_errors(&response);
     // The field has to be there, and explicitly null: indexing the response
     // would also return null for a missing field, which would hide a server
     // that does not return the target at all.
@@ -283,12 +284,13 @@ async fn the_frontend_queries_are_served() {
             )
             .await;
 
-        assert!(
-            graphql_errors(&response).is_empty(),
-            "the frontend query {} (from {}) failed: {:?}",
+        let errors = graphql_errors(&response);
+        assert_eq!(
+            errors,
+            &[] as &[Value],
+            "the frontend query {} (from {}) failed: {errors:?}",
             query.name,
-            query.source,
-            graphql_errors(&response)
+            query.source
         );
         // The query has to have resolved the entity of the sample data. A
         // query that returns nothing would pass the check above. Not every
@@ -348,7 +350,7 @@ async fn drug_page_query_returns_the_drug_from_the_sample_data() {
         )
         .await;
 
-    assert_eq!(graphql_errors(&response), &[] as &[Value]);
+    assert_no_errors(&response);
     let drug = &response["data"]["drug"];
     assert_eq!(drug["id"], sample_data::first_drug_id());
     assert_eq!(drug["name"], sample_data::first_drug_name());
@@ -371,7 +373,7 @@ async fn disease_page_query_returns_the_disease_from_the_sample_data() {
         )
         .await;
 
-    assert_eq!(graphql_errors(&response), &[] as &[Value]);
+    assert_no_errors(&response);
     let disease = &response["data"]["disease"];
     assert_eq!(disease["id"], sample_data::first_disease_id());
     assert_eq!(disease["name"], sample_data::first_disease_name());
@@ -397,7 +399,7 @@ async fn search_resolves_the_drug_object_from_clickhouse() {
         )
         .await;
 
-    assert_eq!(graphql_errors(&response), &[] as &[Value]);
+    assert_no_errors(&response);
     let hit = &response["data"]["search"]["hits"][0];
     assert_eq!(hit["id"], sample_data::first_drug_id());
     assert_eq!(hit["entity"], "drug");
@@ -422,7 +424,7 @@ async fn search_resolves_the_disease_object_from_clickhouse() {
         )
         .await;
 
-    assert_eq!(graphql_errors(&response), &[] as &[Value]);
+    assert_no_errors(&response);
     let hit = &response["data"]["search"]["hits"][0];
     assert_eq!(hit["id"], sample_data::first_disease_id());
     assert_eq!(hit["entity"], "disease");

@@ -1,0 +1,11 @@
+query StudyPageQuery($studyId: String!) {
+  study(studyId: $studyId) {
+    id
+    studyType
+    projectId
+    diseases {
+      id
+      name
+    }
+  }
+}

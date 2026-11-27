@@ -1,0 +1,13 @@
+query VariantEffectQuery($variantId: String!) {
+  variant(variantId: $variantId) {
+    variantEffect {
+      method
+      assessment
+      score
+      assessmentFlag
+      normalisedScore
+    }
+    referenceAllele
+    alternateAllele
+  }
+}
