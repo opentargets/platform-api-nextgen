@@ -10,7 +10,10 @@ use serde::Deserialize;
 
 use crate::{
     datasource::clickhouse::ClickHouse,
-    entity::{target::Target, variant::Chromosome},
+    entity::{
+        target::{Target, load_targets},
+        variant::Chromosome,
+    },
     query::paginate::{Page, Paged, page_complexity},
 };
 
@@ -73,11 +76,18 @@ impl Key {
     }
 }
 
-#[derive(Debug, Clone, Row, Deserialize, SimpleObject)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Row, Deserialize)]
 pub struct TargetsByRegionRow {
     key: usize,
-    targets: Paged<Target>,
+    count: u64,
+    ids: Vec<String>,
+}
+
+/// Total target count in a region and the target ids on one page, in genomic order.
+#[derive(Debug, Clone, Default)]
+pub struct RegionTargetIds {
+    count: u64,
+    ids: Vec<String>,
 }
 
 // --- loaders ---
@@ -88,7 +98,7 @@ pub struct TargetsByRegionLoader {
 }
 
 impl Loader<Key> for TargetsByRegionLoader {
-    type Value = Paged<Target>;
+    type Value = RegionTargetIds;
     type Error = async_graphql::Error;
 
     async fn load(&self, keys: &[Key]) -> Result<HashMap<Key, Self::Value>, Self::Error> {
@@ -111,7 +121,7 @@ impl Loader<Key> for TargetsByRegionLoader {
                 (
                     SELECT count()
                     FROM filtered
-                ) as count,
+                ) AS total,
                 paged AS
                 (
                     SELECT *
@@ -121,10 +131,9 @@ impl Loader<Key> for TargetsByRegionLoader {
                 )
             SELECT
                 query_id,
-                tuple(
-                        CAST(count AS UInt64),
-                        groupArray(target) as rows
-                    )
+                CAST(total AS UInt64) AS count,
+                -- groupArray doesn't keep the subquery's ORDER BY, so sort explicitly.
+                arrayMap(x -> x.3, arraySort(groupArray((start, end, target.id)))) AS ids
             FROM paged
             GROUP BY query_id
             ";
@@ -144,7 +153,15 @@ impl Loader<Key> for TargetsByRegionLoader {
         let result = full_query.fetch_all::<TargetsByRegionRow>().await?;
         let results_with_keys = result
             .iter()
-            .map(|res| (keys[res.key].clone(), res.targets.clone()))
+            .map(|res| {
+                (
+                    keys[res.key].clone(),
+                    RegionTargetIds {
+                        count: res.count,
+                        ids: res.ids.clone(),
+                    },
+                )
+            })
             .collect();
 
         Ok(results_with_keys)
@@ -156,11 +173,13 @@ pub async fn load_targets_by_region(
     ctx: &async_graphql::Context<'_>,
     key: Key,
 ) -> async_graphql::Result<Paged<Target>> {
-    Ok(ctx
+    let RegionTargetIds { count, ids } = ctx
         .data_unchecked::<DataLoader<TargetsByRegionLoader>>()
         .load_one(key)
         .await?
-        .unwrap_or_default())
+        .unwrap_or_default();
+    let rows = load_targets(ctx, &ids).await?;
+    Ok(Paged { count, rows })
 }
 
 #[ComplexObject]
