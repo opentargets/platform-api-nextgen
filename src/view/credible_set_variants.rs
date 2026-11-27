@@ -60,6 +60,20 @@ pub struct CredibleSetVariant {
     reported_standard_error: Option<f64>,
     /// R-squared (LD) between this credible set variant and the lead variant.
     r2_overall: Option<f32>,
+    /// Sample size for this variant.
+    sample_size: Option<u32>,
+    /// Effect allele frequency of this variant.
+    effect_allele_frequency: Option<f32>,
+    /// Effect of this variant from fine-mapping, conditional on the other signals in the locus.
+    conditional_beta: Option<f32>,
+    /// Standard error of the conditional beta.
+    conditional_standard_error: Option<f32>,
+    /// Absolute effect rescaled to be comparable across studies.
+    rescaled_abs_beta: Option<f32>,
+    /// Standard error of the rescaled effect.
+    rescaled_standard_error: Option<f32>,
+    /// Direction of the rescaled effect (1 or -1).
+    rescaled_direction: Option<i8>,
     /// Sequence Ontology id of the variant's most severe consequence (e.g. `SO:0001583`).
     most_severe_consequence_id: Option<String>,
     /// Sequence Ontology label of the variant's most severe consequence (e.g. missense variant).
@@ -88,6 +102,13 @@ columns!(CredibleSetVariantCol {
     ReportedBeta               => "reportedBeta"               : F64,
     ReportedStandardError      => "reportedStandardError"      : F64,
     R2Overall                  => "r2Overall"                  : F64,
+    SampleSize                 => "sampleSize"                 : U64,
+    EffectAlleleFrequency      => "effectAlleleFrequency"      : F64,
+    ConditionalBeta            => "conditionalBeta"            : F64,
+    ConditionalStandardError   => "conditionalStandardError"   : F64,
+    RescaledAbsBeta            => "rescaledAbsBeta"            : F64,
+    RescaledStandardError      => "rescaledStandardError"      : F64,
+    RescaledDirection          => "rescaledDirection"          : I64,
     // Search sees spaces, as the table shows them. The returned label keeps underscores.
     MostSevereConsequenceLabel => "replaceAll(mostSevereConsequenceLabel, '_', ' ')" : Str,
 });
@@ -164,6 +185,16 @@ pub enum SortField {
     R2Overall,
     PosteriorProbability,
     LogBayesFactor,
+    SampleSize,
+    EffectAlleleFrequency,
+    /// Effect from fine-mapping, conditional on the other signals in the locus.
+    ConditionalBeta,
+    ConditionalStandardError,
+    /// Absolute effect rescaled to be comparable across studies.
+    RescaledAbsBeta,
+    RescaledStandardError,
+    /// Direction of the rescaled effect (-1 before 1 ascending).
+    RescaledDirection,
 }
 
 /// By posterior probability, with the lead variant first among ties.
@@ -197,6 +228,13 @@ impl SortField {
             Self::R2Overall => &[C::R2Overall],
             Self::PosteriorProbability => &[C::PosteriorProbability],
             Self::LogBayesFactor => &[C::LogBayesFactor],
+            Self::SampleSize => &[C::SampleSize],
+            Self::EffectAlleleFrequency => &[C::EffectAlleleFrequency],
+            Self::ConditionalBeta => &[C::ConditionalBeta],
+            Self::ConditionalStandardError => &[C::ConditionalStandardError],
+            Self::RescaledAbsBeta => &[C::RescaledAbsBeta],
+            Self::RescaledStandardError => &[C::RescaledStandardError],
+            Self::RescaledDirection => &[C::RescaledDirection],
         };
         OrderBy::each(cols, dir)
     }

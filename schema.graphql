@@ -1484,6 +1484,34 @@ type CredibleSetVariant {
 	"""
 	r2Overall: Float
 	"""
+	Sample size for this variant.
+	"""
+	sampleSize: Int
+	"""
+	Effect allele frequency of this variant.
+	"""
+	effectAlleleFrequency: Float
+	"""
+	Effect of this variant from fine-mapping, conditional on the other signals in the locus.
+	"""
+	conditionalBeta: Float
+	"""
+	Standard error of the conditional beta.
+	"""
+	conditionalStandardError: Float
+	"""
+	Absolute effect rescaled to be comparable across studies.
+	"""
+	rescaledAbsBeta: Float
+	"""
+	Standard error of the rescaled effect.
+	"""
+	rescaledStandardError: Float
+	"""
+	Direction of the rescaled effect (1 or -1).
+	"""
+	rescaledDirection: Int
+	"""
 	Sequence Ontology id of the variant's most severe consequence (e.g. `SO:0001583`).
 	"""
 	mostSevereConsequenceId: String
@@ -1561,6 +1589,22 @@ enum CredibleSetVariantsSortField {
 	R2_OVERALL
 	POSTERIOR_PROBABILITY
 	LOG_BAYES_FACTOR
+	SAMPLE_SIZE
+	EFFECT_ALLELE_FREQUENCY
+	"""
+	Effect from fine-mapping, conditional on the other signals in the locus.
+	"""
+	CONDITIONAL_BETA
+	CONDITIONAL_STANDARD_ERROR
+	"""
+	Absolute effect rescaled to be comparable across studies.
+	"""
+	RESCALED_ABS_BETA
+	RESCALED_STANDARD_ERROR
+	"""
+	Direction of the rescaled effect (-1 before 1 ascending).
+	"""
+	RESCALED_DIRECTION
 }
 
 """

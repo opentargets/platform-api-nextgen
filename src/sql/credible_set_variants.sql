@@ -14,6 +14,13 @@
     l.reportedBeta AS reportedBeta,
     l.reportedStandardError AS reportedStandardError,
     l.r2Overall AS r2Overall,
+    l.sampleSize AS sampleSize,
+    l.effectAlleleFrequency AS effectAlleleFrequency,
+    l.conditionalBeta AS conditionalBeta,
+    l.conditionalStandardError AS conditionalStandardError,
+    l.rescaledAbsBeta AS rescaledAbsBeta,
+    l.rescaledStandardError AS rescaledStandardError,
+    l.rescaledDirection AS rescaledDirection,
     -- Variants use SO_ ids and the ontology uses SO: ids, like the legacy field.
     nullIf(replaceOne(v.mostSevereConsequenceId, '_', ':'), '') AS mostSevereConsequenceId,
     nullIf(
