@@ -11,6 +11,6 @@ mod tests {
 
     #[test]
     fn api_version_is_never_empty() {
-        assert!(!API_VERSION.is_empty());
+        assert_ne!(API_VERSION, "");
     }
 }
