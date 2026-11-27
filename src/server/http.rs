@@ -2,17 +2,20 @@
 
 use std::net::SocketAddr;
 
+use async_graphql::ParseRequestError;
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
-    Router,
+    Json, Router,
     extract::State,
+    http::StatusCode,
     middleware::{Next, from_fn},
-    response::{Html, IntoResponse},
+    response::{Html, IntoResponse, Response},
     routing::{any, get},
 };
 use axum_prometheus::PrometheusMetricLayerBuilder;
 use axum_server::tls_rustls::RustlsConfig;
 use reqwest::{Method, header};
+use serde_json::json;
 use tower_http::{
     compression::CompressionLayer,
     cors::{Any, CorsLayer},
@@ -38,8 +41,40 @@ async fn schema(State(state): State<AppState>) -> impl IntoResponse {
     )
 }
 
+/// Rejection for GraphQL requests that cannot be parsed, e.g. malformed JSON or a batch.
+///
+/// The default `async-graphql-axum` rejection puts the `Debug` text of the error in the body,
+/// which is not JSON. This one answers with a GraphQL error response instead, so clients get
+/// the same JSON shape as for any other error.
+struct RequestRejection(ParseRequestError);
+
+impl From<ParseRequestError> for RequestRejection {
+    fn from(err: ParseRequestError) -> Self { Self(err) }
+}
+
+impl IntoResponse for RequestRejection {
+    fn into_response(self) -> Response {
+        let (status, message) = match self.0 {
+            ParseRequestError::PayloadTooLarge => (
+                StatusCode::PAYLOAD_TOO_LARGE,
+                "Payload too large".to_string(),
+            ),
+            ParseRequestError::UnsupportedBatch => (
+                StatusCode::BAD_REQUEST,
+                "Batch requests are not supported. Send one query per request.".to_string(),
+            ),
+            err => (StatusCode::BAD_REQUEST, err.to_string()),
+        };
+        // A request error has no `data` field, only `errors` (GraphQL over HTTP).
+        (status, Json(json!({ "errors": [{ "message": message }] }))).into_response()
+    }
+}
+
 // The GraphQL part of the API.
-async fn graphql(State(state): State<AppState>, req: GraphQLRequest) -> GraphQLResponse {
+async fn graphql(
+    State(state): State<AppState>,
+    req: GraphQLRequest<RequestRejection>,
+) -> GraphQLResponse {
     state.api.execute(req.into_inner()).await.into()
 }
 
@@ -131,5 +166,91 @@ pub async fn serve(state: AppState) {
             );
         }
         _ => panic!("cert_file and key_file must both be set or both unset"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::{
+        body::{Body, to_bytes},
+        extract::FromRequest,
+        http::Request,
+    };
+    use serde_json::Value;
+
+    use super::*;
+
+    /// Parses `body` as a GraphQL request and returns the rejection response, if any.
+    async fn reject(body: &'static str) -> Option<(StatusCode, Option<String>, Value)> {
+        let req = Request::post("/graphql")
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(body))
+            .unwrap();
+        let rejection = GraphQLRequest::<RequestRejection>::from_request(req, &())
+            .await
+            .err()?;
+        let resp = rejection.into_response();
+        let status = resp.status();
+        let content_type = resp
+            .headers()
+            .get(header::CONTENT_TYPE)
+            .map(|v| v.to_str().unwrap().to_string());
+        let bytes = to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+        Some((
+            status,
+            content_type,
+            serde_json::from_slice(&bytes).unwrap(),
+        ))
+    }
+
+    #[tokio::test]
+    async fn malformed_json_is_a_json_graphql_error() {
+        let (status, content_type, body) = reject(r#"{"query": "#).await.unwrap();
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert_eq!(content_type.as_deref(), Some("application/json"));
+        assert_eq!(
+            body,
+            json!({ "errors": [{
+                "message": "Invalid request: EOF while parsing a value at line 1 column 10"
+            }] })
+        );
+    }
+
+    #[tokio::test]
+    async fn non_json_body_is_a_json_graphql_error() {
+        let (status, _, body) = reject("hello").await.unwrap();
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            body,
+            json!({ "errors": [{
+                "message": "Invalid request: expected value at line 1 column 1"
+            }] })
+        );
+    }
+
+    #[tokio::test]
+    async fn batch_request_says_batches_are_not_supported() {
+        let (status, _, body) =
+            reject(r#"[{"query": "{ meta { name } }"}, {"query": "{ meta { name } }"}]"#)
+                .await
+                .unwrap();
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            body,
+            json!({ "errors": [{
+                "message": "Batch requests are not supported. Send one query per request."
+            }] })
+        );
+    }
+
+    #[tokio::test]
+    async fn valid_request_is_not_rejected() {
+        assert!(reject(r#"{"query": "{ meta { name } }"}"#).await.is_none());
+    }
+
+    #[test]
+    fn payload_too_large_keeps_its_status() {
+        let resp = RequestRejection(ParseRequestError::PayloadTooLarge).into_response();
+        assert_eq!(resp.status(), StatusCode::PAYLOAD_TOO_LARGE);
     }
 }
