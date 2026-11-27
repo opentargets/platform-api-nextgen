@@ -6260,6 +6260,32 @@ type EvidenceViews {
 }
 
 """
+Exon of a transcript.
+"""
+type Exon {
+	"""
+	Ensembl exon identifier.
+	"""
+	exonId: String!
+	"""
+	Genomic start position of the exon.
+	"""
+	start: Int!
+	"""
+	Genomic end position of the exon.
+	"""
+	end: Int!
+	"""
+	Chromosome the exon is located on.
+	"""
+	chromosome: String!
+	"""
+	Strand orientation of the exon.
+	"""
+	strand: Strand!
+}
+
+"""
 Kind of entity that has a facet search index.
 """
 enum FacetEntity {
@@ -6283,6 +6309,20 @@ enum FineMappingMethod {
 	`SuSiE` with an infinitesimal effects component.
 	"""
 	SuSiE_inf
+}
+
+"""
+Ensembl transcript flag, such as `mane` or `appris`.
+"""
+type Flag {
+	"""
+	Flag name.
+	"""
+	label: String
+	"""
+	Flag value.
+	"""
+	value: String
 }
 
 """
@@ -8909,14 +8949,18 @@ type Target {
 	"""
 	transcriptIds: [String!]!
 	"""
-	List of transcripts associated with the target including protein and structure annotations.
+	Ensembl transcripts of the target, with protein, structure and exon annotations.
 	"""
 	transcripts(
 		"""
 		Whether to return only the Ensembl canonical transcript (`true`) or only the non-canonical ones (`false`). Returns all when omitted.
 		"""
-		canonical: Boolean
-	): [Transcript!]!
+		canonical: Boolean,
+		"""
+		Pagination for the transcripts.
+		"""
+		page: Page! = {index: 0, size: 10}
+	): Transcripts!
 	"""
 	Target-disease associations calculated on-the-fly using configurable data source weights and
 	evidence filters. Returns associations with aggregated scores and evidence counts supporting
@@ -9434,7 +9478,7 @@ type Tractability {
 }
 
 """
-Transcript annotation for a target gene.
+Ensembl transcript of a target gene, with protein, structure and exon annotations.
 """
 type Transcript {
 	"""
@@ -9446,29 +9490,57 @@ type Transcript {
 	"""
 	biotype: String!
 	"""
+	Ensembl protein (translation) identifier.
+	"""
+	proteinId: String
+	"""
+	Reviewed (Swiss-Prot) UniProt accessions mapped to the transcript.
+	"""
+	uniprotSwissprotIds: [String!]!
+	"""
+	Unreviewed (`TrEMBL`) UniProt accessions mapped to the transcript.
+	"""
+	uniprotTremblIds: [String!]!
+	"""
+	UniProt isoform identifiers mapped to the transcript.
+	"""
+	uniprotIsoformIds: [String!]!
+	"""
+	AlphaFold structure prediction identifiers.
+	"""
+	alphafoldIds: [String!]!
+	"""
 	Whether this is the Ensembl canonical transcript.
 	"""
-	isEnsemblCanonical: Boolean
+	isEnsemblCanonical: Boolean!
 	"""
-	UniProt accession mapped to the transcript.
+	Genomic start position of the transcript.
 	"""
-	uniprotId: String
+	start: Int!
 	"""
-	Whether the UniProt entry is reviewed (Swiss-Prot).
+	Genomic end position of the transcript.
 	"""
-	isUniprotReviewed: Boolean
+	end: Int!
 	"""
-	Ensembl translation identifier.
+	Genomic position of the transcription start site.
 	"""
-	translationId: String
+	transcriptionStartSite: Int!
 	"""
-	AlphaFold structure prediction identifier.
+	Ensembl transcript flags, such as MANE select or APPRIS principal.
 	"""
-	alphafoldId: String
+	flags: [Flag!]!
 	"""
-	UniProt isoform identifier.
+	Exons of the transcript.
 	"""
-	uniprotIsoformId: String
+	exons: [Exon!]!
+	"""
+	Chromosome the transcript is located on.
+	"""
+	chromosome: String!
+	"""
+	Strand orientation of the transcript.
+	"""
+	strand: Strand!
 }
 
 """
@@ -9557,6 +9629,14 @@ enum TranscriptConsequenceSortField {
 	Distance of the variant from the transcription start site.
 	"""
 	DISTANCE_FROM_TSS
+}
+
+"""
+The result of a paginated query, containing the total number of items and the items.
+"""
+type Transcripts {
+	count: Int!
+	rows: [Transcript!]!
 }
 
 """

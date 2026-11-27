@@ -41,4 +41,5 @@ pub mod study;
 pub mod target;
 pub mod target_essentiality;
 pub mod target_prioritisation;
+pub mod transcript;
 pub mod variant;
