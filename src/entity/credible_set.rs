@@ -18,7 +18,7 @@ use crate::{
         cache::{CachedLoader, entity_cache},
         filter::Filter,
         load_ordered,
-        paginate::{Page, Paged, page_complexity},
+        paginate::{Page, Paged, capped_page_complexity, page_complexity},
         sort::{Sort, UniqueSortKeys},
     },
     view::{credible_set_colocalisations as csc, credible_set_variants as csv},
@@ -187,7 +187,9 @@ pub struct CredibleSetQuery;
 #[Object]
 impl CredibleSetQuery {
     /// Retrieve a list of credible sets by their identifier.
-    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    #[graphql(
+        complexity = "capped_page_complexity(page, credible_set_ids.len(), child_complexity)"
+    )]
     async fn credible_sets(
         &self,
         ctx: &Context<'_>,

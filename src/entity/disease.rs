@@ -34,7 +34,7 @@ use crate::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
-        paginate::{Page, Paged, PagedWithStats, page_complexity},
+        paginate::{Page, Paged, PagedWithStats, capped_page_complexity, page_complexity},
         search::{Search, Searchable, contains},
         sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
     },
@@ -330,7 +330,7 @@ pub struct DiseaseQuery;
 #[Object]
 impl DiseaseQuery {
     /// Fetch diseases by EFO ID.
-    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    #[graphql(complexity = "capped_page_complexity(page, efo_ids.len(), child_complexity)")]
     async fn diseases(
         &self,
         ctx: &Context<'_>,

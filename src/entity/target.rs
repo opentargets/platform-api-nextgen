@@ -42,7 +42,7 @@ use crate::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
-        paginate::{Page, Paged, PagedWithStats, page_complexity},
+        paginate::{Page, Paged, PagedWithStats, capped_page_complexity, page_complexity},
         sort::{Sort, UniqueSortKeys},
     },
     view::{
@@ -595,7 +595,7 @@ pub struct TargetQuery;
 #[Object]
 impl TargetQuery {
     /// Retrieve multiple targets by target identifiers.
-    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    #[graphql(complexity = "capped_page_complexity(page, ensembl_ids.len(), child_complexity)")]
     async fn targets(
         &self,
         ctx: &Context<'_>,

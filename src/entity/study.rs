@@ -29,7 +29,7 @@ use crate::{
         cache::{CachedLoader, entity_cache},
         filter::{Filter, IntFilter, StringFilter},
         load_ordered,
-        paginate::{Page, Paged, PagedWithStats, page_complexity},
+        paginate::{Page, Paged, PagedWithStats, capped_page_complexity, page_complexity},
         search::{Search, Searchable, contains},
         sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
         stats::{
@@ -443,7 +443,11 @@ pub struct StudyQuery;
 
 #[Object]
 impl StudyQuery {
-    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    // `studyIds` bounds the rows (alone or intersected with `diseaseIds`); `diseaseIds` alone
+    // does not, so fall back to the page size.
+    #[graphql(
+        complexity = "capped_page_complexity(page, study_ids.as_ref().map_or(usize::MAX, Vec::len), child_complexity)"
+    )]
     async fn studies(
         &self,
         ctx: &Context<'_>,

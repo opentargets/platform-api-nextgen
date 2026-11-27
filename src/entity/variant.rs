@@ -32,7 +32,7 @@ use crate::{
         Entity, QueryExt,
         cache::{CachedLoader, entity_cache},
         load_ordered,
-        paginate::{Page, Paged, page_complexity},
+        paginate::{Page, Paged, capped_page_complexity, page_complexity},
         sort::{Nulls, Sort, SortDirection, SortKey, Term, UniqueSortKeys},
     },
     view::{variant_credible_sets as vcs, variant_transcript_consequences as vtc},
@@ -366,7 +366,7 @@ pub struct VariantQuery;
 impl VariantQuery {
     /// Retrieve a list of variants by their identifier in the format of CHROM_POS_REF_ALT for SNPs
     /// and short indels (e.g. 19_44908684_T_C).
-    #[graphql(complexity = "page_complexity(page, child_complexity)")]
+    #[graphql(complexity = "capped_page_complexity(page, variant_ids.len(), child_complexity)")]
     async fn variants(
         &self,
         ctx: &Context<'_>,
