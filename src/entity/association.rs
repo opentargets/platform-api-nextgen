@@ -10,7 +10,7 @@ use crate::{
     datasource::{clickhouse::ClickHouse, opensearch::OpenSearch},
     entity::{
         disease::{Disease, load_disease},
-        search_facet::facet_entity_ids,
+        search_facet::{FacetEntity, facet_entity_ids},
         target::{Target, load_target},
     },
     query::{
@@ -310,6 +310,9 @@ pub struct AssociationArguments {
     /// Filter to apply to the B dimension items.
     pub b_filter: Option<String>,
     /// List of the facet IDs to filter the B dimension items by.
+    ///
+    /// Facets in the same category are combined with OR and facets in different categories are
+    /// combined with AND.
     pub facet_filters: Vec<String>,
     /// Whether to include diseases from the _measurement_ family in `B` set. Default is `false`.
     pub include_measurements: Option<bool>,
@@ -455,6 +458,8 @@ pub trait EntityWithAssociations {
     const B_TABLE: &'static str;
     /// Lowercased SQL expression over `B_TABLE` that `BFilter` terms are matched against.
     const B_SEARCH: &'static str;
+    /// The kind of entity in the B dimension, used to pick the facet search index.
+    const B_FACET_ENTITY: FacetEntity;
     /// The type of the B id for this entity's associations.
     type B: OutputType + 'static;
     /// Generate the ID set to use this entity as A in an association query.
@@ -604,16 +609,24 @@ impl AotfSql {
 // ---- loaders ----
 
 /// Resolve the B ids for the associations query.
-#[instrument(skip_all, level = "trace", fields(bs = ?args.bs, facet_filters = ?args.facet_filters))]
+///
+/// The facet filters are resolved against the facet index of the B dimension entity. Facets in the
+/// same category are combined with OR and facets in different categories are combined with AND.
+#[instrument(
+    skip_all,
+    level = "trace",
+    fields(bs = ?args.bs, facet_filters = ?args.facet_filters, facet_entity = ?facet_entity)
+)]
 async fn prepare_b_ids(
     os: &OpenSearch,
     args: &AssociationArguments,
+    facet_entity: FacetEntity,
 ) -> async_graphql::Result<Vec<String>> {
     match (args.facet_filters.is_empty(), args.bs.is_empty()) {
         (true, _) => Ok(args.bs.clone()),
-        (false, true) => facet_entity_ids(os, &args.facet_filters).await,
+        (false, true) => facet_entity_ids(os, facet_entity, &args.facet_filters).await,
         (false, false) => {
-            let facet_b_ids = facet_entity_ids(os, &args.facet_filters).await?;
+            let facet_b_ids = facet_entity_ids(os, facet_entity, &args.facet_filters).await?;
             let set: HashSet<&str> = facet_b_ids.iter().map(String::as_str).collect();
             Ok(args
                 .bs
@@ -650,7 +663,7 @@ where
 
     let a_ids = A::a_ids(ch, anchor).await?;
     tracing::trace!("found {} indirect ids", a_ids.len());
-    let b_ids = prepare_b_ids(os, args).await?;
+    let b_ids = prepare_b_ids(os, args, A::B_FACET_ENTITY).await?;
     if !args.facet_filters.is_empty() && b_ids.is_empty() {
         return Ok(Paged {
             count: 0,

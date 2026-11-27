@@ -27,6 +27,7 @@ use crate::{
         disease_hpo::{DiseasePhenotype, DiseasePhenotypeLoader},
         evidence::{Evidence, EvidenceKey, load_evidences},
         publication::{Publication, PublicationArguments, load_publications},
+        search_facet::FacetEntity,
         similar_entity::{SimilarEntityArguments, Similarity, load_similar_entities},
         target::Target,
     },
@@ -124,6 +125,7 @@ impl EntityWithAssociations for Disease {
     const TABLE: &'static str = "associations_otf_disease";
     const B_TABLE: &'static str = "targets";
     const B_SEARCH: &'static str = "lower(concat(id, ' ', approvedSymbol, ' ', approvedName))";
+    const B_FACET_ENTITY: FacetEntity = FacetEntity::Target;
     type B = Target;
     async fn a_ids(ch: &ClickHouse, anchor: &str) -> async_graphql::Result<Vec<String>> {
         Ok(ch
@@ -446,7 +448,11 @@ impl Disease {
         #[graphql(name = "BFilter", desc = "Filter to apply to the B dimension items.")]
         b_filter: Option<String>,
 
-        #[graphql(default, desc = "List of the facet ids to filter by (using AND).")]
+        #[graphql(
+            default,
+            desc = "List of the facet ids to filter by. Facets within the same category are \
+                    combined with OR; facets from different categories are combined with AND."
+        )]
         facet_filters: Vec<String>,
 
         #[graphql(
