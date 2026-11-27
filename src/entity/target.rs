@@ -34,6 +34,7 @@ use crate::{
             SortField as PharmacogenomicsSortField, load_pharmacogenomics,
         },
         publication::{Publication, PublicationArguments, load_publications},
+        search_facet::FacetEntity,
         similar_entity::{SimilarEntityArguments, Similarity, load_similar_entities},
         target_essentiality::{DepMapEssentiality, load_target_essentiality_by_target},
         target_prioritisation::{TargetPrioritisations, load_target_prioritisations},
@@ -515,6 +516,7 @@ impl EntityWithAssociations for Target {
     const TABLE: &'static str = "associations_otf_target";
     const B_TABLE: &'static str = "disease";
     const B_SEARCH: &'static str = "lower(concat(id, ' ', name))";
+    const B_FACET_ENTITY: FacetEntity = FacetEntity::Disease;
     type B = Disease;
     async fn a_ids(_: &ClickHouse, _: &str) -> async_graphql::Result<Vec<String>> { Ok(Vec::new()) }
 }
@@ -660,7 +662,11 @@ impl Target {
         #[graphql(name = "BFilter", desc = "Filter to apply to the `B` dimension items.")]
         b_filter: Option<String>,
 
-        #[graphql(default, desc = "List of the Facet IDs to filter by (using AND).")]
+        #[graphql(
+            default,
+            desc = "List of the facet ids to filter by. Facets within the same category are \
+                    combined with OR; facets from different categories are combined with AND."
+        )]
         facet_filters: Vec<String>,
 
         #[graphql(

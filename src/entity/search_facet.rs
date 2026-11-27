@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use async_graphql::{Context, Enum, Object, SimpleObject};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -259,7 +261,71 @@ impl FacetQuery {
     }
 }
 
+/// A facet resolved into the category it belongs to and the entity ids it covers.
+type ResolvedFacet = (String, Vec<String>);
+
+/// Combines the entity ids of the given facets into a single set of entity ids.
+///
+/// Facets in the same category are combined with OR (the union of their entity ids) and facets in
+/// different categories are combined with AND (the intersection of the per-category sets). An
+/// entity is therefore only covered when a facet in *every* category covers it.
+///
+/// A category whose facets carry no entity ids covers nothing, which makes the whole combination
+/// empty.
+fn combine_facet_entity_ids(facets: &[ResolvedFacet]) -> Vec<String> {
+    // Group the facets by category, keeping the order in which the categories are first seen.
+    let mut categories: Vec<(String, HashSet<String>)> = Vec::new();
+    for (category, entity_ids) in facets {
+        match categories.iter_mut().find(|(c, _)| c == category) {
+            Some((_, set)) => set.extend(entity_ids.iter().cloned()),
+            None => categories.push((category.clone(), entity_ids.iter().cloned().collect())),
+        }
+    }
+
+    // Intersect the per-category sets. An empty intersection stays empty, so we can stop early.
+    let mut combined: Option<HashSet<String>> = None;
+    for (_, set) in categories {
+        combined = Some(match combined {
+            Some(current) => current.intersection(&set).cloned().collect(),
+            None => set,
+        });
+        if combined.as_ref().is_some_and(HashSet::is_empty) {
+            break;
+        }
+    }
+
+    let mut ids: Vec<String> = combined.unwrap_or_default().into_iter().collect();
+    ids.sort();
+    ids
+}
+
+/// Parses the facet documents out of an OpenSearch response.
+///
+/// Facet documents without a category are skipped, as they cannot be combined with the other
+/// facets.
+fn parse_resolved_facets(json: &Value) -> Vec<ResolvedFacet> {
+    json["hits"]["hits"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|h| {
+            let category = h["_source"]["category"].as_str()?.to_owned();
+            let entity_ids = h["_source"]["entityIds"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|v| v.as_str().map(str::to_owned))
+                .collect();
+            Some((category, entity_ids))
+        })
+        .collect()
+}
+
 /// Returns all entity IDs given a list of facet IDs.
+///
+/// Facets in the same category are combined with OR and facets in different categories are
+/// combined with AND. Only the facet index of the given entity type is searched, so facet ids
+/// belonging to the other entity type cannot contribute to the result.
 ///
 /// Used to narrow down the B entity list in the associations query.
 ///
@@ -267,15 +333,16 @@ impl FacetQuery {
 /// Returns an error if the search fails.
 pub async fn facet_entity_ids(
     os: &OpenSearch,
+    entity: FacetEntity,
     facet_ids: &[String],
 ) -> Result<Vec<String>, async_graphql::Error> {
     if facet_ids.is_empty() {
         return Ok(vec![]);
     }
-    let indices = &facet_indices(None);
+    let indices = &[entity.index()];
     let body = json!({
         "size": facet_ids.len(),
-        "_source": ["entityIds"],
+        "_source": ["category", "entityIds"],
         "query": { "ids": { "values": facet_ids } }
     });
 
@@ -284,16 +351,7 @@ pub async fn facet_entity_ids(
         .await
         .map_err(|e| async_graphql::Error::new(e.to_string()))?;
 
-    let mut ids: Vec<String> = json["hits"]["hits"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(|h| h["_source"]["entityIds"].as_array().cloned())
-        .flatten()
-        .filter_map(|v| v.as_str().map(str::to_owned))
-        .collect();
-    ids.sort();
-    ids.dedup();
+    let ids = combine_facet_entity_ids(&parse_resolved_facets(&json));
 
     tracing::trace!("facet_entity_ids: ids={:?}", ids);
 

@@ -1917,7 +1917,7 @@ type Disease {
 		"""
 		BFilter: String,
 		"""
-		List of the facet ids to filter by (using AND).
+		List of the facet ids to filter by. Facets within the same category are combined with OR; facets from different categories are combined with AND.
 		"""
 		facetFilters: [String!]! = [],
 		"""
@@ -8932,7 +8932,7 @@ type Target {
 		"""
 		BFilter: String,
 		"""
-		List of the Facet IDs to filter by (using AND).
+		List of the facet ids to filter by. Facets within the same category are combined with OR; facets from different categories are combined with AND.
 		"""
 		facetFilters: [String!]! = [],
 		"""
