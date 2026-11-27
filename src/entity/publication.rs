@@ -122,6 +122,9 @@ FROM (
         groupArray((keywordId, relevance)) AS relevances        -- Per-id relevance
     FROM literature_entity_lut
     WHERE keywordId IN ?                                        -- Any row whose keyword is one of the ids
+      -- TEMPORARY until the data is fixed (opentargets/issues#4719): undated publications are
+      -- stored as year 0 and some are dated in the future, which breaks `earliestPubYear`.
+      AND literature_entity_lut.year BETWEEN 1 AND toYear(now())
     GROUP BY pmid
     HAVING uniqExact(keywordId) = ?                             -- Intersection: only pmids matched by EVERY id
 )
